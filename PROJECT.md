@@ -63,13 +63,14 @@ Next.js + Supabase + Vercel is de meest populaire moderne combinatie en daarmee 
 
 ## Bouwtijd inschatting
 
-Realistisch voor Rein met Claude Code: 11-19 uur totaal.
+Realistisch voor Rein met Claude Code: ~13-22 uur totaal (na splitsing van sessie 2 in 2A en 2B).
 
-Verdeeld over 3-4 sessies van 3-5 uur:
-- Sessie 1: Backend, AI-koppelingen, PDF-uitlezen werkend
-- Sessie 2: Telefoon-input (foto, spraak, urgentie)
-- Sessie 3: Lijst-weergave Ed's kant, live updates
-- Sessie 4: Polijsten, PWA-configuratie (installeerbaar maken op startscherm), testen op echte telefoon, demo-scenario klaarzetten
+Verdeeld over 5 sessies:
+- ~~Sessie 1: Backend, AI-koppelingen, PDF-uitlezen werkend~~ **✓ KLAAR (2026-05-26, ~95 min, 24 tests groen)**
+- Sessie 2A: Monteur-flow — UI-scaffolding met ui-ux-pro-max, werkbak, detail-scherm, foto-upload via Supabase Storage, spraak naar tekst, urgentie + verzenden. Aan het eind: monteur kan op telefoon complete melding maken. (4-6u)
+- Sessie 2B: Ed-flow + echte data — Gmail-koppeling voor mail-input, mail-output naar Ed bij nieuwe melding, eerste echte Keukenstudio-PDF testen en parser fine-tunen. (4-5u)
+- Sessie 3: Lijst-weergave Ed's kant, live updates (3-5u)
+- Sessie 4: Polijsten, PWA-configuratie (installeerbaar maken op startscherm), testen op echte telefoon, demo-scenario klaarzetten (2-4u)
 
 ## Toekomstige features (sessie 3-4 of later)
 
