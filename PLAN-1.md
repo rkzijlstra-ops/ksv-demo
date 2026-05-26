@@ -14,39 +14,31 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 ## Groep A — Skeleton (5 taken, ~12 min)
 
 ### A1: Next.js skeleton initialiseren
-- Status: `[ ]`
-- Bestand(en): hele project-map
-- Code: `pnpm create next-app@latest . --typescript --eslint --app --src-dir --import-alias "@/*" --no-tailwind --turbopack`
-- Verifiëren: `package.json` bestaat, `pnpm dev` start (alleen testen, niet bouwen verder)
-- Tijd: 3 min
+- Status: `[x]` 3 min (npm i.p.v. pnpm). Hick-up: create-next-app weigerde door bestaande MD's → tijdelijk verplaatst naar `..\_tmp_ksv_md` en daarna terug.
+- Bestand(en): hele project-map (Next.js 16.2.6, React 19.2.4, TS strict, App Router, src-dir)
+- Code: `npx create-next-app@latest . --typescript --eslint --app --src-dir --import-alias "@/*" --no-tailwind --turbopack --use-npm --skip-install`
+- Verifiëren: `package.json` en `src/app/page.tsx` aanwezig
 
 ### A2: .gitignore + git init + eerste commit
-- Status: `[ ]`
-- Bestand(en): `.gitignore` (Next.js-default + `.env.local` toevoegen)
-- Code: git init, git add, git commit "init: Next.js skeleton"
-- Verifiëren: `git log` toont één commit
-- Tijd: 2 min
+- Status: `[x]` 1 min. create-next-app deed `git init` + "Initial commit from Create Next App" zelf. Tweede commit "docs: brainstorm + plan + project context voor sessie 1" voor MD's. `.gitignore` regelt `.env*` al af.
+- Verifiëren: `git log` toont 2 commits
 
 ### A3: Dependencies installeren
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `package.json`
-- Code: `pnpm add @anthropic-ai/sdk @supabase/supabase-js zod` + `pnpm add -D vitest @vitest/coverage-v8 @types/node pdf-lib`
-- Verifiëren: dependencies in package.json
-- Tijd: 2 min
+- Code: `npm install @anthropic-ai/sdk @supabase/supabase-js zod` + `npm install --save-dev vitest @vitest/coverage-v8 @types/node pdf-lib`
+- Verifiëren: alle 7 deps in package.json. 2 moderate transitieve vulnerabilities (niet kritiek voor demo).
 
 ### A4: Vitest config + npm scripts
-- Status: `[ ]`
-- Bestand(en): `vitest.config.ts`, `package.json` (scripts: `test`, `check:env`)
-- Code: minimale Vitest config, scripts toevoegen
-- Verifiëren: `pnpm test` draait (nul tests = OK)
-- Tijd: 3 min
+- Status: `[x]` 2 min
+- Bestand(en): `vitest.config.ts`, `package.json` (scripts: `test`, `test:watch`, `check:env`)
+- Verifiëren: `npx vitest run` geeft "No test files found" exit 1 (verwacht, geen tests nog)
 
 ### A5: .env.example met alle vereiste vars
-- Status: `[ ]`
+- Status: `[x]` 2 min
 - Bestand(en): `.env.example`
-- Code: placeholder-vars: `ANTHROPIC_API_KEY=`, `ANTHROPIC_MODEL=`, `SUPABASE_URL=`, `SUPABASE_ANON_KEY=`, `SUPABASE_SERVICE_KEY=`
-- Verifiëren: bestand zichtbaar in repo
-- Tijd: 2 min
+- Code: 5 vars met Nederlandse comments. Tip in comment: hergebruik ANTHROPIC_API_KEY uit trc-platform/.env
+- Verifiëren: bestand in repo
 
 ---
 
