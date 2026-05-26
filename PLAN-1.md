@@ -45,63 +45,48 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 ## Groep B — Supabase opzetten (5 taken, ~15-20 min waarvan Rein 10-15 min)
 
 ### B1: Schrijf SQL voor `meldingen` tabel
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `supabase/schema.sql`
-- Test eerst: n.v.t. (pure SQL)
-- Code: CREATE TABLE meldingen met velden uit BRAINSTORM-1, plus index op `created_at desc`
-- Verifiëren: SQL leest goed door
-- Tijd: 3 min
+- Code: CREATE TABLE meldingen met 12 velden uit BRAINSTORM-1, CHECK constraints op `bron` en `urgentie`, jsonb default `[]`, 2 indexen (created_at desc, bron)
+- Verifiëren: SQL leest goed door, Rein heeft hem gerund
 
-### B2: Rein — Supabase-account aanmaken + nieuw project
-- Status: `[ ]`
-- Wie: **Rein** (Claude wacht)
-- Stappen: supabase.com → sign up met Google → new project (naam: `ksv-demo`, regio: `eu-central`, sterk wachtwoord noteren)
-- Verifiëren: Project-dashboard zichtbaar, status `Active`
-- Tijd: 5-10 min
+### B2: Rein — Supabase-account + project
+- Status: `[x]` overgeslagen — al klaar (BKM AI org, project `ksv-demo`, regio eu-west-1 Ireland)
 
 ### B3: Rein — SQL plakken in Supabase SQL Editor
-- Status: `[ ]`
-- Wie: **Rein** (Claude wacht)
-- Stappen: Supabase Studio → SQL Editor → plak inhoud `supabase/schema.sql` → Run
-- Verifiëren: Table Editor toont tabel `meldingen` met alle kolommen
-- Tijd: 2 min
+- Status: `[x]` ~2 min (Rein)
+- Verifiëren: Rein bevestigde "B3+B4 klaar"
 
-### B4: Rein — Keys ophalen + in `.env.local` zetten
-- Status: `[ ]`
-- Wie: **Rein** (Claude wacht)
-- Stappen: Supabase Settings → API → kopieer Project URL, anon-key, service_role-key → maak `.env.local` aan in project-map, plak waarden (incl. ANTHROPIC_API_KEY uit trc-platform/.env hergebruiken + `ANTHROPIC_MODEL=claude-sonnet-4-6` of nieuwer)
-- Verifiëren: `.env.local` bestaat, alle 5 vars gevuld
-- Tijd: 3 min
+### B4: Rein — Keys in `.env.local`
+- Status: `[x]` ~2 min (Rein)
+- Update: nieuwe Supabase-naamgeving — `SUPABASE_PUBLISHABLE_KEY` (was anon) en `SUPABASE_SECRET_KEY` (was service_role). `.env.example` en code aangepast. Claude maakte het bestand met placeholders, Rein vulde 2× `PLAK_HIER` in.
+- Verifiëren: `npm run check:env` gaf alle 5 vars groen
 
-### B5: `lib/env.ts` met Zod-validatie voor process.env
-- Status: `[ ]`
+### B5: `lib/env.ts` met Zod-validatie
+- Status: `[x]` 4 min
 - Bestand(en): `src/lib/env.ts`
-- Test eerst: nee (validatie zelf is de test)
-- Code: Zod-schema voor 5 vereiste vars, `.parse(process.env)` met duidelijke error-message
-- Verifiëren: import in een willekeurig bestand → app-start faalt met heldere melding als var mist
-- Tijd: 3 min
+- Code: Zod-schema met `loadEnv(source)` voor testbaarheid + cached `env()` voor app-runtime. Detecteert placeholders (`PLAK_HIER`, `TODO`, etc.), checkt min-length op secret-keys, checkt `https://` prefix op SUPABASE_URL, default `claude-sonnet-4-6` voor ANTHROPIC_MODEL.
+- Verifiëren: import in scripts/check-env.ts → 6 tests groen
 
 ---
 
 ## Groep C — Env-check CLI (3 taken, ~7 min)
 
 ### C1: Test voor env-validatie (RED)
-- Status: `[ ]`
+- Status: `[x]` 3 min — uitgevoerd vóór B5 voor strikt TDD
 - Bestand(en): `src/lib/env.test.ts`
-- Test eerst: ja
-- Code: 3 tests: alle vars gezet → valid; één missend → Zod-error; lege string → Zod-error
-- Verifiëren: `pnpm test env` faalt (geen implementatie nog) of slaagt (als B5 al gedaan)
-- Tijd: 3 min
+- Code: 6 tests: valid env, default voor model, missend API key, ongeldige URL, lege secret, placeholder-detectie
+- Verifiëren: vitest gaf eerst "Cannot find module './env'" → RED bevestigd
 
-### C2: `scripts/check-env.mjs` CLI tool
-- Status: `[ ]`
-- Bestand(en): `scripts/check-env.mjs`, update `package.json` (`"check:env": "node scripts/check-env.mjs"`)
-- Code: importeer env-schema, parse process.env, log groen vinkje of rode lijst missende vars
-- Verifiëren: `pnpm check:env` output is duidelijk
-- Tijd: 3 min
+### C2: `scripts/check-env.ts` CLI tool
+- Status: `[x]` 2 min
+- Bestand(en): `scripts/check-env.ts`, package.json script aangepast naar `node --env-file=.env.local --experimental-strip-types scripts/check-env.ts`
+- Code: importeert loadEnv uit src/lib/env.ts, print groen vinkje + getrunceerde key-previews, of rode error-lijst
+- Verifiëren: output is leesbaar, exit 0 op succes / 1 op fail
+- Noot: Node 24 ondersteunt native TS via `--experimental-strip-types`, geen tsx-dep nodig
 
-### C3: Run `pnpm check:env` → alles groen
-- Status: `[ ]`
+### C3: Run `npm run check:env` → alles groen
+- Status: `[x]` 1 min
 - Verifiëren: groen vinkje voor alle 5 vars
 - Tijd: 1 min
 - **Dit is Rein's antwoord op de "hoe weet ik dat env-vars OK zijn"-vraag**

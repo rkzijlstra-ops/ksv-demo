@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:env": "node scripts/check-env.mjs"
+    "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
