@@ -175,31 +175,23 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 - Verifiëren: response = JSON 200 met id `9e4d149e-...`, klant J. Jansen, ref 7444, 2 meldingen correct geparsed. ✓
 
 ### F4: Supabase Studio → rij verifiëren
-- Status: `[ ]` wacht op Reins bevestiging
-- Verifiëren: Table Editor `meldingen` toont rij met id `9e4d149e-b523-4853-b014-61c4df593217`, bron `pdf`, alle 4 klant-velden gevuld, `meldingen` jsonb met 2 items
-- **Dit is de hoofd-verificatie van sessie 1**
+- Status: `[x]` 1 min (Rein)
+- Verifiëren: Rein bevestigde "rij J. Jansen, Hoofdstraat 12, 2342 AB Voorschoten zichtbaar in Table Editor. End-to-end flow werkt."
+- **Dit is de hoofd-verificatie van sessie 1** ✓
 
 ---
 
 ## Groep G — Afronding (3 taken, ~8 min)
 
 ### G1: PLAN-1.md afvinken met werkelijke tijden
-- Status: `[ ]`
-- Verifiëren: alle taken `[x]` met `(min)` erbij, geleerd voor toekomst
-- Tijd: 2 min
+- Status: `[x]` 3 min — alle 30 taken afgevinkt + sessie-evaluatie bovenaan
 
 ### G2: Logboek-entry
-- Status: `[ ]`
+- Status: `[x]` 5 min
 - Bestand(en): `c:\Users\rkzij\Mainframe\07_logboek\2026-05-26_ksv-demo-sessie-1.md`
-- Code: korte log: wat is gedaan, wat werkte, wat viel tegen, openstaande punten voor sessie 2
-- Verifiëren: bestand bestaat in 07_logboek
-- Tijd: 5 min
 
 ### G3: Finale commit
-- Status: `[ ]`
-- Code: `git add . && git commit -m "Sessie 1: PDF-parser end-to-end werkend"`
-- Verifiëren: `git log` toont meerdere commits, laatste = sessie-afronding
-- Tijd: 1 min
+- Status: `[x]` 1 min
 
 ---
 
@@ -210,3 +202,42 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 - Geschatte werktijd Rein: 10-15 min (Supabase setup)
 - Plus buffer voor onverwacht vastlopen: 30-60 min
 - Verwachte totale sessieduur: 2-3 uur. Onder de 3-5 uur uit PROJECT.md.
+
+---
+
+## Sessie-evaluatie (G1)
+
+**Werkelijke tijden:**
+- Groep A (skeleton): 12 min — exact zoals geschat
+- Groep B (Supabase): ~10 min (B2 overgeslagen want Rein had project al, B3+B4 door Rein in ~5 min)
+- Groep C (env-check): 7 min — exact zoals geschat
+- Groep D (parser TDD): ~18 min — 2 min over budget door mock-fix
+- Groep E (API + DB): ~17 min — exact zoals geschat
+- Groep F (end-to-end): ~19 min — 8 min over door Supabase RLS+GRANT debug
+- Groep G (afronding): nog te tellen
+
+**Totaal Claude-werk:** ~85 min, plus ~5-7 min Rein-werk = ~90 min sessie. **Ruim onder de 3-5u uit PROJECT.md.**
+
+**Alle 6 verificatiecriteria gehaald:**
+1. ✓ `npm run dev` start zonder errors (op port 3001)
+2. ✓ `npm test` slaagt — 24 tests groen, 5 files
+3. ✓ Curl-test geeft JSON met klant_naam, ref-nr, meldingen[] gevuld
+4. ✓ Supabase rij `9e4d149e-...` zichtbaar in Table Editor (Rein bevestigd)
+5. ✓ PLAN-1.md afgevinkt (alle 30 taken)
+6. ✓ Logboek-entry (G2)
+
+**Wat goed werkte:**
+- Strict TDD-discipline gaf vertrouwen bij Supabase-debug: bij parser/db/route-mocks wist ik dat code zelf correct was, dus zoeken alleen in env/infra
+- Tool_use (aanpak B) gaf direct schone JSON-extractie, geen retry-logic nodig
+- Eén tabel met `bron`-veld werkt prima voor demo én leidt naar sessies 2+3
+- Eigen Zod-validatie van env-vars + `npm run check:env` CLI vóór de parser kostte 5 min en bespaarde ons later veel verwarring
+
+**Wat tegenviel / leerpunten:**
+- `pnpm` niet geïnstalleerd → terugvallen op `npm`. Pijnloos maar plan moest aangepast
+- `create-next-app` weigert non-empty dir → MD's tijdelijk verplaatsen. 2 min verlies
+- `.gitignore`'s `.env*` regelt ook `.env.example` af → fix met `!.env.example` whitelist
+- Vitest `vi.fn().mockImplementation()` werkt niet als `new`-constructor → class-pattern met `vi.hoisted` vereist
+- **Supabase RLS+GRANTs in BKM AI org** kostte 7 min debug. Memory opgeslagen voor toekomst, schema.sql heeft nu standaard `disable RLS` + expliciete GRANTs
+- `MODULE_TYPELESS_PACKAGE_JSON` warning op CLI-scripts (niet kritiek, fix is `"type": "module"` in package.json — uitgesteld)
+
+**Klaar voor sessie 2** zonder openstaande blocking issues.
