@@ -156,28 +156,27 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 
 ## Groep F — End-to-end met echte fake-PDF (4 taken, ~11 min)
 
-### F1: `scripts/generate-fake-pdf.mjs`
-- Status: `[ ]`
-- Bestand(en): `scripts/generate-fake-pdf.mjs`, `test-pdfs/.gitkeep`
-- Code: pdf-lib genereert PDF met realistische Keller-velden (klant "J. Jansen", adres, ref-nr `7444`, adviseur "M. de Vries", 2 meldingen met Keller-codes en omschrijvingen)
-- Verifiëren: script-output toont gegenereerde velden
-- Tijd: 5 min
+### F1: `scripts/generate-fake-pdf.ts`
+- Status: `[x]` 5 min
+- Bestand(en): `scripts/generate-fake-pdf.ts`, npm-script `generate:fake-pdf`
+- Code: pdf-lib met Helvetica + bold. A4 pagina met Keller-style header (klant J. Jansen, ref 7444, adviseur M. de Vries) en 2 artikelen met "Uw melding"-tekst.
+- Verifiëren: script logt pad + bytes. Bestand 1528 bytes.
 
 ### F2: Run script → `test-pdfs/voorbeeld.pdf` bestaat
-- Status: `[ ]`
-- Verifiëren: bestand opent in PDF-viewer, leesbaar
-- Tijd: 1 min
+- Status: `[x]` 1 min
+- Verifiëren: `npm run generate:fake-pdf` → bestand staat in `test-pdfs/voorbeeld.pdf`
 
-### F3: `pnpm dev` + curl-test op echte endpoint
-- Status: `[ ]`
-- Code: `curl -F "file=@test-pdfs/voorbeeld.pdf" http://localhost:3000/api/parse-pdf`
-- Verifiëren: HTTP 200, JSON-response met `klant_naam="J. Jansen"`, `referentienummer="7444"`, `meldingen[]` gevuld
-- Tijd: 3 min
+### F3: `npm run dev` + curl-test op echte endpoint
+- Status: `[x]` 10 min (3 min basis + 7 min debugging Supabase permissions)
+- Dev draait op **port 3001** (3000 was bezet). Curl-commando: `curl.exe -s -F "file=@test-pdfs/voorbeeld.pdf" http://localhost:3001/api/parse-pdf`
+- Hick-up 1 (RLS): Supabase zet sinds 2024 default RLS aan op nieuwe public-tabellen. Opgelost: `alter table public.meldingen disable row level security;`
+- Hick-up 2 (GRANTs): zelfs na RLS-uit, kreeg `permission denied for table meldingen`. Opgelost: expliciete `grant select, insert, update, delete on public.meldingen to anon, authenticated, service_role;` Vermoedelijk een Supabase-edge-case in BKM AI org-config (Supabase doet dit normaal automatisch).
+- Diagnostiek: directe SQL-insert in Supabase werkte, wat aantoonde dat schema OK was en het probleem in de PostgREST-laag tussen JS-client en Postgres zat.
+- Verifiëren: response = JSON 200 met id `9e4d149e-...`, klant J. Jansen, ref 7444, 2 meldingen correct geparsed. ✓
 
 ### F4: Supabase Studio → rij verifiëren
-- Status: `[ ]`
-- Verifiëren: Table Editor `meldingen` toont nieuwe rij met `bron='pdf'`, alle velden gevuld zoals verwacht
-- Tijd: 2 min
+- Status: `[ ]` wacht op Reins bevestiging
+- Verifiëren: Table Editor `meldingen` toont rij met id `9e4d149e-b523-4853-b014-61c4df593217`, bron `pdf`, alle 4 klant-velden gevuld, `meldingen` jsonb met 2 items
 - **Dit is de hoofd-verificatie van sessie 1**
 
 ---

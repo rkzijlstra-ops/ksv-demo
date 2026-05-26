@@ -36,3 +36,16 @@ create index if not exists meldingen_created_at_idx
 -- Filter op bron komt vaak voor (Ed wil monteur-meldingen apart kunnen zien)
 create index if not exists meldingen_bron_idx
   on public.meldingen (bron);
+
+-- Sessie 1: RLS uitzetten zodat server-side service-key insert mag (geen demo-RLS-policies)
+-- Sessie 4 of bij productie: RLS aanzetten + policies opnieuw bekijken
+alter table public.meldingen disable row level security;
+
+-- Expliciete grants. Supabase doet dit normaal automatisch op nieuwe public-tabellen,
+-- maar belt-and-suspenders na "permission denied" tijdens demo-bouw.
+grant usage on schema public to anon, authenticated, service_role;
+grant select, insert, update, delete on public.meldingen to anon, authenticated, service_role;
+
+-- Voor toekomstige tabellen in public: zelfde grants automatisch
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to anon, authenticated, service_role;

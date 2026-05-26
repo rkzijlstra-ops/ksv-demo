@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts"
+    "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts",
+    "generate:fake-pdf": "node --experimental-strip-types scripts/generate-fake-pdf.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
