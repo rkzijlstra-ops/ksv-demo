@@ -96,39 +96,33 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 ## Groep D — Parser-laag TDD (5 taken, ~16 min)
 
 ### D1: Test voor Zod parser-output-schema (RED)
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/lib/parser-schema.test.ts`
-- Test eerst: ja
-- Code: 4 tests: volledig object valid; ontbrekende optionele velden = null ok; verkeerd type faalt; lege `meldingen[]` is geldig
-- Verifiëren: tests falen (geen schema nog)
-- Tijd: 3 min
+- Code: 6 tests: compleet valid, alleen nulls valid, lege meldingen-array valid, verkeerd type faalt, melding zonder keller_code faalt, object zonder meldingen-veld faalt
+- Verifiëren: RED — "Cannot find module './parser-schema'"
 
-### D2: `src/lib/parser-schema.ts` met Zod-schema (GREEN)
-- Status: `[ ]`
+### D2: `src/lib/parser-schema.ts` (GREEN)
+- Status: `[x]` 3 min
 - Bestand(en): `src/lib/parser-schema.ts`
-- Code: Zod-schema dat Claude-output beschrijft (klant_naam, klant_adres, referentienummer, adviseur als nullable strings; meldingen als array van `{keller_code, omschrijving, melding_tekst}`)
-- Verifiëren: `pnpm test parser-schema` → groen
-- Tijd: 3 min
+- Code: Zod `ParsedPdfSchema` (4 nullable strings + meldingen-array van Zod `MeldingItemSchema`) PLUS handmatige `ParsedPdfJsonSchema` als const voor Anthropic tool_use (raw JSON-schema, niet Zod). Dubbele bron is bewust — Zod voor runtime-validatie, JSON-schema voor de tool-definition. Bij wijziging beide bijwerken.
+- Verifiëren: 6 tests groen
 
 ### D3: Test voor Claude-client met mock (RED)
-- Status: `[ ]`
+- Status: `[x]` 4 min
 - Bestand(en): `src/lib/claude-client.test.ts`
-- Test eerst: ja
-- Code: mock `@anthropic-ai/sdk`, test dat `parsePdfWithClaude(buffer)` Anthropic aanroept met juiste model + system prompt + PDF, en gevalideerde output teruggeeft
-- Verifiëren: test faalt (geen client nog)
-- Tijd: 4 min
+- Code: 4 tests met mock van `@anthropic-ai/sdk` via `vi.hoisted`: juiste model/tool/PDF-base64, gevalideerde return, error bij geen tool_use, Zod-error bij schema-mismatch
+- Verifiëren: RED — module niet gevonden
 
 ### D4: `src/lib/claude-client.ts` (GREEN)
-- Status: `[ ]`
+- Status: `[x]` 7 min (incl 2 min mock-fix)
 - Bestand(en): `src/lib/claude-client.ts`
-- Code: Anthropic SDK-call met PDF-base64, system prompt: "Extract uit deze Keukenstudio service-PDF: klant, adres, referentienummer, adviseur, en alle meldingen met Keller-code", return type via Zod-parse
-- Verifiëren: `pnpm test claude-client` → groen
-- Tijd: 5 min
+- Code: `createParser(config)` factory + cached `parsePdfWithClaude(pdf)`. Tool_use met `tool_choice: { type: "tool", name: "extract_pdf_data" }` forceert structured output. Nederlandse system prompt met regels (referentienummer als string, null bij twijfel, altijd tool aanroepen). Bij text-response i.p.v. tool_use → informatieve error met de tekst.
+- Mock-hick-up: `vi.fn().mockImplementation()` werkt niet als `new`-constructor. Opgelost met `class MockAnthropic` in `vi.mock` + `vi.hoisted` voor `mockCreate`.
+- Verifiëren: 4 tests groen
 
 ### D5: Run hele test-suite tot hier
-- Status: `[ ]`
-- Verifiëren: `pnpm test` alles groen
-- Tijd: 1 min
+- Status: `[x]` 1 min
+- Verifiëren: `npm test` → 3 files, 16 tests groen
 
 ---
 
