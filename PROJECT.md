@@ -71,6 +71,64 @@ Verdeeld over 3-4 sessies van 3-5 uur:
 - Sessie 3: Lijst-weergave Ed's kant, live updates
 - Sessie 4: Polijsten, PWA-configuratie (installeerbaar maken op startscherm), testen op echte telefoon, demo-scenario klaarzetten
 
+## Toekomstige features (sessie 3-4 of later)
+
+Twee features die nu nog niet in scope zitten maar wel doorgedacht zijn. Wanneer ze concreet ingebouwd worden hangt af van wat data uit sessies 1 en 2 leert.
+
+### 1. Klantgeschiedenis per referentienummer
+
+Idee: bij een serviceklus moet de monteur zien:
+- Wie de keuken oorspronkelijk monteerde
+- Welke tekeningen erbij zaten
+- Wat de eerste monteur had genoteerd bij oplevering (incl. open punten)
+- Foto's van de eerste oplevering
+
+KSV gebruikt unieke referentienummers per klant. Die zijn de juiste sleutel, niet het adres.
+
+Datamodel-uitbreiding:
+- Aparte tabel `klanten` met `referentienummer` als unique key
+- Aparte tabel `opdrachten` (gekoppeld aan klant via referentienummer, met datum, type, monteur, PDFs, oplevering)
+- Bij nieuwe opdracht: app zoekt op referentienummer of klant al bestaat
+
+Edge case: opdracht zonder referentienummer
+- Komt heel soms voor (volgens Rein)
+- App detecteert ontbreken in PDF
+- Melding: "Geen referentienummer gevonden, laat op kantoor controleren"
+- Status: "nog te valideren"
+- Na invullen door kantoor: opslaan met correct nummer
+- Niet als hard fout markeren, wel als attentiepunt
+
+Voordeel voor Ed: monteur hoeft niet meer te bellen voor context.
+
+Plannen voor sessie 4+ wanneer:
+- Werkbak werkt
+- Monteurs kunnen opleveren met foto's
+- Data begint te stromen
+
+### 2. Wijzigingen en annuleringen door Ed
+
+Scenario: Ed mailt opdracht naar app. Opdracht staat bij monteur in werkbak. Daarna verandert er iets:
+- Tijdwijziging
+- Extra info voor monteur
+- Datum verschoven
+- Andere monteur
+- Annulering
+
+Drie mogelijke oplossingen:
+
+A) Ed mailt opnieuw met referentienummer + "WIJZIGING" of "ANNULEREN" als trigger. App matcht op ref-nr en updatet.
+
+B) Ed werkt in eigen web-pagina/app waar hij opdrachten kan zien en aanpassen.
+
+C) Hybride: nieuwe opdrachten via mail, wijzigingen via simpele knop in notificatie-mail die app stuurt.
+
+Voor sessie 2: alleen nieuwe opdrachten ondersteunen.
+Voor sessie 3 of 4: wijzigingsflow uitwerken op basis van hoe vaak het voorkomt.
+
+Rein moet checken: hoe vaak komt wijziging na mail voor bij Ed?
+- Bijna nooit / Regelmatig / Vaak
+- Bepaalt prioriteit van deze feature
+
 ## Hergebruik voor echte versie
 
 Geschat 70-80% van de demo-code is direct herbruikbaar voor versie 1 van het echte systeem. Specifiek:
