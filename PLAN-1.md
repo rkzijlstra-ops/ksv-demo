@@ -128,39 +128,29 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 
 ## Groep E — API-route + DB-insert TDD (5 taken, ~17 min)
 
-### E1: `src/lib/db.ts` Supabase-client + insertMelding
-- Status: `[ ]`
+### E1: `src/lib/db.ts` Supabase-client + insertPdfMelding
+- Status: `[x]` 3 min (na E2 test)
 - Bestand(en): `src/lib/db.ts`
-- Code: createClient met SUPABASE_URL + SERVICE_KEY (server-side), functie `insertMelding(data)` die rij invoegt
-- Verifiëren: typechecks OK
-- Tijd: 3 min
+- Code: `createDb(config)` factory + cached `db()`. Server-side client met `auth: { persistSession: false }`. `insertPdfMelding(ParsedPdf)` voegt `bron='pdf'` toe en gebruikt `.select('id').single()`. Strict null-check op response.
 
-### E2: Test voor `lib/db.ts` met gemockte Supabase (RED → GREEN)
-- Status: `[ ]`
+### E2: Test voor `lib/db.ts` met gemockte Supabase
+- Status: `[x]` 4 min (gedaan vóór E1, TDD)
 - Bestand(en): `src/lib/db.test.ts`
-- Code: mock Supabase-client, test dat insertMelding `from('meldingen').insert(...)` aanroept met correcte payload
-- Verifiëren: groen
-- Tijd: 4 min
+- Code: 3 tests via `vi.hoisted` chain-mock van `from().insert().select().single()`: correcte payload met bron='pdf', returnt id, gooit error bij Supabase-error
 
 ### E3: Test voor `app/api/parse-pdf/route.ts` (RED)
-- Status: `[ ]`
+- Status: `[x]` 4 min
 - Bestand(en): `src/app/api/parse-pdf/route.test.ts`
-- Test eerst: ja
-- Code: mock claude-client + db, test happy path (PDF erin → 200 + JSON met id), test 413 voor te grote PDF, test 502 als Claude rommel teruggeeft
-- Verifiëren: tests falen
-- Tijd: 4 min
+- Code: 5 tests met mocks voor `@/lib/claude-client` + `@/lib/db`. Cases: 200 happy path, 400 zonder file, 413 >10MB, 502 Claude-faal, 503 DB-faal. Gebruikt Node 24 globals (File, FormData, Request).
 
 ### E4: `app/api/parse-pdf/route.ts` implementatie (GREEN)
-- Status: `[ ]`
+- Status: `[x]` 5 min
 - Bestand(en): `src/app/api/parse-pdf/route.ts`
-- Code: POST handler, multipart parse, size-check 10 MB, parse via claude-client, insert via db, return `{id, ...data}`
-- Verifiëren: `pnpm test parse-pdf` → groen
-- Tijd: 5 min
+- Code: Next.js App Router POST handler. Drie try/catch-blokken voor scherpe HTTP-statussen: 400 (multipart/file), 413 (size), 502 (Claude), 503 (DB). Gebruikt `NextResponse.json` voor consistente output.
 
 ### E5: Hele suite groen
-- Status: `[ ]`
-- Verifiëren: `pnpm test` alles groen
-- Tijd: 1 min
+- Status: `[x]` 1 min
+- Verifiëren: `npm test` → 5 files, **24 tests groen** (env 6 + parser 6 + claude 4 + db 3 + route 5)
 
 ---
 
