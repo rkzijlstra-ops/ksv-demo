@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkbak";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
+import { PdfUpload } from "@/components/PdfUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,10 @@ export default async function WerkbakPage() {
           {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
         </p>
       </header>
+
+      <div className="mb-4">
+        <PdfUpload />
+      </div>
 
       {actief.length === 0 ? (
         <div className="mt-8 flex flex-col items-center gap-3 rounded-xl border border-line bg-surface p-8 text-center">

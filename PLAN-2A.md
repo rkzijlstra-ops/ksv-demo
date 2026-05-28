@@ -142,25 +142,22 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep E — PDF-upload-knop (tijdelijke bron) (4 taken, ~25 min)
 
 ### E1: Upload-component (client)
-- Status: `[ ]`
-- Bestand(en): `src/components/PdfUpload.tsx`
-- Code: file-input PDF → POST naar bestaande `/api/parse-pdf`
-- Verifiëren: upload triggert request
+- Status: `[x]` 6 min
+- Bestand(en): `src/components/PdfUpload.tsx`, geplaatst in `src/app/page.tsx` header
+- Code: verborgen file-input (accept application/pdf) getriggerd door grote dashed knop → POST naar `/api/parse-pdf`
 
 ### E2: Status-feedback
-- Status: `[ ]`
-- Code: loading-spinner, succes-melding, foutmelding (toont API-error netjes)
-- Verifiëren: states zichtbaar
+- Status: `[x]` (in E1)
+- Code: idle/uploading (spinner "PDF inlezen…")/success (groene check + klantnaam)/error (rode melding met API-error). Knop disabled tijdens upload.
 
 ### E3: Na upload werkbak verversen
-- Status: `[ ]`
-- Code: `router.refresh()` of revalidate na succes
-- Verifiëren: nieuwe klus verschijnt zonder handmatige reload
+- Status: `[x]` (in E1)
+- Code: `router.refresh()` na succes, input reset, success-state na 4s terug naar idle
 
 ### E4: Verifieer PDF-upload-flow
-- Status: `[ ]`
-- Verifiëren: voorbeeld.pdf uploaden via UI → klus in werkbak met klantgegevens
-- **Natuurlijke pauze-plek: hier kan een sessie eventueel splitsen**
+- Status: `[x]` 3 min
+- Verifiëren: knop rendert; echte upload van voorbeeld.pdf gaf 200 + nieuwe rij `31aa6822` met klant_naam J. Jansen, klant_telefoon 071-1234567 (parser extraheert nu telefoon), ref 7444. Rij verschijnt in werkbak, detail krijgt bel-knop.
+- **Natuurlijke pauze-plek: werkbak + detail + PDF-upload werken**
 
 ---
 
