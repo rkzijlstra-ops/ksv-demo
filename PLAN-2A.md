@@ -107,35 +107,35 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep D — Detail-scherm + nav/bel (5 taken, ~35 min)
 
 ### D1: getMeldingById + test
-- Status: `[ ]`
+- Status: `[x]` (al gebouwd + getest in A5)
 - Bestand(en): `src/lib/db.ts`, `src/lib/db.test.ts`
-- Verifiëren: groen
 
 ### D2: Detail-pagina /opdracht/[id]
-- Status: `[ ]`
-- Bestand(en): `src/app/opdracht/[id]/page.tsx`
-- Code: klantgegevens, meldingen-lijst, foto's-sectie, EN aanmaakdatum + uitvoerdatum (zelfde `formatDatumKort`, lege uitvoer = "Nog niet gepland")
-- Verifiëren: detail opent vanuit werkbak-tik
+- Status: `[x]` 8 min
+- Bestand(en): `src/app/opdracht/[id]/page.tsx` (server component, `await params`, notFound bij onbekend id)
+- Code: terug-link, klantnaam + urgentie-badge, bron + ref + adviseur, adres met pin, uitvoer- + aanmaakdatum, nav+bel-knoppen, meldingen-lijst (omschrijving + Keller-code + melding_tekst in body-font), monteur-toelichting indien aanwezig, foto-galerij
+- Verifiëren: HTTP 200, J. Jansen detail toont alle velden
 
 ### Tussentijdse feature (2026-05-28): aanmaak- + uitvoerdatum
 - Status: `[x]` — kolom `uitvoerdatum` (date, nullable) toegevoegd via `supabase/schema-2a-datums.sql`. `formatDatumKort` helper (NL kort, "30 mei") + 6 tests. OpdrachtCard toont uitvoerdatum (klok-icoon, prominent) + aanmaakdatum (plus-icoon, muted). Lege uitvoer = "Nog niet gepland". Detail-scherm neemt ze mee in D2.
 
 ### D3: Nav-knop component + URL-test
-- Status: `[ ]`
-- Bestand(en): `src/components/NavKnop.tsx`, test voor URL-bouw
-- Code: platform-detectie → Android `geo:0,0?q=<adres>`, iPhone `https://maps.google.com/?q=<adres>`, fallback Google Maps web
-- Verifiëren: test groen, knop bouwt juiste link
+- Status: `[x]` 5 min
+- Bestand(en): `src/lib/nav.ts` (+ `nav.test.ts`, 9 tests), `src/components/NavKnop.tsx` (client, detecteert platform via navigator.userAgent in useEffect)
+- Code: `detectPlatform` + `navUrl`: Android `geo:0,0?q=`, iOS/overig `https://maps.google.com/?q=`
+- Verifiëren: 9 tests groen, "Navigeer"-knop rendert op detail
 
 ### D4: Bel-knop component
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/components/BelKnop.tsx`
-- Code: `tel:` link, verbergen als `klant_telefoon` null
-- Verifiëren: knop verschijnt alleen met nummer
+- Code: `tel:` link (spaties gestript), returnt null als `klant_telefoon` null
+- Verifiëren: Rein gaf bestaande rij een nummer via SQL → "Bel klant"-knop verschijnt. Zonder nummer verborgen (correct).
 
 ### D5: Foto-galerij + verifieer detail
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/components/FotoGalerij.tsx`
-- Verifiëren: detail-scherm compleet, nav/bel deep-links kloppen
+- Code: grid van foto's (lege staat "Nog geen foto's"); klikbaar naar volledige afbeelding
+- Verifiëren: detail-scherm compleet — klant, datums, nav+bel, melding F-BK-LD-60, foto-sectie allemaal zichtbaar via curl
 
 ---
 

@@ -15,7 +15,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "KSV Werkbak",
+  title: "KSV Opdrachten",
   description: "Meldingen en opdrachten voor monteurs van Keukenstudio Voorschoten",
 };
 

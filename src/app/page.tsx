@@ -13,7 +13,7 @@ export default async function WerkbakPage() {
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
       <header className="py-4">
-        <h1 className="text-2xl font-bold text-ink">Werkbak</h1>
+        <h1 className="text-2xl font-bold text-ink">Opdrachten</h1>
         <p className="mt-1 text-sm text-ink-muted">
           {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
         </p>
