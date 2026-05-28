@@ -25,6 +25,7 @@ export interface Melding {
   status: "concept" | "verzonden";
   aangepast: boolean;
   verzonden_at: string | null;
+  uitvoerdatum: string | null;
 }
 
 export interface MonteurMeldingInput {

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, CalendarClock, CalendarPlus } from "lucide-react";
 import type { Melding } from "@/lib/db";
+import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "./UrgentieBadge";
 import { BronBadge } from "./BronBadge";
 
@@ -36,6 +37,17 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
         {melding.klant_adres && (
           <p className="mt-1 truncate text-sm text-ink-muted">{melding.klant_adres}</p>
         )}
+
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span className="inline-flex items-center gap-1 font-semibold text-ink">
+            <CalendarClock size={15} strokeWidth={2.5} aria-hidden="true" />
+            {melding.uitvoerdatum ? formatDatumKort(melding.uitvoerdatum) : "Nog niet gepland"}
+          </span>
+          <span className="inline-flex items-center gap-1 text-ink-muted">
+            <CalendarPlus size={15} strokeWidth={2} aria-hidden="true" />
+            {formatDatumKort(melding.created_at)}
+          </span>
+        </div>
       </div>
 
       <ChevronRight size={24} className="shrink-0 text-ink-muted" aria-hidden="true" />

@@ -20,6 +20,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     status: "concept",
     aangepast: false,
     verzonden_at: null,
+    uitvoerdatum: null,
     ...over,
   };
 }

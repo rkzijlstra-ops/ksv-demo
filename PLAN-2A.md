@@ -114,8 +114,11 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ### D2: Detail-pagina /opdracht/[id]
 - Status: `[ ]`
 - Bestand(en): `src/app/opdracht/[id]/page.tsx`
-- Code: klantgegevens, meldingen-lijst, foto's-sectie
+- Code: klantgegevens, meldingen-lijst, foto's-sectie, EN aanmaakdatum + uitvoerdatum (zelfde `formatDatumKort`, lege uitvoer = "Nog niet gepland")
 - Verifiëren: detail opent vanuit werkbak-tik
+
+### Tussentijdse feature (2026-05-28): aanmaak- + uitvoerdatum
+- Status: `[x]` — kolom `uitvoerdatum` (date, nullable) toegevoegd via `supabase/schema-2a-datums.sql`. `formatDatumKort` helper (NL kort, "30 mei") + 6 tests. OpdrachtCard toont uitvoerdatum (klok-icoon, prominent) + aanmaakdatum (plus-icoon, muted). Lege uitvoer = "Nog niet gepland". Detail-scherm neemt ze mee in D2.
 
 ### D3: Nav-knop component + URL-test
 - Status: `[ ]`
