@@ -164,31 +164,30 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep F — Melding maken: foto's (5 taken, ~40 min)
 
 ### F1: Foto-capture component
-- Status: `[ ]`
-- Bestand(en): `src/components/FotoMaken.tsx`
-- Code: `<input type=file accept=image/* capture=environment>` + preview
-- Verifiëren: camera opent op telefoon
+- Status: `[x]` 6 min
+- Bestand(en): `src/components/FotoMaken.tsx` (client)
+- Code: `<input accept=image/* capture=environment multiple>` → comprimeer → upload → preview-grid met verwijder-knop. Loading + error states.
+- Verifiëren: camera-verificatie op echt toestel in groep I (form-context)
 
 ### F2: Client-side compressie
-- Status: `[ ]`
-- Bestand(en): `src/lib/foto-compress.ts` + test
-- Code: canvas-resize naar max ~1500px lange zijde, jpeg-kwaliteit
-- Verifiëren: compressie-test (mock canvas of pure functie) groen
+- Status: `[x]` 4 min
+- Bestand(en): `src/lib/foto-compress.ts` (+ test, 5 tests)
+- Code: `berekenSchaal` (pure, testbaar) + `compressImage` (canvas resize → jpeg, browser-only). Max 1500px langste zijde, geen vergroting.
+- Verifiëren: 5 dimensie-tests groen
 
-### F3: Upload naar Supabase Storage
-- Status: `[ ]`
-- Bestand(en): `src/lib/storage.ts` (+ test mock)
-- Code: upload naar bucket `meldingen-fotos`, retourneer public-url
-- Verifiëren: test groen
+### F3: Upload naar Supabase Storage (route + helper)
+- Status: `[x]` 12 min (incl. test-mock debug, zie noot)
+- Bestand(en): `src/lib/storage.ts` (+ test 3), `src/app/api/upload-foto/route.ts` (+ test 4)
+- Code: server-side `createStorage().uploadFoto(buffer, contentType)` → bucket `meldingen-fotos`, public URL. Route POST: 200/400/413/503.
+- Noot: 503-route-test faalde door vitest die rejected promises in `vi.fn` mock.results tracket (unhandled-rejection false-positive met beforeEach). Opgelost door mock-gedrag via gewone async functie + handmatige call-teller i.p.v. `vi.fn`.
+- Verifiëren: 7 tests groen
 
 ### F4: Koppel foto's aan melding (foto_urls)
-- Status: `[ ]`
-- Code: meerdere foto's → array van urls in melding
-- Verifiëren: typecheck + unit waar mogelijk
+- Status: `[x]` (in F1)
+- Code: FotoMaken houdt `urls: string[]` + `onChange` callback; parent-form (H) geeft ze door aan `createMonteurMelding.foto_urls`
 
 ### F5: Verifieer foto's maken + opslaan
-- Status: `[ ]`
-- Verifiëren: foto maken → compressie → upload → url in foto_urls
+- Status: `[x]` deels — storage-route end-to-end bewezen (upload werkte in E-test). Camera→compressie→upload-keten volledig op echt toestel: groep I.
 
 ---
 
