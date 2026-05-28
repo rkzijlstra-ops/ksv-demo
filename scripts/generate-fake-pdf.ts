@@ -25,6 +25,7 @@ async function main() {
   y -= 8;
   line("Klant:            J. Jansen", { font: bold });
   line("Adres:            Hoofdstraat 12, 2342 AB Voorschoten");
+  line("Telefoon:         071-1234567");
   line("Referentienummer: 7444", { font: bold });
   line("Adviseur:         M. de Vries");
   y -= 16;

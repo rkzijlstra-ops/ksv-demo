@@ -1,14 +1,53 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
-import type { ParsedPdf } from "./parser-schema";
+import type { ParsedPdf, MeldingItem } from "./parser-schema";
 
 export interface DbConfig {
   url: string;
   secretKey: string;
 }
 
+/** Eén rij uit de meldingen-tabel. */
+export interface Melding {
+  id: string;
+  created_at: string;
+  bron: "pdf" | "monteur";
+  urgentie: "rood" | "geel" | null;
+  klant_naam: string | null;
+  klant_adres: string | null;
+  referentienummer: string | null;
+  adviseur: string | null;
+  klant_telefoon: string | null;
+  meldingen: MeldingItem[];
+  foto_urls: string[];
+  spraak_tekst: string | null;
+  ruwe_tekst: string | null;
+  status: "concept" | "verzonden";
+  aangepast: boolean;
+  verzonden_at: string | null;
+}
+
+export interface MonteurMeldingInput {
+  urgentie: "rood" | "geel";
+  ruwe_tekst: string | null;
+  spraak_tekst: string | null;
+  foto_urls: string[];
+  klant_naam?: string | null;
+  klant_adres?: string | null;
+  referentienummer?: string | null;
+  klant_telefoon?: string | null;
+  status?: "concept" | "verzonden";
+}
+
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
+  getMeldingen(): Promise<Melding[]>;
+  getMeldingById(id: string): Promise<Melding | null>;
+  createMonteurMelding(data: MonteurMeldingInput): Promise<{ id: string }>;
+  updateMeldingStatus(
+    id: string,
+    opts: { status: "concept" | "verzonden"; aangepast?: boolean },
+  ): Promise<void>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -23,13 +62,67 @@ export function createDb(config: DbConfig): Db {
         .insert({ bron: "pdf", ...data })
         .select("id")
         .single();
-      if (error) {
-        throw new Error(`DB insert mislukt: ${error.message}`);
-      }
+      if (error) throw new Error(`DB insert mislukt: ${error.message}`);
       if (!row || typeof row.id !== "string") {
         throw new Error("DB insert lukte maar geen id terug");
       }
       return { id: row.id };
+    },
+
+    async getMeldingen() {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
+    },
+
+    async getMeldingById(id: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Melding | null) ?? null;
+    },
+
+    async createMonteurMelding(data: MonteurMeldingInput) {
+      const { data: row, error } = await client
+        .from("meldingen")
+        .insert({
+          bron: "monteur",
+          status: data.status ?? "concept",
+          urgentie: data.urgentie,
+          ruwe_tekst: data.ruwe_tekst,
+          spraak_tekst: data.spraak_tekst,
+          foto_urls: data.foto_urls,
+          klant_naam: data.klant_naam ?? null,
+          klant_adres: data.klant_adres ?? null,
+          referentienummer: data.referentienummer ?? null,
+          klant_telefoon: data.klant_telefoon ?? null,
+          meldingen: [],
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(`DB insert mislukt: ${error.message}`);
+      if (!row || typeof row.id !== "string") {
+        throw new Error("DB insert lukte maar geen id terug");
+      }
+      return { id: row.id };
+    },
+
+    async updateMeldingStatus(id, opts) {
+      const patch: Record<string, unknown> = { status: opts.status };
+      if (opts.status === "verzonden") {
+        patch.verzonden_at = new Date().toISOString();
+      }
+      if (opts.aangepast !== undefined) {
+        patch.aangepast = opts.aangepast;
+      }
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
     },
   };
 }

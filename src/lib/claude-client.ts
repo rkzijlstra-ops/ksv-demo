@@ -13,6 +13,7 @@ Je krijgt een PDF van een service-melding (Keller-format) en je gebruikt de tool
 
 Regels:
 - Geef het referentienummer altijd als string terug (ook al staat het in de PDF als cijfer).
+- "klant_telefoon": het telefoonnummer van de klant als string (bijv. '071-1234567' of '06-12345678'), of null als er geen nummer in de PDF staat.
 - Bij twijfel over een veld: geef null terug, verzin niets.
 - Voor "meldingen": voor elke artikel-regel met "Uw melding" tekst één item in de array.
 - "keller_code" is de specifieke Keller-artikelcode (vaak gecodeerd, bijv. F-BK-LD-60).

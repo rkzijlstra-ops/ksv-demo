@@ -11,6 +11,7 @@ export const ParsedPdfSchema = z.object({
   klant_adres: z.string().nullable(),
   referentienummer: z.string().nullable(),
   adviseur: z.string().nullable(),
+  klant_telefoon: z.string().nullable(),
   meldingen: z.array(MeldingItemSchema),
 });
 
@@ -44,6 +45,11 @@ export const ParsedPdfJsonSchema = {
       type: ["string", "null"],
       description: "Naam van de adviseur/verkoper, bijv. 'M. de Vries'. null als niet vindbaar.",
     },
+    klant_telefoon: {
+      type: ["string", "null"],
+      description:
+        "Telefoonnummer van de klant zoals op de PDF, bijv. '071-1234567' of '06-12345678'. null als niet vindbaar.",
+    },
     meldingen: {
       type: "array",
       description:
@@ -71,6 +77,13 @@ export const ParsedPdfJsonSchema = {
       },
     },
   },
-  required: ["klant_naam", "klant_adres", "referentienummer", "adviseur", "meldingen"],
+  required: [
+    "klant_naam",
+    "klant_adres",
+    "referentienummer",
+    "adviseur",
+    "klant_telefoon",
+    "meldingen",
+  ],
   additionalProperties: false,
 } as const;

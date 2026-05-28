@@ -6,6 +6,7 @@ const fullValid: ParsedPdf = {
   klant_adres: "Hoofdstraat 12, 1234 AB Voorschoten",
   referentienummer: "7444",
   adviseur: "M. de Vries",
+  klant_telefoon: "071-1234567",
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
@@ -31,9 +32,17 @@ describe("ParsedPdfSchema", () => {
       klant_adres: null,
       referentienummer: null,
       adviseur: null,
+      klant_telefoon: null,
       meldingen: [],
     };
     expect(() => ParsedPdfSchema.parse(minimal)).not.toThrow();
+  });
+
+  it("accepteert klant_telefoon als string of null", () => {
+    expect(ParsedPdfSchema.parse({ ...fullValid, klant_telefoon: null }).klant_telefoon).toBeNull();
+    expect(
+      ParsedPdfSchema.parse({ ...fullValid, klant_telefoon: "06-12345678" }).klant_telefoon,
+    ).toBe("06-12345678");
   });
 
   it("accepteert een lege meldingen-array", () => {

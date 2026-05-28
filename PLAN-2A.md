@@ -14,33 +14,34 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep A — Datamodel + Storage + parser-uitbreiding (5 taken, ~20 min waarvan Rein ~5 min)
 
 ### A1: SQL migration voor nieuwe kolommen
-- Status: `[ ]`
+- Status: `[x]` 4 min
 - Bestand(en): `supabase/schema-2a.sql`
-- Code: ALTER TABLE meldingen: `status` (default 'concept', check concept|verzonden), `aangepast` bool default false, `verzonden_at` timestamptz, `foto_urls` jsonb default '[]', `klant_telefoon` text
+- Code: ALTER TABLE (idempotent add column if not exists): status + check, aangepast, verzonden_at, foto_urls jsonb, klant_telefoon. Index op status. Storage bucket via `insert into storage.buckets ... on conflict do nothing`.
 - Verifiëren: SQL leest goed door
 
 ### A2: Rein — SQL runnen + Storage-bucket
-- Status: `[ ]` (Rein, Claude wacht)
-- Stappen: plak `schema-2a.sql` in SQL Editor + run; maak Storage-bucket `meldingen-fotos` (public read voor demo)
-- Verifiëren: kolommen zichtbaar in Table Editor, bucket bestaat
+- Status: `[ ]` (Rein, wacht op bevestiging)
+- Stappen: plak `schema-2a.sql` in SQL Editor + run (bucket wordt via dezelfde SQL aangemaakt)
+- Verifiëren: kolommen zichtbaar in Table Editor, bucket `meldingen-fotos` bestaat
 
 ### A3: Parser-schema uitbreiden met klant_telefoon (TDD)
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/lib/parser-schema.test.ts` (test eerst), `src/lib/parser-schema.ts`
-- Code: `klant_telefoon: string|null` in Zod + JSON-schema (required-lijst bijwerken)
-- Verifiëren: tests groen
+- Code: `klant_telefoon: string|null` in Zod + JSON-schema + required-lijst. Extra test voor string/null.
+- Verifiëren: 7 tests groen
 
 ### A4: claude-client system prompt bijwerken
-- Status: `[ ]`
-- Bestand(en): `src/lib/claude-client.ts`
-- Code: instructie toevoegen telefoonnummer te extraheren (null bij twijfel)
-- Verifiëren: bestaande client-tests blijven groen
+- Status: `[x]` 2 min
+- Bestand(en): `src/lib/claude-client.ts`, test-mock bijgewerkt (klant_telefoon in tool_use input)
+- Code: regel toegevoegd voor telefoon-extractie (null bij twijfel)
+- Verifiëren: 4 client-tests groen
 
 ### A5: db.ts uitbreiden + tests
-- Status: `[ ]`
+- Status: `[x]` 12 min
 - Bestand(en): `src/lib/db.ts`, `src/lib/db.test.ts`
-- Code: insertPdfMelding neemt klant_telefoon mee; nieuwe functies `getMeldingen()`, `getMeldingById(id)`, `createMonteurMelding()`, `updateMeldingStatus()`
-- Verifiëren: `npm test` alles groen
+- Code: `Melding` + `MonteurMeldingInput` types. insertPdfMelding neemt klant_telefoon mee via `...data`. Nieuwe functies `getMeldingen()` (order created_at desc), `getMeldingById(id)` (maybeSingle, null als niet gevonden), `createMonteurMelding()` (bron='monteur', status concept default), `updateMeldingStatus()` (zet verzonden_at bij verzonden, aangepast-vlag optioneel). Test-mock herschreven naar flexibele thenable chain-builder.
+- Extra: route.test dummyParsed + klant_telefoon, fake-PDF kreeg telefoonnummer (voor bel-knop test-data)
+- Verifiëren: `npm test` → 35 tests groen (5 files)
 
 ---
 

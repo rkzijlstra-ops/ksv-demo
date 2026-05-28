@@ -21,6 +21,7 @@ const dummyParsed: ParsedPdf = {
   klant_adres: "Hoofdstraat 12",
   referentienummer: "7444",
   adviseur: "M. de Vries",
+  klant_telefoon: "071-1234567",
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
