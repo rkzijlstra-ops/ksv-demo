@@ -21,6 +21,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     aangepast: false,
     verzonden_at: null,
     uitvoerdatum: null,
+    opdracht_id: null,
     ...over,
   };
 }

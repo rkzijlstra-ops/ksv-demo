@@ -26,24 +26,25 @@ export interface Melding {
   aangepast: boolean;
   verzonden_at: string | null;
   uitvoerdatum: string | null;
+  opdracht_id: string | null;
 }
 
 export interface MonteurMeldingInput {
+  opdracht_id: string;
   urgentie: "rood" | "geel";
   ruwe_tekst: string | null;
   spraak_tekst: string | null;
   foto_urls: string[];
-  klant_naam?: string | null;
-  klant_adres?: string | null;
-  referentienummer?: string | null;
-  klant_telefoon?: string | null;
   status?: "concept" | "verzonden";
 }
 
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
+  /** Alleen opdrachten (top-level, opdracht_id IS NULL) voor de werkbak. */
   getMeldingen(): Promise<Melding[]>;
   getMeldingById(id: string): Promise<Melding | null>;
+  /** Meldingen die bij één opdracht horen (nieuwste eerst). */
+  getMeldingenVoorOpdracht(opdrachtId: string): Promise<Melding[]>;
   createMonteurMelding(data: MonteurMeldingInput): Promise<{ id: string }>;
   updateMeldingStatus(
     id: string,
@@ -74,6 +75,7 @@ export function createDb(config: DbConfig): Db {
       const { data, error } = await client
         .from("meldingen")
         .select("*")
+        .is("opdracht_id", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Melding[];
@@ -89,20 +91,27 @@ export function createDb(config: DbConfig): Db {
       return (data as Melding | null) ?? null;
     },
 
+    async getMeldingenVoorOpdracht(opdrachtId: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .eq("opdracht_id", opdrachtId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
+    },
+
     async createMonteurMelding(data: MonteurMeldingInput) {
       const { data: row, error } = await client
         .from("meldingen")
         .insert({
           bron: "monteur",
+          opdracht_id: data.opdracht_id,
           status: data.status ?? "concept",
           urgentie: data.urgentie,
           ruwe_tekst: data.ruwe_tekst,
           spraak_tekst: data.spraak_tekst,
           foto_urls: data.foto_urls,
-          klant_naam: data.klant_naam ?? null,
-          klant_adres: data.klant_adres ?? null,
-          referentienummer: data.referentienummer ?? null,
-          klant_telefoon: data.klant_telefoon ?? null,
           meldingen: [],
         })
         .select("id")

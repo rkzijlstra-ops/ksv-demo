@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, CalendarClock, CalendarPlus, MapPin } from "lucide-react";
+import {
+  ChevronLeft,
+  CalendarClock,
+  CalendarPlus,
+  MapPin,
+  Plus,
+  Check,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "@/components/UrgentieBadge";
@@ -17,8 +24,9 @@ export default async function OpdrachtDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const melding = await db().getMeldingById(id);
-  if (!melding) notFound();
+  const opdracht = await db().getMeldingById(id);
+  if (!opdracht) notFound();
+  const meldingen = await db().getMeldingenVoorOpdracht(id);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -32,27 +40,27 @@ export default async function OpdrachtDetailPage({
 
       <header className="mt-2 flex items-start justify-between gap-3">
         <h1 className="text-2xl font-bold text-ink">
-          {melding.klant_naam ?? "Onbekende klant"}
+          {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>
-        <UrgentieBadge urgentie={melding.urgentie} />
+        <UrgentieBadge urgentie={opdracht.urgentie} />
       </header>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <BronBadge bron={melding.bron} />
-        {melding.referentienummer && (
+        <BronBadge bron={opdracht.bron} />
+        {opdracht.referentienummer && (
           <span className="text-sm font-semibold text-ink-muted">
-            ref {melding.referentienummer}
+            ref {opdracht.referentienummer}
           </span>
         )}
-        {melding.adviseur && (
-          <span className="text-sm text-ink-muted">adviseur {melding.adviseur}</span>
+        {opdracht.adviseur && (
+          <span className="text-sm text-ink-muted">adviseur {opdracht.adviseur}</span>
         )}
       </div>
 
-      {melding.klant_adres && (
+      {opdracht.klant_adres && (
         <p className="mt-3 flex items-start gap-2 text-base text-ink">
           <MapPin size={20} className="mt-0.5 shrink-0 text-ink-muted" aria-hidden="true" />
-          {melding.klant_adres}
+          {opdracht.klant_adres}
         </p>
       )}
 
@@ -60,32 +68,26 @@ export default async function OpdrachtDetailPage({
         <span className="inline-flex items-center gap-2 font-semibold text-ink">
           <CalendarClock size={16} strokeWidth={2.5} aria-hidden="true" />
           Uitvoer:{" "}
-          {melding.uitvoerdatum ? formatDatumKort(melding.uitvoerdatum) : "Nog niet gepland"}
+          {opdracht.uitvoerdatum ? formatDatumKort(opdracht.uitvoerdatum) : "Nog niet gepland"}
         </span>
         <span className="inline-flex items-center gap-2 text-ink-muted">
           <CalendarPlus size={16} aria-hidden="true" />
-          Aangemaakt: {formatDatumKort(melding.created_at)}
+          Aangemaakt: {formatDatumKort(opdracht.created_at)}
         </span>
       </div>
 
-      {(melding.klant_adres || melding.klant_telefoon) && (
+      {(opdracht.klant_adres || opdracht.klant_telefoon) && (
         <div className="mt-5 flex gap-3">
-          {melding.klant_adres && <NavKnop adres={melding.klant_adres} />}
-          <BelKnop telefoon={melding.klant_telefoon} />
+          {opdracht.klant_adres && <NavKnop adres={opdracht.klant_adres} />}
+          <BelKnop telefoon={opdracht.klant_telefoon} />
         </div>
       )}
 
-      <section className="mt-6">
-        <h2 className="mb-2 text-lg font-bold text-ink">
-          Meldingen ({melding.meldingen.length})
-        </h2>
-        {melding.meldingen.length === 0 ? (
-          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
-            Geen artikel-meldingen op deze opdracht.
-          </p>
-        ) : (
+      {opdracht.meldingen.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-2 text-lg font-bold text-ink">Artikelen uit opdracht</h2>
           <ul className="flex flex-col gap-3">
-            {melding.meldingen.map((item, i) => (
+            {opdracht.meldingen.map((item, i) => (
               <li key={i} className="rounded-xl border border-line bg-white p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                   <span className="font-bold text-ink">{item.omschrijving}</span>
@@ -97,21 +99,61 @@ export default async function OpdrachtDetailPage({
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      {(melding.ruwe_tekst || melding.spraak_tekst) && (
-        <section className="mt-6">
-          <h2 className="mb-2 text-lg font-bold text-ink">Toelichting monteur</h2>
-          <p className="rounded-xl border border-line bg-white p-4 font-[family-name:var(--font-body)] text-base text-ink">
-            {melding.ruwe_tekst ?? melding.spraak_tekst}
-          </p>
         </section>
       )}
 
       <section className="mt-6">
-        <h2 className="mb-2 text-lg font-bold text-ink">Foto&apos;s</h2>
-        <FotoGalerij urls={melding.foto_urls} />
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-ink">Meldingen ({meldingen.length})</h2>
+        </div>
+
+        <Link
+          href={`/opdracht/${id}/melding`}
+          className="mb-3 flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary"
+        >
+          <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
+          Melding toevoegen
+        </Link>
+
+        {meldingen.length === 0 ? (
+          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+            Nog geen meldingen op deze opdracht. Maak er een met de knop hierboven.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {meldingen.map((m) => (
+              <li key={m.id} className="rounded-xl border border-line bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <UrgentieBadge urgentie={m.urgentie} />
+                  {m.status === "verzonden" ? (
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+                      <Check size={16} strokeWidth={2.5} aria-hidden="true" />
+                      Verzonden{m.aangepast ? " (aangepast)" : ""}
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-ink-muted">Concept</span>
+                  )}
+                </div>
+
+                {m.ruwe_tekst && (
+                  <p className="mt-2 font-[family-name:var(--font-body)] text-base text-ink">
+                    {m.ruwe_tekst}
+                  </p>
+                )}
+
+                {m.foto_urls.length > 0 && (
+                  <div className="mt-3">
+                    <FotoGalerij urls={m.foto_urls} />
+                  </div>
+                )}
+
+                <p className="mt-2 text-xs text-ink-muted">
+                  {formatDatumKort(m.created_at)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

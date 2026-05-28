@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Inbox, Plus } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkbak";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
@@ -20,14 +19,6 @@ export default async function WerkbakPage() {
           {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
         </p>
       </header>
-
-      <Link
-        href="/melding/nieuw"
-        className="mb-3 flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary"
-      >
-        <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
-        Nieuwe melding
-      </Link>
 
       <div className="mb-4">
         <PdfUpload />

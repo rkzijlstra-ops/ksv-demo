@@ -8,12 +8,11 @@ import { SpraakOpname } from "./SpraakOpname";
 
 type Urgentie = "rood" | "geel";
 
-export function MeldingForm() {
+export function MeldingForm({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
   const [urgentie, setUrgentie] = useState<Urgentie | null>(null);
   const [tekst, setTekst] = useState("");
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
-  const [klantNaam, setKlantNaam] = useState("");
   const [bezig, setBezig] = useState<"" | "concept" | "verzonden">("");
   const [fout, setFout] = useState("");
 
@@ -29,16 +28,16 @@ export function MeldingForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          opdracht_id: opdrachtId,
           urgentie,
           ruwe_tekst: tekst.trim() || null,
           foto_urls: fotoUrls,
-          klant_naam: klantNaam.trim() || null,
           status,
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `Opslaan mislukt (${res.status})`);
-      router.push("/");
+      router.push(`/opdracht/${opdrachtId}`);
       router.refresh();
     } catch (err) {
       setFout((err as Error).message);
@@ -73,20 +72,6 @@ export function MeldingForm() {
           {urgentieKnop("rood", "DIRECT", AlertTriangle, "bg-urgent-rood")}
           {urgentieKnop("geel", "ACHTERAF", Clock, "bg-urgent-geel")}
         </div>
-      </div>
-
-      <div>
-        <label htmlFor="klant" className="mb-2 block font-semibold text-ink">
-          Klant (optioneel)
-        </label>
-        <input
-          id="klant"
-          type="text"
-          value={klantNaam}
-          onChange={(e) => setKlantNaam(e.target.value)}
-          placeholder="Naam of adres"
-          className="min-h-[56px] w-full rounded-xl border border-line px-4 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-        />
       </div>
 
       <div>

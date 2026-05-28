@@ -9,6 +9,7 @@ const h = vi.hoisted(() => {
     insert: vi.fn(),
     update: vi.fn(),
     eq: vi.fn(),
+    is: vi.fn(),
     order: vi.fn(),
     single: vi.fn(),
     maybeSingle: vi.fn(),
@@ -21,6 +22,7 @@ const h = vi.hoisted(() => {
   builder.insert = (...a: unknown[]) => (fns.insert(...a), builder);
   builder.update = (...a: unknown[]) => (fns.update(...a), builder);
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
+  builder.is = (...a: unknown[]) => (fns.is(...a), builder);
   builder.order = (...a: unknown[]) => (fns.order(...a), builder);
   builder.single = () => (fns.single(), Promise.resolve(result));
   builder.maybeSingle = () => (fns.maybeSingle(), Promise.resolve(result));
@@ -84,12 +86,13 @@ describe("insertPdfMelding", () => {
 });
 
 describe("getMeldingen", () => {
-  it("selecteert alle meldingen gesorteerd op created_at desc", async () => {
+  it("selecteert alleen opdrachten (opdracht_id IS NULL) gesorteerd op created_at desc", async () => {
     h.setResult({ data: [{ id: "1" }, { id: "2" }], error: null });
     const rows = await createDb(cfg).getMeldingen();
 
     expect(h.fns.from).toHaveBeenCalledWith("meldingen");
     expect(h.fns.select).toHaveBeenCalledWith("*");
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
     expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
     expect(rows).toHaveLength(2);
   });
@@ -103,6 +106,22 @@ describe("getMeldingen", () => {
   it("gooit Error bij DB-fout", async () => {
     h.setResult({ data: null, error: { message: "connection refused" } });
     await expect(createDb(cfg).getMeldingen()).rejects.toThrow(/connection refused/);
+  });
+});
+
+describe("getMeldingenVoorOpdracht", () => {
+  it("filtert op opdracht_id en sorteert op created_at desc", async () => {
+    h.setResult({ data: [{ id: "s1" }], error: null });
+    const rows = await createDb(cfg).getMeldingenVoorOpdracht("opdr-1");
+
+    expect(h.fns.eq).toHaveBeenCalledWith("opdracht_id", "opdr-1");
+    expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("returnt lege array als geen meldingen", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getMeldingenVoorOpdracht("x")).toEqual([]);
   });
 });
 
@@ -123,9 +142,10 @@ describe("getMeldingById", () => {
 });
 
 describe("createMonteurMelding", () => {
-  it("insert met bron='monteur' en status='concept' default", async () => {
+  it("insert met bron='monteur', opdracht_id en status='concept' default", async () => {
     h.setResult({ data: { id: "m-1" }, error: null });
     await createDb(cfg).createMonteurMelding({
+      opdracht_id: "opdr-9",
       urgentie: "geel",
       ruwe_tekst: "Front beschadigd",
       spraak_tekst: null,
@@ -134,6 +154,7 @@ describe("createMonteurMelding", () => {
 
     const payload = h.fns.insert.mock.calls[0][0];
     expect(payload.bron).toBe("monteur");
+    expect(payload.opdracht_id).toBe("opdr-9");
     expect(payload.status).toBe("concept");
     expect(payload.urgentie).toBe("geel");
     expect(payload.foto_urls).toEqual(["https://x/foto1.jpg"]);
@@ -142,6 +163,7 @@ describe("createMonteurMelding", () => {
   it("returnt id", async () => {
     h.setResult({ data: { id: "m-1" }, error: null });
     const r = await createDb(cfg).createMonteurMelding({
+      opdracht_id: "opdr-9",
       urgentie: "rood",
       ruwe_tekst: null,
       spraak_tekst: "ingesproken tekst",
