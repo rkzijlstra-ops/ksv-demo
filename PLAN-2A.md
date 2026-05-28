@@ -251,19 +251,16 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep I — Afronding (4 taken, ~25 min waarvan Rein ~10 min)
 
 ### I1: Rein — test op echte telefoon
-- Status: `[ ]` (Rein)
-- Verifiëren: camera, microfoon (Whisper), nav-knop, bel-knop werken op echt toestel
-- Noot: vereist app bereikbaar op telefoon (lokaal netwerk-IP uit `npm run dev`, of korte ngrok/Vercel-preview)
+- Status: `[x]` Rein testte op Android. Werkt: melding toevoegen binnen opdracht, urgentie, foto maken + preview, verzenden (na allowedDevOrigins-fix), bewerken + versie. Nav/bel-knop werken. **Spraak NIET** — vereist HTTPS (geparkeerd voor 2B/demo).
 
-### I2: PLAN-2A.md afvinken + werkelijke tijden
-- Status: `[ ]`
+### I2: PLAN-2A.md afvinken
+- Status: `[x]`
 
 ### I3: Logboek-entry
-- Status: `[ ]`
-- Bestand(en): `c:\Users\rkzij\Mainframe\07_logboek\2026-05-28_ksv-demo-sessie-2a.md`
+- Status: `[x]` `07_logboek/2026-05-28_ksv-demo-sessie-2a.md`
 
 ### I4: Finale commit
-- Status: `[ ]`
+- Status: `[x]`
 
 ---
 
