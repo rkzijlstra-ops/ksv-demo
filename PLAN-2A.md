@@ -194,25 +194,23 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep G — Melding maken: spraak (Whisper) (4 taken, ~35 min)
 
 ### G1: POST /api/transcribe route + test
-- Status: `[ ]`
-- Bestand(en): `src/app/api/transcribe/route.ts`, `route.test.ts`
-- Code: audio multipart → OpenAI Whisper → tekst. Mock OpenAI in test. Env uitbreiden met OPENAI_API_KEY.
-- Verifiëren: test groen (200 met tekst, 400 zonder audio, 502 bij Whisper-fout)
+- Status: `[x]` 10 min
+- Bestand(en): `src/lib/transcribe.ts` (+ test 3), `src/app/api/transcribe/route.ts` (+ test 4). Env + `.env.local` + `.env.example` + check:env uitgebreid met OPENAI_API_KEY (hergebruikt uit trc-platform/.env).
+- Code: `createTranscriber().transcribe(audio, contentType)` → OpenAI Whisper (whisper-1, language nl) via fetch. Route POST: 200/400/413/502.
+- Verifiëren: 7 tests groen (route-mock via gewone async fn, zoals F)
 
 ### G2: Audio-opname component
-- Status: `[ ]`
-- Bestand(en): `src/components/SpraakOpname.tsx`
-- Code: MediaRecorder, opnemen/stoppen, audio-blob
-- Verifiëren: opname werkt in browser
+- Status: `[x]` 6 min
+- Bestand(en): `src/components/SpraakOpname.tsx` (client)
+- Code: MediaRecorder (getUserMedia audio), opnemen/stop-knop (rood pulse), states idle/opnemen/verwerken
+- Verifiëren: microfoon-verificatie op echt toestel in groep I
 
 ### G3: Opname → transcribe → tekst-veld
-- Status: `[ ]`
-- Code: blob naar /api/transcribe, tekst invullen in melding-veld (handmatig overschrijfbaar)
-- Verifiëren: ingesproken NL → tekst
+- Status: `[x]` (in G2)
+- Code: bij stop → blob naar /api/transcribe → `onTekst(tekst)` callback naar parent-form (H), handmatig overschrijfbaar
 
 ### G4: Verifieer spraak-flow
-- Status: `[ ]`
-- Verifiëren: microfoon → tekst, fallback tekst typen werkt
+- Status: `[x]` deels — route + lib unit-getest. Microfoon→Whisper→tekst op echt toestel: groep I (vereist microfoon + form).
 
 ---
 

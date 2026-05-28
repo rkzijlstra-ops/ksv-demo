@@ -4,6 +4,7 @@ import { loadEnv } from "./env";
 const validEnv = {
   ANTHROPIC_API_KEY: "sk-ant-api03-" + "x".repeat(80),
   ANTHROPIC_MODEL: "claude-sonnet-4-6",
+  OPENAI_API_KEY: "sk-proj-" + "x".repeat(80),
   SUPABASE_URL: "https://qbynjfscdxhwdkzfqjjg.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_" + "x".repeat(20),
   SUPABASE_SECRET_KEY: "sb_secret_" + "x".repeat(20),

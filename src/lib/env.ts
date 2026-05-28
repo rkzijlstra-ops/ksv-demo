@@ -10,6 +10,9 @@ const envSchema = z.object({
     z.string().min(20, "ANTHROPIC_API_KEY ontbreekt of is te kort"),
   ),
   ANTHROPIC_MODEL: z.string().min(1).default("claude-sonnet-4-6"),
+  OPENAI_API_KEY: notPlaceholder("OPENAI_API_KEY is een placeholder").pipe(
+    z.string().min(20, "OPENAI_API_KEY ontbreekt of is te kort"),
+  ),
   SUPABASE_URL: notPlaceholder("SUPABASE_URL is een placeholder").pipe(
     z
       .string()

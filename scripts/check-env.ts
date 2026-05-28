@@ -7,6 +7,7 @@ try {
   console.log("\n  ✓ Alle env-vars OK\n");
   console.log(`    ANTHROPIC_MODEL          = ${env.ANTHROPIC_MODEL}`);
   console.log(`    ANTHROPIC_API_KEY        = ${tail(env.ANTHROPIC_API_KEY)}`);
+  console.log(`    OPENAI_API_KEY           = ${tail(env.OPENAI_API_KEY)}`);
   console.log(`    SUPABASE_URL             = ${env.SUPABASE_URL}`);
   console.log(`    SUPABASE_PUBLISHABLE_KEY = ${tail(env.SUPABASE_PUBLISHABLE_KEY)}`);
   console.log(`    SUPABASE_SECRET_KEY      = ${tail(env.SUPABASE_SECRET_KEY)}\n`);
