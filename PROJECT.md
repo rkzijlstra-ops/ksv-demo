@@ -65,12 +65,24 @@ Next.js + Supabase + Vercel is de meest populaire moderne combinatie en daarmee 
 
 Realistisch voor Rein met Claude Code: ~13-22 uur totaal (na splitsing van sessie 2 in 2A en 2B).
 
-Verdeeld over 5 sessies:
+Verdeeld over sessies:
 - ~~Sessie 1: Backend, AI-koppelingen, PDF-uitlezen werkend~~ **✓ KLAAR (2026-05-26, ~95 min, 24 tests groen)**
-- Sessie 2A: Monteur-flow — UI-scaffolding met ui-ux-pro-max, werkbak, detail-scherm, foto-upload via Supabase Storage, spraak naar tekst, urgentie + verzenden. Aan het eind: monteur kan op telefoon complete melding maken. (4-6u)
+- ~~Sessie 2A: Monteur-flow — werkbak, opdracht-detail (nav/bel/datums), melding toevoegen binnen opdracht (foto, spraak, urgentie), bewerken met versie-nummering, PDF-upload~~ **✓ KLAAR (2026-05-28, 91 tests groen). Spraak op telefoon vereist nog HTTPS.**
+- **Zelf-gebruik fase (geen bouwsessie): Rein gebruikt de PWA voor echte KSV-opdrachten en debugt wat hapert. Pas verder bouwen als Rein tevreden is over deze versie.**
+- Sessie 2A.5: Authenticatie via Supabase Auth, RLS aanzetten met juiste regels, account voor collega. (zie "Volgorde na sessie 2A")
 - Sessie 2B: Ed-flow + echte data — Gmail-koppeling voor mail-input, mail-output naar Ed bij nieuwe melding, eerste echte Keukenstudio-PDF testen en parser fine-tunen. (4-5u)
 - Sessie 3: Lijst-weergave Ed's kant, live updates (3-5u)
 - Sessie 4: Polijsten, PWA-configuratie (installeerbaar maken op startscherm), testen op echte telefoon, demo-scenario klaarzetten (2-4u)
+
+## Volgorde na sessie 2A (vastgelegd 2026-05-28)
+
+Bewuste volgorde, niet eerder uitvoeren:
+
+1. **Zelf-gebruik fase.** Rein zet de PWA in voor echte KSV-opdrachten en debugt wat in de praktijk hapert. Pas door naar stap 2 als Rein tevreden is over de huidige versie.
+2. **Sessie 2A.5 — authenticatie.** Supabase Auth toevoegen, RLS aanzetten met juiste policies, account voor Reins collega. Dit gebeurt PAS na de zelf-gebruik fase, op Reins signaal.
+3. **Daarna pas sessie 2B (Gmail) en de rest.**
+
+**Toekomstvast bouwen (geldt vanaf nu):** schrijf nieuwe code zo dat `user_id` (wie maakte de rij) en `toegewezen_aan` (welke monteur de opdracht krijgt) later naadloos toegevoegd kunnen worden zonder grote herschrijf. Concreet: rij-creatie via expliciete velden in de input-objecten (db-laag), zodat een extra kolom = één veld erbij; query-functies (getMeldingen e.d.) zo dat een filter op gebruiker later toe te voegen is. NU geen auth-functionaliteit toevoegen — alleen de structuur toekomstvast houden.
 
 ## Toekomstige features (sessie 3-4 of later)
 
