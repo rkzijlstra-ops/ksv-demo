@@ -239,10 +239,12 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ### H5: Hele suite groen
 - Status: `[x]` — `npm test` → 15 files, 82 tests groen
 
-### H6 (OPEN — verschoven): verzonden melding aanpassen + opnieuw verzenden
-- Status: `[ ]` NIET gebouwd in 2A-kern
-- Uit history-model (BRAINSTORM-2A): verzonden melding heropenen → bewerken → opnieuw verzenden met `aangepast=true` vlag. `updateMeldingStatus(id, {status, aangepast})` bestaat al in db.ts; alleen de edit-UI (bewerk-form + knop op detail-scherm) ontbreekt nog.
-- Beslissing met Rein nodig: nu afmaken of naar vervolgblok.
+### H6: verzonden melding aanpassen + opnieuw verzenden (met versie-nummering)
+- Status: `[x]` ~25 min — Rein koos: maken, mét nummering (aanpassing-op-aanpassing telt door)
+- Datamodel: `versie integer default 1` (`supabase/schema-2a-versie.sql`)
+- db.ts: `updateMelding(id, data)` werkt velden bij, zet versie + `aangepast = versie > 1`. API `PATCH /api/meldingen/[id]` berekent versie server-side (huidige + 1), 404/400/503.
+- UI: "Bewerken"-knop per melding op detail → bewerk-route `/opdracht/[id]/melding/[meldingId]` → MeldingForm in bewerk-modus (prefill + PATCH). Label "Verzonden · aangepast (v2)".
+- Verifiëren: 2× PATCH gaf v1→v2→v3, detail toont "aangepast (v3)" + bijgewerkte tekst. 91 tests groen.
 
 ---
 
