@@ -48,63 +48,59 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep B — UI-fundament met ui-ux-pro-max (5 taken, ~40 min)
 
 ### B1: ui-ux-pro-max skill activeren + design-keuze
-- Status: `[ ]`
-- Actie: Skill tool `ui-ux-pro-max` laden. Kies stijl/palette/typografie passend bij een snelle, overzichtelijke monteur-app (mobile-first, grote tap-targets, duidelijke urgentie-kleuren rood/geel)
-- Verifiëren: design-keuze vastgelegd (kort, in dit plan of apart bestand)
+- Status: `[x]` 10 min
+- Actie: skill geladen. Python ontbreekt (search.py CLI), dus CSV-data direct gelezen (styles.csv, typography.csv) i.p.v. globale Python-install.
+- Keuze (vastgelegd in `design-system.md`): stijl #1 Minimal/Flat + #8 Accessible & Ethical; kleuren high-contrast light (geen dark mode); typografie #16 Corporate Trust (Lexend + Source Sans 3, accessibility-focused); tap-targets min 56px; urgentie altijd icoon+label naast kleur; Lucide icons.
 
 ### B2: Tailwind toevoegen aan project
-- Status: `[ ]`
-- Bestand(en): `package.json`, `postcss.config`, `src/app/globals.css`
-- Code: Tailwind installeren + configureren (was `--no-tailwind` in sessie 1)
-- Verifiëren: een test-class rendert in dev
+- Status: `[x]` 4 min
+- Bestand(en): `package.json`, `postcss.config.mjs`, `src/app/globals.css`
+- Code: Tailwind v4 + @tailwindcss/postcss + lucide-react. CSS-first `@theme` met kleurtokens.
+- Verifiëren: classes renderen in dev
 
 ### B3: Root layout + mobile-first viewport + globale stijl
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/app/layout.tsx`, `globals.css`
-- Code: viewport meta, font, kleurtokens, basis-achtergrond
-- Verifiëren: dev toont gestylede lege pagina
+- Code: Lexend + Source Sans via next/font, `lang="nl"`, viewport (device-width, max-scale 5), theme-color, prefers-reduced-motion
+- Verifiëren: dev toont gestylede pagina, fonts geladen
 
 ### B4: Basis-componenten (badges + card)
-- Status: `[ ]`
-- Bestand(en): `src/components/UrgentieBadge.tsx`, `BronBadge.tsx`, `OpdrachtCard.tsx`
-- Code: urgentie rood/geel/grijs, bron monteur/pdf, kaart-layout. Test voor badge-kleurlogica.
-- Verifiëren: componenten renderen, badge-test groen
+- Status: `[x]` 8 min
+- Bestand(en): `src/lib/urgentie.ts` (+test), `src/components/Badge.tsx`, `UrgentieBadge.tsx`, `BronBadge.tsx`, `OpdrachtCard.tsx`
+- Code: pure `urgentieConfig`/`bronConfig` (testbaar), generieke Badge met Lucide-icoon, OpdrachtCard als grote tap-target Link met hover + focus-ring
+- Verifiëren: 5 badge-tests groen
 
 ### B5: Verifieer gestyled fundament
-- Status: `[ ]`
-- Verifiëren: dev-server toont nette lege werkbak-shell op telefoon-breedte
+- Status: `[x]` (samengevoegd met C5) — werkbak rendert gestyled met echte data
 
 ---
 
 ## Groep C — Werkbak (lijst) (5 taken, ~35 min)
 
 ### C1: Data-laag getMeldingen + groepering
-- Status: `[ ]`
-- Bestand(en): `src/lib/db.ts` (al deels A5), evt `src/lib/werkbak.ts`
-- Code: haal meldingen op, splits in actief (concept + pdf niet-verzonden) en history (verzonden)
-- Verifiëren: typecheck
+- Status: `[x]` (getMeldingen in A5) + `src/lib/werkbak.ts`
+- Code: `groepeerMeldingen` splitst verzonden (history) van rest (actief), volgorde behouden
 
 ### C2: Test voor werkbak-groepering
-- Status: `[ ]`
+- Status: `[x]` 3 min
 - Bestand(en): `src/lib/werkbak.test.ts`
-- Code: gegeven mix van rijen → juiste verdeling actief/history
-- Verifiëren: groen
+- Verifiëren: 3 tests groen
 
 ### C3: Werkbak-pagina (server component)
-- Status: `[ ]`
-- Bestand(en): `src/app/page.tsx`
-- Code: actief bovenaan, history achter tab/inklapbaar (client-eilandje voor toggle)
+- Status: `[x]` 4 min
+- Bestand(en): `src/app/page.tsx` (`export const dynamic = "force-dynamic"`)
+- Code: haalt getMeldingen, groepeert, actief bovenaan + lege-staat, HistorySection eronder. Oude boilerplate page + page.module.css verwijderd.
 - Verifiëren: pagina rendert lijst
 
 ### C4: Werkbak-interactie (history-toggle)
-- Status: `[ ]`
-- Bestand(en): `src/components/HistorySection.tsx` (client)
-- Code: inklapbaar/tab, default ingeklapt
-- Verifiëren: tik klapt history open/dicht
+- Status: `[x]` 3 min
+- Bestand(en): `src/components/HistorySection.tsx` (client, useState)
+- Code: inklapbaar, default dicht, aria-expanded, verbergt zich bij 0 verzonden
+- Verifiëren: toggle werkt
 
 ### C5: Verifieer werkbak met echte data
-- Status: `[ ]`
-- Verifiëren: J. Jansen-rij (sessie 1) zichtbaar in werkbak met juiste badges
+- Status: `[x]` 3 min
+- Verifiëren: HTTP 200 op localhost:3001, "2 actieve klussen", J. Jansen-card met ref 7444 + adres + Opdracht-badge, DIAGNOSE-rij, fonts geladen, geen echte render-error
 
 ---
 
