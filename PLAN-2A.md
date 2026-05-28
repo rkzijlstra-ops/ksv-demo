@@ -217,29 +217,32 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd.
 ## Groep H — Melding maken: urgentie + opslaan/verzenden (5 taken, ~35 min)
 
 ### H1: Melding-form samenstellen
-- Status: `[ ]`
-- Bestand(en): `src/components/MeldingForm.tsx`, route `src/app/melding/nieuw/page.tsx` (of vanuit detail)
-- Code: urgentie rood/geel, tekst (uit spraak of typen), foto's, koppel aan klus/opdracht
-- Verifiëren: form rendert compleet
+- Status: `[x]` 10 min
+- Bestand(en): `src/components/MeldingForm.tsx`, `src/app/melding/nieuw/page.tsx`, "Nieuwe melding"-knop in werkbak
+- Code: urgentie-keuze (2 grote knoppen DIRECT/ACHTERAF), klant-veld (optioneel), tekst-textarea + SpraakOpname (append), FotoMaken, twee actie-knoppen
+- Verifiëren: /melding/nieuw rendert alle elementen (via curl bevestigd)
 
-### H2: createMonteurMelding + updateMelding (server action) + test
-- Status: `[ ]`
-- Bestand(en): `src/lib/db.ts`, test
-- Code: insert met bron='monteur', status='concept'; update naar 'verzonden' + verzonden_at; heropslaan verzonden → aangepast=true
-- Verifiëren: db-tests groen
+### H2: createMonteurMelding + API-route + test
+- Status: `[x]` 8 min
+- Bestand(en): `src/app/api/meldingen/route.ts` (+ test 5). DB-functies createMonteurMelding/updateMeldingStatus bestonden al uit A5.
+- Code: POST /api/meldingen met Zod-validatie → createMonteurMelding (bron='monteur'). 200/400/503. Gewone-functie mock in test.
+- Verifiëren: 5 route-tests groen
 
 ### H3: Opslaan-concept vs verzenden knoppen
-- Status: `[ ]`
-- Code: twee acties, juiste status-overgang
-- Verifiëren: concept blijft in actief, verzonden gaat naar history
+- Status: `[x]` (in H1)
+- Code: twee knoppen, status concept of verzonden direct meegegeven. Concept → actief, verzonden → history.
 
-### H4: Verifieer hele monteur-flow
-- Status: `[ ]`
-- Verifiëren: foto+spraak+urgentie → concept → verschijnt werkbak → verzenden → history → aanpassen → aangepast-vlag
+### H4: Verifieer monteur-flow (nieuwe melding)
+- Status: `[x]` 5 min
+- Verifiëren: form rendert; POST monteur-melding ("De Wit", rood, verzonden) → id `e51c00b4` in DB. Foto/spraak/microfoon-interactie: groep I (telefoon).
 
 ### H5: Hele suite groen
-- Status: `[ ]`
-- Verifiëren: `npm test` alles groen
+- Status: `[x]` — `npm test` → 15 files, 82 tests groen
+
+### H6 (OPEN — verschoven): verzonden melding aanpassen + opnieuw verzenden
+- Status: `[ ]` NIET gebouwd in 2A-kern
+- Uit history-model (BRAINSTORM-2A): verzonden melding heropenen → bewerken → opnieuw verzenden met `aangepast=true` vlag. `updateMeldingStatus(id, {status, aangepast})` bestaat al in db.ts; alleen de edit-UI (bewerk-form + knop op detail-scherm) ontbreekt nog.
+- Beslissing met Rein nodig: nu afmaken of naar vervolgblok.
 
 ---
 
