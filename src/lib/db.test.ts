@@ -198,3 +198,50 @@ describe("updateMeldingStatus", () => {
     ).rejects.toThrow(/update failed/);
   });
 });
+
+describe("updateMelding", () => {
+  it("werkt velden + versie bij en zet aangepast=true bij versie > 1", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateMelding("row-1", {
+      urgentie: "rood",
+      ruwe_tekst: "Toch erger dan gedacht",
+      foto_urls: ["https://x/f2.jpg"],
+      status: "verzonden",
+      versie: 2,
+    });
+
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "row-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.urgentie).toBe("rood");
+    expect(patch.versie).toBe(2);
+    expect(patch.aangepast).toBe(true);
+    expect(patch.verzonden_at).toBeTypeOf("string");
+  });
+
+  it("versie 1 betekent niet aangepast", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateMelding("row-1", {
+      urgentie: "geel",
+      ruwe_tekst: null,
+      foto_urls: [],
+      status: "concept",
+      versie: 1,
+    });
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.aangepast).toBe(false);
+    expect(patch.verzonden_at).toBeUndefined();
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "update kapot" } });
+    await expect(
+      createDb(cfg).updateMelding("row-1", {
+        urgentie: "rood",
+        ruwe_tekst: null,
+        foto_urls: [],
+        status: "verzonden",
+        versie: 3,
+      }),
+    ).rejects.toThrow(/update kapot/);
+  });
+});

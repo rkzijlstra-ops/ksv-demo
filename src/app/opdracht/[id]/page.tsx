@@ -7,6 +7,7 @@ import {
   MapPin,
   Plus,
   Check,
+  Pencil,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
@@ -128,10 +129,12 @@ export default async function OpdrachtDetailPage({
                   {m.status === "verzonden" ? (
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
                       <Check size={16} strokeWidth={2.5} aria-hidden="true" />
-                      Verzonden{m.aangepast ? " (aangepast)" : ""}
+                      Verzonden{m.versie > 1 ? ` · aangepast (v${m.versie})` : ""}
                     </span>
                   ) : (
-                    <span className="text-sm font-semibold text-ink-muted">Concept</span>
+                    <span className="text-sm font-semibold text-ink-muted">
+                      Concept{m.versie > 1 ? ` · v${m.versie}` : ""}
+                    </span>
                   )}
                 </div>
 
@@ -147,9 +150,16 @@ export default async function OpdrachtDetailPage({
                   </div>
                 )}
 
-                <p className="mt-2 text-xs text-ink-muted">
-                  {formatDatumKort(m.created_at)}
-                </p>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
+                  <Link
+                    href={`/opdracht/${id}/melding/${m.id}`}
+                    className="inline-flex min-h-[40px] cursor-pointer items-center gap-1 rounded-lg border border-line px-3 text-sm font-semibold text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+                  >
+                    <Pencil size={15} strokeWidth={2.5} aria-hidden="true" />
+                    Bewerken
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

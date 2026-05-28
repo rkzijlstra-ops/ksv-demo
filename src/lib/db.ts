@@ -27,6 +27,7 @@ export interface Melding {
   verzonden_at: string | null;
   uitvoerdatum: string | null;
   opdracht_id: string | null;
+  versie: number;
 }
 
 export interface MonteurMeldingInput {
@@ -36,6 +37,15 @@ export interface MonteurMeldingInput {
   spraak_tekst: string | null;
   foto_urls: string[];
   status?: "concept" | "verzonden";
+}
+
+export interface UpdateMeldingInput {
+  urgentie: "rood" | "geel";
+  ruwe_tekst: string | null;
+  foto_urls: string[];
+  status: "concept" | "verzonden";
+  /** Nieuwe versie (huidige + 1), berekend door de aanroeper. */
+  versie: number;
 }
 
 export interface Db {
@@ -50,6 +60,8 @@ export interface Db {
     id: string,
     opts: { status: "concept" | "verzonden"; aangepast?: boolean },
   ): Promise<void>;
+  /** Werkt een bestaande melding bij (bewerken + opnieuw verzenden). Hoogt versie op. */
+  updateMelding(id: string, data: UpdateMeldingInput): Promise<void>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -130,6 +142,22 @@ export function createDb(config: DbConfig): Db {
       }
       if (opts.aangepast !== undefined) {
         patch.aangepast = opts.aangepast;
+      }
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async updateMelding(id, data) {
+      const patch: Record<string, unknown> = {
+        urgentie: data.urgentie,
+        ruwe_tekst: data.ruwe_tekst,
+        foto_urls: data.foto_urls,
+        status: data.status,
+        versie: data.versie,
+        aangepast: data.versie > 1,
+      };
+      if (data.status === "verzonden") {
+        patch.verzonden_at = new Date().toISOString();
       }
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);

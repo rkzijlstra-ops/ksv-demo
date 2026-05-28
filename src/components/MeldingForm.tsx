@@ -8,11 +8,25 @@ import { SpraakOpname } from "./SpraakOpname";
 
 type Urgentie = "rood" | "geel";
 
-export function MeldingForm({ opdrachtId }: { opdrachtId: string }) {
+export interface BestaandeMelding {
+  id: string;
+  urgentie: Urgentie | null;
+  ruwe_tekst: string | null;
+  foto_urls: string[];
+}
+
+export function MeldingForm({
+  opdrachtId,
+  bestaand,
+}: {
+  opdrachtId: string;
+  bestaand?: BestaandeMelding;
+}) {
   const router = useRouter();
-  const [urgentie, setUrgentie] = useState<Urgentie | null>(null);
-  const [tekst, setTekst] = useState("");
-  const [fotoUrls, setFotoUrls] = useState<string[]>([]);
+  const isBewerken = Boolean(bestaand);
+  const [urgentie, setUrgentie] = useState<Urgentie | null>(bestaand?.urgentie ?? null);
+  const [tekst, setTekst] = useState(bestaand?.ruwe_tekst ?? "");
+  const [fotoUrls, setFotoUrls] = useState<string[]>(bestaand?.foto_urls ?? []);
   const [bezig, setBezig] = useState<"" | "concept" | "verzonden">("");
   const [fout, setFout] = useState("");
 
@@ -24,17 +38,29 @@ export function MeldingForm({ opdrachtId }: { opdrachtId: string }) {
     setBezig(status);
     setFout("");
     try {
-      const res = await fetch("/api/meldingen", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          opdracht_id: opdrachtId,
-          urgentie,
-          ruwe_tekst: tekst.trim() || null,
-          foto_urls: fotoUrls,
-          status,
-        }),
-      });
+      const res = await fetch(
+        bestaand ? `/api/meldingen/${bestaand.id}` : "/api/meldingen",
+        {
+          method: bestaand ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(
+            bestaand
+              ? {
+                  urgentie,
+                  ruwe_tekst: tekst.trim() || null,
+                  foto_urls: fotoUrls,
+                  status,
+                }
+              : {
+                  opdracht_id: opdrachtId,
+                  urgentie,
+                  ruwe_tekst: tekst.trim() || null,
+                  foto_urls: fotoUrls,
+                  status,
+                },
+          ),
+        },
+      );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `Opslaan mislukt (${res.status})`);
       router.push(`/opdracht/${opdrachtId}`);
@@ -128,7 +154,7 @@ export function MeldingForm({ opdrachtId }: { opdrachtId: string }) {
           ) : (
             <Send size={20} strokeWidth={2.5} aria-hidden="true" />
           )}
-          Verzenden
+          {isBewerken ? "Opnieuw verzenden" : "Verzenden"}
         </button>
       </div>
     </div>
