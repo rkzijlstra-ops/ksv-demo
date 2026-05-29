@@ -1,5 +1,11 @@
 # PLAN Sessie 2A.6 - Blok A: fundament + multi-document
 
+## STATUS (2026-05-29)
+- A0 t/m A9: KLAAR. 125 tests groen, tsc schoon, `next build` slaagt. Commits aa34aea, 240863b, dd4d842, 0793787.
+- A10: WACHT OP REIN. Eerst `supabase/schema-2a6-documenten.sql` in Supabase draaien, dan live testen
+  (zonder migratie crasht de opdracht-detailpagina, want die leest nu de documenten-tabel).
+- Daarna: Blok B (opleveren/rapport/Resend-mail) in apart plan.
+
 Basis: DESIGN-2A6.md (goedgekeurd 2026-05-29). TDD per taak (RED -> GREEN -> commit -> afvinken).
 Migraties draait Rein in Supabase-dashboard; unit-tests mocken Supabase, dus bouwen kan vooruitlopen.
 UI-taken (A7+): EERST skill `ui-ux-pro-max` laden (geheugen: verplicht vóór JSX in sessie 2).
