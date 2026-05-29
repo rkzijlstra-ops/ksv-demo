@@ -20,7 +20,7 @@ export function HistorySection({ meldingen }: { meldingen: Melding[] }) {
       >
         <span className="inline-flex items-center gap-2">
           <History size={20} strokeWidth={2.5} aria-hidden="true" />
-          Verzonden ({meldingen.length})
+          Opgeleverd ({meldingen.length})
         </span>
         {open ? (
           <ChevronUp size={22} aria-hidden="true" />

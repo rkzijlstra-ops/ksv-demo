@@ -184,7 +184,7 @@ export default async function OpdrachtDetailPage({
                   {m.status === "verzonden" ? (
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
                       <Check size={16} strokeWidth={2.5} aria-hidden="true" />
-                      Verzonden{m.versie > 1 ? ` · aangepast (v${m.versie})` : ""}
+                      In rapport{m.versie > 1 ? ` · aangepast (v${m.versie})` : ""}
                     </span>
                   ) : (
                     <span className="text-sm font-semibold text-ink-muted">

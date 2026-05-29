@@ -27,7 +27,7 @@ export default async function MeldingBewerkenPagina({
 
       <h1 className="mt-2 text-2xl font-bold text-ink">Melding bewerken</h1>
       <p className="mb-5 mt-1 text-sm text-ink-muted">
-        Huidige versie: v{melding.versie}. Opnieuw verzenden maakt er v{melding.versie + 1} van.
+        Huidige versie: v{melding.versie}. Bijwerken maakt er v{melding.versie + 1} van.
       </p>
 
       <MeldingForm

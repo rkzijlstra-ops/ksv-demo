@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Clock, Loader2, Send, Save, AlertCircle } from "lucide-react";
+import { AlertTriangle, Clock, Loader2, FileCheck, Save, AlertCircle } from "lucide-react";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 
@@ -152,9 +152,9 @@ export function MeldingForm({
           {bezig === "verzonden" ? (
             <Loader2 size={20} className="animate-spin" aria-hidden="true" />
           ) : (
-            <Send size={20} strokeWidth={2.5} aria-hidden="true" />
+            <FileCheck size={20} strokeWidth={2.5} aria-hidden="true" />
           )}
-          {isBewerken ? "Opnieuw verzenden" : "Verzenden"}
+          {isBewerken ? "Bijwerken in rapport" : "Toevoegen aan rapport"}
         </button>
       </div>
     </div>

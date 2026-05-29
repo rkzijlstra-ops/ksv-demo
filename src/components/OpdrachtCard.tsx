@@ -29,7 +29,7 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
           {melding.status === "verzonden" && (
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
               <Check size={16} strokeWidth={2.5} aria-hidden="true" />
-              Verzonden{melding.aangepast ? " (aangepast)" : ""}
+              In rapport{melding.aangepast ? " (aangepast)" : ""}
             </span>
           )}
         </div>
