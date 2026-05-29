@@ -1,16 +1,11 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { Melding } from "./db";
 import { formatDatumKort } from "./datum";
-import { urgentieConfig } from "./urgentie";
 
 const A4 = { breedte: 595, hoogte: 842 } as const;
 const MARGE = 50;
 const FOTO_MAX_BREEDTE = 220;
 const FOTO_MAX_HOOGTE = 165;
-
-function urgentieLabel(urgentie: Melding["urgentie"]): string {
-  return urgentieConfig(urgentie)?.label ?? "Melding";
-}
 
 /**
  * Genereert het opleverrapport als PDF (bytes) uit de opdracht-kop en de monteur-meldingen.
@@ -73,7 +68,14 @@ export async function genereerRapportPdf(
 
   for (const m of meldingen) {
     ruimte(40);
-    tekst(`${urgentieLabel(m.urgentie)} — ${formatDatumKort(m.created_at)}`, { font: bold });
+    const kop = m.spoed ? "SPOED" : "Melding";
+    tekst(`${kop} — ${formatDatumKort(m.created_at)}`, { font: bold });
+    if (m.spoed && m.spoed_verzonden_at) {
+      tekst(`(al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at)})`, {
+        kleur: grijs,
+        inspring: 6,
+      });
+    }
     if (m.ruwe_tekst) {
       for (const regel of wikkel(m.ruwe_tekst, 90)) tekst(regel, { inspring: 6 });
     }

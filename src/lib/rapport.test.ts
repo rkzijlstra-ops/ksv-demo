@@ -28,6 +28,8 @@ function maakMelding(over: Partial<Melding>): Melding {
     opdracht_status: "open",
     opgeleverd_at: null,
     rapport_url: null,
+    spoed: false,
+    spoed_verzonden_at: null,
     ...over,
   };
 }
@@ -52,8 +54,8 @@ describe("genereerRapportPdf", () => {
 
     const opdracht = maakMelding({ opdracht_id: null });
     const meldingen = [
-      maakMelding({ id: "m1", opdracht_id: "x", urgentie: "rood", ruwe_tekst: "Front beschadigd" }),
-      maakMelding({ id: "m2", opdracht_id: "x", urgentie: "geel", ruwe_tekst: "Greep nabestellen" }),
+      maakMelding({ id: "m1", opdracht_id: "x", spoed: true, spoed_verzonden_at: "2026-05-29T18:00:00Z", ruwe_tekst: "Front beschadigd" }),
+      maakMelding({ id: "m2", opdracht_id: "x", spoed: false, ruwe_tekst: "Greep nabestellen" }),
     ];
 
     const bytes = await genereerRapportPdf(opdracht, meldingen);
@@ -81,7 +83,7 @@ describe("genereerRapportPdf", () => {
       maakMelding({
         id: "m1",
         opdracht_id: "x",
-        urgentie: "rood",
+        spoed: true,
         ruwe_tekst: "Met foto",
         foto_urls: ["https://x/foto1.jpg"],
       }),

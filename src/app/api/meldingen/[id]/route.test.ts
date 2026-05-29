@@ -33,7 +33,7 @@ function patchReq(id: string, body: unknown): Request {
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 const geldig = {
-  urgentie: "rood",
+  spoed: true,
   ruwe_tekst: "Toch erger",
   foto_urls: [],
   status: "verzonden",
@@ -65,8 +65,8 @@ describe("PATCH /api/meldingen/[id]", () => {
     expect(m.updateCalls).toBe(0);
   });
 
-  it("geeft 400 bij ongeldige urgentie", async () => {
-    const res = await PATCH(patchReq("row-1", { ...geldig, urgentie: "x" }), params("row-1"));
+  it("geeft 400 bij ongeldige spoed (geen boolean)", async () => {
+    const res = await PATCH(patchReq("row-1", { ...geldig, spoed: "x" }), params("row-1"));
     expect(res.status).toBe(400);
     expect(m.updateCalls).toBe(0);
   });

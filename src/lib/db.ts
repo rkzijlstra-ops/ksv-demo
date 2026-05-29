@@ -34,6 +34,9 @@ export interface Melding {
   opdracht_status: "open" | "opgeleverd";
   opgeleverd_at: string | null;
   rapport_url: string | null;
+  // sessie 2A.7 (spoed vervangt rood/geel-urgentie)
+  spoed: boolean;
+  spoed_verzonden_at: string | null;
 }
 
 /** Eén rij uit de documenten-tabel (origineel document bij een opdracht). */
@@ -76,7 +79,7 @@ export interface DocumentInput {
 
 export interface MonteurMeldingInput {
   opdracht_id: string;
-  urgentie: "rood" | "geel";
+  spoed: boolean;
   ruwe_tekst: string | null;
   spraak_tekst: string | null;
   foto_urls: string[];
@@ -84,13 +87,16 @@ export interface MonteurMeldingInput {
 }
 
 export interface UpdateMeldingInput {
-  urgentie: "rood" | "geel";
+  spoed: boolean;
   ruwe_tekst: string | null;
   foto_urls: string[];
   status: "concept" | "verzonden";
   /** Nieuwe versie (huidige + 1), berekend door de aanroeper. */
   versie: number;
 }
+
+/** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de werkbak). */
+export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: boolean }>;
 
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
@@ -118,6 +124,10 @@ export interface Db {
   verwijderOpdracht(id: string): Promise<void>;
   /** Verwijdert één los document van een opdracht. */
   verwijderDocument(id: string): Promise<void>;
+  /** Markeert dat de spoed-mail voor deze melding is verstuurd. */
+  markeerSpoedVerzonden(id: string): Promise<void>;
+  /** Aantal meldingen + spoed-vlag per opdracht (voor de werkbak-kaarten). */
+  getMeldingTellingen(): Promise<MeldingTellingen>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -232,7 +242,7 @@ export function createDb(config: DbConfig): Db {
           bron: "monteur",
           opdracht_id: data.opdracht_id,
           status: data.status ?? "concept",
-          urgentie: data.urgentie,
+          spoed: data.spoed,
           ruwe_tekst: data.ruwe_tekst,
           spraak_tekst: data.spraak_tekst,
           foto_urls: data.foto_urls,
@@ -261,7 +271,7 @@ export function createDb(config: DbConfig): Db {
 
     async updateMelding(id, data) {
       const patch: Record<string, unknown> = {
-        urgentie: data.urgentie,
+        spoed: data.spoed,
         ruwe_tekst: data.ruwe_tekst,
         foto_urls: data.foto_urls,
         status: data.status,
@@ -295,6 +305,30 @@ export function createDb(config: DbConfig): Db {
     async verwijderDocument(id) {
       const { error } = await client.from("documenten").delete().eq("id", id);
       if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
+    },
+
+    async markeerSpoedVerzonden(id) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ spoed_verzonden_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async getMeldingTellingen() {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("opdracht_id, spoed")
+        .not("opdracht_id", "is", null);
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      const result: MeldingTellingen = {};
+      for (const rij of (data ?? []) as { opdracht_id: string; spoed: boolean }[]) {
+        const huidig = result[rij.opdracht_id] ?? { aantal: 0, heeftSpoed: false };
+        huidig.aantal += 1;
+        if (rij.spoed) huidig.heeftSpoed = true;
+        result[rij.opdracht_id] = huidig;
+      }
+      return result;
     },
   };
 }

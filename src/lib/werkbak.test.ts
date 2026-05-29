@@ -28,6 +28,8 @@ function maakMelding(over: Partial<Melding>): Melding {
     opdracht_status: "open",
     opgeleverd_at: null,
     rapport_url: null,
+    spoed: false,
+    spoed_verzonden_at: null,
     ...over,
   };
 }

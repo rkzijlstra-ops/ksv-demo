@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   },
 }));
 
-import { verstuurOpleverRapport } from "./mail";
+import { verstuurOpleverRapport, verstuurSpoedMelding } from "./mail";
 
 function opdracht(over: Partial<Melding> = {}): Melding {
   return {
@@ -74,5 +74,32 @@ describe("verstuurOpleverRapport", () => {
     await expect(
       verstuurOpleverRapport({ ...basis, opdracht: opdracht() }),
     ).rejects.toThrow(/domain not verified/);
+  });
+});
+
+describe("verstuurSpoedMelding", () => {
+  const melding = {
+    ruwe_tekst: "Vaatwasser lekt, direct actie nodig",
+    foto_urls: ["https://x/foto1.jpg"],
+  } as Melding;
+
+  it("verstuurt een SPOED-mail zonder bijlage, met tekst en foto-link in de body", async () => {
+    await verstuurSpoedMelding({ naar: "rein@example.com", opdracht: opdracht(), melding });
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const arg = mockSend.mock.calls[0][0];
+    expect(arg.to).toBe("rein@example.com");
+    expect(arg.subject).toMatch(/SPOED/);
+    expect(arg.subject).toMatch(/van Dijk/);
+    expect(arg.text).toMatch(/Vaatwasser lekt/);
+    expect(arg.text).toMatch(/foto1\.jpg/);
+    expect(arg.attachments).toBeUndefined();
+  });
+
+  it("gooit een error als RESEND_API_KEY ontbreekt", async () => {
+    delete process.env.RESEND_API_KEY;
+    await expect(
+      verstuurSpoedMelding({ naar: "rein@example.com", opdracht: opdracht(), melding }),
+    ).rejects.toThrow(/RESEND_API_KEY/);
   });
 });

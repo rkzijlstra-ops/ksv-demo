@@ -8,6 +8,12 @@ export interface OpleverMailInput {
   bestandsnaam: string;
 }
 
+export interface SpoedMailInput {
+  naar: string;
+  opdracht: Melding;
+  melding: Melding;
+}
+
 function mailConfig() {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -43,5 +49,36 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
       ? (error as { message: string }).message
       : JSON.stringify(error);
     throw new Error(`Mail versturen mislukt: ${msg}`);
+  }
+}
+
+/**
+ * Verstuurt een losse SPOED-melding direct naar kantoor (geen PDF, korte tekst-mail).
+ * Wordt gebruikt als de monteur een melding als spoed markeert; de melding komt later ook in het rapport.
+ */
+export async function verstuurSpoedMelding(input: SpoedMailInput): Promise<void> {
+  const { apiKey, from } = mailConfig();
+  const resend = new Resend(apiKey);
+
+  const klant = input.opdracht.klant_naam ?? "opdracht";
+  const ref = input.opdracht.referentienummer ? ` (ref ${input.opdracht.referentienummer})` : "";
+  const fotoRegels =
+    input.melding.foto_urls.length > 0
+      ? `\n\nFoto's:\n${input.melding.foto_urls.join("\n")}`
+      : "";
+  const tekst = input.melding.ruwe_tekst?.trim() || "(geen tekst)";
+
+  const { error } = await resend.emails.send({
+    from,
+    to: input.naar,
+    subject: `SPOED - ${klant}${ref}`,
+    text: `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\nKeukenstudio Voorschoten`,
+  });
+
+  if (error) {
+    const msg = typeof error === "object" && error && "message" in error
+      ? (error as { message: string }).message
+      : JSON.stringify(error);
+    throw new Error(`Spoed-mail versturen mislukt: ${msg}`);
   }
 }

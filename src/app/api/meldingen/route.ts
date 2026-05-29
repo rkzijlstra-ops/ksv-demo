@@ -4,10 +4,9 @@ import { db } from "@/lib/db";
 
 const NieuweMeldingSchema = z.object({
   opdracht_id: z.string().uuid(),
-  urgentie: z.enum(["rood", "geel"]),
+  spoed: z.boolean(),
   ruwe_tekst: z.string().nullable(),
   foto_urls: z.array(z.string()),
-  status: z.enum(["concept", "verzonden"]),
 });
 
 export async function POST(req: Request) {
@@ -29,11 +28,10 @@ export async function POST(req: Request) {
   try {
     const { id } = await db().createMonteurMelding({
       opdracht_id: parsed.data.opdracht_id,
-      urgentie: parsed.data.urgentie,
+      spoed: parsed.data.spoed,
       ruwe_tekst: parsed.data.ruwe_tekst,
       spraak_tekst: null,
       foto_urls: parsed.data.foto_urls,
-      status: parsed.data.status,
     });
     return NextResponse.json({ id }, { status: 200 });
   } catch (err) {

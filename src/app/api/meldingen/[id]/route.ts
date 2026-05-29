@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 
 const UpdateSchema = z.object({
-  urgentie: z.enum(["rood", "geel"]),
+  spoed: z.boolean(),
   ruwe_tekst: z.string().nullable(),
   foto_urls: z.array(z.string()),
   status: z.enum(["concept", "verzonden"]),
@@ -35,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const nieuweVersie = bestaand.versie + 1;
   try {
     await db().updateMelding(id, {
-      urgentie: parsed.data.urgentie,
+      spoed: parsed.data.spoed,
       ruwe_tekst: parsed.data.ruwe_tekst,
       foto_urls: parsed.data.foto_urls,
       status: parsed.data.status,

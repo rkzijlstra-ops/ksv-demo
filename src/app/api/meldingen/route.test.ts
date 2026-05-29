@@ -28,10 +28,9 @@ function jsonReq(body: unknown): Request {
 
 const geldig = {
   opdracht_id: "9e4d149e-b523-4853-b014-61c4df593217",
-  urgentie: "geel",
+  spoed: false,
   ruwe_tekst: "Front bovenkast beschadigd",
   foto_urls: ["https://x/f1.jpg"],
-  status: "concept",
 };
 
 beforeEach(() => {
@@ -47,25 +46,25 @@ describe("POST /api/meldingen", () => {
     expect(res.status).toBe(200);
     expect(body.id).toBe("m-1");
     expect(m.calls).toBe(1);
-    expect((m.lastArg as { urgentie: string }).urgentie).toBe("geel");
+    expect((m.lastArg as { spoed: boolean }).spoed).toBe(false);
   });
 
-  it("geeft 400 bij ongeldige urgentie", async () => {
-    const res = await POST(jsonReq({ ...geldig, urgentie: "paars" }));
+  it("geeft 400 als spoed geen boolean is", async () => {
+    const res = await POST(jsonReq({ ...geldig, spoed: "ja" }));
     expect(res.status).toBe(400);
     expect(m.calls).toBe(0);
   });
 
-  it("geeft 400 als status ontbreekt", async () => {
-    const { status: _s, ...zonderStatus } = geldig;
-    const res = await POST(jsonReq(zonderStatus));
+  it("geeft 400 als spoed ontbreekt", async () => {
+    const { spoed: _s, ...zonderSpoed } = geldig;
+    const res = await POST(jsonReq(zonderSpoed));
     expect(res.status).toBe(400);
   });
 
-  it("accepteert status 'verzonden'", async () => {
-    const res = await POST(jsonReq({ ...geldig, status: "verzonden" }));
+  it("bewaart spoed=true", async () => {
+    const res = await POST(jsonReq({ ...geldig, spoed: true }));
     expect(res.status).toBe(200);
-    expect((m.lastArg as { status: string }).status).toBe("verzonden");
+    expect((m.lastArg as { spoed: boolean }).spoed).toBe(true);
   });
 
   it("geeft 503 als DB faalt", async () => {

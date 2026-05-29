@@ -11,6 +11,7 @@ const h = vi.hoisted(() => {
     delete: vi.fn(),
     eq: vi.fn(),
     is: vi.fn(),
+    not: vi.fn(),
     order: vi.fn(),
     single: vi.fn(),
     maybeSingle: vi.fn(),
@@ -25,6 +26,7 @@ const h = vi.hoisted(() => {
   builder.delete = (...a: unknown[]) => (fns.delete(...a), builder);
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
   builder.is = (...a: unknown[]) => (fns.is(...a), builder);
+  builder.not = (...a: unknown[]) => (fns.not(...a), builder);
   builder.order = (...a: unknown[]) => (fns.order(...a), builder);
   builder.single = () => (fns.single(), Promise.resolve(result));
   builder.maybeSingle = () => (fns.maybeSingle(), Promise.resolve(result));
@@ -150,7 +152,7 @@ describe("createMonteurMelding", () => {
     h.setResult({ data: { id: "m-1" }, error: null });
     await createDb(cfg).createMonteurMelding({
       opdracht_id: "opdr-9",
-      urgentie: "geel",
+      spoed: false,
       ruwe_tekst: "Front beschadigd",
       spraak_tekst: null,
       foto_urls: ["https://x/foto1.jpg"],
@@ -159,21 +161,21 @@ describe("createMonteurMelding", () => {
     const payload = h.fns.insert.mock.calls[0][0];
     expect(payload.bron).toBe("monteur");
     expect(payload.opdracht_id).toBe("opdr-9");
-    expect(payload.status).toBe("concept");
-    expect(payload.urgentie).toBe("geel");
+    expect(payload.spoed).toBe(false);
     expect(payload.foto_urls).toEqual(["https://x/foto1.jpg"]);
   });
 
-  it("returnt id", async () => {
+  it("returnt id en bewaart spoed=true", async () => {
     h.setResult({ data: { id: "m-1" }, error: null });
     const r = await createDb(cfg).createMonteurMelding({
       opdracht_id: "opdr-9",
-      urgentie: "rood",
+      spoed: true,
       ruwe_tekst: null,
       spraak_tekst: "ingesproken tekst",
       foto_urls: [],
     });
     expect(r.id).toBe("m-1");
+    expect(h.fns.insert.mock.calls[0][0].spoed).toBe(true);
   });
 });
 
@@ -359,6 +361,44 @@ describe("verwijderOpdracht", () => {
   });
 });
 
+describe("markeerSpoedVerzonden", () => {
+  it("zet spoed_verzonden_at op de melding", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).markeerSpoedVerzonden("m-1");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "m-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.spoed_verzonden_at).toBeTypeOf("string");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "spoed kapot" } });
+    await expect(createDb(cfg).markeerSpoedVerzonden("m-1")).rejects.toThrow(/spoed kapot/);
+  });
+});
+
+describe("getMeldingTellingen", () => {
+  it("aggregeert per opdracht_id het aantal en of er spoed is", async () => {
+    h.setResult({
+      data: [
+        { opdracht_id: "a", spoed: false },
+        { opdracht_id: "a", spoed: true },
+        { opdracht_id: "b", spoed: false },
+      ],
+      error: null,
+    });
+    const t = await createDb(cfg).getMeldingTellingen();
+
+    expect(h.fns.not).toHaveBeenCalledWith("opdracht_id", "is", null);
+    expect(t["a"]).toEqual({ aantal: 2, heeftSpoed: true });
+    expect(t["b"]).toEqual({ aantal: 1, heeftSpoed: false });
+  });
+
+  it("lege map als er geen meldingen zijn", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getMeldingTellingen()).toEqual({});
+  });
+});
+
 describe("verwijderDocument", () => {
   it("verwijdert de rij uit 'documenten' op id", async () => {
     h.setResult({ data: null, error: null });
@@ -379,7 +419,7 @@ describe("updateMelding", () => {
   it("werkt velden + versie bij en zet aangepast=true bij versie > 1", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).updateMelding("row-1", {
-      urgentie: "rood",
+      spoed: true,
       ruwe_tekst: "Toch erger dan gedacht",
       foto_urls: ["https://x/f2.jpg"],
       status: "verzonden",
@@ -388,7 +428,7 @@ describe("updateMelding", () => {
 
     expect(h.fns.eq).toHaveBeenCalledWith("id", "row-1");
     const patch = h.fns.update.mock.calls[0][0];
-    expect(patch.urgentie).toBe("rood");
+    expect(patch.spoed).toBe(true);
     expect(patch.versie).toBe(2);
     expect(patch.aangepast).toBe(true);
     expect(patch.verzonden_at).toBeTypeOf("string");
@@ -397,7 +437,7 @@ describe("updateMelding", () => {
   it("versie 1 betekent niet aangepast", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).updateMelding("row-1", {
-      urgentie: "geel",
+      spoed: false,
       ruwe_tekst: null,
       foto_urls: [],
       status: "concept",
@@ -412,7 +452,7 @@ describe("updateMelding", () => {
     h.setResult({ data: null, error: { message: "update kapot" } });
     await expect(
       createDb(cfg).updateMelding("row-1", {
-        urgentie: "rood",
+        spoed: false,
         ruwe_tekst: null,
         foto_urls: [],
         status: "verzonden",
