@@ -6,12 +6,20 @@ export const MeldingItemSchema = z.object({
   melding_tekst: z.string().min(1),
 });
 
+export const DocumenttypeSchema = z.enum([
+  "orderbevestiging",
+  "werkbon_service",
+  "onbekend",
+]);
+
 export const ParsedPdfSchema = z.object({
   klant_naam: z.string().nullable(),
   klant_adres: z.string().nullable(),
   referentienummer: z.string().nullable(),
   adviseur: z.string().nullable(),
   klant_telefoon: z.string().nullable(),
+  documenttype: DocumenttypeSchema,
+  leverweek: z.string().nullable(),
   meldingen: z.array(MeldingItemSchema),
 });
 
@@ -50,6 +58,17 @@ export const ParsedPdfJsonSchema = {
       description:
         "Telefoonnummer van de klant zoals op de PDF, bijv. '071-1234567' of '06-12345678'. null als niet vindbaar.",
     },
+    documenttype: {
+      type: "string",
+      enum: ["orderbevestiging", "werkbon_service", "onbekend"],
+      description:
+        "Soort document. 'orderbevestiging' = montage-order met 'Gepl. leverweek' en apparatuur/keukenmeubelen (geen 'Uw melding'). 'werkbon_service' = service-werkbon met 'WERKBON SERVICE' en 'Uw melding'-klachten. 'onbekend' als geen van beide past.",
+    },
+    leverweek: {
+      type: ["string", "null"],
+      description:
+        "Geplande leverweek zoals op een orderbevestiging, bijv. '22/2026'. null bij service-werkbon of als niet vindbaar.",
+    },
     meldingen: {
       type: "array",
       description:
@@ -83,6 +102,8 @@ export const ParsedPdfJsonSchema = {
     "referentienummer",
     "adviseur",
     "klant_telefoon",
+    "documenttype",
+    "leverweek",
     "meldingen",
   ],
   additionalProperties: false,

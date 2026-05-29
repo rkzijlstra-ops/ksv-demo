@@ -7,6 +7,8 @@ const fullValid: ParsedPdf = {
   referentienummer: "7444",
   adviseur: "M. de Vries",
   klant_telefoon: "071-1234567",
+  documenttype: "werkbon_service",
+  leverweek: null,
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
@@ -33,9 +35,39 @@ describe("ParsedPdfSchema", () => {
       referentienummer: null,
       adviseur: null,
       klant_telefoon: null,
+      documenttype: "onbekend",
+      leverweek: null,
       meldingen: [],
     };
     expect(() => ParsedPdfSchema.parse(minimal)).not.toThrow();
+  });
+
+  it("accepteert een orderbevestiging met leverweek en lege meldingen", () => {
+    const order = {
+      ...fullValid,
+      documenttype: "orderbevestiging",
+      leverweek: "22/2026",
+      meldingen: [],
+    };
+    const parsed = ParsedPdfSchema.parse(order);
+    expect(parsed.documenttype).toBe("orderbevestiging");
+    expect(parsed.leverweek).toBe("22/2026");
+    expect(parsed.meldingen).toEqual([]);
+  });
+
+  it("accepteert leverweek als string of null", () => {
+    expect(ParsedPdfSchema.parse({ ...fullValid, leverweek: null }).leverweek).toBeNull();
+    expect(ParsedPdfSchema.parse({ ...fullValid, leverweek: "16/2026" }).leverweek).toBe("16/2026");
+  });
+
+  it("verwerpt een onbekende documenttype-waarde", () => {
+    const invalid = { ...fullValid, documenttype: "factuur" };
+    expect(() => ParsedPdfSchema.parse(invalid)).toThrow(/documenttype/);
+  });
+
+  it("verwerpt object zonder documenttype-veld", () => {
+    const { documenttype: _ignored, ...withoutType } = fullValid;
+    expect(() => ParsedPdfSchema.parse(withoutType)).toThrow(/documenttype/);
   });
 
   it("accepteert klant_telefoon als string of null", () => {

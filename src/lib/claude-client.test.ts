@@ -25,6 +25,8 @@ const validToolUseResponse = {
         referentienummer: "7444",
         adviseur: "M. de Vries",
         klant_telefoon: "071-1234567",
+        documenttype: "werkbon_service",
+        leverweek: null,
         meldingen: [
           {
             keller_code: "F-BK-LD-60",
@@ -32,6 +34,25 @@ const validToolUseResponse = {
             melding_tekst: "Beschadigd bij ontvangst",
           },
         ],
+      },
+    },
+  ],
+};
+
+const orderbevestigingResponse = {
+  content: [
+    {
+      type: "tool_use",
+      name: "extract_pdf_data",
+      input: {
+        klant_naam: "De heer en mevrouw van Dijk",
+        klant_adres: "Hoge Morsweg 37, 2332 HG Leiden",
+        referentienummer: "7407",
+        adviseur: "Marco van Leeuwen",
+        klant_telefoon: "06-40200603",
+        documenttype: "orderbevestiging",
+        leverweek: "22/2026",
+        meldingen: [],
       },
     },
   ],
@@ -73,6 +94,39 @@ describe("createParser", () => {
     expect(result.referentienummer).toBe("7444");
     expect(result.meldingen).toHaveLength(1);
     expect(result.meldingen[0].keller_code).toBe("F-BK-LD-60");
+  });
+
+  it("returnt orderbevestiging-type met leverweek en lege meldingen", async () => {
+    mockCreate.mockResolvedValue(orderbevestigingResponse);
+    const parse = createParser({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    const result = await parse(dummyPdf);
+
+    expect(result.documenttype).toBe("orderbevestiging");
+    expect(result.leverweek).toBe("22/2026");
+    expect(result.meldingen).toEqual([]);
+    expect(result.referentienummer).toBe("7407");
+  });
+
+  it("returnt documenttype werkbon_service voor een service-PDF", async () => {
+    mockCreate.mockResolvedValue(validToolUseResponse);
+    const parse = createParser({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    const result = await parse(dummyPdf);
+
+    expect(result.documenttype).toBe("werkbon_service");
+    expect(result.meldingen).toHaveLength(1);
+  });
+
+  it("instrueert Claude om het documenttype te bepalen (orderbevestiging vs werkbon)", async () => {
+    mockCreate.mockResolvedValue(orderbevestigingResponse);
+    const parse = createParser({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    await parse(dummyPdf);
+
+    const callArg = mockCreate.mock.calls[0][0];
+    expect(callArg.system).toMatch(/orderbevestiging/i);
+    expect(callArg.system).toMatch(/werkbon/i);
   });
 
   it("gooit informatieve error als Claude geen tool_use teruggeeft", async () => {

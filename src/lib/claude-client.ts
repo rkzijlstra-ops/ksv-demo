@@ -9,21 +9,29 @@ import {
 const TOOL_NAME = "extract_pdf_data";
 
 const SYSTEM_PROMPT = `Je bent een nauwkeurige extractie-assistent voor Keukenstudio Voorschoten.
-Je krijgt een PDF van een service-melding (Keller-format) en je gebruikt de tool "extract_pdf_data" om de gegevens gestructureerd terug te geven.
+Je krijgt een PDF van Keukenstudio Voorschoten en gebruikt de tool "extract_pdf_data" om de gegevens gestructureerd terug te geven.
 
-Regels:
-- Geef het referentienummer altijd als string terug (ook al staat het in de PDF als cijfer).
-- "klant_telefoon": het telefoonnummer van de klant als string (bijv. '071-1234567' of '06-12345678'), of null als er geen nummer in de PDF staat.
+Bepaal EERST het documenttype:
+- "orderbevestiging": een montage-order. Herkenbaar aan de titel "Orderbevestiging" en een regel "Gepl. leverweek", met een kop (Referentienummer, Orderbev.nr, Orderverwerker, Datum order, Adviseur, Telefoon klant, Email-adres) en daaronder apparatuur en/of keukenmeubelen-specificaties. Heeft GEEN "Uw melding"-regels. Laat "meldingen" dan een LEGE array.
+- "werkbon_service": een service-werkbon. Herkenbaar aan "WERKBON SERVICE" en een blok "Uw melding" met klachten. Vul "meldingen" dan met één item per melding-regel.
+- "onbekend": als geen van beide duidelijk past. Doe een beste-poging op de kop-velden.
+
+Kop-velden (gelden voor beide types):
+- Geef het referentienummer altijd als string terug (ook al staat het als cijfer).
+- "klant_telefoon": telefoonnummer van de klant als string (bijv. '071-1234567' of '06-12345678'), of null. Staan er meerdere nummers, neem ze samen in één string.
+- "klant_naam" en "klant_adres" uit de klant-/afleveradres-gegevens.
+- "adviseur": de adviseur/orderverwerker.
+- "leverweek": de "Gepl. leverweek" (bijv. '22/2026') bij een orderbevestiging; null bij een werkbon of als niet vindbaar.
 - Bij twijfel over een veld: geef null terug, verzin niets.
-- Voor "meldingen": voor elke artikel-regel met "Uw melding" tekst één item in de array.
-- "keller_code" is de specifieke Keller-artikelcode (vaak gecodeerd, bijv. F-BK-LD-60).
-- "omschrijving" is de officiële artikelomschrijving naast de code.
-- "melding_tekst" is letterlijk wat onder "Uw melding" staat voor dat artikel.
 
-Roep ALTIJD de tool aan, geef nooit een vrije tekstantwoord.`;
+Alleen bij werkbon_service de "meldingen":
+- Voor elke artikel-regel met "Uw melding" tekst één item.
+- "keller_code" is de specifieke artikelcode (bijv. F-BK-LD-60 of 'KELL'); "omschrijving" is de officiële artikelomschrijving; "melding_tekst" is letterlijk wat onder "Uw melding" staat.
+
+Roep ALTIJD de tool aan, geef nooit een vrij tekstantwoord.`;
 
 const USER_INSTRUCTION =
-  "Extract alle gegevens uit deze Keukenstudio service-PDF via de tool extract_pdf_data.";
+  "Bepaal het documenttype en extract alle gegevens uit deze Keukenstudio-PDF via de tool extract_pdf_data.";
 
 export interface ClaudeClientConfig {
   apiKey: string;
@@ -44,7 +52,7 @@ export function createParser(config: ClaudeClientConfig): ParsePdfFn {
         {
           name: TOOL_NAME,
           description:
-            "Extract klant- en meldinggegevens uit een Keukenstudio service-PDF (Keller-format).",
+            "Extract documenttype, klantgegevens en (bij service) meldinggegevens uit een Keukenstudio-PDF.",
           input_schema: ParsedPdfJsonSchema as unknown as Anthropic.Tool.InputSchema,
         },
       ],

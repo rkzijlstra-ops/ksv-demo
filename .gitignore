@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# echte klant-data (PII): nooit committen
+/test-pdfs/week23/
+
 # next.js
 /.next/
 /out/
