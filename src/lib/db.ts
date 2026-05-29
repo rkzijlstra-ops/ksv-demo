@@ -114,6 +114,8 @@ export interface Db {
   updateMelding(id: string, data: UpdateMeldingInput): Promise<void>;
   /** Markeert een opdracht als opgeleverd en koppelt het rapport-PDF. */
   markeerOpgeleverd(id: string, rapportUrl: string): Promise<void>;
+  /** Verwijdert een opdracht; documenten en gekoppelde meldingen gaan mee via FK-cascade. */
+  verwijderOpdracht(id: string): Promise<void>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -281,6 +283,11 @@ export function createDb(config: DbConfig): Db {
         })
         .eq("id", id);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async verwijderOpdracht(id) {
+      const { error } = await client.from("meldingen").delete().eq("id", id);
+      if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
     },
   };
 }

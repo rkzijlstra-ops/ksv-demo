@@ -8,6 +8,7 @@ const h = vi.hoisted(() => {
     select: vi.fn(),
     insert: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
     eq: vi.fn(),
     is: vi.fn(),
     order: vi.fn(),
@@ -21,6 +22,7 @@ const h = vi.hoisted(() => {
   builder.select = (...a: unknown[]) => (fns.select(...a), builder);
   builder.insert = (...a: unknown[]) => (fns.insert(...a), builder);
   builder.update = (...a: unknown[]) => (fns.update(...a), builder);
+  builder.delete = (...a: unknown[]) => (fns.delete(...a), builder);
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
   builder.is = (...a: unknown[]) => (fns.is(...a), builder);
   builder.order = (...a: unknown[]) => (fns.order(...a), builder);
@@ -338,6 +340,22 @@ describe("markeerOpgeleverd", () => {
     await expect(
       createDb(cfg).markeerOpgeleverd("opdr-1", "https://x/r.pdf"),
     ).rejects.toThrow(/update kapot/);
+  });
+});
+
+describe("verwijderOpdracht", () => {
+  it("verwijdert de rij uit 'meldingen' op id (cascade ruimt documenten + meldingen)", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).verwijderOpdracht("opdr-1");
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.delete).toHaveBeenCalled();
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "delete kapot" } });
+    await expect(createDb(cfg).verwijderOpdracht("opdr-1")).rejects.toThrow(/delete kapot/);
   });
 });
 

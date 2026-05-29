@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Clock, Loader2, FileCheck, Save, AlertCircle } from "lucide-react";
+import { AlertTriangle, Clock, Loader2, FileCheck, AlertCircle } from "lucide-react";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 
@@ -27,15 +27,15 @@ export function MeldingForm({
   const [urgentie, setUrgentie] = useState<Urgentie | null>(bestaand?.urgentie ?? null);
   const [tekst, setTekst] = useState(bestaand?.ruwe_tekst ?? "");
   const [fotoUrls, setFotoUrls] = useState<string[]>(bestaand?.foto_urls ?? []);
-  const [bezig, setBezig] = useState<"" | "concept" | "verzonden">("");
+  const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
 
-  async function opslaan(status: "concept" | "verzonden") {
+  async function opslaan() {
     if (!urgentie) {
       setFout("Kies eerst rood of geel.");
       return;
     }
-    setBezig(status);
+    setBezig(true);
     setFout("");
     try {
       const res = await fetch(
@@ -49,14 +49,14 @@ export function MeldingForm({
                   urgentie,
                   ruwe_tekst: tekst.trim() || null,
                   foto_urls: fotoUrls,
-                  status,
+                  status: "verzonden",
                 }
               : {
                   opdracht_id: opdrachtId,
                   urgentie,
                   ruwe_tekst: tekst.trim() || null,
                   foto_urls: fotoUrls,
-                  status,
+                  status: "verzonden",
                 },
           ),
         },
@@ -67,7 +67,7 @@ export function MeldingForm({
       router.refresh();
     } catch (err) {
       setFout((err as Error).message);
-      setBezig("");
+      setBezig(false);
     }
   }
 
@@ -87,8 +87,6 @@ export function MeldingForm({
       </button>
     );
   };
-
-  const werkBezig = bezig !== "";
 
   return (
     <div className="flex flex-col gap-5">
@@ -129,34 +127,19 @@ export function MeldingForm({
         </p>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => opslaan("concept")}
-          disabled={werkBezig}
-          className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-primary bg-white px-4 text-base font-bold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
-        >
-          {bezig === "concept" ? (
-            <Loader2 size={20} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Save size={20} strokeWidth={2.5} aria-hidden="true" />
-          )}
-          Concept
-        </button>
-        <button
-          type="button"
-          onClick={() => opslaan("verzonden")}
-          disabled={werkBezig}
-          className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
-        >
-          {bezig === "verzonden" ? (
-            <Loader2 size={20} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <FileCheck size={20} strokeWidth={2.5} aria-hidden="true" />
-          )}
-          {isBewerken ? "Bijwerken in rapport" : "Toevoegen aan rapport"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={opslaan}
+        disabled={bezig}
+        className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+      >
+        {bezig ? (
+          <Loader2 size={20} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <FileCheck size={20} strokeWidth={2.5} aria-hidden="true" />
+        )}
+        {isBewerken ? "Bijwerken in rapport" : "Toevoegen aan rapport"}
+      </button>
     </div>
   );
 }

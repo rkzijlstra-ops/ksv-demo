@@ -21,6 +21,7 @@ import { UrgentieBadge } from "@/components/UrgentieBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { OpleverKnop } from "@/components/OpleverKnop";
+import { VerwijderKnop } from "@/components/VerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
@@ -253,6 +254,10 @@ export default async function OpdrachtDetailPage({
           </div>
         )}
       </section>
+
+      <div className="mt-10">
+        <VerwijderKnop opdrachtId={id} klantNaam={opdracht.klant_naam ?? "deze opdracht"} />
+      </div>
     </main>
   );
 }
