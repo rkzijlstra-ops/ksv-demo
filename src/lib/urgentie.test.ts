@@ -60,11 +60,12 @@ describe("meldingStaatConfig (kleur-staat)", () => {
     expect(c.bg).toContain("urgent-rood");
   });
 
-  it("normaal: amber, label 'Open', donkere tekst", () => {
+  it("normaal: outline oranje accent (industrieel D), label 'Open'", () => {
     const c = meldingStaatConfig(false, null);
     expect(c.label).toBe("Open");
-    expect(c.bg).toContain("urgent-geel");
-    expect(c.ink).not.toContain("white");
+    expect(c.bg).toContain("white");
+    expect(c.ink).toContain("accent");
+    expect(c.border).toContain("accent");
   });
 });
 

@@ -31,7 +31,7 @@ export function DocumentRij({ doc }: { doc: Document }) {
 
   return (
     <li>
-      <div className="flex min-h-[56px] items-center gap-2 rounded-xl border border-line bg-white p-3">
+      <div className="flex min-h-[56px] items-center gap-2 rounded-none border border-line bg-white p-3">
         <a
           href={doc.publieke_url}
           target="_blank"
@@ -45,7 +45,7 @@ export function DocumentRij({ doc }: { doc: Document }) {
           )}
           <span className="min-w-0 flex-1 truncate font-semibold text-ink">{doc.bestandsnaam}</span>
           {doc.is_primair && (
-            <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
+            <span className="shrink-0 rounded-none bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
               bron
             </span>
           )}
@@ -56,7 +56,7 @@ export function DocumentRij({ doc }: { doc: Document }) {
           onClick={verwijder}
           disabled={bezig}
           aria-label={`Document ${doc.bestandsnaam} verwijderen`}
-          className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+          className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-none border border-line text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
         >
           {bezig ? (
             <Loader2 size={18} className="animate-spin" aria-hidden="true" />

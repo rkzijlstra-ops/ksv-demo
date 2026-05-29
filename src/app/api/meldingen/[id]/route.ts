@@ -49,3 +49,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const bestaand = await db().getMeldingById(id);
+  if (!bestaand) {
+    return NextResponse.json({ error: "Melding niet gevonden" }, { status: 404 });
+  }
+  try {
+    await db().verwijderMelding(id);
+  } catch (err) {
+    return NextResponse.json(
+      { error: `Verwijderen mislukt: ${(err as Error).message}` },
+      { status: 503 },
+    );
+  }
+  return NextResponse.json({ verwijderd: true }, { status: 200 });
+}

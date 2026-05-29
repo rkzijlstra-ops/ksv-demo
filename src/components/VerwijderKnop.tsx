@@ -45,7 +45,7 @@ export function VerwijderKnop({
         type="button"
         onClick={verwijder}
         disabled={bezig}
-        className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-urgent-rood px-3 text-sm font-semibold text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+        className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-none border border-urgent-rood px-3 text-sm font-semibold text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
       >
         {bezig ? (
           <Loader2 size={16} className="animate-spin" aria-hidden="true" />

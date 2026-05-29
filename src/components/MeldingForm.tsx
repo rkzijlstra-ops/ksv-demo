@@ -115,7 +115,7 @@ export function MeldingForm({
           onChange={(e) => setTekst(e.target.value)}
           rows={4}
           placeholder="Typ of spreek je melding in"
-          className="w-full rounded-xl border border-line p-4 font-[family-name:var(--font-body)] text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+          className="w-full rounded-none border border-line p-4 font-[family-name:var(--font-body)] text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
         />
         <div className="mt-2">
           <SpraakOpname onTekst={(t) => setTekst((prev) => (prev ? `${prev} ${t}` : t))} />
@@ -129,7 +129,7 @@ export function MeldingForm({
             type="button"
             onClick={() => setSpoed((v) => !v)}
             aria-pressed={spoed}
-            className={`inline-flex min-h-[48px] cursor-pointer items-center gap-2 rounded-xl border-2 px-4 font-bold transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-primary ${
+            className={`inline-flex min-h-[48px] cursor-pointer items-center gap-2 rounded-none border-2 px-4 font-bold transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-primary ${
               spoed ? "border-transparent bg-urgent-rood text-white" : "border-line bg-white text-ink"
             }`}
           >
@@ -141,13 +141,13 @@ export function MeldingForm({
             onClick={() => setToonUitleg((v) => !v)}
             aria-label="Uitleg over spoed"
             aria-expanded={toonUitleg}
-            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-muted hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
           >
             <HelpCircle size={22} aria-hidden="true" />
           </button>
         </div>
         {toonUitleg && (
-          <p className="mt-2 rounded-lg bg-surface p-3 text-sm text-ink">
+          <p className="mt-2 rounded-none bg-surface p-3 text-sm text-ink">
             Spoed = nu meteen los naar kantoor, buiten de oplevering om. Alleen gebruiken als het echt
             niet kan wachten. De melding komt daarna ook gewoon in het opleverrapport.
           </p>
@@ -166,7 +166,7 @@ export function MeldingForm({
           type="button"
           onClick={opnieuwSpoed}
           disabled={bezig}
-          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-urgent-rood px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+          className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-urgent-rood px-4 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
         >
           {bezig ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : <Send size={20} strokeWidth={2.5} aria-hidden="true" />}
           Spoed opnieuw versturen
@@ -176,7 +176,7 @@ export function MeldingForm({
           type="button"
           onClick={opslaan}
           disabled={bezig}
-          className={`flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60 ${
+          className={`relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 px-4 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-[''] ${
             spoed ? "bg-urgent-rood" : "bg-primary"
           }`}
         >

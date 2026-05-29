@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSV — kleur/stijl mockups</title>
+<style>
+  :root { font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; background: #f4f4f5; color: #18181b; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 28px; color: #52525b; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 700px) { .grid { grid-template-columns: 1fr 1fr; } }
+  a.tile {
+    display: block; padding: 20px; background: #fff; border: 1px solid #e4e4e7;
+    border-radius: 10px; text-decoration: none; color: inherit;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  a.tile:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+  .swatch-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .sw { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0,0,0,.06); }
+  .name { font-size: 18px; font-weight: 700; margin: 4px 0 2px; }
+  .desc { font-size: 14px; color: #52525b; }
+</style>
+</head>
+<body>
+<main>
+  <h1>KSV — kleur/stijl mockups</h1>
+  <p class="lead">Vier totaal verschillende richtingen voor de werkbak. Klik er één voor de volledige pagina.</p>
+  <div class="grid">
+    <a class="tile" href="style-a-scandi.html">
+      <div class="swatch-row">
+        <span class="sw" style="background:#FAF7F2"></span>
+        <span class="sw" style="background:#65A30D"></span>
+        <span class="sw" style="background:#A16207"></span>
+        <span class="sw" style="background:#1F2937"></span>
+      </div>
+      <div class="name">A — Warm Scandi</div>
+      <div class="desc">Cream + olijfgroen, warme keuken-vibe, zachte 6px-rondingen.</div>
+    </a>
+    <a class="tile" href="style-b-klassiek.html">
+      <div class="swatch-row">
+        <span class="sw" style="background:#FEFCF7"></span>
+        <span class="sw" style="background:#111827"></span>
+        <span class="sw" style="background:#B45309"></span>
+        <span class="sw" style="background:#71717A"></span>
+      </div>
+      <div class="name">B — Klassiek / Premium</div>
+      <div class="desc">Ivoor + charcoal + gouden accent, geen rondingen, serif-kop.</div>
+    </a>
+    <a class="tile" href="style-c-modern.html">
+      <div class="swatch-row">
+        <span class="sw" style="background:#F9FAFB"></span>
+        <span class="sw" style="background:#047857"></span>
+        <span class="sw" style="background:#A7F3D0"></span>
+        <span class="sw" style="background:#0F172A"></span>
+      </div>
+      <div class="name">C — Modern Fris</div>
+      <div class="desc">Wit + emerald + sage, lichte 4px-rondingen, bold sans.</div>
+    </a>
+    <a class="tile" href="style-d-industrieel.html">
+      <div class="swatch-row">
+        <span class="sw" style="background:#FAFAFA"></span>
+        <span class="sw" style="background:#0F172A"></span>
+        <span class="sw" style="background:#F97316"></span>
+        <span class="sw" style="background:#27272A"></span>
+      </div>
+      <div class="name">D — Industrieel</div>
+      <div class="desc">Wit + anthraciet + fel oranje accent, harde hoeken, mono-titel.</div>
+    </a>
+  </div>
+</main>
+</body>
+</html>

@@ -91,7 +91,7 @@ export function OpdrachtAanmaken() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={bezig}
-        className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-white px-4 py-3 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:left-0 after:-bottom-[2px] after:h-1 after:w-20 after:bg-accent after:content-['']"
       >
         {bezig ? (
           <>
@@ -119,7 +119,7 @@ export function OpdrachtAanmaken() {
       ) : (
         <form
           onSubmit={handleHandmatig}
-          className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4"
+          className="flex flex-col gap-3 rounded-none border border-line bg-surface p-4"
         >
           <div className="flex items-center justify-between">
             <span className="font-bold text-ink">Handmatige opdracht</span>
@@ -127,7 +127,7 @@ export function OpdrachtAanmaken() {
               type="button"
               onClick={() => setHandmatig(false)}
               aria-label="Handmatige opdracht sluiten"
-              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
             >
               <X size={20} aria-hidden="true" />
             </button>
@@ -138,7 +138,7 @@ export function OpdrachtAanmaken() {
             <input
               value={naam}
               onChange={(e) => setNaam(e.target.value)}
-              className="min-h-[48px] rounded-lg border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+              className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
               placeholder="Bijv. Mevrouw Veering"
             />
           </label>
@@ -147,7 +147,7 @@ export function OpdrachtAanmaken() {
             <input
               value={adres}
               onChange={(e) => setAdres(e.target.value)}
-              className="min-h-[48px] rounded-lg border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+              className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
               placeholder="Straat, postcode, plaats"
             />
           </label>
@@ -157,7 +157,7 @@ export function OpdrachtAanmaken() {
               <input
                 value={ref}
                 onChange={(e) => setRef(e.target.value)}
-                className="min-h-[48px] rounded-lg border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
                 placeholder="7407"
               />
             </label>
@@ -167,7 +167,7 @@ export function OpdrachtAanmaken() {
                 value={telefoon}
                 onChange={(e) => setTelefoon(e.target.value)}
                 inputMode="tel"
-                className="min-h-[48px] rounded-lg border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
                 placeholder="06-12345678"
               />
             </label>
@@ -175,7 +175,7 @@ export function OpdrachtAanmaken() {
           <button
             type="submit"
             disabled={bezig || (!naam && !adres && !ref && !telefoon)}
-            className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {bezig ? <Loader2 size={22} className="animate-spin" aria-hidden="true" /> : null}
             Opdracht aanmaken

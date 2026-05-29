@@ -17,20 +17,29 @@ export function OpdrachtCard({
   const opgeleverd = melding.opdracht_status === "opgeleverd";
   const aantalOpen = telling?.aantal ?? 0;
 
+  // Kleur-staat: gekleurde linker strip (8px) per staat (rood=spoed, oranje=open, groen=opgeleverd)
+  const stripKleur = opgeleverd
+    ? "border-l-success"
+    : telling?.heeftSpoed
+      ? "border-l-urgent-rood"
+      : aantalOpen > 0
+        ? "border-l-accent"
+        : "border-l-ink";
+
   return (
     <Link
       href={`/opdracht/${melding.id}`}
-      className="flex min-h-[72px] cursor-pointer items-center gap-3 rounded-xl border border-line bg-white p-4 transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+      className={`flex min-h-[72px] cursor-pointer items-center gap-3 border-2 border-ink border-l-[8px] ${stripKleur} bg-white p-4 transition-colors duration-150 hover:brightness-[0.97] focus-visible:outline-3 focus-visible:outline-accent`}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-lg font-bold text-ink">{titel}</span>
+          <span className="truncate text-lg font-extrabold tracking-tight text-ink">{titel}</span>
           {opgeleverd ? (
             <Badge config={opgeleverdBadgeConfig()} />
           ) : (
             telling?.heeftSpoed && (
               <Badge
-                config={{ label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", icon: "alert" }}
+                config={{ label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", border: "border-urgent-rood", icon: "alert" }}
               />
             )
           )}
@@ -39,16 +48,17 @@ export function OpdrachtCard({
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <DocumenttypeBadge type={melding.documenttype} />
           {melding.referentienummer && (
-            <span className="text-sm font-semibold text-ink-muted">
-              ref {melding.referentienummer}
+            <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
+              {melding.referentienummer}
             </span>
           )}
           {!opgeleverd && aantalOpen > 0 && (
             <Badge
               config={{
                 label: `${aantalOpen} open`,
-                bg: "bg-urgent-geel",
-                ink: "text-ink",
+                bg: "bg-white",
+                ink: "text-accent",
+                border: "border-accent",
                 icon: "clock",
               }}
             />
@@ -60,17 +70,17 @@ export function OpdrachtCard({
         )}
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="inline-flex items-center gap-1 font-semibold text-ink">
+          <span className="inline-flex items-center gap-1 font-mono font-bold text-ink">
             <CalendarClock size={15} strokeWidth={2.5} aria-hidden="true" />
             {melding.uitvoerdatum ? formatDatumKort(melding.uitvoerdatum) : "Nog niet gepland"}
           </span>
           {melding.leverweek && (
-            <span className="inline-flex items-center gap-1 text-ink-muted">
+            <span className="inline-flex items-center gap-1 font-mono text-ink-muted">
               <Truck size={15} strokeWidth={2} aria-hidden="true" />
               wk {melding.leverweek}
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-ink-muted">
+          <span className="inline-flex items-center gap-1 font-mono text-ink-muted">
             <CalendarPlus size={15} strokeWidth={2} aria-hidden="true" />
             {formatDatumKort(melding.created_at)}
           </span>

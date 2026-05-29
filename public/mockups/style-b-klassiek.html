@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B — Klassiek / Premium</title>
+<style>
+  :root {
+    --bg: #FEFCF7;
+    --surface: #F7F2E7;
+    --ink: #111827;
+    --ink-muted: #57534E;
+    --line: #D6D3D1;
+    --primary: #111827;     /* charcoal */
+    --primary-ink: #FFFFFF;
+    --accent: #B45309;       /* gold */
+    --urgent: #B91C1C;
+    --open: #B45309;
+    --done: #15803D;
+    --radius: 0px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .serif { font-family: "Georgia", "Iowan Old Style", "Times New Roman", serif; letter-spacing: -.01em; }
+  main { max-width: 680px; margin: 0 auto; padding: 16px 16px 64px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:8px; }
+  .topbar b { color: var(--ink); }
+
+  .header { background: var(--bg); border: 1px solid var(--ink); border-top: 3px solid var(--accent); padding: 22px 22px 18px; margin-bottom: 18px; }
+  .header h1 { margin:0; font-size: 30px; font-weight: 700; }
+  .header .sub { margin-top: 6px; font-size: 14px; color: var(--ink-muted); letter-spacing: .02em; text-transform: uppercase; }
+
+  .upload {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    min-height: 56px; width: 100%;
+    background: var(--bg); border: 1.5px solid var(--ink); padding: 12px 16px;
+    font-weight: 700; color: var(--ink); cursor: pointer; letter-spacing: .01em;
+  }
+  .upload:hover { background: var(--surface); }
+  .tertiary { display:inline-flex; gap:6px; align-items:center; margin-top:10px;
+    color: var(--ink); font-weight: 600; font-size: 13.5px; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+
+  .cards { display:flex; flex-direction:column; gap: 14px; margin-top: 18px; }
+  .card {
+    position: relative;
+    display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 12px;
+    background: #FFFFFF; border: 1px solid var(--ink);
+    padding: 16px 18px; text-decoration: none; color: inherit; min-height: 92px;
+  }
+  .card .corner { position:absolute; top:-1px; right:-1px; width: 0; height: 0; border-style: solid; border-width: 0 28px 28px 0; border-color: transparent var(--line) transparent transparent; }
+  .card.s-spoed .corner { border-color: transparent var(--urgent) transparent transparent; }
+  .card.s-open  .corner { border-color: transparent var(--open) transparent transparent; }
+  .card.s-done  .corner { border-color: transparent var(--done) transparent transparent; }
+
+  .row1 { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .titel { font-size: 19px; font-weight: 700; letter-spacing: -.005em; }
+  .ref { font-size: 13px; color: var(--ink-muted); letter-spacing: .03em; }
+  .badges { margin-top: 6px; display:flex; flex-wrap:wrap; gap: 10px; align-items:center; }
+  .badge {
+    display:inline-flex; gap:6px; align-items:center;
+    border: 1px solid var(--line); color: var(--ink); background: var(--bg);
+    padding: 3px 10px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .badge.open  { border-color: var(--open);   color: var(--open); }
+  .badge.spoed { border-color: var(--urgent); color: var(--urgent); }
+  .badge.done  { border-color: var(--done);   color: var(--done); }
+  .addr { margin-top: 8px; font-size: 13.5px; color: var(--ink-muted); }
+  .meta { margin-top: 6px; display:flex; gap: 16px; font-size: 13px; }
+  .meta .muted { color: var(--ink-muted); }
+  .chev { color: var(--ink-muted); font-size: 22px; line-height: 1; }
+
+  .footer-act { margin-top: 30px; }
+  .btn-primary {
+    display:flex; align-items:center; justify-content:center; gap: 8px;
+    min-height: 56px; width: 100%;
+    background: var(--done); color: #fff; border: none; padding: 14px;
+    font-weight: 700; font-size: 16px; letter-spacing: .03em; text-transform: uppercase; cursor: pointer;
+  }
+  svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .ico-lg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><a href="index.html" style="color:inherit">← terug naar mockups</a> · <b>B — Klassiek / Premium</b></div>
+
+  <header class="header">
+    <h1 class="serif">Opdrachten</h1>
+    <div class="sub">3 actieve klussen</div>
+  </header>
+
+  <button class="upload">
+    <svg class="ico-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Documenten toevoegen
+  </button>
+  <a href="#" class="tertiary">Of: opdracht zonder document</a>
+
+  <div class="cards">
+    <a class="card s-open" href="#"><div class="corner"></div><div>
+      <div class="row1"><span class="titel serif">Mevrouw Heesakkers</span><span class="ref">ref 7636</span></div>
+      <div class="badges">
+        <span class="badge">Montage</span>
+        <span class="badge open">3 open meldingen</span>
+      </div>
+      <div class="addr">Apollolaan 700, 2324 CL Leiden</div>
+      <div class="meta"><span>14 jun</span><span class="muted">leverweek 16</span></div>
+    </div><div class="chev">›</div></a>
+
+    <a class="card s-spoed" href="#"><div class="corner"></div><div>
+      <div class="row1"><span class="titel serif">De heer en mevrouw van Dijk</span><span class="ref">ref 7407</span></div>
+      <div class="badges">
+        <span class="badge">Montage</span>
+        <span class="badge spoed">Spoed</span>
+        <span class="badge open">2 open</span>
+      </div>
+      <div class="addr">Hoge Morsweg 37, 2332 HG Leiden</div>
+      <div class="meta"><span>6 jul</span><span class="muted">leverweek 22</span></div>
+    </div><div class="chev">›</div></a>
+
+    <a class="card s-open" href="#"><div class="corner"></div><div>
+      <div class="row1"><span class="titel serif">Wouter & Myrthe Putman</span><span class="ref">ref 7320</span></div>
+      <div class="badges">
+        <span class="badge">Service</span>
+        <span class="badge open">1 open</span>
+      </div>
+      <div class="addr">van Struykstraat 17, 2203 HC Noordwijk</div>
+      <div class="meta"><span class="muted">nog niet gepland</span></div>
+    </div><div class="chev">›</div></a>
+
+    <a class="card s-done" href="#"><div class="corner"></div><div>
+      <div class="row1"><span class="titel serif">J. Jansen</span><span class="ref">ref 7444</span></div>
+      <div class="badges">
+        <span class="badge">Service</span>
+        <span class="badge done">Opgeleverd</span>
+      </div>
+      <div class="addr">Hoofdstraat 12, 2342 AB Voorschoten</div>
+      <div class="meta"><span class="muted">opgeleverd 28 mei</span></div>
+    </div><div class="chev">›</div></a>
+  </div>
+
+  <div class="footer-act">
+    <div class="sub" style="font-size:11.5px;color:var(--ink-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Primaire actie op een opdracht-detail:</div>
+    <button class="btn-primary">Opdracht opleveren</button>
+  </div>
+</main>
+</body>
+</html>

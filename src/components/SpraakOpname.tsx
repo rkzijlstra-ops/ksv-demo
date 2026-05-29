@@ -59,7 +59,7 @@ export function SpraakOpname({ onTekst }: { onTekst: (tekst: string) => void }) 
         <button
           type="button"
           onClick={stop}
-          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-urgent-rood px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-none bg-urgent-rood px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Square size={20} strokeWidth={3} className="animate-pulse" aria-hidden="true" />
           Stop opname
@@ -69,7 +69,7 @@ export function SpraakOpname({ onTekst }: { onTekst: (tekst: string) => void }) 
           type="button"
           onClick={start}
           disabled={status === "verwerken"}
-          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-primary bg-white px-4 py-3 text-base font-bold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
+          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-primary bg-white px-4 py-3 text-base font-bold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
         >
           {status === "verwerken" ? (
             <>

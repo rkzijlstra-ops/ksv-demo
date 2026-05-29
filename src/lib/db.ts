@@ -124,6 +124,8 @@ export interface Db {
   verwijderOpdracht(id: string): Promise<void>;
   /** Verwijdert één los document van een opdracht. */
   verwijderDocument(id: string): Promise<void>;
+  /** Verwijdert één monteur-melding (in de wachtrij) van een opdracht. */
+  verwijderMelding(id: string): Promise<void>;
   /** Markeert dat de spoed-mail voor deze melding is verstuurd. */
   markeerSpoedVerzonden(id: string): Promise<void>;
   /** Aantal meldingen + spoed-vlag per opdracht (voor de werkbak-kaarten). */
@@ -304,6 +306,11 @@ export function createDb(config: DbConfig): Db {
 
     async verwijderDocument(id) {
       const { error } = await client.from("documenten").delete().eq("id", id);
+      if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
+    },
+
+    async verwijderMelding(id) {
+      const { error } = await client.from("meldingen").delete().eq("id", id);
       if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
     },
 

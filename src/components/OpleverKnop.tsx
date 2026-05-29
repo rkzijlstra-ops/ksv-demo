@@ -7,9 +7,14 @@ import { PackageCheck, Loader2, AlertCircle } from "lucide-react";
 export function OpleverKnop({
   opdrachtId,
   meldingCount,
+  label = "Opdracht opleveren",
+  accent = "oranje",
 }: {
   opdrachtId: string;
   meldingCount: number;
+  label?: string;
+  /** oranje = standaard merk-accent; groen = voor "Opnieuw opleveren" op een opgeleverde opdracht. */
+  accent?: "oranje" | "groen";
 }) {
   const router = useRouter();
   const [bezig, setBezig] = useState(false);
@@ -45,7 +50,7 @@ export function OpleverKnop({
         type="button"
         onClick={opleveren}
         disabled={bezig}
-        className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-success px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className={`relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-bold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:content-[''] ${accent === "groen" ? "after:bg-success" : "after:bg-accent"}`}
       >
         {bezig ? (
           <>
@@ -55,7 +60,7 @@ export function OpleverKnop({
         ) : (
           <>
             <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
-            Opdracht opleveren
+            {label}
           </>
         )}
       </button>

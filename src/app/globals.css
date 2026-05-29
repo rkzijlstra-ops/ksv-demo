@@ -6,8 +6,9 @@
   --color-ink: #0f172a;
   --color-ink-muted: #475569;
   --color-line: #cbd5e1;
-  --color-primary: #1d4ed8;
+  --color-primary: #27272a;      /* anthraciet (industrieel D) */
   --color-primary-ink: #ffffff;
+  --color-accent: #f97316;       /* fel oranje, merk-accent */
   --color-urgent-rood: #dc2626;
   --color-urgent-geel: #fbbf24;
   --color-success: #16a34a;

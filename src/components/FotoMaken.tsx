@@ -42,7 +42,7 @@ export function FotoMaken({
 
   return (
     <div>
-      <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+      <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
         <input
           type="file"
           accept="image/*"
@@ -80,7 +80,7 @@ export function FotoMaken({
               <img
                 src={url}
                 alt="Gemaakte foto"
-                className="aspect-square w-full rounded-lg border border-line object-cover"
+                className="aspect-square w-full rounded-none border border-line object-cover"
               />
               <button
                 type="button"

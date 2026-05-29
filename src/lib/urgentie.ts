@@ -10,6 +10,8 @@ export interface BadgeConfig {
   label: string;
   bg: string;
   ink: string;
+  /** Tailwind class voor de border-kleur. Default in Badge is border-current. */
+  border?: string;
   icon: "alert" | "clock" | "document" | "wrench" | "package" | "edit" | "check";
 }
 
@@ -27,29 +29,31 @@ export function bronConfig(bron: Bron): BadgeConfig {
  */
 export function meldingStaatConfig(spoed: boolean, spoedVerzondenAt: string | null): BadgeConfig {
   if (spoed && spoedVerzondenAt) {
-    return { label: "Spoed verstuurd", bg: "bg-urgent-rood", ink: "text-white", icon: "alert" };
+    return { label: "Spoed verstuurd", bg: "bg-urgent-rood", ink: "text-white", border: "border-urgent-rood", icon: "alert" };
   }
   if (spoed) {
-    return { label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", icon: "alert" };
+    return { label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", border: "border-urgent-rood", icon: "alert" };
   }
-  return { label: "Open", bg: "bg-urgent-geel", ink: "text-ink", icon: "clock" };
+  // open = outlined oranje (industrieel D)
+  return { label: "Open", bg: "bg-white", ink: "text-accent", border: "border-accent", icon: "clock" };
 }
 
-/** Groene "opgeleverd"-badge. */
+/** Groene "opgeleverd"-badge, solid (industrieel D). */
 export function opgeleverdBadgeConfig(): BadgeConfig {
-  return { label: "Opgeleverd", bg: "bg-success", ink: "text-white", icon: "check" };
+  return { label: "Opgeleverd", bg: "bg-success", ink: "text-white", border: "border-success", icon: "check" };
 }
 
 /** Badge-config voor documenttype (montage / service / handmatig). null = geen badge. */
 export function documenttypeConfig(type: Documenttype): BadgeConfig | null {
+  // Outlined in industrieel D: wit met anthraciet rand en tekst.
   if (type === "orderbevestiging") {
-    return { label: "Montage", bg: "bg-surface", ink: "text-ink-muted", icon: "package" };
+    return { label: "Montage", bg: "bg-white", ink: "text-ink", border: "border-ink", icon: "package" };
   }
   if (type === "werkbon_service") {
-    return { label: "Service", bg: "bg-surface", ink: "text-ink-muted", icon: "wrench" };
+    return { label: "Service", bg: "bg-white", ink: "text-ink", border: "border-ink", icon: "wrench" };
   }
   if (type === "tekst") {
-    return { label: "Handmatig", bg: "bg-surface", ink: "text-ink-muted", icon: "edit" };
+    return { label: "Handmatig", bg: "bg-white", ink: "text-ink", border: "border-ink", icon: "edit" };
   }
   return null;
 }

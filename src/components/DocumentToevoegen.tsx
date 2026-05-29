@@ -51,7 +51,7 @@ export function DocumentToevoegen({ opdrachtId }: { opdrachtId: string }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={bezig}
-        className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-none border border-line px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {bezig ? (
           <Loader2 size={16} className="animate-spin" aria-hidden="true" />

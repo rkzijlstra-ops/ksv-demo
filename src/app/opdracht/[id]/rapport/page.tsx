@@ -34,7 +34,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
         <p className="text-sm text-ink-muted">Keukenstudio Voorschoten</p>
       </header>
 
-      <section className="mt-4 rounded-xl border border-line bg-surface p-4">
+      <section className="mt-4 rounded-none border border-line bg-surface p-4">
         <p className="text-lg font-bold text-ink">{opdracht.klant_naam ?? "Onbekende klant"}</p>
         {opdracht.klant_adres && <p className="text-base text-ink">{opdracht.klant_adres}</p>}
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
@@ -47,15 +47,15 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
       </section>
 
       <section className="mt-6">
-        <h2 className="mb-3 text-lg font-bold text-ink">Meldingen ({meldingen.length})</h2>
+        <h2 className="mb-3 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Meldingen ({meldingen.length})</h2>
         {meldingen.length === 0 ? (
-          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+          <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
             Geen meldingen op deze opdracht.
           </p>
         ) : (
           <ul className="flex flex-col gap-4">
             {meldingen.map((m) => (
-              <li key={m.id} className="rounded-xl border border-line bg-white p-4">
+              <li key={m.id} className="rounded-none border border-line bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
                   <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
                   <span className="text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>

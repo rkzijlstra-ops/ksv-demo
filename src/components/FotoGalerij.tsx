@@ -3,7 +3,7 @@ import { ImageOff } from "lucide-react";
 export function FotoGalerij({ urls }: { urls: string[] }) {
   if (urls.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+      <div className="flex items-center gap-2 rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
         <ImageOff size={20} aria-hidden="true" />
         Nog geen foto&apos;s
       </div>
@@ -18,7 +18,7 @@ export function FotoGalerij({ urls }: { urls: string[] }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block overflow-hidden rounded-xl border border-line"
+          className="block overflow-hidden rounded-none border border-line"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

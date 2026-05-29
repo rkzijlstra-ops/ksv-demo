@@ -19,6 +19,7 @@ import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { DocumentRij } from "@/components/DocumentRij";
 import { OpleverKnop } from "@/components/OpleverKnop";
 import { VerwijderKnop } from "@/components/VerwijderKnop";
+import { MeldingVerwijderKnop } from "@/components/MeldingVerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
@@ -46,10 +47,19 @@ export default async function OpdrachtDetailPage({
         Werkbak
       </Link>
 
-      <header className="mt-2">
-        <h1 className="text-2xl font-bold text-ink">
+      <header className="relative mt-2 bg-primary px-5 py-5 text-white">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">
+          KSV / {opdracht.opdracht_status === "opgeleverd" ? "Opgeleverd" : "Opdracht"}
+        </p>
+        <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">
           {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>
+        <span
+          aria-hidden
+          className={`absolute inset-x-0 bottom-0 h-1.5 ${
+            opdracht.opdracht_status === "opgeleverd" ? "bg-success" : "bg-accent"
+          }`}
+        />
       </header>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -98,11 +108,11 @@ export default async function OpdrachtDetailPage({
 
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-ink">Documenten ({documenten.length})</h2>
+          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Documenten ({documenten.length})</h2>
           <DocumentToevoegen opdrachtId={id} />
         </div>
         {documenten.length === 0 ? (
-          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+          <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
             Geen documenten bij deze opdracht. Voeg een PDF of foto toe met de knop hierboven.
           </p>
         ) : (
@@ -116,10 +126,10 @@ export default async function OpdrachtDetailPage({
 
       {opdracht.meldingen.length > 0 && (
         <section className="mt-6">
-          <h2 className="mb-2 text-lg font-bold text-ink">Artikelen uit opdracht</h2>
+          <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Artikelen uit opdracht</h2>
           <ul className="flex flex-col gap-3">
             {opdracht.meldingen.map((item, i) => (
-              <li key={i} className="rounded-xl border border-line bg-white p-4">
+              <li key={i} className="rounded-none border border-line bg-white p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2">
                   <span className="font-bold text-ink">{item.omschrijving}</span>
                   <span className="font-mono text-xs text-ink-muted">{item.keller_code}</span>
@@ -135,25 +145,27 @@ export default async function OpdrachtDetailPage({
 
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-ink">Meldingen ({meldingen.length})</h2>
+          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Meldingen ({meldingen.length})</h2>
         </div>
 
         <Link
           href={`/opdracht/${id}/melding`}
-          className="mb-3 flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary"
+          className={`relative mb-3 flex min-h-[56px] cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:content-[''] ${
+            opdracht.opdracht_status === "opgeleverd" ? "after:bg-success" : "after:bg-accent"
+          }`}
         >
           <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
           Melding toevoegen
         </Link>
 
         {meldingen.length === 0 ? (
-          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+          <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
             Nog geen meldingen op deze opdracht. Maak er een met de knop hierboven.
           </p>
         ) : (
           <ul className="flex flex-col gap-4">
             {meldingen.map((m) => (
-              <li key={m.id} className="rounded-xl border border-line bg-white p-4">
+              <li key={m.id} className="rounded-none border border-line bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
                   <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
                   {m.versie > 1 && (
@@ -181,14 +193,17 @@ export default async function OpdrachtDetailPage({
                 )}
 
                 <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
-                  <Link
-                    href={`/opdracht/${id}/melding/${m.id}`}
-                    className="inline-flex min-h-[40px] cursor-pointer items-center gap-1 rounded-lg border border-line px-3 text-sm font-semibold text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
-                  >
-                    <Pencil size={15} strokeWidth={2.5} aria-hidden="true" />
-                    Bewerken
-                  </Link>
+                  <span className="font-mono text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/opdracht/${id}/melding/${m.id}`}
+                      className="inline-flex min-h-[40px] cursor-pointer items-center gap-1 border border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                    >
+                      <Pencil size={15} strokeWidth={2.5} aria-hidden="true" />
+                      Bewerken
+                    </Link>
+                    <MeldingVerwijderKnop meldingId={m.id} />
+                  </div>
                 </div>
               </li>
             ))}
@@ -198,7 +213,7 @@ export default async function OpdrachtDetailPage({
 
       <section className="mt-8 border-t border-line pt-6">
         {opdracht.opdracht_status === "opgeleverd" ? (
-          <div className="flex flex-col gap-3 rounded-xl border border-success bg-success/10 p-4">
+          <div className="flex flex-col gap-3 rounded-none border border-success bg-success/10 p-4">
             <p className="flex items-center gap-2 font-bold text-success">
               <PackageCheck size={20} strokeWidth={2.5} aria-hidden="true" />
               Opgeleverd op {formatDatumKort(opdracht.opgeleverd_at)}
@@ -208,12 +223,18 @@ export default async function OpdrachtDetailPage({
                 href={opdracht.rapport_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 text-base font-semibold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+                className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 border-2 border-success bg-white px-4 text-base font-extrabold uppercase tracking-[0.05em] text-success transition-colors duration-150 hover:bg-success/10 focus-visible:outline-3 focus-visible:outline-accent"
               >
                 <FileBarChart size={20} strokeWidth={2.5} aria-hidden="true" />
                 Rapport-PDF openen
               </a>
             )}
+            <OpleverKnop
+              opdrachtId={id}
+              meldingCount={meldingen.length}
+              label="Opnieuw opleveren"
+              accent="groen"
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-2">
