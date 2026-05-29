@@ -1,12 +1,21 @@
 import Link from "next/link";
-import { Check, ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
+import { ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
-import { UrgentieBadge } from "./UrgentieBadge";
+import { opgeleverdBadgeConfig } from "@/lib/urgentie";
+import { Badge } from "./Badge";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
-export function OpdrachtCard({ melding }: { melding: Melding }) {
+export function OpdrachtCard({
+  melding,
+  telling,
+}: {
+  melding: Melding;
+  telling?: { aantal: number; heeftSpoed: boolean };
+}) {
   const titel = melding.klant_naam ?? "Onbekende klant";
+  const opgeleverd = melding.opdracht_status === "opgeleverd";
+  const aantalOpen = telling?.aantal ?? 0;
 
   return (
     <Link
@@ -16,7 +25,15 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-lg font-bold text-ink">{titel}</span>
-          <UrgentieBadge urgentie={melding.urgentie} />
+          {opgeleverd ? (
+            <Badge config={opgeleverdBadgeConfig()} />
+          ) : (
+            telling?.heeftSpoed && (
+              <Badge
+                config={{ label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", icon: "alert" }}
+              />
+            )
+          )}
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -26,11 +43,15 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
               ref {melding.referentienummer}
             </span>
           )}
-          {melding.status === "verzonden" && (
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
-              <Check size={16} strokeWidth={2.5} aria-hidden="true" />
-              In rapport{melding.aangepast ? " (aangepast)" : ""}
-            </span>
+          {!opgeleverd && aantalOpen > 0 && (
+            <Badge
+              config={{
+                label: `${aantalOpen} open`,
+                bg: "bg-urgent-geel",
+                ink: "text-ink",
+                icon: "clock",
+              }}
+            />
           )}
         </div>
 

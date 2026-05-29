@@ -34,7 +34,7 @@ export default async function MeldingBewerkenPagina({
         opdrachtId={id}
         bestaand={{
           id: melding.id,
-          urgentie: melding.urgentie,
+          spoed: melding.spoed,
           ruwe_tekst: melding.ruwe_tekst,
           foto_urls: melding.foto_urls,
         }}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, PackageCheck } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
-import { UrgentieBadge } from "@/components/UrgentieBadge";
+import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
             {meldingen.map((m) => (
               <li key={m.id} className="rounded-xl border border-line bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <UrgentieBadge urgentie={m.urgentie} />
+                  <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
                   <span className="text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
                 </div>
                 {m.ruwe_tekst && (

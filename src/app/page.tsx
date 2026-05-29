@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function WerkbakPage() {
   const meldingen = await db().getMeldingen();
+  const tellingen = await db().getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
 
   return (
@@ -35,7 +36,7 @@ export default async function WerkbakPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {actief.map((m) => (
-            <OpdrachtCard key={m.id} melding={m} />
+            <OpdrachtCard key={m.id} melding={m} telling={tellingen[m.id]} />
           ))}
         </div>
       )}

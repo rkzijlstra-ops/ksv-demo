@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Clock, Loader2, FileCheck, AlertCircle } from "lucide-react";
+import { Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 
-type Urgentie = "rood" | "geel";
-
 export interface BestaandeMelding {
   id: string;
-  urgentie: Urgentie | null;
+  spoed: boolean;
   ruwe_tekst: string | null;
   foto_urls: string[];
 }
@@ -24,19 +22,36 @@ export function MeldingForm({
 }) {
   const router = useRouter();
   const isBewerken = Boolean(bestaand);
-  const [urgentie, setUrgentie] = useState<Urgentie | null>(bestaand?.urgentie ?? null);
   const [tekst, setTekst] = useState(bestaand?.ruwe_tekst ?? "");
   const [fotoUrls, setFotoUrls] = useState<string[]>(bestaand?.foto_urls ?? []);
+  const [spoed, setSpoed] = useState(bestaand?.spoed ?? false);
+  const [toonUitleg, setToonUitleg] = useState(false);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
+  // melding-id na opslaan, voor het opnieuw proberen van een mislukte spoed-mail
+  const [retryId, setRetryId] = useState<string | null>(null);
+
+  async function spoedVersturen(id: string): Promise<boolean> {
+    const res = await fetch(`/api/meldingen/${id}/spoed-versturen`, { method: "POST" });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      setFout(b.error ?? `Spoed versturen mislukt (${res.status})`);
+      setRetryId(id);
+      return false;
+    }
+    return true;
+  }
 
   async function opslaan() {
-    if (!urgentie) {
-      setFout("Kies eerst rood of geel.");
-      return;
+    if (spoed) {
+      const ok = window.confirm(
+        "Deze melding NU als spoed versturen? Hij gaat meteen los naar kantoor (en komt later ook in het opleverrapport).",
+      );
+      if (!ok) return;
     }
     setBezig(true);
     setFout("");
+    setRetryId(null);
     try {
       const res = await fetch(
         bestaand ? `/api/meldingen/${bestaand.id}` : "/api/meldingen",
@@ -45,24 +60,22 @@ export function MeldingForm({
           headers: { "content-type": "application/json" },
           body: JSON.stringify(
             bestaand
-              ? {
-                  urgentie,
-                  ruwe_tekst: tekst.trim() || null,
-                  foto_urls: fotoUrls,
-                  status: "verzonden",
-                }
-              : {
-                  opdracht_id: opdrachtId,
-                  urgentie,
-                  ruwe_tekst: tekst.trim() || null,
-                  foto_urls: fotoUrls,
-                  status: "verzonden",
-                },
+              ? { spoed, ruwe_tekst: tekst.trim() || null, foto_urls: fotoUrls, status: "verzonden" }
+              : { opdracht_id: opdrachtId, spoed, ruwe_tekst: tekst.trim() || null, foto_urls: fotoUrls },
           ),
         },
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `Opslaan mislukt (${res.status})`);
+
+      const id: string = bestaand ? bestaand.id : body.id;
+      if (spoed) {
+        const verstuurd = await spoedVersturen(id);
+        if (!verstuurd) {
+          setBezig(false);
+          return; // melding is opgeslagen, spoed-mail mislukt -> retry mogelijk
+        }
+      }
       router.push(`/opdracht/${opdrachtId}`);
       router.refresh();
     } catch (err) {
@@ -71,31 +84,25 @@ export function MeldingForm({
     }
   }
 
-  const urgentieKnop = (waarde: Urgentie, label: string, Icon: typeof AlertTriangle, kleur: string) => {
-    const actief = urgentie === waarde;
-    return (
-      <button
-        type="button"
-        onClick={() => setUrgentie(waarde)}
-        aria-pressed={actief}
-        className={`flex min-h-[64px] flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 font-bold transition-all duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary ${
-          actief ? `${kleur} text-white border-transparent` : "border-line bg-white text-ink"
-        }`}
-      >
-        <Icon size={24} strokeWidth={2.5} aria-hidden="true" />
-        {label}
-      </button>
-    );
-  };
+  async function opnieuwSpoed() {
+    if (!retryId) return;
+    setBezig(true);
+    setFout("");
+    const verstuurd = await spoedVersturen(retryId);
+    if (verstuurd) {
+      router.push(`/opdracht/${opdrachtId}`);
+      router.refresh();
+    } else {
+      setBezig(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Foto bovenaan: natuurlijke volgorde tijdens het werk */}
       <div>
-        <span className="mb-2 block font-semibold text-ink">Urgentie</span>
-        <div className="flex gap-3">
-          {urgentieKnop("rood", "DIRECT", AlertTriangle, "bg-urgent-rood")}
-          {urgentieKnop("geel", "ACHTERAF", Clock, "bg-urgent-geel")}
-        </div>
+        <span className="mb-2 block font-semibold text-ink">Foto&apos;s</span>
+        <FotoMaken urls={fotoUrls} onChange={setFotoUrls} />
       </div>
 
       <div>
@@ -115,9 +122,36 @@ export function MeldingForm({
         </div>
       </div>
 
+      {/* Spoed-keuze (uitzondering) */}
       <div>
-        <span className="mb-2 block font-semibold text-ink">Foto&apos;s</span>
-        <FotoMaken urls={fotoUrls} onChange={setFotoUrls} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSpoed((v) => !v)}
+            aria-pressed={spoed}
+            className={`inline-flex min-h-[48px] cursor-pointer items-center gap-2 rounded-xl border-2 px-4 font-bold transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-primary ${
+              spoed ? "border-transparent bg-urgent-rood text-white" : "border-line bg-white text-ink"
+            }`}
+          >
+            <AlertTriangle size={20} strokeWidth={2.5} aria-hidden="true" />
+            Spoed{spoed ? " aan" : ""}
+          </button>
+          <button
+            type="button"
+            onClick={() => setToonUitleg((v) => !v)}
+            aria-label="Uitleg over spoed"
+            aria-expanded={toonUitleg}
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-muted hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+          >
+            <HelpCircle size={22} aria-hidden="true" />
+          </button>
+        </div>
+        {toonUitleg && (
+          <p className="mt-2 rounded-lg bg-surface p-3 text-sm text-ink">
+            Spoed = nu meteen los naar kantoor, buiten de oplevering om. Alleen gebruiken als het echt
+            niet kan wachten. De melding komt daarna ook gewoon in het opleverrapport.
+          </p>
+        )}
       </div>
 
       {fout && (
@@ -127,19 +161,35 @@ export function MeldingForm({
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={opslaan}
-        disabled={bezig}
-        className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
-      >
-        {bezig ? (
-          <Loader2 size={20} className="animate-spin" aria-hidden="true" />
-        ) : (
-          <FileCheck size={20} strokeWidth={2.5} aria-hidden="true" />
-        )}
-        {isBewerken ? "Bijwerken in rapport" : "Toevoegen aan rapport"}
-      </button>
+      {retryId ? (
+        <button
+          type="button"
+          onClick={opnieuwSpoed}
+          disabled={bezig}
+          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-urgent-rood px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+        >
+          {bezig ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : <Send size={20} strokeWidth={2.5} aria-hidden="true" />}
+          Spoed opnieuw versturen
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={opslaan}
+          disabled={bezig}
+          className={`flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60 ${
+            spoed ? "bg-urgent-rood" : "bg-primary"
+          }`}
+        >
+          {bezig ? (
+            <Loader2 size={20} className="animate-spin" aria-hidden="true" />
+          ) : spoed ? (
+            <Send size={20} strokeWidth={2.5} aria-hidden="true" />
+          ) : (
+            <FileCheck size={20} strokeWidth={2.5} aria-hidden="true" />
+          )}
+          {spoed ? "Nu als spoed versturen" : isBewerken ? "Bijwerken in rapport" : "Toevoegen aan rapport"}
+        </button>
+      )}
     </div>
   );
 }

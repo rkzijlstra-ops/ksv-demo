@@ -1,30 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { urgentieConfig, bronConfig, documenttypeConfig } from "./urgentie";
-
-describe("urgentieConfig", () => {
-  it("rood: label DIRECT, rode achtergrond, witte tekst, alert-icoon", () => {
-    const c = urgentieConfig("rood");
-    expect(c).not.toBeNull();
-    expect(c!.label).toBe("DIRECT");
-    expect(c!.icon).toBe("alert");
-    expect(c!.bg).toContain("urgent-rood");
-    expect(c!.ink).toContain("white");
-  });
-
-  it("geel: label ACHTERAF, gele achtergrond, donkere tekst (contrast), klok-icoon", () => {
-    const c = urgentieConfig("geel");
-    expect(c).not.toBeNull();
-    expect(c!.label).toBe("ACHTERAF");
-    expect(c!.icon).toBe("clock");
-    expect(c!.bg).toContain("urgent-geel");
-    // geel vereist donkere tekst voor contrast, niet wit
-    expect(c!.ink).not.toContain("white");
-  });
-
-  it("null: geen badge (PDF-klus zonder urgentie)", () => {
-    expect(urgentieConfig(null)).toBeNull();
-  });
-});
+import {
+  bronConfig,
+  documenttypeConfig,
+  meldingStaatConfig,
+  opgeleverdBadgeConfig,
+} from "./urgentie";
 
 describe("bronConfig", () => {
   it("pdf: label Opdracht, document-icoon", () => {
@@ -63,5 +43,36 @@ describe("documenttypeConfig", () => {
   it("onbekend en null: geen badge", () => {
     expect(documenttypeConfig("onbekend")).toBeNull();
     expect(documenttypeConfig(null)).toBeNull();
+  });
+});
+
+describe("meldingStaatConfig (kleur-staat)", () => {
+  it("spoed + verstuurd: rood, label 'Spoed verstuurd'", () => {
+    const c = meldingStaatConfig(true, "2026-05-29T18:00:00Z");
+    expect(c.label).toBe("Spoed verstuurd");
+    expect(c.bg).toContain("urgent-rood");
+    expect(c.ink).toContain("white");
+  });
+
+  it("spoed, nog niet verstuurd: rood, label 'Spoed'", () => {
+    const c = meldingStaatConfig(true, null);
+    expect(c.label).toBe("Spoed");
+    expect(c.bg).toContain("urgent-rood");
+  });
+
+  it("normaal: amber, label 'Open', donkere tekst", () => {
+    const c = meldingStaatConfig(false, null);
+    expect(c.label).toBe("Open");
+    expect(c.bg).toContain("urgent-geel");
+    expect(c.ink).not.toContain("white");
+  });
+});
+
+describe("opgeleverdBadgeConfig", () => {
+  it("groen, label 'Opgeleverd', check-icoon", () => {
+    const c = opgeleverdBadgeConfig();
+    expect(c.label).toBe("Opgeleverd");
+    expect(c.bg).toContain("success");
+    expect(c.icon).toBe("check");
   });
 });

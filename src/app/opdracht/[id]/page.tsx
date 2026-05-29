@@ -7,14 +7,13 @@ import {
   Truck,
   MapPin,
   Plus,
-  Check,
   Pencil,
   PackageCheck,
   FileBarChart,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
-import { UrgentieBadge } from "@/components/UrgentieBadge";
+import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { DocumentRij } from "@/components/DocumentRij";
@@ -47,11 +46,10 @@ export default async function OpdrachtDetailPage({
         Werkbak
       </Link>
 
-      <header className="mt-2 flex items-start justify-between gap-3">
+      <header className="mt-2">
         <h1 className="text-2xl font-bold text-ink">
           {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>
-        <UrgentieBadge urgentie={opdracht.urgentie} />
       </header>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -157,18 +155,18 @@ export default async function OpdrachtDetailPage({
             {meldingen.map((m) => (
               <li key={m.id} className="rounded-xl border border-line bg-white p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <UrgentieBadge urgentie={m.urgentie} />
-                  {m.status === "verzonden" ? (
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
-                      <Check size={16} strokeWidth={2.5} aria-hidden="true" />
-                      In rapport{m.versie > 1 ? ` · aangepast (v${m.versie})` : ""}
-                    </span>
-                  ) : (
+                  <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
+                  {m.versie > 1 && (
                     <span className="text-sm font-semibold text-ink-muted">
-                      Concept{m.versie > 1 ? ` · v${m.versie}` : ""}
+                      aangepast (v{m.versie})
                     </span>
                   )}
                 </div>
+                {m.spoed && m.spoed_verzonden_at && (
+                  <p className="mt-1 text-xs font-semibold text-urgent-rood">
+                    Spoed verstuurd op {formatDatumKort(m.spoed_verzonden_at)}
+                  </p>
+                )}
 
                 {m.ruwe_tekst && (
                   <p className="mt-2 font-[family-name:var(--font-body)] text-base text-ink">
