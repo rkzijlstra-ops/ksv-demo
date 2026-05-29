@@ -4,15 +4,20 @@ import {
   ChevronLeft,
   CalendarClock,
   CalendarPlus,
+  Truck,
   MapPin,
   Plus,
   Check,
   Pencil,
+  FileText,
+  Image as ImageIcon,
+  ExternalLink,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "@/components/UrgentieBadge";
-import { BronBadge } from "@/components/BronBadge";
+import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
+import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
@@ -28,6 +33,7 @@ export default async function OpdrachtDetailPage({
   const opdracht = await db().getMeldingById(id);
   if (!opdracht) notFound();
   const meldingen = await db().getMeldingenVoorOpdracht(id);
+  const documenten = await db().getDocumentenVoorOpdracht(id);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -47,7 +53,7 @@ export default async function OpdrachtDetailPage({
       </header>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <BronBadge bron={opdracht.bron} />
+        <DocumenttypeBadge type={opdracht.documenttype} />
         {opdracht.referentienummer && (
           <span className="text-sm font-semibold text-ink-muted">
             ref {opdracht.referentienummer}
@@ -71,6 +77,12 @@ export default async function OpdrachtDetailPage({
           Uitvoer:{" "}
           {opdracht.uitvoerdatum ? formatDatumKort(opdracht.uitvoerdatum) : "Nog niet gepland"}
         </span>
+        {opdracht.leverweek && (
+          <span className="inline-flex items-center gap-2 font-semibold text-ink">
+            <Truck size={16} strokeWidth={2.5} aria-hidden="true" />
+            Leverweek: {opdracht.leverweek}
+          </span>
+        )}
         <span className="inline-flex items-center gap-2 text-ink-muted">
           <CalendarPlus size={16} aria-hidden="true" />
           Aangemaakt: {formatDatumKort(opdracht.created_at)}
@@ -83,6 +95,46 @@ export default async function OpdrachtDetailPage({
           <BelKnop telefoon={opdracht.klant_telefoon} />
         </div>
       )}
+
+      <section className="mt-6">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-ink">Documenten ({documenten.length})</h2>
+          <DocumentToevoegen opdrachtId={id} />
+        </div>
+        {documenten.length === 0 ? (
+          <p className="rounded-xl border border-line bg-surface p-4 text-sm text-ink-muted">
+            Geen documenten bij deze opdracht. Voeg een PDF of foto toe met de knop hierboven.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {documenten.map((doc) => (
+              <li key={doc.id}>
+                <a
+                  href={doc.publieke_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-xl border border-line bg-white p-3 transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+                >
+                  {doc.type === "pdf" ? (
+                    <FileText size={22} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                  ) : (
+                    <ImageIcon size={22} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">
+                    {doc.bestandsnaam}
+                  </span>
+                  {doc.is_primair && (
+                    <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                      bron
+                    </span>
+                  )}
+                  <ExternalLink size={18} className="shrink-0 text-primary" aria-hidden="true" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {opdracht.meldingen.length > 0 && (
         <section className="mt-6">

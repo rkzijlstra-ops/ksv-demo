@@ -28,6 +28,12 @@ export interface Melding {
   uitvoerdatum: string | null;
   opdracht_id: string | null;
   versie: number;
+  // sessie 2A.6
+  documenttype: "orderbevestiging" | "werkbon_service" | "tekst" | "onbekend" | null;
+  leverweek: string | null;
+  opdracht_status: "open" | "opgeleverd";
+  opgeleverd_at: string | null;
+  rapport_url: string | null;
 }
 
 /** Eén rij uit de documenten-tabel (origineel document bij een opdracht). */

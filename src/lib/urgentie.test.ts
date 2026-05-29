@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { urgentieConfig, bronConfig } from "./urgentie";
+import { urgentieConfig, bronConfig, documenttypeConfig } from "./urgentie";
 
 describe("urgentieConfig", () => {
   it("rood: label DIRECT, rode achtergrond, witte tekst, alert-icoon", () => {
@@ -37,5 +37,31 @@ describe("bronConfig", () => {
     const c = bronConfig("monteur");
     expect(c.label).toBe("Melding");
     expect(c.icon).toBe("wrench");
+  });
+});
+
+describe("documenttypeConfig", () => {
+  it("orderbevestiging: label Montage, package-icoon", () => {
+    const c = documenttypeConfig("orderbevestiging");
+    expect(c).not.toBeNull();
+    expect(c!.label).toBe("Montage");
+    expect(c!.icon).toBe("package");
+  });
+
+  it("werkbon_service: label Service, sleutel-icoon", () => {
+    const c = documenttypeConfig("werkbon_service");
+    expect(c!.label).toBe("Service");
+    expect(c!.icon).toBe("wrench");
+  });
+
+  it("tekst: label Handmatig, edit-icoon", () => {
+    const c = documenttypeConfig("tekst");
+    expect(c!.label).toBe("Handmatig");
+    expect(c!.icon).toBe("edit");
+  });
+
+  it("onbekend en null: geen badge", () => {
+    expect(documenttypeConfig("onbekend")).toBeNull();
+    expect(documenttypeConfig(null)).toBeNull();
   });
 });

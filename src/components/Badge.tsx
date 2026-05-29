@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, FileText, Wrench } from "lucide-react";
+import { AlertTriangle, Clock, FileText, Wrench, Package, Pencil } from "lucide-react";
 import type { BadgeConfig } from "@/lib/urgentie";
 
 const ICONS = {
@@ -6,6 +6,8 @@ const ICONS = {
   clock: Clock,
   document: FileText,
   wrench: Wrench,
+  package: Package,
+  edit: Pencil,
 } as const;
 
 export function Badge({ config, size = 16 }: { config: BadgeConfig; size?: number }) {

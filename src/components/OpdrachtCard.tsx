@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Check, ChevronRight, CalendarClock, CalendarPlus } from "lucide-react";
+import { Check, ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "./UrgentieBadge";
-import { BronBadge } from "./BronBadge";
+import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
 export function OpdrachtCard({ melding }: { melding: Melding }) {
   const titel = melding.klant_naam ?? "Onbekende klant";
@@ -20,7 +20,7 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <BronBadge bron={melding.bron} />
+          <DocumenttypeBadge type={melding.documenttype} />
           {melding.referentienummer && (
             <span className="text-sm font-semibold text-ink-muted">
               ref {melding.referentienummer}
@@ -43,6 +43,12 @@ export function OpdrachtCard({ melding }: { melding: Melding }) {
             <CalendarClock size={15} strokeWidth={2.5} aria-hidden="true" />
             {melding.uitvoerdatum ? formatDatumKort(melding.uitvoerdatum) : "Nog niet gepland"}
           </span>
+          {melding.leverweek && (
+            <span className="inline-flex items-center gap-1 text-ink-muted">
+              <Truck size={15} strokeWidth={2} aria-hidden="true" />
+              wk {melding.leverweek}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-ink-muted">
             <CalendarPlus size={15} strokeWidth={2} aria-hidden="true" />
             {formatDatumKort(melding.created_at)}
