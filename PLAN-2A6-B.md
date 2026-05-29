@@ -1,5 +1,13 @@
 # PLAN Sessie 2A.6 - Blok B: opleveren -> rapport -> PDF -> mail
 
+## STATUS (2026-05-29) - BLOK B COMPLEET
+- B0 t/m B7: KLAAR + live geverifieerd (opleveren-mail kwam aan via Resend).
+- Extra uit live-test-feedback van Rein:
+  - B8: Concept-knop verwijderd (één meldingknop "Toevoegen aan rapport"; concepten kwamen toch al in
+    het rapport). Meldingknop hernoemd, statuslabels "Verzonden" -> "In rapport".
+  - B9: opdracht verwijderen (db + DELETE-route + knop met bevestiging; FK-cascade).
+- 145 tests groen, tsc schoon, `next build` slaagt. Logboek: 2026-05-29_ksv-demo-sessie-2a6-blok-b.md.
+
 Basis: BRAINSTORM-2A6.md (keuzes 4/5/6) + DESIGN-2A6.md. TDD per taak (RED -> GREEN -> commit).
 Keuzes Rein (2026-05-29): Resend nu instellen; rapport naar eigen mail (Resend-testopzet, geen domein).
 Testcommando: `npm test`. Baseline na Blok A: 125 tests groen.
