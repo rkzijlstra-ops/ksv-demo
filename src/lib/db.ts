@@ -116,6 +116,8 @@ export interface Db {
   markeerOpgeleverd(id: string, rapportUrl: string): Promise<void>;
   /** Verwijdert een opdracht; documenten en gekoppelde meldingen gaan mee via FK-cascade. */
   verwijderOpdracht(id: string): Promise<void>;
+  /** Verwijdert één los document van een opdracht. */
+  verwijderDocument(id: string): Promise<void>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -287,6 +289,11 @@ export function createDb(config: DbConfig): Db {
 
     async verwijderOpdracht(id) {
       const { error } = await client.from("meldingen").delete().eq("id", id);
+      if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
+    },
+
+    async verwijderDocument(id) {
+      const { error } = await client.from("documenten").delete().eq("id", id);
       if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
     },
   };

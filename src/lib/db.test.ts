@@ -359,6 +359,22 @@ describe("verwijderOpdracht", () => {
   });
 });
 
+describe("verwijderDocument", () => {
+  it("verwijdert de rij uit 'documenten' op id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).verwijderDocument("doc-1");
+
+    expect(h.fns.from).toHaveBeenCalledWith("documenten");
+    expect(h.fns.delete).toHaveBeenCalled();
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "doc-1");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "doc weg kapot" } });
+    await expect(createDb(cfg).verwijderDocument("doc-1")).rejects.toThrow(/doc weg kapot/);
+  });
+});
+
 describe("updateMelding", () => {
   it("werkt velden + versie bij en zet aangepast=true bij versie > 1", async () => {
     h.setResult({ data: null, error: null });

@@ -9,9 +9,6 @@ import {
   Plus,
   Check,
   Pencil,
-  FileText,
-  Image as ImageIcon,
-  ExternalLink,
   PackageCheck,
   FileBarChart,
 } from "lucide-react";
@@ -20,6 +17,7 @@ import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "@/components/UrgentieBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
+import { DocumentRij } from "@/components/DocumentRij";
 import { OpleverKnop } from "@/components/OpleverKnop";
 import { VerwijderKnop } from "@/components/VerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
@@ -112,29 +110,7 @@ export default async function OpdrachtDetailPage({
         ) : (
           <ul className="flex flex-col gap-2">
             {documenten.map((doc) => (
-              <li key={doc.id}>
-                <a
-                  href={doc.publieke_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-xl border border-line bg-white p-3 transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
-                >
-                  {doc.type === "pdf" ? (
-                    <FileText size={22} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                  ) : (
-                    <ImageIcon size={22} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                  )}
-                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">
-                    {doc.bestandsnaam}
-                  </span>
-                  {doc.is_primair && (
-                    <span className="shrink-0 rounded-md bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                      bron
-                    </span>
-                  )}
-                  <ExternalLink size={18} className="shrink-0 text-primary" aria-hidden="true" />
-                </a>
-              </li>
+              <DocumentRij key={doc.id} doc={doc} />
             ))}
           </ul>
         )}
