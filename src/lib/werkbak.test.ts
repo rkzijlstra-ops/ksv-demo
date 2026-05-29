@@ -45,6 +45,17 @@ describe("groepeerMeldingen", () => {
     expect(history.map((m) => m.id)).toEqual(["2"]);
   });
 
+  it("opgeleverde opdracht hoort in history, ook als melding-status concept is", () => {
+    const rows = [
+      maakMelding({ id: "a", status: "concept", opdracht_status: "open" }),
+      maakMelding({ id: "b", status: "concept", opdracht_status: "opgeleverd" }),
+    ];
+    const { actief, history } = groepeerMeldingen(rows);
+
+    expect(actief.map((m) => m.id)).toEqual(["a"]);
+    expect(history.map((m) => m.id)).toEqual(["b"]);
+  });
+
   it("lege input geeft lege groepen", () => {
     const { actief, history } = groepeerMeldingen([]);
     expect(actief).toEqual([]);

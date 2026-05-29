@@ -112,6 +112,8 @@ export interface Db {
   ): Promise<void>;
   /** Werkt een bestaande melding bij (bewerken + opnieuw verzenden). Hoogt versie op. */
   updateMelding(id: string, data: UpdateMeldingInput): Promise<void>;
+  /** Markeert een opdracht als opgeleverd en koppelt het rapport-PDF. */
+  markeerOpgeleverd(id: string, rapportUrl: string): Promise<void>;
 }
 
 export function createDb(config: DbConfig): Db {
@@ -266,6 +268,18 @@ export function createDb(config: DbConfig): Db {
         patch.verzonden_at = new Date().toISOString();
       }
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async markeerOpgeleverd(id, rapportUrl) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          opdracht_status: "opgeleverd",
+          opgeleverd_at: new Date().toISOString(),
+          rapport_url: rapportUrl,
+        })
+        .eq("id", id);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
     },
   };

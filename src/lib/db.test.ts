@@ -320,6 +320,27 @@ describe("getDocumentenVoorOpdracht", () => {
   });
 });
 
+describe("markeerOpgeleverd", () => {
+  it("zet opdracht_status='opgeleverd', opgeleverd_at en rapport_url", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).markeerOpgeleverd("opdr-1", "https://x/rapport.pdf");
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.opdracht_status).toBe("opgeleverd");
+    expect(patch.opgeleverd_at).toBeTypeOf("string");
+    expect(patch.rapport_url).toBe("https://x/rapport.pdf");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "update kapot" } });
+    await expect(
+      createDb(cfg).markeerOpgeleverd("opdr-1", "https://x/r.pdf"),
+    ).rejects.toThrow(/update kapot/);
+  });
+});
+
 describe("updateMelding", () => {
   it("werkt velden + versie bij en zet aangepast=true bij versie > 1", async () => {
     h.setResult({ data: null, error: null });

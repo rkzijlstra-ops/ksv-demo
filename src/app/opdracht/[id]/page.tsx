@@ -12,12 +12,15 @@ import {
   FileText,
   Image as ImageIcon,
   ExternalLink,
+  PackageCheck,
+  FileBarChart,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { UrgentieBadge } from "@/components/UrgentieBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
+import { OpleverKnop } from "@/components/OpleverKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
@@ -215,6 +218,39 @@ export default async function OpdrachtDetailPage({
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-8 border-t border-line pt-6">
+        {opdracht.opdracht_status === "opgeleverd" ? (
+          <div className="flex flex-col gap-3 rounded-xl border border-success bg-success/10 p-4">
+            <p className="flex items-center gap-2 font-bold text-success">
+              <PackageCheck size={20} strokeWidth={2.5} aria-hidden="true" />
+              Opgeleverd op {formatDatumKort(opdracht.opgeleverd_at)}
+            </p>
+            {opdracht.rapport_url && (
+              <a
+                href={opdracht.rapport_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 text-base font-semibold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary"
+              >
+                <FileBarChart size={20} strokeWidth={2.5} aria-hidden="true" />
+                Rapport-PDF openen
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <OpleverKnop opdrachtId={id} meldingCount={meldingen.length} />
+            <Link
+              href={`/opdracht/${id}/rapport`}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-primary"
+            >
+              <FileBarChart size={18} strokeWidth={2.5} aria-hidden="true" />
+              Rapport voorvertonen
+            </Link>
+          </div>
         )}
       </section>
     </main>
