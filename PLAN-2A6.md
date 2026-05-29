@@ -1,9 +1,11 @@
 # PLAN Sessie 2A.6 - Blok A: fundament + multi-document
 
 ## STATUS (2026-05-29)
-- A0 t/m A9: KLAAR. 125 tests groen, tsc schoon, `next build` slaagt. Commits aa34aea, 240863b, dd4d842, 0793787.
-- A10: WACHT OP REIN. Eerst `supabase/schema-2a6-documenten.sql` in Supabase draaien, dan live testen
-  (zonder migratie crasht de opdracht-detailpagina, want die leest nu de documenten-tabel).
+- A0 t/m A10: KLAAR. 125 tests groen, tsc schoon, `next build` slaagt.
+- A10 live geverifieerd: migratie gedraaid in Supabase; Dijk-order (7407) ingeschoten, kop correct
+  geparsd (van Dijk, leverweek 22/2026), PNG-schets erbij via "document toevoegen" -> 2 documenten,
+  originelen openen. Server-log: POST /api/opdrachten 200, POST .../documenten 200, geen fouten.
+  Nog niet apart aangeklikt maar code+tests dekken: service-PDF (Putman, meldingen) en tekst-only.
 - Daarna: Blok B (opleveren/rapport/Resend-mail) in apart plan.
 
 Basis: DESIGN-2A6.md (goedgekeurd 2026-05-29). TDD per taak (RED -> GREEN -> commit -> afvinken).
