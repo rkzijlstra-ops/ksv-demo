@@ -30,6 +30,44 @@ export interface Melding {
   versie: number;
 }
 
+/** Eén rij uit de documenten-tabel (origineel document bij een opdracht). */
+export interface Document {
+  id: string;
+  created_at: string;
+  opdracht_id: string;
+  type: "pdf" | "afbeelding";
+  bestandsnaam: string;
+  storage_pad: string;
+  publieke_url: string;
+  referentienummer: string | null;
+  is_primair: boolean;
+}
+
+/** Input voor een nieuwe opdracht (top-level rij). Dekt zowel uit-PDF als tekst-only. */
+export interface OpdrachtInput {
+  documenttype: "orderbevestiging" | "werkbon_service" | "onbekend" | "tekst";
+  klant_naam: string | null;
+  klant_adres: string | null;
+  referentienummer: string | null;
+  adviseur: string | null;
+  klant_telefoon: string | null;
+  leverweek: string | null;
+  meldingen?: MeldingItem[];
+  // TOEKOMSTVAST (sessie 2A.5 auth): nu altijd null.
+  user_id?: string | null;
+  toegewezen_aan?: string | null;
+}
+
+export interface DocumentInput {
+  opdracht_id: string;
+  type: "pdf" | "afbeelding";
+  bestandsnaam: string;
+  storage_pad: string;
+  publieke_url: string;
+  referentienummer: string | null;
+  is_primair: boolean;
+}
+
 export interface MonteurMeldingInput {
   opdracht_id: string;
   urgentie: "rood" | "geel";
@@ -50,6 +88,12 @@ export interface UpdateMeldingInput {
 
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
+  /** Maakt een top-level opdracht (uit geparsde PDF of handmatige tekst). */
+  createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
+  /** Voegt een origineel document toe aan een opdracht. */
+  addDocument(input: DocumentInput): Promise<{ id: string }>;
+  /** Documenten bij één opdracht (oudste eerst, primair doc als eerste aangemaakt). */
+  getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   /** Alleen opdrachten (top-level, opdracht_id IS NULL) voor de werkbak. */
   getMeldingen(): Promise<Melding[]>;
   getMeldingById(id: string): Promise<Melding | null>;
@@ -81,6 +125,62 @@ export function createDb(config: DbConfig): Db {
         throw new Error("DB insert lukte maar geen id terug");
       }
       return { id: row.id };
+    },
+
+    async createOpdracht(input: OpdrachtInput) {
+      const { data: row, error } = await client
+        .from("meldingen")
+        .insert({
+          bron: "pdf",
+          documenttype: input.documenttype,
+          klant_naam: input.klant_naam,
+          klant_adres: input.klant_adres,
+          referentienummer: input.referentienummer,
+          adviseur: input.adviseur,
+          klant_telefoon: input.klant_telefoon,
+          leverweek: input.leverweek,
+          meldingen: input.meldingen ?? [],
+          user_id: input.user_id ?? null,
+          toegewezen_aan: input.toegewezen_aan ?? null,
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(`DB insert mislukt: ${error.message}`);
+      if (!row || typeof row.id !== "string") {
+        throw new Error("DB insert lukte maar geen id terug");
+      }
+      return { id: row.id };
+    },
+
+    async addDocument(input: DocumentInput) {
+      const { data: row, error } = await client
+        .from("documenten")
+        .insert({
+          opdracht_id: input.opdracht_id,
+          type: input.type,
+          bestandsnaam: input.bestandsnaam,
+          storage_pad: input.storage_pad,
+          publieke_url: input.publieke_url,
+          referentienummer: input.referentienummer,
+          is_primair: input.is_primair,
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(`DB insert mislukt: ${error.message}`);
+      if (!row || typeof row.id !== "string") {
+        throw new Error("DB insert lukte maar geen id terug");
+      }
+      return { id: row.id };
+    },
+
+    async getDocumentenVoorOpdracht(opdrachtId: string) {
+      const { data, error } = await client
+        .from("documenten")
+        .select("*")
+        .eq("opdracht_id", opdrachtId)
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Document[];
     },
 
     async getMeldingen() {

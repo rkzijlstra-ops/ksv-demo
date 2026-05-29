@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
 
 const BUCKET = "meldingen-fotos";
+const DOCUMENTEN_BUCKET = "opdracht-documenten";
 
 export interface StorageConfig {
   url: string;
@@ -10,6 +11,23 @@ export interface StorageConfig {
 
 export interface Storage {
   uploadFoto(data: Buffer, contentType: string): Promise<{ url: string }>;
+  /** Upload een origineel opdracht-document (PDF of afbeelding). */
+  uploadOpdrachtDocument(
+    data: Buffer,
+    bestandsnaam: string,
+    contentType: string,
+  ): Promise<{ pad: string; publieke_url: string }>;
+}
+
+/** Extensie afleiden uit bestandsnaam, met content-type als fallback. */
+function bepaalExtensie(bestandsnaam: string, contentType: string): string {
+  const uitNaam = bestandsnaam.includes(".")
+    ? bestandsnaam.split(".").pop()!.toLowerCase()
+    : "";
+  if (uitNaam) return uitNaam;
+  if (contentType === "application/pdf") return "pdf";
+  if (contentType === "image/png") return "png";
+  return "bin";
 }
 
 export function createStorage(config: StorageConfig): Storage {
@@ -28,6 +46,18 @@ export function createStorage(config: StorageConfig): Storage {
       if (error) throw new Error(`Foto-upload mislukt: ${error.message}`);
       const { data: pub } = client.storage.from(BUCKET).getPublicUrl(path);
       return { url: pub.publicUrl };
+    },
+
+    async uploadOpdrachtDocument(data: Buffer, bestandsnaam: string, contentType: string) {
+      const ext = bepaalExtensie(bestandsnaam, contentType);
+      const pad = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await client.storage.from(DOCUMENTEN_BUCKET).upload(pad, data, {
+        contentType,
+        upsert: false,
+      });
+      if (error) throw new Error(`Document-upload mislukt: ${error.message}`);
+      const { data: pub } = client.storage.from(DOCUMENTEN_BUCKET).getPublicUrl(pad);
+      return { pad, publieke_url: pub.publicUrl };
     },
   };
 }

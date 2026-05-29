@@ -48,6 +48,8 @@ const validParsedPdf: ParsedPdf = {
   referentienummer: "7444",
   adviseur: "M. de Vries",
   klant_telefoon: "071-1234567",
+  documenttype: "werkbon_service",
+  leverweek: null,
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
@@ -196,6 +198,125 @@ describe("updateMeldingStatus", () => {
     await expect(
       createDb(cfg).updateMeldingStatus("row-1", { status: "concept" }),
     ).rejects.toThrow(/update failed/);
+  });
+});
+
+describe("createOpdracht", () => {
+  const basisInput = {
+    documenttype: "orderbevestiging" as const,
+    klant_naam: "De heer en mevrouw van Dijk",
+    klant_adres: "Hoge Morsweg 37, 2332 HG Leiden",
+    referentienummer: "7407",
+    adviseur: "Marco van Leeuwen",
+    klant_telefoon: "06-40200603",
+    leverweek: "22/2026",
+  };
+
+  it("insert top-level opdracht in 'meldingen' met bron='pdf' en kop-velden", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht(basisInput);
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.bron).toBe("pdf");
+    expect(payload.documenttype).toBe("orderbevestiging");
+    expect(payload.referentienummer).toBe("7407");
+    expect(payload.leverweek).toBe("22/2026");
+    expect(payload.meldingen).toEqual([]);
+  });
+
+  it("zet user_id/toegewezen_aan op null als niet meegegeven (toekomstvast)", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht(basisInput);
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.user_id).toBeNull();
+    expect(payload.toegewezen_aan).toBeNull();
+  });
+
+  it("neemt meegegeven user_id/toegewezen_aan over (toekomstvast)", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht({
+      ...basisInput,
+      user_id: "u-9",
+      toegewezen_aan: "monteur-3",
+    });
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.user_id).toBe("u-9");
+    expect(payload.toegewezen_aan).toBe("monteur-3");
+  });
+
+  it("bewaart meegegeven service-meldingen op de opdracht-rij", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht({
+      ...basisInput,
+      documenttype: "werkbon_service",
+      meldingen: [{ keller_code: "KELL", omschrijving: "Merk algemeen", melding_tekst: "afdekplaatjes manco" }],
+    });
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.meldingen).toHaveLength(1);
+  });
+
+  it("returnt id van de opdracht", async () => {
+    h.setResult({ data: { id: "opdr-77" }, error: null });
+    const r = await createDb(cfg).createOpdracht(basisInput);
+    expect(r.id).toBe("opdr-77");
+  });
+
+  it("gooit Error bij insert-fout", async () => {
+    h.setResult({ data: null, error: { message: "permission denied" } });
+    await expect(createDb(cfg).createOpdracht(basisInput)).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("addDocument", () => {
+  const docInput = {
+    opdracht_id: "opdr-1",
+    type: "pdf" as const,
+    bestandsnaam: "7407-orderafdruk.pdf",
+    storage_pad: "uuid.pdf",
+    publieke_url: "https://x/opdracht-documenten/uuid.pdf",
+    referentienummer: "7407",
+    is_primair: true,
+  };
+
+  it("insert in tabel 'documenten' met alle velden", async () => {
+    h.setResult({ data: { id: "doc-1" }, error: null });
+    await createDb(cfg).addDocument(docInput);
+
+    expect(h.fns.from).toHaveBeenCalledWith("documenten");
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.opdracht_id).toBe("opdr-1");
+    expect(payload.type).toBe("pdf");
+    expect(payload.is_primair).toBe(true);
+    expect(payload.publieke_url).toContain("opdracht-documenten");
+  });
+
+  it("returnt id van het document", async () => {
+    h.setResult({ data: { id: "doc-9" }, error: null });
+    const r = await createDb(cfg).addDocument(docInput);
+    expect(r.id).toBe("doc-9");
+  });
+
+  it("gooit Error bij insert-fout", async () => {
+    h.setResult({ data: null, error: { message: "fk violation" } });
+    await expect(createDb(cfg).addDocument(docInput)).rejects.toThrow(/fk violation/);
+  });
+});
+
+describe("getDocumentenVoorOpdracht", () => {
+  it("filtert op opdracht_id en sorteert op created_at oplopend", async () => {
+    h.setResult({ data: [{ id: "d1" }, { id: "d2" }], error: null });
+    const rows = await createDb(cfg).getDocumentenVoorOpdracht("opdr-1");
+
+    expect(h.fns.from).toHaveBeenCalledWith("documenten");
+    expect(h.fns.eq).toHaveBeenCalledWith("opdracht_id", "opdr-1");
+    expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: true });
+    expect(rows).toHaveLength(2);
+  });
+
+  it("returnt lege array als geen documenten", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getDocumentenVoorOpdracht("x")).toEqual([]);
   });
 });
 

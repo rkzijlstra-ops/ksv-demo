@@ -53,3 +53,43 @@ describe("createStorage -> uploadFoto", () => {
     ).rejects.toThrow(/bucket not found/);
   });
 });
+
+describe("createStorage -> uploadOpdrachtDocument", () => {
+  it("uploadt naar bucket 'opdracht-documenten' en geeft pad + publieke_url terug", async () => {
+    h.upload.mockResolvedValue({ data: { path: "p" }, error: null });
+    h.getPublicUrl.mockReturnValue({
+      data: { publicUrl: "https://x.supabase.co/storage/v1/object/public/opdracht-documenten/p.pdf" },
+    });
+
+    const result = await createStorage(cfg).uploadOpdrachtDocument(
+      Buffer.from("%PDF"),
+      "7407-orderafdruk.pdf",
+      "application/pdf",
+    );
+
+    expect(h.from).toHaveBeenCalledWith("opdracht-documenten");
+    expect(h.upload).toHaveBeenCalledOnce();
+    expect(result.pad).toMatch(/\.pdf$/);
+    expect(result.publieke_url).toContain("opdracht-documenten");
+  });
+
+  it("kiest de extensie op basis van de bestandsnaam (png)", async () => {
+    h.upload.mockResolvedValue({ data: {}, error: null });
+    h.getPublicUrl.mockReturnValue({ data: { publicUrl: "u" } });
+
+    const result = await createStorage(cfg).uploadOpdrachtDocument(
+      Buffer.from("img"),
+      "schermafbeelding.PNG",
+      "image/png",
+    );
+    expect(result.pad).toMatch(/\.png$/);
+    expect(h.upload.mock.calls[0][0]).toMatch(/\.png$/);
+  });
+
+  it("gooit Error als document-upload faalt", async () => {
+    h.upload.mockResolvedValue({ data: null, error: { message: "quota exceeded" } });
+    await expect(
+      createStorage(cfg).uploadOpdrachtDocument(Buffer.from("x"), "a.pdf", "application/pdf"),
+    ).rejects.toThrow(/quota exceeded/);
+  });
+});
