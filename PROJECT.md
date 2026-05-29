@@ -1,6 +1,6 @@
 # Keukenstudio Voorschoten - Demo
 
-Status: te bouwen
+Status: in ontwikkeling (sessies 1, 2A, 2A.6 klaar; volgende: Vercel-deploy, daarna zelf-gebruik fase)
 Datum opgemaakt: 2026-05-24
 Doel: werkende mini-demo om bij eerste gesprek met Ed mee te brengen
 
