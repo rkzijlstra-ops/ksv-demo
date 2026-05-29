@@ -22,6 +22,8 @@ const dummyParsed: ParsedPdf = {
   referentienummer: "7444",
   adviseur: "M. de Vries",
   klant_telefoon: "071-1234567",
+  documenttype: "werkbon_service",
+  leverweek: null,
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
