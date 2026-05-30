@@ -42,20 +42,27 @@ export function PrefetchOpdrachten({ ids }: { ids: string[] }) {
     (async () => {
       for (const id of ids) {
         if (cancelled) break;
-        const url = `/opdracht/${id}`;
-        if (await alGecached(url)) continue;
-        try {
-          await fetch(url, {
-            method: "GET",
-            credentials: "same-origin",
-            // `priority` is een hint; browsers die het niet kennen negeren het.
-            priority: "low",
-          } as RequestInit);
-        } catch {
-          // best-effort
+        // Drie URLs per opdracht zodat de hele "doorkliklus" offline werkt:
+        // detail-pagina, melding-toevoegen-formulier, en opleverrapport.
+        const urls = [
+          `/opdracht/${id}`,
+          `/opdracht/${id}/melding`,
+          `/opdracht/${id}/rapport`,
+        ];
+        for (const url of urls) {
+          if (cancelled) break;
+          if (await alGecached(url)) continue;
+          try {
+            await fetch(url, {
+              method: "GET",
+              credentials: "same-origin",
+              priority: "low",
+            } as RequestInit);
+          } catch {
+            // best-effort
+          }
+          await new Promise((r) => setTimeout(r, 1500));
         }
-        // Pauze tussen requests om de server en de gebruikers-POSTs lucht te geven.
-        await new Promise((r) => setTimeout(r, 1500));
       }
     })();
     return () => {
