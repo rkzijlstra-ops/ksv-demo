@@ -13,9 +13,11 @@ function LoginInhoud() {
   const [email, setEmail] = useState("");
   const [bezig, setBezig] = useState<"" | "google" | "magic">("");
   const [bericht, setBericht] = useState("");
-  const [fout, setFout] = useState(
-    foutParam === "inlog-mislukt" ? "Inloggen mislukt. Probeer opnieuw." : "",
-  );
+  const [fout, setFout] = useState(() => {
+    if (!foutParam) return "";
+    if (foutParam === "inlog-mislukt") return "Inloggen mislukt. Probeer opnieuw.";
+    return `Inloggen mislukt: ${foutParam}`;
+  });
 
   async function loginGoogle() {
     setBezig("google");
