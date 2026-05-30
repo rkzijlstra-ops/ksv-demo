@@ -25,6 +25,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     versie: 1,
     documenttype: "orderbevestiging",
     leverweek: "22/2026",
+    keukenzaak: "Keukenstudio Voorschoten",
     opdracht_status: "open",
     opgeleverd_at: null,
     rapport_url: null,

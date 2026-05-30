@@ -7,6 +7,7 @@ const h = vi.hoisted(() => {
   const fns = {
     select: vi.fn(),
     insert: vi.fn(),
+    upsert: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
     eq: vi.fn(),
@@ -22,6 +23,7 @@ const h = vi.hoisted(() => {
   const builder: Record<string, unknown> = {};
   builder.select = (...a: unknown[]) => (fns.select(...a), builder);
   builder.insert = (...a: unknown[]) => (fns.insert(...a), builder);
+  builder.upsert = (...a: unknown[]) => (fns.upsert(...a), builder);
   builder.update = (...a: unknown[]) => (fns.update(...a), builder);
   builder.delete = (...a: unknown[]) => (fns.delete(...a), builder);
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
@@ -268,6 +270,20 @@ describe("createOpdracht", () => {
     expect(r.id).toBe("opdr-77");
   });
 
+  it("neemt keukenzaak mee als die is meegegeven", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht({ ...basisInput, keukenzaak: "Keukensale.com Katwijk" });
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.keukenzaak).toBe("Keukensale.com Katwijk");
+  });
+
+  it("zet keukenzaak op null als niet meegegeven", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht(basisInput);
+    const payload = h.fns.insert.mock.calls[0][0];
+    expect(payload.keukenzaak).toBeNull();
+  });
+
   it("gooit Error bij insert-fout", async () => {
     h.setResult({ data: null, error: { message: "permission denied" } });
     await expect(createDb(cfg).createOpdracht(basisInput)).rejects.toThrow(/permission denied/);
@@ -462,5 +478,81 @@ describe("updateMelding", () => {
         versie: 3,
       }),
     ).rejects.toThrow(/update kapot/);
+  });
+});
+
+describe("upsertOpleveringConcept", () => {
+  const input = {
+    opdracht_id: "opdr-1",
+    uitkomst: "afgerond" as const,
+    eindstaat_foto_urls: ["https://x/eind1.jpg"],
+    video_url: "https://x/oplever-videos/v1.mp4",
+    handtekening_url: null,
+  };
+
+  it("upsert in 'opleveringen' op opdracht_id met de bewijs-velden", async () => {
+    h.setResult({ data: { id: "opl-1" }, error: null });
+    await createDb(cfg).upsertOpleveringConcept(input);
+
+    expect(h.fns.from).toHaveBeenCalledWith("opleveringen");
+    expect(h.fns.upsert).toHaveBeenCalled();
+    const payload = h.fns.upsert.mock.calls[0][0];
+    expect(payload.opdracht_id).toBe("opdr-1");
+    expect(payload.uitkomst).toBe("afgerond");
+    expect(payload.eindstaat_foto_urls).toEqual(["https://x/eind1.jpg"]);
+    expect(payload.video_url).toBe("https://x/oplever-videos/v1.mp4");
+    const opts = h.fns.upsert.mock.calls[0][1];
+    expect(opts).toMatchObject({ onConflict: "opdracht_id" });
+  });
+
+  it("returnt id van de oplevering", async () => {
+    h.setResult({ data: { id: "opl-9" }, error: null });
+    const r = await createDb(cfg).upsertOpleveringConcept(input);
+    expect(r.id).toBe("opl-9");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "upsert kapot" } });
+    await expect(createDb(cfg).upsertOpleveringConcept(input)).rejects.toThrow(/upsert kapot/);
+  });
+});
+
+describe("getOpleveringVoorOpdracht", () => {
+  it("selecteert op opdracht_id en geeft de oplevering terug", async () => {
+    h.setResult({ data: { id: "opl-1", opdracht_id: "opdr-1", uitkomst: "afgerond" }, error: null });
+    const opl = await createDb(cfg).getOpleveringVoorOpdracht("opdr-1");
+
+    expect(h.fns.from).toHaveBeenCalledWith("opleveringen");
+    expect(h.fns.eq).toHaveBeenCalledWith("opdracht_id", "opdr-1");
+    expect(opl?.id).toBe("opl-1");
+  });
+
+  it("returnt null als er nog geen oplevering is", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getOpleveringVoorOpdracht("opdr-x")).toBeNull();
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "lees kapot" } });
+    await expect(createDb(cfg).getOpleveringVoorOpdracht("opdr-1")).rejects.toThrow(/lees kapot/);
+  });
+});
+
+describe("finaliseerOplevering", () => {
+  it("zet rapport_url op de oplevering van die opdracht", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).finaliseerOplevering("opdr-1", "https://x/rapport.pdf");
+
+    expect(h.fns.from).toHaveBeenCalledWith("opleveringen");
+    expect(h.fns.eq).toHaveBeenCalledWith("opdracht_id", "opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.rapport_url).toBe("https://x/rapport.pdf");
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "finaliseer kapot" } });
+    await expect(
+      createDb(cfg).finaliseerOplevering("opdr-1", "https://x/r.pdf"),
+    ).rejects.toThrow(/finaliseer kapot/);
   });
 });

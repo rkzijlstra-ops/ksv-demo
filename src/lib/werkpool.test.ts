@@ -25,6 +25,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     versie: 1,
     documenttype: "werkbon_service",
     leverweek: null,
+    keukenzaak: null,
     opdracht_status: "open",
     opgeleverd_at: null,
     rapport_url: null,

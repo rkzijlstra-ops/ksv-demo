@@ -32,12 +32,36 @@ export interface Melding {
   // sessie 2A.6
   documenttype: "orderbevestiging" | "werkbon_service" | "tekst" | "onbekend" | null;
   leverweek: string | null;
+  keukenzaak: string | null;
   opdracht_status: "open" | "opgeleverd";
   opgeleverd_at: string | null;
   rapport_url: string | null;
   // sessie 2A.7 (spoed vervangt rood/geel-urgentie)
   spoed: boolean;
   spoed_verzonden_at: string | null;
+}
+
+/** Eén rij uit de opleveringen-tabel (één per opdracht). */
+export interface Oplevering {
+  id: string;
+  created_at: string;
+  opdracht_id: string;
+  uitkomst: "afgerond" | "openstaande_punten";
+  eindstaat_foto_urls: string[];
+  video_url: string | null;
+  handtekening_url: string | null;
+  rapport_url: string | null;
+  user_id: string | null;
+}
+
+/** Input voor het opslaan/bijwerken van een oplevering-concept. */
+export interface OpleveringConceptInput {
+  opdracht_id: string;
+  uitkomst: "afgerond" | "openstaande_punten";
+  eindstaat_foto_urls: string[];
+  video_url: string | null;
+  handtekening_url: string | null;
+  user_id?: string | null;
 }
 
 /** Eén rij uit de documenten-tabel (origineel document bij een opdracht). */
@@ -62,6 +86,7 @@ export interface OpdrachtInput {
   adviseur: string | null;
   klant_telefoon: string | null;
   leverweek: string | null;
+  keukenzaak?: string | null;
   meldingen?: MeldingItem[];
   user_id?: string | null;
   toegewezen_aan?: string | null;
@@ -114,6 +139,9 @@ export interface Db {
   ): Promise<void>;
   updateMelding(id: string, data: UpdateMeldingInput): Promise<void>;
   markeerOpgeleverd(id: string, rapportUrl: string): Promise<void>;
+  upsertOpleveringConcept(input: OpleveringConceptInput): Promise<{ id: string }>;
+  getOpleveringVoorOpdracht(opdrachtId: string): Promise<Oplevering | null>;
+  finaliseerOplevering(opdrachtId: string, rapportUrl: string): Promise<void>;
   verwijderOpdracht(id: string): Promise<void>;
   verwijderDocument(id: string): Promise<void>;
   verwijderMelding(id: string): Promise<void>;
@@ -152,6 +180,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           adviseur: input.adviseur,
           klant_telefoon: input.klant_telefoon,
           leverweek: input.leverweek,
+          keukenzaak: input.keukenzaak ?? null,
           meldingen: input.meldingen ?? [],
           user_id: input.user_id ?? null,
           toegewezen_aan: input.toegewezen_aan ?? null,
@@ -287,6 +316,47 @@ function createDbFromClient(client: SupabaseClient): Db {
           rapport_url: rapportUrl,
         })
         .eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async upsertOpleveringConcept(input) {
+      const { data: row, error } = await client
+        .from("opleveringen")
+        .upsert(
+          {
+            opdracht_id: input.opdracht_id,
+            uitkomst: input.uitkomst,
+            eindstaat_foto_urls: input.eindstaat_foto_urls,
+            video_url: input.video_url,
+            handtekening_url: input.handtekening_url,
+            user_id: input.user_id ?? null,
+          },
+          { onConflict: "opdracht_id" },
+        )
+        .select("id")
+        .single();
+      if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
+      if (!row || typeof row.id !== "string") {
+        throw new Error("DB upsert lukte maar geen id terug");
+      }
+      return { id: row.id };
+    },
+
+    async getOpleveringVoorOpdracht(opdrachtId) {
+      const { data, error } = await client
+        .from("opleveringen")
+        .select("*")
+        .eq("opdracht_id", opdrachtId)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Oplevering | null) ?? null;
+    },
+
+    async finaliseerOplevering(opdrachtId, rapportUrl) {
+      const { error } = await client
+        .from("opleveringen")
+        .update({ rapport_url: rapportUrl })
+        .eq("opdracht_id", opdrachtId);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
     },
 
