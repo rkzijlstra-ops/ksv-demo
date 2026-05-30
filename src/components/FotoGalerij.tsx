@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ImageOff } from "lucide-react";
 
 export function FotoGalerij({ urls }: { urls: string[] }) {
@@ -18,14 +19,16 @@ export function FotoGalerij({ urls }: { urls: string[] }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block overflow-hidden rounded-none border border-line"
+          className="relative block aspect-square overflow-hidden rounded-none border border-line"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={url}
             alt={`Foto ${i + 1}`}
-            className="aspect-square h-full w-full object-cover"
+            fill
+            sizes="(min-width: 640px) 200px, 50vw"
+            className="object-cover"
             loading="lazy"
+            unoptimized={false}
           />
         </a>
       ))}

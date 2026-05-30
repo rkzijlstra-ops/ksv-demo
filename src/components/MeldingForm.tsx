@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
+import { ChevronLeft, Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 
@@ -16,18 +17,41 @@ export interface BestaandeMelding {
 export function MeldingForm({
   opdrachtId,
   bestaand,
+  terugHref,
+  kop,
 }: {
   opdrachtId: string;
   bestaand?: BestaandeMelding;
+  /** URL voor de "Terug naar opdracht"-link bovenaan; krijgt een dirty-check. */
+  terugHref: string;
+  /** Kop-elementen tussen back-link en formulier (h1 + evt. versie-info). */
+  kop?: React.ReactNode;
 }) {
   const router = useRouter();
   const isBewerken = Boolean(bestaand);
-  const [tekst, setTekst] = useState(bestaand?.ruwe_tekst ?? "");
-  const [fotoUrls, setFotoUrls] = useState<string[]>(bestaand?.foto_urls ?? []);
-  const [spoed, setSpoed] = useState(bestaand?.spoed ?? false);
+  const initialTekst = bestaand?.ruwe_tekst ?? "";
+  const initialFotoUrls = bestaand?.foto_urls ?? [];
+  const initialSpoed = bestaand?.spoed ?? false;
+
+  const [tekst, setTekst] = useState(initialTekst);
+  const [fotoUrls, setFotoUrls] = useState<string[]>(initialFotoUrls);
+  const [spoed, setSpoed] = useState(initialSpoed);
   const [toonUitleg, setToonUitleg] = useState(false);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
+
+  const isDirty =
+    !bezig &&
+    (tekst.trim() !== initialTekst.trim() ||
+      fotoUrls.length !== initialFotoUrls.length ||
+      fotoUrls.some((u, i) => u !== initialFotoUrls[i]) ||
+      spoed !== initialSpoed);
+
+  function handleTerugClick(e: React.MouseEvent) {
+    if (isDirty && !window.confirm("Melding nog niet opgeslagen. Weggooien en terug?")) {
+      e.preventDefault();
+    }
+  }
   // melding-id na opslaan, voor het opnieuw proberen van een mislukte spoed-mail
   const [retryId, setRetryId] = useState<string | null>(null);
 
@@ -99,6 +123,17 @@ export function MeldingForm({
 
   return (
     <div className="flex flex-col gap-5">
+      <Link
+        href={terugHref}
+        onClick={handleTerugClick}
+        className="inline-flex min-h-[44px] items-center gap-1 text-base font-semibold text-primary hover:underline"
+      >
+        <ChevronLeft size={22} aria-hidden="true" />
+        Terug naar opdracht
+      </Link>
+
+      {kop}
+
       {/* Foto bovenaan: natuurlijke volgorde tijdens het werk */}
       <div>
         <span className="mb-2 block font-semibold text-ink">Foto&apos;s</span>

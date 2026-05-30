@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Loader2, X, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import { Image as ImageIcon, Loader2, X, AlertCircle } from "lucide-react";
 import { compressImage } from "@/lib/foto-compress";
 
 export function FotoMaken({
@@ -46,7 +47,6 @@ export function FotoMaken({
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           multiple
           hidden
           onChange={handleFiles}
@@ -59,8 +59,8 @@ export function FotoMaken({
           </>
         ) : (
           <>
-            <Camera size={22} strokeWidth={2.5} aria-hidden="true" />
-            Foto maken
+            <ImageIcon size={22} strokeWidth={2.5} aria-hidden="true" />
+            Foto toevoegen (camera of galerij)
           </>
         )}
       </label>
@@ -76,12 +76,16 @@ export function FotoMaken({
         <div className="mt-3 grid grid-cols-3 gap-2">
           {urls.map((url) => (
             <div key={url} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt="Gemaakte foto"
-                className="aspect-square w-full rounded-none border border-line object-cover"
-              />
+              <div className="relative aspect-square w-full overflow-hidden rounded-none border border-line">
+                <Image
+                  src={url}
+                  alt="Gemaakte foto"
+                  fill
+                  sizes="(min-width: 640px) 160px, 33vw"
+                  className="object-cover"
+                  loading="lazy"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => onChange(urls.filter((u) => u !== url))}
