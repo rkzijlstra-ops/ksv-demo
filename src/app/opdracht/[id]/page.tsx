@@ -235,14 +235,13 @@ export default async function OpdrachtDetailPage({
             )}
             <OpleverKnop
               opdrachtId={id}
-              meldingCount={meldingen.length}
               label="Opnieuw opleveren"
               accent="groen"
             />
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            <OpleverKnop opdrachtId={id} meldingCount={meldingen.length} />
+            <OpleverKnop opdrachtId={id} />
             <Link
               href={`/opdracht/${id}/rapport`}
               className="inline-flex min-h-[44px] items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-primary"

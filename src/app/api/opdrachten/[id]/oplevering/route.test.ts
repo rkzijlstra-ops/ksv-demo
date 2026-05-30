@@ -1,0 +1,90 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockUpsert, mockGetOpl, mockUserId } = vi.hoisted(() => ({
+  mockUpsert: vi.fn(),
+  mockGetOpl: vi.fn(),
+  mockUserId: vi.fn(),
+}));
+
+vi.mock("@/lib/db", () => ({
+  db: () => ({ upsertOpleveringConcept: mockUpsert, getOpleveringVoorOpdracht: mockGetOpl }),
+}));
+vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockUserId }));
+
+import { GET, POST } from "./route";
+
+const params = (id: string) => ({ params: Promise.resolve({ id }) });
+function postReq(body: unknown) {
+  return new Request("http://localhost/api/opdrachten/opdr-1/oplevering", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+beforeEach(() => {
+  mockUpsert.mockReset();
+  mockGetOpl.mockReset();
+  mockUserId.mockReset();
+  mockUserId.mockResolvedValue("user-1");
+  mockUpsert.mockResolvedValue({ id: "opl-1" });
+});
+
+describe("POST /api/opdrachten/[id]/oplevering", () => {
+  it("slaat concept op met de bewijs-velden en uitkomst, 200", async () => {
+    const res = await POST(
+      postReq({
+        uitkomst: "afgerond",
+        eindstaat_foto_urls: ["https://x/eind1.jpg"],
+        video_url: "https://x/oplever-videos/v1.mp4",
+        handtekening_url: null,
+      }),
+      params("opdr-1"),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.id).toBe("opl-1");
+    const arg = mockUpsert.mock.calls[0][0];
+    expect(arg.opdracht_id).toBe("opdr-1");
+    expect(arg.uitkomst).toBe("afgerond");
+    expect(arg.eindstaat_foto_urls).toEqual(["https://x/eind1.jpg"]);
+    expect(arg.video_url).toBe("https://x/oplever-videos/v1.mp4");
+    expect(arg.user_id).toBe("user-1");
+  });
+
+  it("401 als niet ingelogd", async () => {
+    mockUserId.mockResolvedValue(null);
+    const res = await POST(postReq({ uitkomst: "afgerond" }), params("opdr-1"));
+    expect(res.status).toBe(401);
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("400 bij ontbrekende/ongeldige uitkomst", async () => {
+    const res = await POST(postReq({ uitkomst: "klaar" }), params("opdr-1"));
+    expect(res.status).toBe(400);
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it("503 als opslaan mislukt", async () => {
+    mockUpsert.mockRejectedValue(new Error("db kapot"));
+    const res = await POST(postReq({ uitkomst: "afgerond" }), params("opdr-1"));
+    expect(res.status).toBe(503);
+  });
+});
+
+describe("GET /api/opdrachten/[id]/oplevering", () => {
+  it("geeft de bestaande oplevering terug", async () => {
+    mockGetOpl.mockResolvedValue({ id: "opl-1", opdracht_id: "opdr-1", uitkomst: "afgerond" });
+    const res = await GET(new Request("http://localhost/x"), params("opdr-1"));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.oplevering.id).toBe("opl-1");
+  });
+
+  it("geeft null als er nog geen oplevering is", async () => {
+    mockGetOpl.mockResolvedValue(null);
+    const res = await GET(new Request("http://localhost/x"), params("opdr-1"));
+    const body = await res.json();
+    expect(body.oplevering).toBeNull();
+  });
+});
