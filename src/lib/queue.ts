@@ -94,3 +94,22 @@ export async function aantalInQueue(): Promise<number> {
   const db = await openQueueDb();
   return await db.count("melding_queue");
 }
+
+/**
+ * Zet alle items met status "mislukt" terug op "wachtend" met pogingen=0.
+ * Bedoeld voor het `online`-event: als het netwerk net is teruggekomen, geef
+ * eerder gefaalde items een verse kans (anders blijven ze voor altijd hangen).
+ */
+export async function resetMislukteItems(): Promise<void> {
+  const db = await openQueueDb();
+  const alles = (await db.getAll("melding_queue")) as QueueMelding[];
+  const mislukt = alles.filter((m) => m.status === "mislukt");
+  if (mislukt.length === 0) return;
+  for (const item of mislukt) {
+    item.status = "wachtend";
+    item.pogingen = 0;
+    item.laatste_fout = undefined;
+    await db.put("melding_queue", item);
+  }
+  publishQueueGewijzigd();
+}

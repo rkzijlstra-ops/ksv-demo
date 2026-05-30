@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { syncQueue } from "@/lib/sync";
-import { aantalInQueue } from "@/lib/queue";
+import { aantalInQueue, resetMislukteItems } from "@/lib/queue";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 /**
@@ -38,12 +38,18 @@ export function SyncBoot() {
       }
     }
 
+    async function bijOnline() {
+      // Net netwerk terug: alle eerder mislukte items een verse kans geven.
+      await resetMislukteItems().catch(() => {});
+      void probeerSync();
+    }
+
     // Initial run na korte vertraging zodat de page-render eerst af is.
     const initial = setTimeout(probeerSync, 500);
-    window.addEventListener("online", probeerSync);
+    window.addEventListener("online", bijOnline);
     return () => {
       clearTimeout(initial);
-      window.removeEventListener("online", probeerSync);
+      window.removeEventListener("online", bijOnline);
     };
   }, [router]);
 

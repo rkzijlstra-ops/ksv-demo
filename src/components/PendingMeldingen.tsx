@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, AlertCircle, AlertTriangle } from "lucide-react";
-import { haalQueueVoorOpdracht } from "@/lib/queue";
+import { Clock, AlertCircle, AlertTriangle, X } from "lucide-react";
+import { haalQueueVoorOpdracht, verwijderUitQueue } from "@/lib/queue";
 import { abonneerOpQueue } from "@/lib/sync-state";
 import type { QueueMelding } from "@/lib/queue-db";
 
@@ -32,6 +32,11 @@ export function PendingMeldingen({ opdrachtId }: { opdrachtId: string }) {
     };
   }, [opdrachtId]);
 
+  async function weggooien(id: string) {
+    if (!window.confirm("Deze wachtende melding verwijderen? Wordt niet meer verstuurd.")) return;
+    await verwijderUitQueue(id);
+  }
+
   if (items.length === 0) return null;
 
   return (
@@ -42,13 +47,21 @@ export function PendingMeldingen({ opdrachtId }: { opdrachtId: string }) {
         return (
           <li
             key={m.id}
-            className={`rounded-none border-2 border-dashed p-3 ${
+            className={`relative rounded-none border-2 border-dashed p-3 ${
               mislukt
                 ? "border-urgent-rood bg-urgent-rood/5"
                 : "border-accent bg-accent/5"
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => weggooien(m.id)}
+              aria-label="Wachtende melding verwijderen"
+              className="absolute right-1 top-1 inline-flex h-7 w-7 cursor-pointer items-center justify-center text-ink-muted transition-colors hover:bg-line/40"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+            <div className="flex items-center justify-between gap-2 pr-6">
               <span
                 className={`flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider ${
                   mislukt ? "text-urgent-rood" : "text-accent"
