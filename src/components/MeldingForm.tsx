@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export interface BestaandeMelding {
   id: string;
@@ -102,6 +103,7 @@ export function MeldingForm({
       }
       router.push(`/opdracht/${opdrachtId}`);
       router.refresh();
+      vernieuwOfflineCache();
     } catch (err) {
       setFout((err as Error).message);
       setBezig(false);
@@ -116,6 +118,7 @@ export function MeldingForm({
     if (verstuurd) {
       router.push(`/opdracht/${opdrachtId}`);
       router.refresh();
+      vernieuwOfflineCache();
     } else {
       setBezig(false);
     }

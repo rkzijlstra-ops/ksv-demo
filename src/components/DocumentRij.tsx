@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Image as ImageIcon, ExternalLink, Trash2, Loader2 } from "lucide-react";
 import type { Document } from "@/lib/db";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export function DocumentRij({ doc }: { doc: Document }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function DocumentRij({ doc }: { doc: Document }) {
         return;
       }
       router.refresh();
+      vernieuwOfflineCache();
     } catch {
       setFout("Netwerkfout, probeer opnieuw");
       setBezig(false);

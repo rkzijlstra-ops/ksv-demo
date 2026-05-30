@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PackageCheck, Loader2, AlertCircle } from "lucide-react";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export function OpleverKnop({
   opdrachtId,
@@ -37,6 +38,7 @@ export function OpleverKnop({
         return;
       }
       router.refresh();
+      vernieuwOfflineCache();
     } catch {
       setFout("Netwerkfout, probeer opnieuw");
     } finally {

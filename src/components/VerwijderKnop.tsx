@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertCircle } from "lucide-react";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export function VerwijderKnop({
   opdrachtId,
@@ -33,6 +34,7 @@ export function VerwijderKnop({
       }
       router.push("/");
       router.refresh();
+      vernieuwOfflineCache();
     } catch {
       setFout("Netwerkfout, probeer opnieuw");
       setBezig(false);

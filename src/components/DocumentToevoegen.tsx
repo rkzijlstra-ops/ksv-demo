@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, AlertCircle } from "lucide-react";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export function DocumentToevoegen({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
@@ -28,6 +29,7 @@ export function DocumentToevoegen({ opdrachtId }: { opdrachtId: string }) {
         return;
       }
       router.refresh();
+      vernieuwOfflineCache();
     } catch {
       setFout("Netwerkfout, probeer opnieuw");
     } finally {

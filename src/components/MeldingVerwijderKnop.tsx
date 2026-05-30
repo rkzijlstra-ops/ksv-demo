@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 export function MeldingVerwijderKnop({ meldingId }: { meldingId: string }) {
   const router = useRouter();
@@ -20,6 +21,7 @@ export function MeldingVerwijderKnop({ meldingId }: { meldingId: string }) {
         return;
       }
       router.refresh();
+      vernieuwOfflineCache();
     } catch {
       window.alert("Netwerkfout, probeer opnieuw");
       setBezig(false);

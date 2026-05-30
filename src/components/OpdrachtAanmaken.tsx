@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Loader2, Check, AlertCircle, PencilLine, X } from "lucide-react";
+import { vernieuwOfflineCache } from "@/lib/sw-cache";
 
 type Status = "idle" | "uploading" | "success" | "error";
 
@@ -39,6 +40,7 @@ export function OpdrachtAanmaken() {
       setStatus("success");
       setMessage(gelukteMelding(body));
       router.refresh();
+      vernieuwOfflineCache();
       setTimeout(() => setStatus("idle"), 4000);
       return true;
     } catch {

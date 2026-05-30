@@ -38,6 +38,31 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", async (event) => {
+  if (event.data && event.data.type === "REFRESH_NAV_CACHE") {
+    // Client meldt dat een mutatie voltooid is. Ververs de HTML-cache van alle
+    // gecachte navigate-URLs (negeer RSC-fetches herkenbaar aan `_rsc`-query).
+    try {
+      const cache = await caches.open(CACHE_PAGES);
+      const requests = await cache.keys();
+      await Promise.all(
+        requests.map(async (req) => {
+          const url = new URL(req.url);
+          if (url.searchParams.has("_rsc")) return;
+          try {
+            const fresh = await fetch(req.url);
+            if (fresh.ok) await cache.put(req, fresh.clone());
+          } catch {
+            // best-effort
+          }
+        }),
+      );
+    } catch {
+      // best-effort
+    }
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
