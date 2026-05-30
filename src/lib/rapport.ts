@@ -1,6 +1,33 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import type { Melding } from "./db";
+import type { Melding, Oplevering } from "./db";
 import { formatDatumKort } from "./datum";
+
+export interface RapportSamenvatting {
+  zaaknaam: string;
+  uitkomstLabel: string | null;
+  videoUrl: string | null;
+  ondertekend: boolean;
+}
+
+/**
+ * Leidt de oplever-kop-gegevens af voor het rapport. Pure functie (geen IO), los te testen.
+ * Zaaknaam komt van de opdracht (niet hardcoded), uitkomst/video/handtekening van de oplevering.
+ */
+export function rapportSamenvatting(
+  opdracht: Melding,
+  oplevering: Oplevering | null,
+): RapportSamenvatting {
+  return {
+    zaaknaam: opdracht.keukenzaak?.trim() || "Keukenzaak onbekend",
+    uitkomstLabel: oplevering
+      ? oplevering.uitkomst === "afgerond"
+        ? "Afgerond"
+        : "Nog openstaande punten"
+      : null,
+    videoUrl: oplevering?.video_url ?? null,
+    ondertekend: Boolean(oplevering?.handtekening_url),
+  };
+}
 
 const A4 = { breedte: 595, hoogte: 842 } as const;
 const MARGE = 50;
@@ -14,7 +41,9 @@ const FOTO_MAX_HOOGTE = 165;
 export async function genereerRapportPdf(
   opdracht: Melding,
   meldingen: Melding[],
+  oplevering: Oplevering | null = null,
 ): Promise<Uint8Array> {
+  const samenvatting = rapportSamenvatting(opdracht, oplevering);
   const doc = await PDFDocument.create();
   const helv = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -49,7 +78,7 @@ export async function genereerRapportPdf(
 
   // ===== Kop =====
   tekst("Opleverrapport", { size: 20, font: bold });
-  tekst("Keukenstudio Voorschoten", { size: 11, kleur: grijs });
+  tekst(samenvatting.zaaknaam, { size: 11, kleur: grijs });
   y -= 8;
   tekst(opdracht.klant_naam ?? "Onbekende klant", { size: 14, font: bold });
   if (opdracht.klant_adres) tekst(opdracht.klant_adres, { kleur: grijs });
@@ -57,6 +86,45 @@ export async function genereerRapportPdf(
   if (opdracht.leverweek) tekst(`Leverweek: ${opdracht.leverweek}`, { kleur: grijs });
   tekst(`Opgeleverd: ${formatDatumKort(new Date().toISOString())}`, { kleur: grijs });
   y -= 10;
+
+  // ===== Oplevering (eindstaat-bewijs, uitkomst, handtekening) =====
+  if (oplevering) {
+    if (samenvatting.uitkomstLabel) {
+      tekst(`Uitkomst: ${samenvatting.uitkomstLabel}`, { size: 13, font: bold });
+    }
+
+    if (oplevering.eindstaat_foto_urls.length > 0) {
+      tekst("Eindstaat bij oplevering:", { font: bold });
+      await tekenFotos(
+        doc,
+        () => page,
+        () => y,
+        (nieuw) => (y = nieuw),
+        ruimte,
+        oplevering.eindstaat_foto_urls,
+      );
+    }
+
+    if (samenvatting.videoUrl) {
+      tekst(`Video van de oplevering: ${samenvatting.videoUrl}`, { kleur: grijs });
+    }
+
+    if (oplevering.handtekening_url) {
+      tekst("Handtekening klant:", { font: bold });
+      await tekenFotos(
+        doc,
+        () => page,
+        () => y,
+        (nieuw) => (y = nieuw),
+        ruimte,
+        [oplevering.handtekening_url],
+      );
+    } else {
+      tekst("Niet ondertekend", { kleur: grijs });
+    }
+
+    y -= 10;
+  }
 
   // ===== Meldingen =====
   tekst(`Meldingen (${meldingen.length})`, { size: 14, font: bold });

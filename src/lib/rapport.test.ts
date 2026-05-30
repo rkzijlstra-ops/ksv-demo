@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { genereerRapportPdf } from "./rapport";
-import type { Melding } from "./db";
+import { genereerRapportPdf, rapportSamenvatting } from "./rapport";
+import type { Melding, Oplevering } from "./db";
+
+function maakOplevering(over: Partial<Oplevering>): Oplevering {
+  return {
+    id: "opl-1",
+    created_at: "2026-06-22T15:00:00Z",
+    opdracht_id: "x",
+    uitkomst: "afgerond",
+    eindstaat_foto_urls: [],
+    video_url: null,
+    handtekening_url: null,
+    rapport_url: null,
+    user_id: null,
+    ...over,
+  };
+}
 
 function maakMelding(over: Partial<Melding>): Melding {
   return {
@@ -40,6 +55,73 @@ function startsWithPdf(bytes: Uint8Array): boolean {
     bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
   );
 }
+
+describe("rapportSamenvatting", () => {
+  it("gebruikt de keukenzaak van de opdracht", () => {
+    const s = rapportSamenvatting(maakMelding({ keukenzaak: "Keukensale.com Katwijk" }), null);
+    expect(s.zaaknaam).toBe("Keukensale.com Katwijk");
+  });
+
+  it("valt terug op een nette tekst als keukenzaak ontbreekt", () => {
+    expect(rapportSamenvatting(maakMelding({ keukenzaak: null }), null).zaaknaam).toMatch(/onbekend/i);
+  });
+
+  it("vertaalt uitkomst naar een label", () => {
+    expect(
+      rapportSamenvatting(maakMelding({}), maakOplevering({ uitkomst: "afgerond" })).uitkomstLabel,
+    ).toBe("Afgerond");
+    expect(
+      rapportSamenvatting(maakMelding({}), maakOplevering({ uitkomst: "openstaande_punten" }))
+        .uitkomstLabel,
+    ).toBe("Nog openstaande punten");
+  });
+
+  it("geen oplevering betekent geen uitkomst-label", () => {
+    expect(rapportSamenvatting(maakMelding({}), null).uitkomstLabel).toBeNull();
+  });
+
+  it("meldt video en ondertekening", () => {
+    const s = rapportSamenvatting(
+      maakMelding({}),
+      maakOplevering({ handtekening_url: "https://x/h.png", video_url: "https://x/v.mp4" }),
+    );
+    expect(s.ondertekend).toBe(true);
+    expect(s.videoUrl).toBe("https://x/v.mp4");
+  });
+
+  it("zonder handtekening niet ondertekend", () => {
+    expect(rapportSamenvatting(maakMelding({}), maakOplevering({ handtekening_url: null })).ondertekend).toBe(false);
+  });
+});
+
+describe("genereerRapportPdf met oplevering", () => {
+  beforeEach(() => vi.restoreAllMocks());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("rendert een geldige PDF met eindstaat-foto's, video en handtekening", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
+      }),
+    );
+    const opdracht = maakMelding({ keukenzaak: "Keukensale.com Katwijk" });
+    const opl = maakOplevering({
+      eindstaat_foto_urls: ["https://x/e1.jpg"],
+      video_url: "https://x/v.mp4",
+      handtekening_url: "https://x/h.png",
+      uitkomst: "openstaande_punten",
+    });
+    const bytes = await genereerRapportPdf(opdracht, [], opl);
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+
+  it("werkt ook zonder oplevering (terugval)", async () => {
+    const bytes = await genereerRapportPdf(maakMelding({}), [], null);
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+});
 
 describe("genereerRapportPdf", () => {
   beforeEach(() => {
