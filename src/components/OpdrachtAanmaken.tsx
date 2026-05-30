@@ -9,6 +9,7 @@ type Status = "idle" | "uploading" | "success" | "error";
 export function OpdrachtAanmaken() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const bezigRef = useRef(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
   const [handmatig, setHandmatig] = useState(false);
@@ -22,6 +23,9 @@ export function OpdrachtAanmaken() {
   const bezig = status === "uploading";
 
   async function verstuur(fd: FormData, gelukteMelding: (body: Record<string, unknown>) => string) {
+    // Failsafe tegen dubbel-tap: ref reageert synchroon (state-update kan een tick later).
+    if (bezigRef.current) return false;
+    bezigRef.current = true;
     setStatus("uploading");
     setMessage("");
     try {
@@ -41,6 +45,8 @@ export function OpdrachtAanmaken() {
       setStatus("error");
       setMessage("Netwerkfout, probeer opnieuw");
       return false;
+    } finally {
+      bezigRef.current = false;
     }
   }
 
