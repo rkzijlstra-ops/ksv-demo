@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Image as ImageIcon, Loader2, X, AlertCircle } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2, X, AlertCircle } from "lucide-react";
 import { compressImage } from "@/lib/foto-compress";
 
 export function FotoMaken({
@@ -43,27 +43,37 @@ export function FotoMaken({
 
   return (
     <div>
-      <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={handleFiles}
-          disabled={bezig}
-        />
-        {bezig ? (
-          <>
-            <Loader2 size={22} className="animate-spin" aria-hidden="true" />
-            Foto&apos;s uploaden…
-          </>
-        ) : (
-          <>
+      {bezig ? (
+        <div className="flex min-h-[56px] items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink">
+          <Loader2 size={22} className="animate-spin" aria-hidden="true" />
+          Foto&apos;s uploaden…
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={handleFiles}
+            />
+            <Camera size={22} strokeWidth={2.5} aria-hidden="true" />
+            Camera
+          </label>
+          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={handleFiles}
+            />
             <ImageIcon size={22} strokeWidth={2.5} aria-hidden="true" />
-            Foto toevoegen (camera of galerij)
-          </>
-        )}
-      </label>
+            Galerij
+          </label>
+        </div>
+      )}
 
       {fout && (
         <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
