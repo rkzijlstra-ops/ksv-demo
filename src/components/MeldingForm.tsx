@@ -7,6 +7,9 @@ import { ChevronLeft, Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
+import { voegToeAanQueue } from "@/lib/queue";
+
+const LOCAL_PREFIX = "local:";
 
 export interface BestaandeMelding {
   id: string;
@@ -74,6 +77,41 @@ export function MeldingForm({
       );
       if (!ok) return;
     }
+
+    // Offline-route: alleen voor nieuwe meldingen. Bewerken offline is niet
+    // ondersteund (te complex vs. risico op conflicten met de server).
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      if (bestaand) {
+        setFout("Bewerken kan alleen met netwerk. Probeer opnieuw zodra je verbinding hebt.");
+        return;
+      }
+      setBezig(true);
+      setFout("");
+      try {
+        const echteUrls = fotoUrls.filter((u) => !u.startsWith(LOCAL_PREFIX));
+        const localIds = fotoUrls
+          .filter((u) => u.startsWith(LOCAL_PREFIX))
+          .map((u) => u.slice(LOCAL_PREFIX.length));
+        await voegToeAanQueue({
+          opdracht_id: opdrachtId,
+          spoed,
+          ruwe_tekst: tekst.trim() || null,
+          foto_urls: echteUrls,
+          foto_local_ids: localIds,
+        });
+        window.alert(
+          "Opgeslagen op je telefoon. Wordt verstuurd zodra je weer netwerk hebt.",
+        );
+        router.push(`/opdracht/${opdrachtId}`);
+        router.refresh();
+        return;
+      } catch (err) {
+        setFout(`Opslaan offline mislukt: ${(err as Error).message}`);
+        setBezig(false);
+        return;
+      }
+    }
+
     setBezig(true);
     setFout("");
     setRetryId(null);

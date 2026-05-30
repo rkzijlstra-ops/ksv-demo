@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Lexend, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { SwRegistrar } from "@/components/SwRegistrar";
+import { SyncBoot } from "@/components/SyncBoot";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="nl" className={`${lexend.variable} ${sourceSans.variable}`}>
       <body>
         <SwRegistrar />
+        <SyncBoot />
         {children}
       </body>
     </html>
