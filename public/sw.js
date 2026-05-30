@@ -76,13 +76,15 @@ self.addEventListener("fetch", (event) => {
       return;
     }
 
-    // 2d. HTML-navigatie en RSC-fetches: stale-while-revalidate.
-    if (
-      request.mode === "navigate" ||
-      request.headers.get("RSC") === "1" ||
-      url.searchParams.has("_rsc")
-    ) {
-      event.respondWith(staleWhileRevalidate(request, CACHE_PAGES));
+    // 2d. App-pages (werkbak + opdracht-detail): network-first.
+    //     Online = altijd verse RSC (mutaties zichtbaar zonder refresh).
+    //     Offline = fallback naar gecachte versie.
+    //     Path-based ipv mode-based, zodat ook prefetch-fetches geraakt worden.
+    const isAppPage =
+      url.pathname === "/" ||
+      url.pathname.startsWith("/opdracht/");
+    if (isAppPage) {
+      event.respondWith(networkFirst(request, CACHE_PAGES));
       return;
     }
   }
@@ -103,21 +105,18 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-  const fetchPromise = fetch(request)
-    .then((fresh) => {
-      if (fresh.ok) cache.put(request, fresh.clone()).catch(() => {});
-      return fresh;
-    })
-    .catch(() => null);
-
-  if (cached) {
-    fetchPromise.catch(() => {});
-    return cached;
+async function networkFirst(request, cacheName) {
+  try {
+    const fresh = await fetch(request);
+    if (fresh.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, fresh.clone()).catch(() => {});
+    }
+    return fresh;
+  } catch {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return new Response("Offline en niet in cache", { status: 503 });
   }
-  const fresh = await fetchPromise;
-  if (fresh) return fresh;
-  return new Response("Offline en niet in cache", { status: 503 });
 }

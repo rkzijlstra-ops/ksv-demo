@@ -5,6 +5,7 @@ import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
 import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
 import { UserMenu } from "@/components/UserMenu";
+import { PrefetchOpdrachten } from "@/components/PrefetchOpdrachten";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +19,11 @@ export default async function WerkbakPage() {
   const tellingen = await dbi.getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
 
+  const prefetchIds = [...actief.map((m) => m.id), ...history.map((m) => m.id)];
+
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
+      <PrefetchOpdrachten ids={prefetchIds} />
       <header className="relative mb-4 bg-primary px-5 py-5 text-white">
         <div className="flex items-start justify-between gap-3">
           <div>
