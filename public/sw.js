@@ -1,27 +1,123 @@
 // KSV Service Worker
-// Versie: v1 (basis-skelet, blok G van sessie 2A.9)
-// Cache-strategieen volgen in blok H. Voor nu: installeerbaar + clients-claim.
+// Versie: v2 - blok H van sessie 2A.9 (lezen offline)
+// Drie cache-strategieen:
+//   1. app-shell + Next static chunks (cache-first, langere TTL)
+//   2. HTML/RSC-navigatie (stale-while-revalidate, snel + actueel)
+//   3. Supabase Storage assets + next/image (cache-first, lange TTL)
 
-const VERSION = "ksv-v1";
+const VERSION = "ksv-v2";
+const CACHE_SHELL = `${VERSION}-shell`;
+const CACHE_PAGES = `${VERSION}-pages`;
+const CACHE_STORAGE = `${VERSION}-storage`;
+
+// Statische assets die we direct bij install pakken.
+const APP_SHELL = ["/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
-  // Direct overstap naar de nieuwe SW zonder te wachten op page-reload.
   self.skipWaiting();
+  event.waitUntil(
+    caches
+      .open(CACHE_SHELL)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .catch(() => {
+        // Niet kritiek als precache faalt; runtime fetch vult cache alsnog.
+      }),
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      // Pak alle open tabs/clients direct over.
+      // Verwijder caches van oudere versies.
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k)),
+      );
       await self.clients.claim();
     })(),
   );
 });
 
 self.addEventListener("fetch", (event) => {
-  // Blok H breidt dit uit met:
-  // - app-shell cache-first
-  // - RSC stale-while-revalidate
-  // - storage/* cache-first met lange TTL
-  // Voor blok G: geen interceptie, alles loopt normaal door het netwerk.
+  const { request } = event;
+
+  // Alleen GET cachen; POST/PATCH/DELETE laten we altijd door naar netwerk.
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // 1. Supabase Storage (foto's, PDFs, rapporten): cache-first met lange TTL.
+  if (url.hostname.endsWith(".supabase.co") && url.pathname.startsWith("/storage/")) {
+    event.respondWith(cacheFirst(request, CACHE_STORAGE));
+    return;
+  }
+
+  // 2. Same-origin assets + pages.
+  if (url.origin === self.location.origin) {
+    // 2a. API-routes, auth-callback en login: nooit uit cache (state-changing of
+    //     vereisen verse server-respons).
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.pathname.startsWith("/auth/") ||
+      url.pathname === "/login"
+    ) {
+      return;
+    }
+
+    // 2b. Next.js static chunks (gehashte filenames, langlevend): cache-first.
+    if (url.pathname.startsWith("/_next/static/")) {
+      event.respondWith(cacheFirst(request, CACHE_SHELL));
+      return;
+    }
+
+    // 2c. next/image optimizer: cache-first met aparte storage-cache.
+    if (url.pathname.startsWith("/_next/image")) {
+      event.respondWith(cacheFirst(request, CACHE_STORAGE));
+      return;
+    }
+
+    // 2d. HTML-navigatie en RSC-fetches: stale-while-revalidate.
+    if (
+      request.mode === "navigate" ||
+      request.headers.get("RSC") === "1" ||
+      url.searchParams.has("_rsc")
+    ) {
+      event.respondWith(staleWhileRevalidate(request, CACHE_PAGES));
+      return;
+    }
+  }
+
+  // Default: laat de fetch normaal door (eigen api, third-party).
 });
+
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  try {
+    const fresh = await fetch(request);
+    if (fresh.ok) cache.put(request, fresh.clone()).catch(() => {});
+    return fresh;
+  } catch {
+    return new Response("Offline en niet in cache", { status: 503 });
+  }
+}
+
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const fetchPromise = fetch(request)
+    .then((fresh) => {
+      if (fresh.ok) cache.put(request, fresh.clone()).catch(() => {});
+      return fresh;
+    })
+    .catch(() => null);
+
+  if (cached) {
+    fetchPromise.catch(() => {});
+    return cached;
+  }
+  const fresh = await fetchPromise;
+  if (fresh) return fresh;
+  return new Response("Offline en niet in cache", { status: 503 });
+}

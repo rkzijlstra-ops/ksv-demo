@@ -207,6 +207,20 @@ Realistisch: 2 bouwsessies van ~4 uur, of opgedeeld in een 'lezen offline + mani
 deel (G + H) en een 'schrijven offline + sync + UI' deel (I + J + K + L) met
 tussentijdse push naar Vercel.
 
+## Open punten ontdekt tijdens blok G
+
+### PWA + Google OAuth opent niet standalone (Android Chrome)
+- Bevestigd door Rein op zijn Android: na Google OAuth opent app niet meteen
+  full-screen, ververs nodig. Magic link heeft het niet.
+- Oorzaak: Android Chrome Custom Tabs vangt de OAuth-callback en geeft 'm niet
+  terug aan de PWA-context.
+- Eerste mitigatie geprobeerd: `id` + `scope` expliciet in manifest (blok G commit).
+- Mogelijke vervolgfix: tussenroute `/auth/post-login` met client-side
+  `matchMedia('(display-mode: standalone)')`-check en `location.replace` met
+  query-trick om Android te verleiden PWA opnieuw te openen.
+- Alternatief: magic link prominenter dan Google OAuth zetten.
+- Niet blocker voor H. Beslis na zelf-test of fix nodig is.
+
 ## Wat we expliciet NIET doen in 2A.9
 
 - Conflict-resolution tussen monteurs (RLS isoleert al)

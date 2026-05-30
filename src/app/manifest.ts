@@ -5,6 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "KSV - Keukenstudio Voorschoten",
     short_name: "KSV",
     description: "Monteur-app voor opdrachten en meldingen van Keukenstudio Voorschoten",
+    id: "/",
+    scope: "/",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
