@@ -51,7 +51,8 @@ export default async function OpdrachtDetailPage({
 
       <header className="relative mt-2 bg-primary px-5 py-5 text-white">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">
-          KSV / {opdracht.opdracht_status === "opgeleverd" ? "Opgeleverd" : "Opdracht"}
+          {opdracht.keukenzaak ? `${opdracht.keukenzaak} / ` : ""}
+          {opdracht.opdracht_status === "opgeleverd" ? "Opgeleverd" : "Opdracht"}
         </p>
         <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">
           {opdracht.klant_naam ?? "Onbekende klant"}
