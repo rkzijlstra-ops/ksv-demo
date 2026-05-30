@@ -1,0 +1,66 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut, User } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+
+export function UserMenu({ email }: { email: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [bezig, setBezig] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function buitenKlik(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", buitenKlik);
+    return () => document.removeEventListener("mousedown", buitenKlik);
+  }, [open]);
+
+  async function uitloggen() {
+    setBezig(true);
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  const initiaal = email.charAt(0).toUpperCase();
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Menu voor ${email}`}
+        className="flex h-10 w-10 cursor-pointer items-center justify-center border-2 border-white bg-white/15 font-mono text-base font-extrabold text-white transition-colors duration-150 hover:bg-white/25 focus-visible:outline-3 focus-visible:outline-accent"
+      >
+        {initiaal}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-50 mt-1 w-64 border-2 border-ink bg-white p-2 shadow-md"
+        >
+          <p className="flex items-center gap-2 border-b border-line p-2 text-sm text-ink">
+            <User size={16} className="shrink-0 text-ink-muted" aria-hidden="true" />
+            <span className="truncate" title={email}>{email}</span>
+          </p>
+          <button
+            type="button"
+            onClick={uitloggen}
+            disabled={bezig}
+            className="mt-1 flex w-full cursor-pointer items-center gap-2 border-2 border-urgent-rood px-3 py-2 text-sm font-extrabold uppercase tracking-[0.04em] text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-accent disabled:opacity-60"
+          >
+            <LogOut size={16} strokeWidth={2.5} aria-hidden="true" />
+            Uitloggen
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

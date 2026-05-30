@@ -4,10 +4,15 @@ import { groepeerMeldingen } from "@/lib/werkbak";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
 import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
+import { UserMenu } from "@/components/UserMenu";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function WerkbakPage() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const meldingen = await db().getMeldingen();
   const tellingen = await db().getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
@@ -15,13 +20,18 @@ export default async function WerkbakPage() {
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
       <header className="relative mb-4 bg-primary px-5 py-5 text-white">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">
-          KSV / Werkbak
-        </p>
-        <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Opdrachten</h1>
-        <p className="mt-1 text-sm text-white/85">
-          {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">
+              KSV / Werkbak
+            </p>
+            <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Opdrachten</h1>
+            <p className="mt-1 text-sm text-white/85">
+              {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
+            </p>
+          </div>
+          {user?.email && <UserMenu email={user.email} />}
+        </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
 
