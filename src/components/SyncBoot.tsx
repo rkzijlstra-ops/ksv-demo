@@ -12,7 +12,7 @@ import { vernieuwOfflineCache } from "@/lib/sw-cache";
  * - bij elk `window.online`-event: opnieuw runnen
  *
  * Bij succes wordt `router.refresh()` aangeroepen zodat opdracht-detail en
- * werkbak de nieuw gelande meldingen vanzelf tonen.
+ * werkpool de nieuw gelande meldingen vanzelf tonen.
  */
 export function SyncBoot() {
   const router = useRouter();

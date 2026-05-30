@@ -1,6 +1,6 @@
 import type { Melding } from "./db";
 
-export interface Werkbak {
+export interface Werkpool {
   actief: Melding[];
   history: Melding[];
 }
@@ -9,7 +9,7 @@ export interface Werkbak {
  * Splitst opdrachten in actief werk en history. History = opgeleverde opdrachten
  * (of legacy verzonden-status). Volgorde binnen elke groep blijft behouden.
  */
-export function groepeerMeldingen(meldingen: Melding[]): Werkbak {
+export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
   const actief: Melding[] = [];
   const history: Melding[] = [];
   for (const m of meldingen) {

@@ -1,6 +1,6 @@
 import { Inbox } from "lucide-react";
 import { db } from "@/lib/db";
-import { groepeerMeldingen } from "@/lib/werkbak";
+import { groepeerMeldingen } from "@/lib/werkpool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
 import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
@@ -10,7 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
-export default async function WerkbakPage() {
+export default async function WerkpoolPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -28,7 +28,7 @@ export default async function WerkbakPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">
-              KSV / Werkbak
+              Werkpool
             </p>
             <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Opdrachten</h1>
             <p className="mt-1 text-sm text-white/85">

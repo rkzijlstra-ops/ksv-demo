@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groepeerMeldingen } from "./werkbak";
+import { groepeerMeldingen } from "./werkpool";
 import type { Melding } from "./db";
 
 function maakMelding(over: Partial<Melding>): Melding {

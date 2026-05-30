@@ -46,7 +46,7 @@ export default async function OpdrachtDetailPage({
         className="inline-flex min-h-[44px] items-center gap-1 text-base font-semibold text-primary hover:underline"
       >
         <ChevronLeft size={22} aria-hidden="true" />
-        Werkbak
+        Werkpool
       </Link>
 
       <header className="relative mt-2 bg-primary px-5 py-5 text-white">

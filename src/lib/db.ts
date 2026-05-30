@@ -96,7 +96,7 @@ export interface UpdateMeldingInput {
   versie: number;
 }
 
-/** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de werkbak). */
+/** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de werkpool). */
 export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: boolean }>;
 
 export interface Db {
