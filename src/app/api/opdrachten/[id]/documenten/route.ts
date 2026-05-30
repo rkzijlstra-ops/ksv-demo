@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { db } from "@/lib/db";
+import { getAuthenticatedUserId } from "@/lib/auth";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
+
   const { id } = await params;
 
   const opdracht = await db().getMeldingById(id);
@@ -54,6 +60,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         publieke_url,
         referentienummer: opdracht.referentienummer,
         is_primair: false,
+        user_id: userId,
       });
       documenten.push({ id: docId, bestandsnaam: f.name, type, publieke_url });
     }

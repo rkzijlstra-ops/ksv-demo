@@ -12,6 +12,9 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
 }));
+vi.mock("@/lib/auth", () => ({
+  getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
+}));
 
 import { POST } from "./route";
 
@@ -50,6 +53,7 @@ describe("POST /api/opdrachten/[id]/documenten", () => {
     expect(arg.type).toBe("afbeelding");
     expect(arg.is_primair).toBe(false);
     expect(arg.referentienummer).toBe("7407");
+    expect(arg.user_id).toBe("test-user-uuid");
     expect(body.documenten).toHaveLength(1);
   });
 

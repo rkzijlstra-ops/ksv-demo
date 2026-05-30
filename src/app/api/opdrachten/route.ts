@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parsePdfWithClaude } from "@/lib/claude-client";
 import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
+import { getAuthenticatedUserId } from "@/lib/auth";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -11,6 +12,11 @@ function strVeld(fd: FormData, naam: string): string | null {
 }
 
 export async function POST(req: Request) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
+
   let formData: FormData;
   try {
     formData = await req.formData();
@@ -44,6 +50,7 @@ export async function POST(req: Request) {
         adviseur: null,
         klant_telefoon,
         leverweek: null,
+        user_id: userId,
       });
       return NextResponse.json({ id, documenttype: "tekst", documenten: [] }, { status: 200 });
     } catch (err) {
@@ -75,6 +82,7 @@ export async function POST(req: Request) {
     klant_telefoon: null,
     leverweek: null,
     meldingen: [],
+    user_id: userId,
   };
 
   if (primair) {
@@ -89,6 +97,7 @@ export async function POST(req: Request) {
         klant_telefoon: parsed.klant_telefoon,
         leverweek: parsed.leverweek,
         meldingen: parsed.meldingen,
+        user_id: userId,
       };
     } catch {
       // Parser faalt: opdracht tóch aanmaken met lege kop, origineel blijft bewaard.
@@ -127,6 +136,7 @@ export async function POST(req: Request) {
         publieke_url,
         referentienummer: kop.referentienummer,
         is_primair: f === primair,
+        user_id: userId,
       });
       documenten.push({ id: docId, bestandsnaam: f.name, type, publieke_url, is_primair: f === primair });
     }

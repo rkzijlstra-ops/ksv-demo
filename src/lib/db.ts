@@ -75,6 +75,7 @@ export interface DocumentInput {
   publieke_url: string;
   referentienummer: string | null;
   is_primair: boolean;
+  user_id: string;
 }
 
 export interface MonteurMeldingInput {
@@ -84,6 +85,7 @@ export interface MonteurMeldingInput {
   spraak_tekst: string | null;
   foto_urls: string[];
   status?: "concept" | "verzonden";
+  user_id: string;
 }
 
 export interface UpdateMeldingInput {
@@ -187,6 +189,7 @@ export function createDb(config: DbConfig): Db {
           publieke_url: input.publieke_url,
           referentienummer: input.referentienummer,
           is_primair: input.is_primair,
+          user_id: input.user_id,
         })
         .select("id")
         .single();
@@ -249,6 +252,7 @@ export function createDb(config: DbConfig): Db {
           spraak_tekst: data.spraak_tekst,
           foto_urls: data.foto_urls,
           meldingen: [],
+          user_id: data.user_id,
         })
         .select("id")
         .single();

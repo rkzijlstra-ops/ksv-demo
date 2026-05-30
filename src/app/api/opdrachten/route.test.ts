@@ -15,6 +15,9 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
 }));
+vi.mock("@/lib/auth", () => ({
+  getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
+}));
 
 import { POST } from "./route";
 
@@ -66,8 +69,10 @@ describe("POST /api/opdrachten", () => {
     expect(opdrachtArg.documenttype).toBe("orderbevestiging");
     expect(opdrachtArg.referentienummer).toBe("7407");
     expect(opdrachtArg.leverweek).toBe("22/2026");
+    expect(opdrachtArg.user_id).toBe("test-user-uuid");
     expect(mockAddDocument).toHaveBeenCalledOnce();
     expect(mockAddDocument.mock.calls[0][0].is_primair).toBe(true);
+    expect(mockAddDocument.mock.calls[0][0].user_id).toBe("test-user-uuid");
     expect(body.id).toBe("opdr-1");
     expect(body.documenten).toHaveLength(1);
   });

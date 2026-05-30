@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { getAuthenticatedUserId } from "@/lib/auth";
 
 const NieuweMeldingSchema = z.object({
   opdracht_id: z.string().uuid(),
@@ -10,6 +11,11 @@ const NieuweMeldingSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
+
   let payload: unknown;
   try {
     payload = await req.json();
@@ -32,6 +38,7 @@ export async function POST(req: Request) {
       ruwe_tekst: parsed.data.ruwe_tekst,
       spraak_tekst: null,
       foto_urls: parsed.data.foto_urls,
+      user_id: userId,
     });
     return NextResponse.json({ id }, { status: 200 });
   } catch (err) {

@@ -15,6 +15,9 @@ vi.mock("@/lib/db", () => ({
     },
   }),
 }));
+vi.mock("@/lib/auth", () => ({
+  getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
+}));
 
 import { POST } from "./route";
 
@@ -65,6 +68,12 @@ describe("POST /api/meldingen", () => {
     const res = await POST(jsonReq({ ...geldig, spoed: true }));
     expect(res.status).toBe(200);
     expect((m.lastArg as { spoed: boolean }).spoed).toBe(true);
+  });
+
+  it("bewaart user_id van ingelogde gebruiker", async () => {
+    const res = await POST(jsonReq(geldig));
+    expect(res.status).toBe(200);
+    expect((m.lastArg as { user_id: string }).user_id).toBe("test-user-uuid");
   });
 
   it("geeft 503 als DB faalt", async () => {
