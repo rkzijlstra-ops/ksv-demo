@@ -21,12 +21,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
+  const oplevering = await dbi.getOpleveringVoorOpdracht(id);
+  if (!oplevering) {
+    return NextResponse.json(
+      { error: "Nog geen oplevering vastgelegd. Doorloop eerst de oplever-flow." },
+      { status: 409 },
+    );
+  }
+
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const bestandsnaam = `opleverrapport-${opdracht.referentienummer ?? id}.pdf`;
 
   let rapportUrl: string;
   try {
-    const pdf = await genereerRapportPdf(opdracht, meldingen);
+    const pdf = await genereerRapportPdf(opdracht, meldingen, oplevering);
     const { publieke_url } = await storage().uploadOpdrachtDocument(
       Buffer.from(pdf),
       bestandsnaam,
@@ -35,7 +43,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     rapportUrl = publieke_url;
 
     // Mail vóór het markeren: mislukt de mail, dan blijft de opdracht 'open' (kan opnieuw).
-    await verstuurOpleverRapport({ naar, opdracht, pdf, bestandsnaam });
+    await verstuurOpleverRapport({
+      naar,
+      opdracht,
+      pdf,
+      bestandsnaam,
+      videoUrl: oplevering.video_url,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: `Opleveren mislukt: ${(err as Error).message}` },
@@ -44,6 +58,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
+    await dbi.finaliseerOplevering(id, rapportUrl);
     await dbi.markeerOpgeleverd(id, rapportUrl);
   } catch (err) {
     return NextResponse.json(

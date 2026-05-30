@@ -1,21 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockGetById, mockGetMeldingen, mockMarkeer, mockUpload, mockPdf, mockMail } = vi.hoisted(
-  () => ({
-    mockGetById: vi.fn(),
-    mockGetMeldingen: vi.fn(),
-    mockMarkeer: vi.fn(),
-    mockUpload: vi.fn(),
-    mockPdf: vi.fn(),
-    mockMail: vi.fn(),
-  }),
-);
+const {
+  mockGetById,
+  mockGetMeldingen,
+  mockMarkeer,
+  mockUpload,
+  mockPdf,
+  mockMail,
+  mockGetOpl,
+  mockFinaliseer,
+} = vi.hoisted(() => ({
+  mockGetById: vi.fn(),
+  mockGetMeldingen: vi.fn(),
+  mockMarkeer: vi.fn(),
+  mockUpload: vi.fn(),
+  mockPdf: vi.fn(),
+  mockMail: vi.fn(),
+  mockGetOpl: vi.fn(),
+  mockFinaliseer: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: () => ({
     getMeldingById: mockGetById,
     getMeldingenVoorOpdracht: mockGetMeldingen,
     markeerOpgeleverd: mockMarkeer,
+    getOpleveringVoorOpdracht: mockGetOpl,
+    finaliseerOplevering: mockFinaliseer,
   }),
 }));
 vi.mock("@/lib/storage", () => ({ storage: () => ({ uploadOpdrachtDocument: mockUpload }) }));
@@ -36,8 +47,19 @@ beforeEach(() => {
   mockUpload.mockReset();
   mockPdf.mockReset();
   mockMail.mockReset();
+  mockGetOpl.mockReset();
+  mockFinaliseer.mockReset();
   mockGetById.mockResolvedValue({ id: "opdr-1", klant_naam: "van Dijk", referentienummer: "7407" });
   mockGetMeldingen.mockResolvedValue([{ id: "m1", urgentie: "rood", ruwe_tekst: "x", foto_urls: [] }]);
+  mockGetOpl.mockResolvedValue({
+    id: "opl-1",
+    opdracht_id: "opdr-1",
+    uitkomst: "afgerond",
+    eindstaat_foto_urls: [],
+    video_url: "https://x/oplever-videos/v1.mp4",
+    handtekening_url: null,
+  });
+  mockFinaliseer.mockResolvedValue(undefined);
   mockPdf.mockResolvedValue(new Uint8Array([0x25, 0x50, 0x44, 0x46]));
   mockUpload.mockResolvedValue({ pad: "r.pdf", publieke_url: "https://x/opdracht-documenten/r.pdf" });
   mockMail.mockResolvedValue(undefined);
@@ -55,11 +77,23 @@ describe("POST /api/opdrachten/[id]/opleveren", () => {
 
     expect(res.status).toBe(200);
     expect(mockPdf).toHaveBeenCalledOnce();
+    // oplevering wordt als 3e argument aan de rapport-generator meegegeven
+    expect(mockPdf.mock.calls[0][2]).toMatchObject({ id: "opl-1", uitkomst: "afgerond" });
     expect(mockMail).toHaveBeenCalledOnce();
     expect(mockMail.mock.calls[0][0].naar).toBe("rein@example.com");
+    expect(mockMail.mock.calls[0][0].videoUrl).toBe("https://x/oplever-videos/v1.mp4");
+    expect(mockFinaliseer).toHaveBeenCalledWith("opdr-1", "https://x/opdracht-documenten/r.pdf");
     expect(mockMarkeer).toHaveBeenCalledWith("opdr-1", "https://x/opdracht-documenten/r.pdf");
     expect(body.opgeleverd).toBe(true);
     expect(body.rapport_url).toContain("opdracht-documenten");
+  });
+
+  it("409 als er nog geen oplevering-concept is vastgelegd", async () => {
+    mockGetOpl.mockResolvedValue(null);
+    const res = await POST(req(), params("opdr-1"));
+    expect(res.status).toBe(409);
+    expect(mockPdf).not.toHaveBeenCalled();
+    expect(mockMarkeer).not.toHaveBeenCalled();
   });
 
   it("404 als de opdracht niet bestaat", async () => {

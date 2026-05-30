@@ -17,7 +17,8 @@ function opdracht(over: Partial<Melding> = {}): Melding {
     id: "opdr-1",
     klant_naam: "van Dijk",
     referentienummer: "7407",
-  } as Melding & typeof over;
+    ...over,
+  } as Melding;
 }
 
 const basis = {
@@ -48,6 +49,17 @@ describe("verstuurOpleverRapport", () => {
     expect(arg.subject).toMatch(/7407/);
     expect(arg.attachments).toHaveLength(1);
     expect(arg.attachments[0].filename).toBe("opleverrapport-7407.pdf");
+  });
+
+  it("zet de keukenzaak en de videolink in de body", async () => {
+    await verstuurOpleverRapport({
+      ...basis,
+      opdracht: opdracht({ keukenzaak: "Keukensale.com Katwijk" }),
+      videoUrl: "https://x/oplever-videos/v1.mp4",
+    });
+    const arg = mockSend.mock.calls[0][0];
+    expect(arg.text).toMatch(/Keukensale\.com Katwijk/);
+    expect(arg.text).toMatch(/oplever-videos\/v1\.mp4/);
   });
 
   it("gebruikt onboarding@resend.dev als afzender wanneer RESEND_FROM leeg is", async () => {
