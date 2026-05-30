@@ -22,6 +22,7 @@ export function OpdrachtAanmaken() {
   const [adres, setAdres] = useState("");
   const [ref, setRef] = useState("");
   const [telefoon, setTelefoon] = useState("");
+  const [keukenzaak, setKeukenzaak] = useState("");
 
   const bezig = status === "uploading";
 
@@ -74,6 +75,7 @@ export function OpdrachtAanmaken() {
     fd.append("klant_adres", adres);
     fd.append("referentienummer", ref);
     fd.append("klant_telefoon", telefoon);
+    fd.append("keukenzaak", keukenzaak);
     const ok = await verstuur(fd, (body) =>
       `Opdracht toegevoegd${body.klant_naam ? `: ${body.klant_naam}` : naam ? `: ${naam}` : ""}`,
     );
@@ -82,6 +84,7 @@ export function OpdrachtAanmaken() {
       setAdres("");
       setRef("");
       setTelefoon("");
+      setKeukenzaak("");
       setHandmatig(false);
     }
   }
@@ -187,6 +190,15 @@ export function OpdrachtAanmaken() {
               />
             </label>
           </div>
+          <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+            Keukenzaak
+            <input
+              value={keukenzaak}
+              onChange={(e) => setKeukenzaak(e.target.value)}
+              className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+              placeholder="Bijv. Keukenstudio Voorschoten"
+            />
+          </label>
           <button
             type="submit"
             disabled={bezig || (!naam && !adres && !ref && !telefoon)}

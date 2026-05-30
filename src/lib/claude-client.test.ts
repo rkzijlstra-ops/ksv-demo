@@ -27,6 +27,7 @@ const validToolUseResponse = {
         klant_telefoon: "071-1234567",
         documenttype: "werkbon_service",
         leverweek: null,
+        keukenzaak: "Keukenstudio Voorschoten",
         meldingen: [
           {
             keller_code: "F-BK-LD-60",
@@ -52,6 +53,7 @@ const orderbevestigingResponse = {
         klant_telefoon: "06-40200603",
         documenttype: "orderbevestiging",
         leverweek: "22/2026",
+        keukenzaak: "Keukensale.com Katwijk",
         meldingen: [],
       },
     },

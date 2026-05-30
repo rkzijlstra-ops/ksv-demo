@@ -9,6 +9,7 @@ const fullValid: ParsedPdf = {
   klant_telefoon: "071-1234567",
   documenttype: "werkbon_service",
   leverweek: null,
+  keukenzaak: "Keukenstudio Voorschoten",
   meldingen: [
     {
       keller_code: "F-BK-LD-60",
@@ -37,6 +38,7 @@ describe("ParsedPdfSchema", () => {
       klant_telefoon: null,
       documenttype: "onbekend",
       leverweek: null,
+      keukenzaak: null,
       meldingen: [],
     };
     expect(() => ParsedPdfSchema.parse(minimal)).not.toThrow();
@@ -68,6 +70,13 @@ describe("ParsedPdfSchema", () => {
   it("verwerpt object zonder documenttype-veld", () => {
     const { documenttype: _ignored, ...withoutType } = fullValid;
     expect(() => ParsedPdfSchema.parse(withoutType)).toThrow(/documenttype/);
+  });
+
+  it("accepteert keukenzaak als string of null", () => {
+    expect(ParsedPdfSchema.parse({ ...fullValid, keukenzaak: null }).keukenzaak).toBeNull();
+    expect(
+      ParsedPdfSchema.parse({ ...fullValid, keukenzaak: "Keukensale.com Katwijk" }).keukenzaak,
+    ).toBe("Keukensale.com Katwijk");
   });
 
   it("accepteert klant_telefoon als string of null", () => {

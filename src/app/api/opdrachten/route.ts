@@ -35,6 +35,7 @@ export async function POST(req: Request) {
     const klant_adres = strVeld(formData, "klant_adres");
     const referentienummer = strVeld(formData, "referentienummer");
     const klant_telefoon = strVeld(formData, "klant_telefoon");
+    const keukenzaak = strVeld(formData, "keukenzaak");
     if (!klant_naam && !klant_adres && !referentienummer && !klant_telefoon) {
       return NextResponse.json(
         { error: "Geen documenten en geen klantgegevens opgegeven" },
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
         adviseur: null,
         klant_telefoon,
         leverweek: null,
+        keukenzaak,
         user_id: userId,
       });
       return NextResponse.json({ id, documenttype: "tekst", documenten: [] }, { status: 200 });
@@ -96,6 +98,7 @@ export async function POST(req: Request) {
         adviseur: parsed.adviseur,
         klant_telefoon: parsed.klant_telefoon,
         leverweek: parsed.leverweek,
+        keukenzaak: parsed.keukenzaak,
         meldingen: parsed.meldingen,
         user_id: userId,
       };

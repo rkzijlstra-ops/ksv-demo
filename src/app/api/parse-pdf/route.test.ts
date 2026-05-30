@@ -24,6 +24,7 @@ const dummyParsed: ParsedPdf = {
   klant_telefoon: "071-1234567",
   documenttype: "werkbon_service",
   leverweek: null,
+  keukenzaak: "Keukenstudio Voorschoten",
   meldingen: [
     {
       keller_code: "F-BK-LD-60",

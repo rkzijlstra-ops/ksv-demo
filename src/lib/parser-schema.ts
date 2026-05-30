@@ -20,6 +20,7 @@ export const ParsedPdfSchema = z.object({
   klant_telefoon: z.string().nullable(),
   documenttype: DocumenttypeSchema,
   leverweek: z.string().nullable(),
+  keukenzaak: z.string().nullable(),
   meldingen: z.array(MeldingItemSchema),
 });
 
@@ -69,6 +70,11 @@ export const ParsedPdfJsonSchema = {
       description:
         "Geplande leverweek zoals op een orderbevestiging, bijv. '22/2026'. null bij service-werkbon of als niet vindbaar.",
     },
+    keukenzaak: {
+      type: ["string", "null"],
+      description:
+        "Naam van de keukenzaak/opdrachtgever uit de kop of voettekst van het document, bijv. 'Keukenstudio Voorschoten', 'Keukensale.com Katwijk' of 'Küchen-Dump Almere'. null als niet vindbaar.",
+    },
     meldingen: {
       type: "array",
       description:
@@ -104,6 +110,7 @@ export const ParsedPdfJsonSchema = {
     "klant_telefoon",
     "documenttype",
     "leverweek",
+    "keukenzaak",
     "meldingen",
   ],
   additionalProperties: false,
