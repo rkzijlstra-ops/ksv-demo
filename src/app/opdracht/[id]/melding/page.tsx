@@ -10,7 +10,7 @@ export default async function MeldingToevoegenPagina({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const opdracht = await db().getMeldingById(id);
+  const opdracht = await (await db()).getMeldingById(id);
   if (!opdracht) notFound();
 
   return (

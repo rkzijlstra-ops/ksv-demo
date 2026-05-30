@@ -13,7 +13,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
 
-  const opdracht = await db().getMeldingById(id);
+  const dbi = await db();
+  const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
@@ -52,7 +53,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const type = f.type === "application/pdf" ? "pdf" : "afbeelding";
       const buf = Buffer.from(await f.arrayBuffer());
       const { pad, publieke_url } = await storage().uploadOpdrachtDocument(buf, f.name, f.type);
-      const { id: docId } = await db().addDocument({
+      const { id: docId } = await dbi.addDocument({
         opdracht_id: id,
         type,
         bestandsnaam: f.name,

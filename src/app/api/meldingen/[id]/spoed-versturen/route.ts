@@ -5,11 +5,12 @@ import { verstuurSpoedMelding } from "@/lib/mail";
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const melding = await db().getMeldingById(id);
+  const dbi = await db();
+  const melding = await dbi.getMeldingById(id);
   if (!melding || !melding.opdracht_id) {
     return NextResponse.json({ error: "Melding niet gevonden" }, { status: 404 });
   }
-  const opdracht = await db().getMeldingById(melding.opdracht_id);
+  const opdracht = await dbi.getMeldingById(melding.opdracht_id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
@@ -32,7 +33,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
-    await db().markeerSpoedVerzonden(id);
+    await dbi.markeerSpoedVerzonden(id);
   } catch (err) {
     return NextResponse.json(
       { error: `Spoed-status zetten mislukt: ${(err as Error).message}` },

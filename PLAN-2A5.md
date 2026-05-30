@@ -105,23 +105,23 @@ Bestand: `src/lib/db.ts` + alle API-routes
 - API-routes lezen de user uit `getUser()` van de server-client en zetten user_id automatisch.
 - 401 als geen user (middleware vangt al maar API-routes belt-and-suspenders).
 
-Status: open. Tijd: 30 min.
+Status: AFGEROND.
 
 ### F3.2 Service-role-key alleen voor specifieke admin-acties
-- Standaard de **anon-key** gebruiken in API-routes zodat RLS van toepassing is en je niet per
-  ongeluk andermans rijen kan lezen.
-- Service-role alleen voor migrate-script en eventueel rapport-PDF upload (storage werkt anders
-  beter met service-role).
+- Standaard de **anon-key** (per-request, via session-cookies) gebruiken in API-routes zodat
+  RLS van toepassing is.
+- Service-role (nu `dbAdmin()`) alleen voor migrate-scripts.
+- Storage (rapport-PDF) blijft service-role; storage-policies komen later als nodig.
 
-Status: open. Tijd: 20 min.
+Status: AFGEROND.
 
 ---
 
 ## F4 - RLS activeren + test
 
 ### F4.1 RLS aan
-- F1.2-policies draaien.
-- `alter table meldingen enable row level security;` en idem documenten.
+- Bestand: `supabase/schema-2a5-auth-step2.sql` draaien in Supabase Studio na data-cleanup.
+- Doet NOT NULL + FK + `enable row level security` op meldingen + documenten.
 
 Status: open. Tijd: 5 min.
 

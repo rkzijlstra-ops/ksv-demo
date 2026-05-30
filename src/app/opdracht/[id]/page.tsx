@@ -32,10 +32,11 @@ export default async function OpdrachtDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const opdracht = await db().getMeldingById(id);
+  const dbi = await db();
+  const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) notFound();
-  const meldingen = await db().getMeldingenVoorOpdracht(id);
-  const documenten = await db().getDocumentenVoorOpdracht(id);
+  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
+  const documenten = await dbi.getDocumentenVoorOpdracht(id);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">

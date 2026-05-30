@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { id } = await db().createMonteurMelding({
+    const { id } = await (await db()).createMonteurMelding({
       opdracht_id: parsed.data.opdracht_id,
       spoed: parsed.data.spoed,
       ruwe_tekst: parsed.data.ruwe_tekst,

@@ -4,13 +4,14 @@ import { db } from "@/lib/db";
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const opdracht = await db().getMeldingById(id);
+  const dbi = await db();
+  const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
 
   try {
-    await db().verwijderOpdracht(id);
+    await dbi.verwijderOpdracht(id);
   } catch (err) {
     return NextResponse.json(
       { error: `Verwijderen mislukt: ${(err as Error).message}` },

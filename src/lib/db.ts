@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
+import { createSupabaseServerClient } from "./supabase-server";
 import type { ParsedPdf, MeldingItem } from "./parser-schema";
 
 export interface DbConfig {
@@ -62,7 +63,6 @@ export interface OpdrachtInput {
   klant_telefoon: string | null;
   leverweek: string | null;
   meldingen?: MeldingItem[];
-  // TOEKOMSTVAST (sessie 2A.5 auth): nu altijd null.
   user_id?: string | null;
   toegewezen_aan?: string | null;
 }
@@ -93,7 +93,6 @@ export interface UpdateMeldingInput {
   ruwe_tekst: string | null;
   foto_urls: string[];
   status: "concept" | "verzonden";
-  /** Nieuwe versie (huidige + 1), berekend door de aanroeper. */
   versie: number;
 }
 
@@ -102,43 +101,31 @@ export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: bool
 
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
-  /** Maakt een top-level opdracht (uit geparsde PDF of handmatige tekst). */
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
-  /** Voegt een origineel document toe aan een opdracht. */
   addDocument(input: DocumentInput): Promise<{ id: string }>;
-  /** Documenten bij één opdracht (oudste eerst, primair doc als eerste aangemaakt). */
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
-  /** Alleen opdrachten (top-level, opdracht_id IS NULL) voor de werkbak. */
   getMeldingen(): Promise<Melding[]>;
   getMeldingById(id: string): Promise<Melding | null>;
-  /** Meldingen die bij één opdracht horen (nieuwste eerst). */
   getMeldingenVoorOpdracht(opdrachtId: string): Promise<Melding[]>;
   createMonteurMelding(data: MonteurMeldingInput): Promise<{ id: string }>;
   updateMeldingStatus(
     id: string,
     opts: { status: "concept" | "verzonden"; aangepast?: boolean },
   ): Promise<void>;
-  /** Werkt een bestaande melding bij (bewerken + opnieuw verzenden). Hoogt versie op. */
   updateMelding(id: string, data: UpdateMeldingInput): Promise<void>;
-  /** Markeert een opdracht als opgeleverd en koppelt het rapport-PDF. */
   markeerOpgeleverd(id: string, rapportUrl: string): Promise<void>;
-  /** Verwijdert een opdracht; documenten en gekoppelde meldingen gaan mee via FK-cascade. */
   verwijderOpdracht(id: string): Promise<void>;
-  /** Verwijdert één los document van een opdracht. */
   verwijderDocument(id: string): Promise<void>;
-  /** Verwijdert één monteur-melding (in de wachtrij) van een opdracht. */
   verwijderMelding(id: string): Promise<void>;
-  /** Markeert dat de spoed-mail voor deze melding is verstuurd. */
   markeerSpoedVerzonden(id: string): Promise<void>;
-  /** Aantal meldingen + spoed-vlag per opdracht (voor de werkbak-kaarten). */
   getMeldingTellingen(): Promise<MeldingTellingen>;
 }
 
-export function createDb(config: DbConfig): Db {
-  const client: SupabaseClient = createClient(config.url, config.secretKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
+/**
+ * Bouwt een Db-instantie boven een gegeven Supabase-client. De caller bepaalt of de
+ * client onder de ingelogde user (RLS-respecterend) of onder service-role (admin) draait.
+ */
+function createDbFromClient(client: SupabaseClient): Db {
   return {
     async insertPdfMelding(data: ParsedPdf) {
       const { data: row, error } = await client
@@ -344,12 +331,39 @@ export function createDb(config: DbConfig): Db {
   };
 }
 
-let cachedDb: Db | null = null;
+/**
+ * Backwards-compat: bouw een Db met een eigen service-role config.
+ * Wordt nog gebruikt door db.test.ts (mock-server) en migrate-scripts.
+ */
+export function createDb(config: DbConfig): Db {
+  const client = createClient(config.url, config.secretKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return createDbFromClient(client);
+}
 
-export function db(): Db {
-  if (!cachedDb) {
+/**
+ * Hoofd-db voor user-acties in API-routes en server-components. Draait onder de sessie
+ * van de ingelogde gebruiker en respecteert RLS. Per request opnieuw opgebouwd (cookies
+ * wisselen per request, dus geen module-level cache mogelijk).
+ */
+export async function db(): Promise<Db> {
+  const client = await createSupabaseServerClient();
+  return createDbFromClient(client as unknown as SupabaseClient);
+}
+
+/**
+ * Admin-db voor acties die RLS moeten omzeilen: rapport-PDF uploaden, migratie-scripts,
+ * eventuele cross-user-rapportage. Service-role-key, gecached op module-niveau.
+ */
+let cachedAdminDb: Db | null = null;
+export function dbAdmin(): Db {
+  if (!cachedAdminDb) {
     const e = env();
-    cachedDb = createDb({ url: e.SUPABASE_URL, secretKey: e.SUPABASE_SECRET_KEY });
+    const client = createClient(e.SUPABASE_URL, e.SUPABASE_SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    cachedAdminDb = createDbFromClient(client);
   }
-  return cachedDb;
+  return cachedAdminDb;
 }

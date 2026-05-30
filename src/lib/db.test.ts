@@ -156,6 +156,7 @@ describe("createMonteurMelding", () => {
       ruwe_tekst: "Front beschadigd",
       spraak_tekst: null,
       foto_urls: ["https://x/foto1.jpg"],
+      user_id: "u-test",
     });
 
     const payload = h.fns.insert.mock.calls[0][0];
@@ -173,6 +174,7 @@ describe("createMonteurMelding", () => {
       ruwe_tekst: null,
       spraak_tekst: "ingesproken tekst",
       foto_urls: [],
+      user_id: "u-test",
     });
     expect(r.id).toBe("m-1");
     expect(h.fns.insert.mock.calls[0][0].spoed).toBe(true);
@@ -281,6 +283,7 @@ describe("addDocument", () => {
     publieke_url: "https://x/opdracht-documenten/uuid.pdf",
     referentienummer: "7407",
     is_primair: true,
+    user_id: "u-test",
   };
 
   it("insert in tabel 'documenten' met alle velden", async () => {

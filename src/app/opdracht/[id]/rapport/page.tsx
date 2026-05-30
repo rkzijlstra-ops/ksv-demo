@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function RapportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const opdracht = await db().getMeldingById(id);
+  const dbi = await db();
+  const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) notFound();
-  const meldingen = await db().getMeldingenVoorOpdracht(id);
+  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
 
   const opleverdatum = opdracht.opgeleverd_at ?? new Date().toISOString();
 

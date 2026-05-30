@@ -27,14 +27,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const bestaand = await db().getMeldingById(id);
+  const dbi = await db();
+  const bestaand = await dbi.getMeldingById(id);
   if (!bestaand) {
     return NextResponse.json({ error: "Melding niet gevonden" }, { status: 404 });
   }
 
   const nieuweVersie = bestaand.versie + 1;
   try {
-    await db().updateMelding(id, {
+    await dbi.updateMelding(id, {
       spoed: parsed.data.spoed,
       ruwe_tekst: parsed.data.ruwe_tekst,
       foto_urls: parsed.data.foto_urls,
@@ -52,12 +53,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const bestaand = await db().getMeldingById(id);
+  const dbi = await db();
+  const bestaand = await dbi.getMeldingById(id);
   if (!bestaand) {
     return NextResponse.json({ error: "Melding niet gevonden" }, { status: 404 });
   }
   try {
-    await db().verwijderMelding(id);
+    await dbi.verwijderMelding(id);
   } catch (err) {
     return NextResponse.json(
       { error: `Verwijderen mislukt: ${(err as Error).message}` },

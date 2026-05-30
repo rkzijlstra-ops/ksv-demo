@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
   let id: string;
   try {
-    const result = await db().insertPdfMelding(parsed);
+    const result = await (await db()).insertPdfMelding(parsed);
     id = result.id;
   } catch (err) {
     return NextResponse.json(

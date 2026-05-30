@@ -7,7 +7,8 @@ import { verstuurOpleverRapport } from "@/lib/mail";
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const opdracht = await db().getMeldingById(id);
+  const dbi = await db();
+  const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
@@ -20,7 +21,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const meldingen = await db().getMeldingenVoorOpdracht(id);
+  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const bestandsnaam = `opleverrapport-${opdracht.referentienummer ?? id}.pdf`;
 
   let rapportUrl: string;
@@ -43,7 +44,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
-    await db().markeerOpgeleverd(id, rapportUrl);
+    await dbi.markeerOpgeleverd(id, rapportUrl);
   } catch (err) {
     return NextResponse.json(
       { error: `Opgeleverd-status zetten mislukt: ${(err as Error).message}` },

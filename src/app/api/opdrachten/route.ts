@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       );
     }
     try {
-      const { id } = await db().createOpdracht({
+      const { id } = await (await db()).createOpdracht({
         documenttype: "tekst",
         klant_naam,
         klant_adres,
@@ -106,8 +106,9 @@ export async function POST(req: Request) {
   }
 
   let opdrachtId: string;
+  const dbi = await db();
   try {
-    const r = await db().createOpdracht(kop);
+    const r = await dbi.createOpdracht(kop);
     opdrachtId = r.id;
   } catch (err) {
     return NextResponse.json(
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
       const type = f.type === "application/pdf" ? "pdf" : "afbeelding";
       const buf = Buffer.from(await f.arrayBuffer());
       const { pad, publieke_url } = await storage().uploadOpdrachtDocument(buf, f.name, f.type);
-      const { id: docId } = await db().addDocument({
+      const { id: docId } = await dbi.addDocument({
         opdracht_id: opdrachtId,
         type,
         bestandsnaam: f.name,

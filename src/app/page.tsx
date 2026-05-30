@@ -13,8 +13,9 @@ export default async function WerkbakPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const meldingen = await db().getMeldingen();
-  const tellingen = await db().getMeldingTellingen();
+  const dbi = await db();
+  const meldingen = await dbi.getMeldingen();
+  const tellingen = await dbi.getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
 
   return (

@@ -10,7 +10,7 @@ export default async function MeldingBewerkenPagina({
   params: Promise<{ id: string; meldingId: string }>;
 }) {
   const { id, meldingId } = await params;
-  const melding = await db().getMeldingById(meldingId);
+  const melding = await (await db()).getMeldingById(meldingId);
   if (!melding) notFound();
 
   return (
