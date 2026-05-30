@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, AlertCircle } from "lucide-react";
+import { Mic, Square, Loader2, AlertCircle, CloudOff } from "lucide-react";
+import { useOfflineState } from "@/lib/use-offline-state";
 
 type Status = "idle" | "opnemen" | "verwerken";
 
@@ -55,6 +56,7 @@ const STILTE_THRESHOLD = 0.012; // RMS-grens onder spraak
 const STILTE_MAX_MS = 5000; // auto-stop na 5s stilte
 
 export function SpraakOpname({ onTekst }: { onTekst: (tekst: string) => void }) {
+  const { online } = useOfflineState();
   const [status, setStatus] = useState<Status>("idle");
   const [fout, setFout] = useState("");
   const [stilteMs, setStilteMs] = useState(0);
@@ -234,13 +236,18 @@ export function SpraakOpname({ onTekst }: { onTekst: (tekst: string) => void }) 
         <button
           type="button"
           onClick={start}
-          disabled={status === "verwerken"}
-          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-primary bg-white px-4 py-3 text-base font-bold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
+          disabled={status === "verwerken" || !online}
+          className="flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-primary bg-white px-4 py-3 text-base font-bold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           {status === "verwerken" ? (
             <>
               <Loader2 size={20} className="animate-spin" aria-hidden="true" />
               Tekst verwerken…
+            </>
+          ) : !online ? (
+            <>
+              <CloudOff size={20} strokeWidth={2.5} aria-hidden="true" />
+              Inspreken – netwerk nodig
             </>
           ) : (
             <>

@@ -5,6 +5,7 @@ import {
   verwijderUitQueue,
 } from "./queue";
 import type { QueueMelding } from "./queue-db";
+import { publishSyncBezig } from "./sync-state";
 
 const MAX_POGINGEN = 3;
 
@@ -32,6 +33,9 @@ export async function syncQueue(
 
   const resultaat: SyncResultaat = { geprobeerd: 0, geslaagd: 0, mislukt: 0 };
 
+  if (wachtend.length === 0) return resultaat;
+  publishSyncBezig(true);
+  try {
   for (const item of wachtend) {
     if (item.pogingen >= MAX_POGINGEN) continue;
     resultaat.geprobeerd += 1;
@@ -49,6 +53,9 @@ export async function syncQueue(
       });
       resultaat.mislukt += 1;
     }
+  }
+  } finally {
+    publishSyncBezig(false);
   }
 
   return resultaat;

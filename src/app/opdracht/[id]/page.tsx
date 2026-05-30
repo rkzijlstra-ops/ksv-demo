@@ -23,6 +23,7 @@ import { MeldingVerwijderKnop } from "@/components/MeldingVerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
+import { PendingMeldingen } from "@/components/PendingMeldingen";
 
 export const dynamic = "force-dynamic";
 
@@ -158,6 +159,8 @@ export default async function OpdrachtDetailPage({
           <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
           Melding toevoegen
         </Link>
+
+        <PendingMeldingen opdrachtId={id} />
 
         {meldingen.length === 0 ? (
           <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">

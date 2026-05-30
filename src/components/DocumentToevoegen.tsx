@@ -2,11 +2,13 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Loader2, AlertCircle, CloudOff } from "lucide-react";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
+import { useOfflineState } from "@/lib/use-offline-state";
 
 export function DocumentToevoegen({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
+  const { online } = useOfflineState();
   const inputRef = useRef<HTMLInputElement>(null);
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
@@ -52,15 +54,17 @@ export function DocumentToevoegen({ opdrachtId }: { opdrachtId: string }) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={bezig}
+        disabled={bezig || !online}
         className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-none border border-line px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {bezig ? (
           <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+        ) : !online ? (
+          <CloudOff size={16} strokeWidth={2.5} aria-hidden="true" />
         ) : (
           <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
         )}
-        Document toevoegen
+        {online ? "Document toevoegen" : "Document toevoegen – netwerk nodig"}
       </button>
       {fout && (
         <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-urgent-rood">

@@ -19,6 +19,7 @@ compressie -> J Sync-pijp -> K UI offline-states -> L Quota-detectie -> M Test +
   start_url "/", display "standalone". Icons SVG-gegenereerd of placeholder met "K".
 - Verifiëren: Chrome DevTools -> Application -> Manifest toont geldige config
 - Tijd: 15 min
+- Status: AFGEROND
 
 ### G2 Serwist installeren + service worker registreren
 - Bestanden: `package.json` (deps), `next.config.ts`, `src/app/sw.ts`

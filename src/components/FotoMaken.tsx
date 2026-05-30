@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Camera, Image as ImageIcon, Loader2, X, AlertCircle, CloudOff } from "lucide-react";
 import { compressImage } from "@/lib/foto-compress";
 import { bewaarFotoBlob } from "@/lib/queue";
+import { useQuota } from "@/lib/use-quota";
 
 const LOCAL_PREFIX = "local:";
 
@@ -25,6 +26,8 @@ export function FotoMaken({
 }) {
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
+  const { niveau: quotaNiveau } = useQuota();
+  const quotaVol = quotaNiveau === "vol";
   // Mapping van local:<id> naar een object-URL voor preview tijdens deze sessie.
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
 
@@ -95,23 +98,33 @@ export function FotoMaken({
         </div>
       ) : (
         <div className="flex gap-2">
-          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+          <label
+            className={`flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary ${
+              quotaVol ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-line/40"
+            }`}
+          >
             <input
               type="file"
               accept="image/*"
               capture="environment"
               hidden
+              disabled={quotaVol}
               onChange={handleFiles}
             />
             <Camera size={22} strokeWidth={2.5} aria-hidden="true" />
             Camera
           </label>
-          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+          <label
+            className={`flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary ${
+              quotaVol ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-line/40"
+            }`}
+          >
             <input
               type="file"
               accept="image/*"
               multiple
               hidden
+              disabled={quotaVol}
               onChange={handleFiles}
             />
             <ImageIcon size={22} strokeWidth={2.5} aria-hidden="true" />

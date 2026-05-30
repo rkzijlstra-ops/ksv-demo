@@ -1,4 +1,5 @@
 import { openQueueDb, type QueueMelding, type QueueFotoBlob } from "./queue-db";
+import { publishQueueGewijzigd } from "./sync-state";
 
 /** Genereert een random UUID, fallback voor browsers zonder crypto.randomUUID. */
 function genId(): string {
@@ -31,6 +32,7 @@ export async function voegToeAanQueue(input: NieuweQueueMeldingInput): Promise<s
     created_at: new Date().toISOString(),
   };
   await db.put("melding_queue", entry);
+  publishQueueGewijzigd();
   return id;
 }
 
@@ -57,6 +59,7 @@ export async function verwijderUitQueue(id: string): Promise<void> {
   // Eerst blobs verwijderen, dan de melding zelf.
   await Promise.all(entry.foto_local_ids.map((blobId) => db.delete("foto_blobs", blobId)));
   await db.delete("melding_queue", id);
+  publishQueueGewijzigd();
 }
 
 export async function markeerStatus(
@@ -71,6 +74,7 @@ export async function markeerStatus(
   if (opts.pogingen !== undefined) entry.pogingen = opts.pogingen;
   if (opts.laatste_fout !== undefined) entry.laatste_fout = opts.laatste_fout;
   await db.put("melding_queue", entry);
+  publishQueueGewijzigd();
 }
 
 export async function bewaarFotoBlob(blob: Blob, contentType: string, bestandsnaam: string): Promise<string> {

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PackageCheck, Loader2, AlertCircle } from "lucide-react";
+import { PackageCheck, Loader2, AlertCircle, CloudOff } from "lucide-react";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
+import { useOfflineState } from "@/lib/use-offline-state";
 
 export function OpleverKnop({
   opdrachtId,
@@ -18,6 +19,7 @@ export function OpleverKnop({
   accent?: "oranje" | "groen";
 }) {
   const router = useRouter();
+  const { online } = useOfflineState();
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState("");
 
@@ -51,13 +53,18 @@ export function OpleverKnop({
       <button
         type="button"
         onClick={opleveren}
-        disabled={bezig}
+        disabled={bezig || !online}
         className={`relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-bold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:content-[''] ${accent === "groen" ? "after:bg-success" : "after:bg-accent"}`}
       >
         {bezig ? (
           <>
             <Loader2 size={22} className="animate-spin" aria-hidden="true" />
             Opleveren…
+          </>
+        ) : !online ? (
+          <>
+            <CloudOff size={22} strokeWidth={2.5} aria-hidden="true" />
+            Opleveren – netwerk nodig
           </>
         ) : (
           <>

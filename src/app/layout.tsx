@@ -3,6 +3,8 @@ import { Lexend, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { SwRegistrar } from "@/components/SwRegistrar";
 import { SyncBoot } from "@/components/SyncBoot";
+import { OfflineStrip } from "@/components/OfflineStrip";
+import { QuotaBanner } from "@/components/QuotaBanner";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -38,6 +40,8 @@ export default function RootLayout({
       <body>
         <SwRegistrar />
         <SyncBoot />
+        <OfflineStrip />
+        <QuotaBanner />
         {children}
       </body>
     </html>

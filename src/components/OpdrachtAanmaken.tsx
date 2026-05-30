@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Loader2, Check, AlertCircle, PencilLine, X } from "lucide-react";
+import { Upload, Loader2, Check, AlertCircle, PencilLine, X, CloudOff } from "lucide-react";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
+import { useOfflineState } from "@/lib/use-offline-state";
 
 type Status = "idle" | "uploading" | "success" | "error";
 
 export function OpdrachtAanmaken() {
   const router = useRouter();
+  const { online } = useOfflineState();
   const inputRef = useRef<HTMLInputElement>(null);
   const bezigRef = useRef(false);
   const [status, setStatus] = useState<Status>("idle");
@@ -98,13 +100,18 @@ export function OpdrachtAanmaken() {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={bezig}
+        disabled={bezig || !online}
         className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-white px-4 py-3 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:left-0 after:-bottom-[2px] after:h-1 after:w-20 after:bg-accent after:content-['']"
       >
         {bezig ? (
           <>
             <Loader2 size={22} className="animate-spin" aria-hidden="true" />
             Bezig…
+          </>
+        ) : !online ? (
+          <>
+            <CloudOff size={22} strokeWidth={2.5} aria-hidden="true" />
+            Documenten toevoegen – netwerk nodig
           </>
         ) : (
           <>
@@ -118,7 +125,7 @@ export function OpdrachtAanmaken() {
         <button
           type="button"
           onClick={() => setHandmatig(true)}
-          disabled={bezig}
+          disabled={bezig || !online}
           className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
         >
           <PencilLine size={18} strokeWidth={2.5} aria-hidden="true" />
