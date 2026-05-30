@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Lexend, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
+import { SwRegistrar } from "@/components/SwRegistrar";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#ffffff",
+  themeColor: "#27272a",
 };
 
 export default function RootLayout({
@@ -33,7 +34,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl" className={`${lexend.variable} ${sourceSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SwRegistrar />
+        {children}
+      </body>
     </html>
   );
 }
