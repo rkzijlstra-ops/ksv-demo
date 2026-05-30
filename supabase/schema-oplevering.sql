@@ -35,3 +35,17 @@ grant select, insert, update, delete on public.opleveringen
 insert into storage.buckets (id, name, public)
 values ('oplever-videos', 'oplever-videos', true)
 on conflict (id) do nothing;
+
+-- ====== 5. Storage-policies: browser-upload toestaan op deze bucket ======
+-- Video's worden rechtstreeks vanuit de browser geupload (niet via de server met
+-- service-key), dus storage.objects-RLS geldt. Deze bucket mag door ingelogde
+-- gebruikers (en anon, voor de demo) beschreven en gelezen worden.
+drop policy if exists "oplever_videos_insert" on storage.objects;
+create policy "oplever_videos_insert" on storage.objects
+  for insert to anon, authenticated
+  with check (bucket_id = 'oplever-videos');
+
+drop policy if exists "oplever_videos_select" on storage.objects;
+create policy "oplever_videos_select" on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'oplever-videos');
