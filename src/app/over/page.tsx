@@ -9,8 +9,8 @@ export default function OverPage() {
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
       <TerugKnop href="/" label="Werkpool" />
 
-      <header className="relative mt-2 mb-4 bg-primary px-5 py-5 text-white">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">Over de app</p>
+      <header className="relative mt-2 mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Over de app</p>
         <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">Hoe werkt het?</h1>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

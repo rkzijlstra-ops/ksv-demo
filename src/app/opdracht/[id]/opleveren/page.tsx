@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { OpleverFlow } from "@/components/OpleverFlow";
-import { TerugKnop } from "@/components/TerugKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +16,11 @@ export default async function OpleverenPage({
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 pb-24">
-      <TerugKnop href={`/opdracht/${id}`} label="Terug naar meldingen" />
-
-      <header className="relative mt-2 bg-primary px-5 py-5 text-white">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">Oplevering</p>
+    <main className="mx-auto w-full max-w-2xl p-4 pb-40">
+      <header className="relative border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">
+          {opdracht.keukenzaak ? `${opdracht.keukenzaak} / ` : ""}Oplevering / Rapportage
+        </p>
         <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">
           {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>

@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff } from "lucide-react";
+import { useOfflineState } from "@/lib/use-offline-state";
 import { FotoMaken } from "@/components/FotoMaken";
 import { VideoMaken } from "@/components/VideoMaken";
 import { HandtekeningModal } from "@/components/HandtekeningModal";
@@ -15,6 +17,7 @@ import { KEUKENZAKEN } from "@/lib/keukenzaken";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
+  const { online } = useOfflineState();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
@@ -232,9 +235,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         )}
       </section>
 
-      {/* Stap 3: versturen */}
+      {/* Rapport naar */}
       <section className="border-t border-line pt-6">
-        <div className="mb-3 flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-ink">Rapport naar</span>
           <select
             value={
@@ -281,26 +284,58 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           <span className="text-xs text-ink-muted">Leeg laten = naar het standaardadres (test).</span>
         </div>
         {fout && (
-          <p className="mb-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
+          <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
             <AlertCircle size={18} strokeWidth={2.5} className="mt-0.5 shrink-0" aria-hidden="true" />
             {fout}
           </p>
         )}
-        {bezig ? (
-          <div className="rounded-none border border-line bg-surface px-4 py-4">
-            <Voortgang label="Rapport maken en versturen…" />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={versturen}
-            className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
-          >
-            <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
-            Rapport versturen
-          </button>
-        )}
       </section>
+
+      {/* Vaste onderbalk: voorvertonen + navigatie + versturen */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 py-3">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+          {bezig ? (
+            <Voortgang label="Rapport maken en versturen…" />
+          ) : (
+            <>
+              <Link
+                href={`/opdracht/${opdrachtId}/rapport`}
+                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
+                Rapport voorvertonen
+              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href={`/opdracht/${opdrachtId}`}
+                  className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                >
+                  <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Meldingen
+                </Link>
+                <button
+                  type="button"
+                  onClick={versturen}
+                  disabled={!online}
+                  className="relative inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
+                >
+                  {!online ? (
+                    <>
+                      <CloudOff size={18} strokeWidth={2.5} aria-hidden="true" />
+                      Netwerk nodig
+                    </>
+                  ) : (
+                    <>
+                      <PackageCheck size={18} strokeWidth={2.5} aria-hidden="true" />
+                      Versturen
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {modalOpen && (
         <HandtekeningModal

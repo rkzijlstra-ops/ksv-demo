@@ -5,6 +5,7 @@ import { formatDatumKort } from "@/lib/datum";
 import { opgeleverdBadgeConfig } from "@/lib/urgentie";
 import { Badge } from "./Badge";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
+import { OpdrachtVerwijderIcoon } from "./OpdrachtVerwijderIcoon";
 
 export function OpdrachtCard({
   melding,
@@ -29,8 +30,9 @@ export function OpdrachtCard({
   return (
     <Link
       href={`/opdracht/${melding.id}`}
-      className={`flex min-h-[72px] cursor-pointer items-center gap-3 border-2 border-ink border-l-[8px] ${stripKleur} bg-white p-4 transition-colors duration-150 hover:brightness-[0.97] focus-visible:outline-3 focus-visible:outline-accent`}
+      className={`relative flex min-h-[72px] cursor-pointer items-center gap-3 border-2 border-ink border-l-[8px] ${stripKleur} bg-white p-4 pr-12 transition-colors duration-150 hover:brightness-[0.97] focus-visible:outline-3 focus-visible:outline-accent`}
     >
+      <OpdrachtVerwijderIcoon opdrachtId={melding.id} klantNaam={titel} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-lg font-extrabold tracking-tight text-ink">{titel}</span>
