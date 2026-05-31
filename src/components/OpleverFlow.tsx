@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic } from "lucide-react";
 import { FotoMaken } from "@/components/FotoMaken";
@@ -24,6 +24,51 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [fout, setFout] = useState("");
 
   useVerlaatWaarschuwing(bezig);
+
+  const geladenRef = useRef(false);
+
+  // Bestaand concept laden bij binnenkomst, zodat een halve oplevering (incl. de geuploade
+  // video) bewaard blijft als je tussendoor naar de werkpool gaat en terugkomt.
+  useEffect(() => {
+    let actief = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`);
+        if (res.ok && actief) {
+          const { oplevering } = await res.json();
+          if (oplevering) {
+            setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
+            setVideoUrl(oplevering.video_url ?? null);
+            setOpmerking(oplevering.opmerking ?? "");
+          }
+        }
+      } finally {
+        geladenRef.current = true;
+      }
+    })();
+    return () => {
+      actief = false;
+    };
+  }, [opdrachtId]);
+
+  function bewaarConcept() {
+    if (!geladenRef.current) return;
+    void fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eindstaat_foto_urls: fotoUrls,
+        video_url: videoUrl,
+        opmerking: opmerking.trim() || null,
+      }),
+    }).catch(() => {});
+  }
+
+  // Foto's/video meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
+  useEffect(() => {
+    bewaarConcept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotoUrls, videoUrl]);
 
   const check = controleerOplevering({
     fotoCount: fotoUrls.length,
@@ -119,6 +164,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <textarea
           value={opmerking}
           onChange={(e) => setOpmerking(e.target.value)}
+          onBlur={bewaarConcept}
           rows={3}
           placeholder="Typ hier of spreek in…"
           className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
@@ -147,31 +193,29 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             Klant laten tekenen
           </button>
         ) : (
-          <div className="flex flex-col gap-3 rounded-none border border-success bg-success/10 p-3">
-            <span className="flex items-center gap-2 text-sm font-semibold text-success">
-              <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
-              Handtekening gezet
-            </span>
+          <div className="flex items-center gap-2 rounded-none border border-success bg-success/10 p-2">
+            <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={handtekeningDataUrl}
               alt="Handtekening klant"
-              className="max-h-32 w-full bg-white object-contain"
+              className="h-10 w-20 shrink-0 border border-line bg-white object-contain"
             />
-            <div className="flex gap-2">
+            <span className="text-sm font-semibold text-success">Gezet</span>
+            <div className="ml-auto flex gap-1.5">
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 border border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-ink px-2 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
               >
                 Opnieuw
               </button>
               <button
                 type="button"
                 onClick={() => setHandtekeningDataUrl(null)}
-                className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 border border-urgent-rood px-3 text-sm font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
+                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
               >
-                Verwijderen
+                Wis
               </button>
             </div>
           </div>

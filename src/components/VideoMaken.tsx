@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Video, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Video, AlertCircle, CheckCircle2, Play, Trash2 } from "lucide-react";
 import { uploadOpleverVideo } from "@/lib/oplever-upload";
 import { Voortgang } from "@/components/Voortgang";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
@@ -20,6 +20,7 @@ export function VideoMaken({
   const [bezig, setBezig] = useState(false);
   const [pct, setPct] = useState(0);
   const [fout, setFout] = useState("");
+  const [speel, setSpeel] = useState(false);
 
   useVerlaatWaarschuwing(bezig);
 
@@ -43,27 +44,41 @@ export function VideoMaken({
   if (url) {
     return (
       <div className="flex flex-col gap-2 rounded-none border border-success bg-success/10 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-sm font-semibold text-success">
-            <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
-            Video vastgelegd
-          </span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-success">
+          <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
+          Video vastgelegd
+        </span>
+        {speel && (
+          <video
+            src={url}
+            controls
+            autoPlay
+            playsInline
+            preload="metadata"
+            className="max-h-56 w-full rounded-none border border-line bg-black"
+          />
+        )}
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => onChange(null)}
-            aria-label="Video verwijderen"
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
+            onClick={() => setSpeel((v) => !v)}
+            className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 rounded-none border border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
-            <X size={20} aria-hidden="true" />
+            <Play size={15} strokeWidth={2.5} aria-hidden="true" />
+            {speel ? "Verbergen" : "Bekijken"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(null);
+              setSpeel(false);
+            }}
+            className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 rounded-none border border-urgent-rood px-3 text-sm font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
+          >
+            <Trash2 size={15} strokeWidth={2.5} aria-hidden="true" />
+            Verwijderen
           </button>
         </div>
-        <video
-          src={url}
-          controls
-          playsInline
-          preload="metadata"
-          className="w-full rounded-none border border-line bg-black"
-        />
       </div>
     );
   }
@@ -76,15 +91,9 @@ export function VideoMaken({
         </div>
       ) : (
         <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
-          <input
-            type="file"
-            accept="video/*"
-            capture="environment"
-            hidden
-            onChange={handleFile}
-          />
+          <input type="file" accept="video/*" hidden onChange={handleFile} />
           <Video size={22} strokeWidth={2.5} aria-hidden="true" />
-          Video opnemen (optioneel)
+          Video toevoegen (opnemen of galerij)
         </label>
       )}
       {fout && (
