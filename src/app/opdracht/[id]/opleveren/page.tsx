@@ -36,7 +36,7 @@ export default async function OpleverenPage({
       </header>
 
       {meldingen.length > 0 && (
-        <div className="mt-6 rounded-none border border-line bg-surface p-3">
+        <div className="mt-6 rounded-none border border-accent/40 bg-accent/10 p-3">
           <p className="text-sm font-semibold text-ink">
             Meldingen in dit rapport ({meldingen.length})
           </p>
