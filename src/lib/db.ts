@@ -39,6 +39,8 @@ export interface Melding {
   // sessie 2A.7 (spoed vervangt rood/geel-urgentie)
   spoed: boolean;
   spoed_verzonden_at: string | null;
+  // v2: soft-delete (prullenbak)
+  verwijderd_at: string | null;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -145,6 +147,9 @@ export interface Db {
   getOpleveringVoorOpdracht(opdrachtId: string): Promise<Oplevering | null>;
   finaliseerOplevering(opdrachtId: string, rapportUrl: string): Promise<void>;
   verwijderOpdracht(id: string): Promise<void>;
+  herstelOpdracht(id: string): Promise<void>;
+  definitiefVerwijderen(id: string): Promise<void>;
+  getVerwijderdeOpdrachten(): Promise<Melding[]>;
   verwijderDocument(id: string): Promise<void>;
   verwijderMelding(id: string): Promise<void>;
   markeerSpoedVerzonden(id: string): Promise<void>;
@@ -233,6 +238,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         .from("meldingen")
         .select("*")
         .is("opdracht_id", null)
+        .is("verwijderd_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Melding[];
@@ -364,8 +370,36 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async verwijderOpdracht(id) {
-      const { error } = await client.from("meldingen").delete().eq("id", id);
+      // Soft-delete: markeren als verwijderd (prullenbak), niet echt wissen.
+      const { error } = await client
+        .from("meldingen")
+        .update({ verwijderd_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
+    },
+
+    async herstelOpdracht(id) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ verwijderd_at: null })
+        .eq("id", id);
+      if (error) throw new Error(`DB herstellen mislukt: ${error.message}`);
+    },
+
+    async definitiefVerwijderen(id) {
+      const { error } = await client.from("meldingen").delete().eq("id", id);
+      if (error) throw new Error(`DB definitief verwijderen mislukt: ${error.message}`);
+    },
+
+    async getVerwijderdeOpdrachten() {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .is("opdracht_id", null)
+        .not("verwijderd_at", "is", null)
+        .order("verwijderd_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
     },
 
     async verwijderDocument(id) {

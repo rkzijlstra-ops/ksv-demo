@@ -47,6 +47,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     rapport_url: null,
     spoed: false,
     spoed_verzonden_at: null,
+    verwijderd_at: null,
     ...over,
   };
 }

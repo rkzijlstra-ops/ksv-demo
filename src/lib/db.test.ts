@@ -365,19 +365,50 @@ describe("markeerOpgeleverd", () => {
   });
 });
 
-describe("verwijderOpdracht", () => {
-  it("verwijdert de rij uit 'meldingen' op id (cascade ruimt documenten + meldingen)", async () => {
+describe("verwijderOpdracht (soft-delete)", () => {
+  it("markeert de rij als verwijderd (update verwijderd_at), wist niet echt", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).verwijderOpdracht("opdr-1");
 
     expect(h.fns.from).toHaveBeenCalledWith("meldingen");
-    expect(h.fns.delete).toHaveBeenCalled();
+    expect(h.fns.delete).not.toHaveBeenCalled();
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.verwijderd_at).toBeTypeOf("string");
     expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
   });
 
   it("gooit Error bij DB-fout", async () => {
-    h.setResult({ data: null, error: { message: "delete kapot" } });
-    await expect(createDb(cfg).verwijderOpdracht("opdr-1")).rejects.toThrow(/delete kapot/);
+    h.setResult({ data: null, error: { message: "soft kapot" } });
+    await expect(createDb(cfg).verwijderOpdracht("opdr-1")).rejects.toThrow(/soft kapot/);
+  });
+});
+
+describe("herstelOpdracht", () => {
+  it("zet verwijderd_at terug op null", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).herstelOpdracht("opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.verwijderd_at).toBeNull();
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+  });
+});
+
+describe("definitiefVerwijderen", () => {
+  it("verwijdert de rij echt (delete) op id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).definitiefVerwijderen("opdr-1");
+    expect(h.fns.delete).toHaveBeenCalled();
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+  });
+});
+
+describe("getVerwijderdeOpdrachten", () => {
+  it("selecteert opdrachten met verwijderd_at gezet", async () => {
+    h.setResult({ data: [{ id: "v1" }], error: null });
+    const rows = await createDb(cfg).getVerwijderdeOpdrachten();
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
+    expect(h.fns.not).toHaveBeenCalledWith("verwijderd_at", "is", null);
+    expect(rows).toHaveLength(1);
   });
 });
 
