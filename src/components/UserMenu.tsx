@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import Link from "next/link";
+import { LogOut, User, Info, Trash2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { APP_VERSIE } from "@/lib/versie";
 
 export function UserMenu({ email }: { email: string }) {
   const router = useRouter();
@@ -50,6 +52,24 @@ export function UserMenu({ email }: { email: string }) {
             <User size={16} className="shrink-0 text-ink-muted" aria-hidden="true" />
             <span className="truncate" title={email}>{email}</span>
           </p>
+          <Link
+            href="/over"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="mt-1 flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <Info size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+            Over de app
+          </Link>
+          <Link
+            href="/prullenbak"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <Trash2 size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+            Prullenbak
+          </Link>
           <button
             type="button"
             onClick={uitloggen}
@@ -59,6 +79,7 @@ export function UserMenu({ email }: { email: string }) {
             <LogOut size={16} strokeWidth={2.5} aria-hidden="true" />
             Uitloggen
           </button>
+          <p className="mt-2 px-2 text-xs text-ink-muted">Versie {APP_VERSIE}</p>
         </div>
       )}
     </div>
