@@ -273,12 +273,10 @@ export default async function OpdrachtDetailPage({
       )}
 
       <div className="mt-6">
-        <Tabs
-          tabs={[
-            { label: `Meldingen (${meldingen.length})`, inhoud: meldingenPaneel },
-            { label: "Afronden", inhoud: afrondenPaneel },
-          ]}
-        />
+        <Tabs labels={[`Meldingen (${meldingen.length})`, "Afronden"]}>
+          {meldingenPaneel}
+          {afrondenPaneel}
+        </Tabs>
       </div>
 
       <div className="mt-10">

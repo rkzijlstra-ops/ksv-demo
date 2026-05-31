@@ -1,24 +1,22 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Children, useState, type ReactNode } from "react";
 
 /**
- * Eenvoudige tabs. De inhoud per tab wordt als (server-gerenderde) node meegegeven,
- * zodat server-componenten server blijven en alleen het wisselen client-side is.
+ * Eenvoudige tabs. Labels als string-array, de panelen als children (in dezelfde volgorde).
+ * Alleen het actieve paneel wordt getoond. Children-patroon zodat server-gerenderde inhoud
+ * (incl. client-componenten) betrouwbaar wordt doorgegeven.
  */
-export function Tabs({
-  tabs,
-}: {
-  tabs: { label: string; inhoud: ReactNode }[];
-}) {
+export function Tabs({ labels, children }: { labels: string[]; children: ReactNode }) {
   const [actief, setActief] = useState(0);
+  const panels = Children.toArray(children);
 
   return (
     <div>
       <div role="tablist" className="flex border-b border-line">
-        {tabs.map((t, i) => (
+        {labels.map((label, i) => (
           <button
-            key={t.label}
+            key={label}
             type="button"
             role="tab"
             aria-selected={i === actief}
@@ -29,11 +27,11 @@ export function Tabs({
                 : "border-b-[3px] border-transparent text-ink-muted hover:text-ink"
             }`}
           >
-            {t.label}
+            {label}
           </button>
         ))}
       </div>
-      <div className="mt-4">{tabs[actief]?.inhoud}</div>
+      <div className="mt-4">{panels[actief]}</div>
     </div>
   );
 }
