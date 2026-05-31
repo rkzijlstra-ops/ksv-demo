@@ -39,7 +39,7 @@ export function UserMenu({ email }: { email: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Menu voor ${email}`}
-        className="flex h-10 w-10 cursor-pointer items-center justify-center border-2 border-white bg-white/15 font-mono text-base font-extrabold text-white transition-colors duration-150 hover:bg-white/25 focus-visible:outline-3 focus-visible:outline-accent"
+        className="flex h-10 w-10 cursor-pointer items-center justify-center border-2 border-ink bg-surface font-mono text-base font-extrabold text-ink transition-colors duration-150 hover:bg-line/50 focus-visible:outline-3 focus-visible:outline-accent"
       >
         {initiaal}
       </button>
