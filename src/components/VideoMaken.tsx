@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Video, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import { uploadOpleverVideo } from "@/lib/oplever-upload";
 import { Voortgang } from "@/components/Voortgang";
+import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 
 /**
  * Opnemen/kiezen van één oplever-video. Upload rechtstreeks naar Supabase Storage.
@@ -19,6 +20,8 @@ export function VideoMaken({
   const [bezig, setBezig] = useState(false);
   const [pct, setPct] = useState(0);
   const [fout, setFout] = useState("");
+
+  useVerlaatWaarschuwing(bezig);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

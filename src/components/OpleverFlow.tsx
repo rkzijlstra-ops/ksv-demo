@@ -10,6 +10,7 @@ import { SpraakOpname } from "@/components/SpraakOpname";
 import { Voortgang } from "@/components/Voortgang";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
+import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
@@ -21,6 +22,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
+
+  useVerlaatWaarschuwing(bezig);
 
   const check = controleerOplevering({
     fotoCount: fotoUrls.length,
