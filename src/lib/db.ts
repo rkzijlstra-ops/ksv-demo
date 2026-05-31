@@ -53,6 +53,7 @@ export interface Oplevering {
   video_url: string | null;
   handtekening_url: string | null;
   opmerking: string | null;
+  rapport_email: string | null;
   rapport_url: string | null;
   user_id: string | null;
 }
@@ -65,6 +66,7 @@ export interface OpleveringConceptInput {
   video_url: string | null;
   handtekening_url: string | null;
   opmerking?: string | null;
+  rapport_email?: string | null;
   user_id?: string | null;
 }
 
@@ -338,6 +340,7 @@ function createDbFromClient(client: SupabaseClient): Db {
             video_url: input.video_url,
             handtekening_url: input.handtekening_url,
             opmerking: input.opmerking ?? null,
+            rapport_email: input.rapport_email ?? null,
             user_id: input.user_id ?? null,
           },
           { onConflict: "opdracht_id" },

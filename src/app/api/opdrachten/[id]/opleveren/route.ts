@@ -13,19 +13,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
 
-  const naar = process.env.RAPPORT_EMAIL?.trim();
-  if (!naar) {
-    return NextResponse.json(
-      { error: "RAPPORT_EMAIL ontbreekt in de serverconfig (.env.local)" },
-      { status: 500 },
-    );
-  }
-
   const oplevering = await dbi.getOpleveringVoorOpdracht(id);
   if (!oplevering) {
     return NextResponse.json(
       { error: "Nog geen oplevering vastgelegd. Doorloop eerst de oplever-flow." },
       { status: 409 },
+    );
+  }
+
+  // Ontvanger: het bij de oplevering ingestelde adres, anders het standaardadres uit de config.
+  const naar = oplevering.rapport_email?.trim() || process.env.RAPPORT_EMAIL?.trim();
+  if (!naar) {
+    return NextResponse.json(
+      { error: "Geen ontvanger voor het rapport (vul een e-mailadres in of stel RAPPORT_EMAIL in)" },
+      { status: 500 },
     );
   }
 

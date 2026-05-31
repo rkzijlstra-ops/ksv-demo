@@ -96,6 +96,20 @@ describe("POST /api/opdrachten/[id]/opleveren", () => {
     expect(mockMarkeer).not.toHaveBeenCalled();
   });
 
+  it("mailt naar het bij de oplevering ingestelde adres als dat er is", async () => {
+    mockGetOpl.mockResolvedValue({
+      id: "opl-1",
+      uitkomst: "afgerond",
+      eindstaat_foto_urls: [],
+      video_url: null,
+      handtekening_url: null,
+      rapport_email: "zaak@keukenzaak.nl",
+    });
+    const res = await POST(req(), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockMail.mock.calls[0][0].naar).toBe("zaak@keukenzaak.nl");
+  });
+
   it("404 als de opdracht niet bestaat", async () => {
     mockGetById.mockResolvedValue(null);
     const res = await POST(req(), params("weg"));

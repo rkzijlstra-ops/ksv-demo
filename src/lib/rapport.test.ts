@@ -12,6 +12,7 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     video_url: null,
     handtekening_url: null,
     opmerking: null,
+    rapport_email: null,
     rapport_url: null,
     user_id: null,
     ...over,

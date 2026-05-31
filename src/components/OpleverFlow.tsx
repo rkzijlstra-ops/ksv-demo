@@ -17,6 +17,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
+  const [rapportEmail, setRapportEmail] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [handtekeningDataUrl, setHandtekeningDataUrl] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
@@ -40,6 +41,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
             setOpmerking(oplevering.opmerking ?? "");
+            setRapportEmail(oplevering.rapport_email ?? "");
           }
         }
       } finally {
@@ -60,6 +62,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         eindstaat_foto_urls: fotoUrls,
         video_url: videoUrl,
         opmerking: opmerking.trim() || null,
+        rapport_email: rapportEmail.trim() || null,
       }),
     }).catch(() => {});
   }
@@ -95,6 +98,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           video_url: videoUrl,
           handtekening_url,
           opmerking: opmerking.trim() || null,
+          rapport_email: rapportEmail.trim() || null,
         }),
       });
       if (!conceptRes.ok) {
@@ -224,6 +228,21 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
 
       {/* Stap 3: versturen */}
       <section className="border-t border-line pt-6">
+        <label className="mb-3 flex flex-col gap-1 text-sm font-semibold text-ink">
+          Rapport naar (e-mail van de zaak)
+          <input
+            type="email"
+            inputMode="email"
+            value={rapportEmail}
+            onChange={(e) => setRapportEmail(e.target.value)}
+            onBlur={bewaarConcept}
+            placeholder="naam@keukenzaak.nl"
+            className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+          />
+          <span className="text-xs font-normal text-ink-muted">
+            Leeg laten = naar het standaardadres (test).
+          </span>
+        </label>
         {fout && (
           <p className="mb-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
             <AlertCircle size={18} strokeWidth={2.5} className="mt-0.5 shrink-0" aria-hidden="true" />

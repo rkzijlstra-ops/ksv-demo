@@ -52,6 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       video_url: typeof body.video_url === "string" ? body.video_url : null,
       handtekening_url: typeof body.handtekening_url === "string" ? body.handtekening_url : null,
       opmerking: typeof body.opmerking === "string" ? body.opmerking : null,
+      rapport_email: typeof body.rapport_email === "string" ? body.rapport_email : null,
       user_id: userId,
     });
     return NextResponse.json({ id: oplId }, { status: 200 });
