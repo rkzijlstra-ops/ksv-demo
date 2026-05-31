@@ -24,17 +24,20 @@ import { BelKnop } from "@/components/BelKnop";
 import { WhatsAppKnop } from "@/components/WhatsAppKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
-import { Tabs } from "@/components/Tabs";
 import { OpleverFlow } from "@/components/OpleverFlow";
 
 export const dynamic = "force-dynamic";
 
 export default async function OpdrachtDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab: tabParam } = await searchParams;
+  const tab = tabParam === "afronden" ? "afronden" : "meldingen";
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) notFound();
@@ -273,10 +276,31 @@ export default async function OpdrachtDetailPage({
       )}
 
       <div className="mt-6">
-        <Tabs labels={[`Meldingen (${meldingen.length})`, "Afronden"]}>
-          {meldingenPaneel}
-          {afrondenPaneel}
-        </Tabs>
+        <div role="tablist" className="flex border-b border-line">
+          <Link
+            href={`/opdracht/${id}`}
+            scroll={false}
+            className={`inline-flex min-h-[48px] flex-1 items-center justify-center px-3 text-sm font-extrabold uppercase tracking-[0.06em] focus-visible:outline-3 focus-visible:outline-accent ${
+              tab === "meldingen"
+                ? "border-b-[3px] border-primary text-primary"
+                : "border-b-[3px] border-transparent text-ink-muted hover:text-ink"
+            }`}
+          >
+            Meldingen ({meldingen.length})
+          </Link>
+          <Link
+            href={`/opdracht/${id}?tab=afronden`}
+            scroll={false}
+            className={`inline-flex min-h-[48px] flex-1 items-center justify-center px-3 text-sm font-extrabold uppercase tracking-[0.06em] focus-visible:outline-3 focus-visible:outline-accent ${
+              tab === "afronden"
+                ? "border-b-[3px] border-primary text-primary"
+                : "border-b-[3px] border-transparent text-ink-muted hover:text-ink"
+            }`}
+          >
+            Afronden
+          </Link>
+        </div>
+        <div className="mt-4">{tab === "afronden" ? afrondenPaneel : meldingenPaneel}</div>
       </div>
 
       <div className="mt-10">
