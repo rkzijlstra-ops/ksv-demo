@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Video, AlertCircle, CheckCircle2, Play, Trash2 } from "lucide-react";
+import { Video, Image as ImageIcon, AlertCircle, CheckCircle2, Play, Trash2 } from "lucide-react";
 import { uploadOpleverVideo } from "@/lib/oplever-upload";
 import { Voortgang } from "@/components/Voortgang";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
@@ -90,11 +90,18 @@ export function VideoMaken({
           <Voortgang label="Video uploaden…" percent={pct} />
         </div>
       ) : (
-        <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
-          <input type="file" accept="video/*" hidden onChange={handleFile} />
-          <Video size={22} strokeWidth={2.5} aria-hidden="true" />
-          Video toevoegen (opnemen of galerij)
-        </label>
+        <div className="flex gap-2">
+          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+            <input type="file" accept="video/*" capture="environment" hidden onChange={handleFile} />
+            <Video size={22} strokeWidth={2.5} aria-hidden="true" />
+            Opnemen
+          </label>
+          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
+            <input type="file" accept="video/*" hidden onChange={handleFile} />
+            <ImageIcon size={22} strokeWidth={2.5} aria-hidden="true" />
+            Galerij
+          </label>
+        </div>
       )}
       {fout && (
         <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
