@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Oplever",
-    short_name: "Oplever",
+    name: "Oplever App",
+    short_name: "Oplever App",
     description: "Monteur-app voor opleveringen, opdrachten en meldingen.",
     id: "/",
     scope: "/",
