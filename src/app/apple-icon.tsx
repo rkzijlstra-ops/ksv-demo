@@ -3,6 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
+// Maskable: inhoud in de veilige zone (midden), geen randelementen die weggesneden worden.
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -14,21 +15,17 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          position: "relative",
-          fontFamily: "monospace",
         }}
       >
-        <span style={{ color: "#ffffff", fontSize: 110, fontWeight: 900 }}>K</span>
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 12,
-            background: "#F97316",
-          }}
-        />
+        <svg width="110" height="110" viewBox="0 0 192 192" fill="none">
+          <path
+            d="M48 100 l30 32 l66 -74"
+            stroke="#ffffff"
+            strokeWidth="18"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
     ),
     { ...size },
