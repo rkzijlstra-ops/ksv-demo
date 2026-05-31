@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic } from "lucide-react";
 import { FotoMaken } from "@/components/FotoMaken";
 import { VideoMaken } from "@/components/VideoMaken";
-import { Handtekening } from "@/components/Handtekening";
+import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
 import { Voortgang } from "@/components/Voortgang";
 import { controleerOplevering } from "@/lib/oplever-validatie";
@@ -17,7 +17,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
-  const [tekenen, setTekenen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [handtekeningDataUrl, setHandtekeningDataUrl] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
@@ -37,7 +37,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     setFout("");
     try {
       let handtekening_url: string | null = null;
-      if (tekenen && handtekeningDataUrl) {
+      if (handtekeningDataUrl) {
         const blob = dataUrlNaarBlob(handtekeningDataUrl);
         handtekening_url = (await uploadHandtekening(blob)).url;
       }
@@ -137,28 +137,43 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           2. Handtekening (optioneel)
         </h2>
-        {!tekenen ? (
+        {!handtekeningDataUrl ? (
           <button
             type="button"
-            onClick={() => setTekenen(true)}
+            onClick={() => setModalOpen(true)}
             className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-white px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
             <PenLine size={20} strokeWidth={2.5} aria-hidden="true" />
             Klant laten tekenen
           </button>
         ) : (
-          <div className="flex flex-col gap-2">
-            <Handtekening onChange={setHandtekeningDataUrl} />
-            <button
-              type="button"
-              onClick={() => {
-                setTekenen(false);
-                setHandtekeningDataUrl(null);
-              }}
-              className="self-start text-sm font-semibold text-ink-muted hover:underline"
-            >
-              Toch overslaan
-            </button>
+          <div className="flex flex-col gap-3 rounded-none border border-success bg-success/10 p-3">
+            <span className="flex items-center gap-2 text-sm font-semibold text-success">
+              <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
+              Handtekening gezet
+            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={handtekeningDataUrl}
+              alt="Handtekening klant"
+              className="max-h-32 w-full bg-white object-contain"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 border border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                Opnieuw
+              </button>
+              <button
+                type="button"
+                onClick={() => setHandtekeningDataUrl(null)}
+                className="inline-flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1 border border-urgent-rood px-3 text-sm font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
+              >
+                Verwijderen
+              </button>
+            </div>
           </div>
         )}
       </section>
@@ -186,6 +201,16 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           </button>
         )}
       </section>
+
+      {modalOpen && (
+        <HandtekeningModal
+          onOpslaan={(d) => {
+            setHandtekeningDataUrl(d);
+            setModalOpen(false);
+          }}
+          onSluiten={() => setModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
