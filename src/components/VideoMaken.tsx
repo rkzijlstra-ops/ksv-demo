@@ -39,19 +39,28 @@ export function VideoMaken({
 
   if (url) {
     return (
-      <div className="flex items-center justify-between gap-2 rounded-none border border-success bg-success/10 px-3 py-3">
-        <span className="flex items-center gap-2 text-sm font-semibold text-success">
-          <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
-          Video vastgelegd
-        </span>
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          aria-label="Video verwijderen"
-          className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
-        >
-          <X size={20} aria-hidden="true" />
-        </button>
+      <div className="flex flex-col gap-2 rounded-none border border-success bg-success/10 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2 text-sm font-semibold text-success">
+            <CheckCircle2 size={20} strokeWidth={2.5} aria-hidden="true" />
+            Video vastgelegd
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Video verwijderen"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <video
+          src={url}
+          controls
+          playsInline
+          preload="metadata"
+          className="w-full rounded-none border border-line bg-black"
+        />
       </div>
     );
   }

@@ -14,9 +14,9 @@ export function NavKnop({ adres }: { adres: string }) {
   return (
     <a
       href={navUrl(adres, platform)}
-      className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      className="flex min-h-[56px] min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-none bg-primary px-2 py-3 text-sm font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      <Navigation size={22} strokeWidth={2.5} aria-hidden="true" />
+      <Navigation size={20} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
       Navigeer
     </a>
   );
