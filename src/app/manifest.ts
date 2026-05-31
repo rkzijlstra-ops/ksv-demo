@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "KSV - Keukenstudio Voorschoten",
-    short_name: "KSV",
-    description: "Monteur-app voor opdrachten en meldingen van Keukenstudio Voorschoten",
+    name: "Oplever",
+    short_name: "Oplever",
+    description: "Monteur-app voor opleveringen, opdrachten en meldingen.",
     id: "/",
     scope: "/",
     start_url: "/",
