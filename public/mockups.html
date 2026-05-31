@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mockups – Meldingen & Rapportage</title>
+<title>Mockup – Werkbak, Meldingen, Versturen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800;900&display=swap" rel="stylesheet" />
 <style>
@@ -13,38 +13,33 @@
   }
   *{box-sizing:border-box;}
   body{margin:0;background:#e2e8f0;color:var(--ink);font-family:Lexend,system-ui,sans-serif;}
-  h1.page{font-size:20px;margin:20px 16px 4px;}
-  p.intro{margin:0 16px 16px;color:var(--muted);font-size:14px;}
+  h1.page{font-size:20px;margin:18px 16px 4px;}
+  p.intro{margin:0 16px 14px;color:var(--muted);font-size:14px;}
   .nav{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;}
   .nav a{font-size:12px;font-weight:800;text-decoration:none;color:var(--primary);border:1px solid var(--line);padding:4px 8px;}
-  .grid{display:flex;flex-wrap:wrap;gap:24px;padding:20px 16px 60px;align-items:flex-start;}
+  .grid{display:flex;flex-wrap:wrap;gap:24px;padding:18px 16px 60px;align-items:flex-start;}
   .col{flex:1 1 360px;max-width:420px;}
-  .col h2{font-size:15px;margin:0 0 8px;}
+  .col h2{font-size:15px;margin:0 0 6px;}
   .col .concept{font-size:13px;color:var(--muted);margin:0 0 10px;}
-  /* telefoon-frame */
-  .phone{width:100%;max-width:400px;background:#fff;border:8px solid #0f172a;border-radius:22px;overflow:hidden;}
-  .scr{padding:14px;}
-  /* elementen */
-  .back{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--primary);color:var(--primary);font-weight:700;font-size:13px;padding:8px 10px;}
-  .hdr{position:relative;background:var(--primary);color:#fff;padding:16px;margin-top:10px;}
+  .phone{position:relative;width:100%;max-width:400px;background:#fff;border:8px solid #0f172a;border-radius:22px;overflow:hidden;}
+  .scr{padding:14px 14px 80px;}
+  .hdr{position:relative;background:var(--primary);color:#fff;padding:16px;}
+  .hdr.top{margin-top:0;}
   .hdr .kk{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#ffffffb0;}
   .hdr .klant{font-size:20px;font-weight:900;margin-top:2px;}
+  .hdr .sub{font-size:13px;color:#ffffffcc;margin-top:2px;}
   .hdr .bar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--accent);}
   .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12px;}
   .badge{background:var(--primary);color:#fff;padding:2px 8px;font-weight:700;}
-  .meta{font-size:13px;color:var(--ink);margin-top:8px;line-height:1.7;}
+  .meta{font-size:13px;margin-top:8px;line-height:1.7;}
   .muted{color:var(--muted);}
   .contact{display:flex;gap:8px;margin-top:12px;}
   .contact .b{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;border:2px solid var(--primary);color:var(--primary);font-weight:700;font-size:13px;}
   .contact .b.wa{border-color:var(--success);color:var(--success);}
   .contact .b.fill{background:var(--primary);color:#fff;border-color:var(--primary);}
-  .zonebar{background:var(--primary);color:#fff;font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;margin-top:16px;position:relative;}
-  .zonebar .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent);}
-  .h2{font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:16px 0 8px;}
-  .card{border:1px solid var(--line);padding:12px;margin-top:12px;}
-  .card.titled{position:relative;}
-  .card .ct{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:-4px 0 8px;}
-  .doc,.art{font-size:13px;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--line);}
+  .card{border:1px solid var(--line);padding:12px;margin-top:12px;position:relative;}
+  .card .ct{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:-2px 0 8px;}
+  .doc{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line);}
   .btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.05em;width:100%;}
   .btn.primary{background:var(--primary);color:#fff;position:relative;}
   .btn.primary .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent);}
@@ -52,7 +47,6 @@
   .btn.add{background:var(--primary);color:#fff;position:relative;margin-bottom:10px;}
   .btn.add .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent);}
   .melding{border:1px solid var(--line);padding:10px;margin-bottom:10px;}
-  .melding .top{display:flex;justify-content:space-between;font-size:11px;}
   .pill{font-weight:800;font-size:10px;text-transform:uppercase;padding:2px 6px;}
   .pill.rood{background:var(--rood);color:#fff;}
   .pill.grijs{background:var(--surface);color:var(--muted);}
@@ -61,209 +55,116 @@
   .mini{border:1px solid var(--primary);color:var(--primary);font-size:11px;font-weight:800;text-transform:uppercase;padding:4px 8px;}
   .mini.rood{border-color:var(--rood);color:var(--rood);}
   .orange{border:1px solid #f9731666;background:#f973161a;padding:10px;margin-top:12px;font-size:13px;}
-  .orange .t{font-weight:700;color:var(--ink);}
+  .orange .t{font-weight:700;}
   .orange ul{margin:4px 0 0;padding-left:16px;color:var(--muted);}
-  .field{border:1px solid var(--line);min-height:46px;display:flex;align-items:center;padding:0 10px;color:var(--muted);font-size:14px;margin-top:6px;}
-  .textarea{border:1px solid var(--line);min-height:64px;padding:8px 10px;color:var(--muted);font-size:14px;margin-top:6px;}
-  .dashed{border:2px dashed var(--line);background:var(--surface);min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:13px;}
+  .textarea{border:1px solid var(--line);min-height:60px;padding:8px 10px;color:var(--muted);font-size:14px;margin-top:6px;}
+  .dashed{border:2px dashed var(--line);background:var(--surface);min-height:50px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:13px;}
   .row2{display:flex;gap:8px;}
   .row2>*{flex:1;}
   .select{border:1px solid var(--line);min-height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;margin-top:6px;}
-  .verwijder{text-align:center;margin-top:18px;}
-  .verwijder span{border:1px solid var(--rood);color:var(--rood);font-size:12px;font-weight:700;padding:6px 10px;}
-  .check{color:var(--success);font-weight:800;}
-  .sticky{border-top:2px solid var(--line);margin-top:16px;padding-top:12px;display:flex;gap:8px;}
-  .sticky>*{flex:1;}
-  .label{font-weight:700;font-size:13px;margin-top:12px;}
   .stepnum{display:inline-flex;width:20px;height:20px;background:var(--accent);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-right:6px;}
+  .opdracht{border:1px solid var(--line);padding:12px;margin-top:12px;position:relative;}
+  .opdracht .trash{position:absolute;top:8px;right:8px;width:30px;height:30px;border:1px solid var(--rood);color:var(--rood);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .opdracht .accent{position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent);}
+  .opdracht .klant{font-weight:800;font-size:16px;padding-left:8px;}
+  .opdracht .info{font-size:13px;color:var(--muted);padding-left:8px;margin-top:2px;}
+  .bottombar{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+  .bottombar .row{display:flex;gap:8px;}
+  .bottombar .row>*{flex:1;}
+  .b-half{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;}
+  .b-half.outline{border:2px solid var(--primary);color:var(--primary);}
+  .b-half.primary{background:var(--primary);color:#fff;position:relative;}
+  .b-half.primary .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent);}
+  .dialog{position:absolute;inset:0;background:#0f172acc;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .dialog .box{background:#fff;padding:16px;width:100%;max-width:300px;}
+  .dialog .box p{margin:0 0 14px;font-size:14px;}
+  .dialog .box .drow{display:flex;gap:8px;}
+  .dialog .box .drow>*{flex:1;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
 </style>
 </head>
 <body>
 <div class="nav">
-  <strong style="font-size:12px;align-self:center;margin-right:6px;">Mockups:</strong>
-  <a href="#m1">M1</a><a href="#m2">M2</a><a href="#m3">M3</a><a href="#m4">M4</a>
-  <a href="#r1">R1</a><a href="#r2">R2</a><a href="#r3">R3</a><a href="#r4">R4</a>
+  <strong style="font-size:12px;align-self:center;margin-right:6px;">Schermen:</strong>
+  <a href="#werkbak">1 · Werkbak</a><a href="#meldingen">2 · Meldingen</a><a href="#versturen">3 · Versturen</a>
 </div>
 
-<h1 class="page">Meldingen-pagina – 4 indelingen</h1>
-<p class="intro">Doel: opdracht-info en de echte meldingen visueel uit elkaar trekken. Alle elementen blijven.</p>
+<h1 class="page">Voorstel-flow op basis van M1 + R1</h1>
+<p class="intro">Verwijderen zit nu in de werkbak (prullenbakje per opdracht → bevestig-venster). Navigatie staat onderaan: Werkpool ‹ › Rapportage › Versturen. Voorvertonen is een eigen knop boven de onderbalk.</p>
+
 <div class="grid">
 
-  <!-- M1 -->
-  <div class="col" id="m1">
-    <h2>M1 · Gekaderde secties</h2>
-    <p class="concept">Elke sectie een eigen kader met witruimte ertussen. Rustig.</p>
+  <!-- 1. WERKBAK -->
+  <div class="col" id="werkbak">
+    <h2>1 · Werkbak</h2>
+    <p class="concept">Lijst met opdrachten. Prullenbakje rechtsboven per kaart → bevestig-venster (wissen / annuleren).</p>
+    <div class="phone"><div class="scr" style="padding-bottom:14px;">
+      <div class="hdr top"><div class="kk">Werkpool</div><div class="klant">Opdrachten</div><div class="sub">3 actieve klussen</div><div class="bar"></div></div>
+      <div class="btn add" style="margin-top:12px;">⬆ Documenten toevoegen (PDF of foto)<div class="bar"></div></div>
+      <div class="opdracht"><div class="accent"></div><div class="trash">🗑</div><div class="klant">Familie de Vries</div><div class="info">orderbon · ref 7407 · di 2 juni</div></div>
+      <div class="opdracht"><div class="accent"></div><div class="trash">🗑</div><div class="klant">Mevr. Jansen</div><div class="info">service · ref 6203 · 2 meldingen</div></div>
+      <div class="opdracht"><div class="accent"></div><div class="trash">🗑</div><div class="klant">Fam. Schaddé v. Dooren</div><div class="info">orderbon · ref 192945</div></div>
+
+      <div class="dialog"><div class="box">
+        <p><strong>Opdracht "Familie de Vries" verwijderen?</strong><br><span class="muted">De documenten en meldingen gaan ook weg.</span></p>
+        <div class="drow"><span class="mini" style="border-color:var(--primary);color:var(--primary)">Annuleren</span><span class="mini" style="background:var(--rood);color:#fff;border-color:var(--rood)">Wissen</span></div>
+      </div></div>
+    </div></div>
+  </div>
+
+  <!-- 2. MELDINGEN -->
+  <div class="col" id="meldingen">
+    <h2>2 · Meldingen (M1)</h2>
+    <p class="concept">Gekaderde secties. Onderaan vast: ‹ Werkpool en Rapportage ›. Geen verwijderen meer (zit in werkbak).</p>
     <div class="phone"><div class="scr">
-      <span class="back">‹ Werkpool</span>
-      <div class="hdr"><div class="kk">KKS / Opdracht</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
+      <div class="hdr top"><div class="kk">KKS / Opdracht</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
       <div class="badges"><span class="badge">orderbon</span><span class="muted" style="align-self:center">ref 7407 · adviseur M. de Vries</span></div>
-      <div class="card titled"><div class="ct">Opdracht</div>
+      <div class="card"><div class="ct">Opdracht</div>
         <div class="meta">📍 Hoge Morsweg 37, Leiden<br>🕒 di 2 juni &nbsp; 🚚 leverweek 22</div>
         <div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div>
       </div>
-      <div class="card titled"><div class="ct">Documenten (3) &nbsp; [+]</div>
+      <div class="card"><div class="ct">Documenten (3) &nbsp; [+]</div>
         <div class="doc">📄 7407-orderbon.pdf</div><div class="doc">📄 leidingschema.pdf</div>
       </div>
-      <div class="card titled"><div class="ct">Meldingen (2)</div>
+      <div class="card"><div class="ct">Meldingen (2)</div>
         <div class="btn add">+ Melding toevoegen<div class="bar"></div></div>
-        <div class="melding"><div class="top"><span class="pill rood">Spoed</span></div><div class="tx">Front beschadigd bij ontvangst</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
-        <div class="melding"><div class="top"><span class="pill grijs">Melding</span></div><div class="tx">Greep nabestellen</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
+        <div class="melding"><span class="pill rood">Spoed</span><div class="tx">Front beschadigd bij ontvangst</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
+        <div class="melding"><span class="pill grijs">Melding</span><div class="tx">Greep nabestellen</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
       </div>
-      <div style="margin-top:14px;" class="btn primary">▶ Rapportage starten<div class="bar"></div></div>
-      <div class="verwijder"><span>🗑 Opdracht verwijderen</span></div>
+      <div class="bottombar"><div class="row">
+        <span class="b-half outline">‹ Werkpool</span>
+        <span class="b-half primary">Rapportage ›<div class="bar"></div></span>
+      </div></div>
     </div></div>
   </div>
 
-  <!-- M2 -->
-  <div class="col" id="m2">
-    <h2>M2 · Opdracht-info inklapbaar</h2>
-    <p class="concept">Info ingeklapt (tik = open). Meldingen staan centraal, minder rommel.</p>
+  <!-- 3. VERSTUREN -->
+  <div class="col" id="versturen">
+    <h2>3 · Versturen (R1)</h2>
+    <p class="concept">Genummerde kaarten. Onderaan: volle-breedte Voorvertonen, daaronder ‹ Meldingen en ▶ Versturen.</p>
     <div class="phone"><div class="scr">
-      <span class="back">‹ Werkpool</span>
-      <div class="hdr"><div class="kk">KKS / Opdracht</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="card" style="display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:700;">▸ Opdracht-info</span><span class="muted" style="font-size:12px;">ref 7407 · tik om te openen</span></div>
-      <div class="zonebar">Meldingen (2)<div class="bar"></div></div>
-      <div class="btn add" style="margin-top:12px;">+ Melding toevoegen<div class="bar"></div></div>
-      <div class="melding"><div class="top"><span class="pill rood">Spoed</span></div><div class="tx">Front beschadigd bij ontvangst</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
-      <div class="melding"><div class="top"><span class="pill grijs">Melding</span></div><div class="tx">Greep nabestellen</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
-      <div style="margin-top:14px;" class="btn primary">▶ Rapportage starten<div class="bar"></div></div>
-      <div class="verwijder"><span>🗑 Opdracht verwijderen</span></div>
-    </div></div>
-  </div>
-
-  <!-- M3 -->
-  <div class="col" id="m3">
-    <h2>M3 · Twee zones met kopbalken (aanrader)</h2>
-    <p class="concept">Anthraciet balken "Opdracht" en "Meldingen" scheiden de zones hard.</p>
-    <div class="phone"><div class="scr">
-      <span class="back">‹ Werkpool</span>
-      <div class="hdr"><div class="kk">KKS / Opdracht</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="zonebar">Opdracht<div class="bar"></div></div>
-      <div class="badges" style="margin-top:10px;"><span class="badge">orderbon</span><span class="muted" style="align-self:center">ref 7407</span></div>
-      <div class="meta">📍 Hoge Morsweg 37, Leiden<br>🕒 di 2 juni &nbsp; 🚚 leverweek 22</div>
-      <div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div>
-      <div class="h2" style="margin-top:14px;">Documenten (3) &nbsp; [+]</div>
-      <div class="doc">📄 7407-orderbon.pdf</div><div class="doc">📄 leidingschema.pdf</div>
-      <div class="zonebar">Meldingen (2)<div class="bar"></div></div>
-      <div class="btn add" style="margin-top:12px;">+ Melding toevoegen<div class="bar"></div></div>
-      <div class="melding"><div class="top"><span class="pill rood">Spoed</span></div><div class="tx">Front beschadigd bij ontvangst</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
-      <div class="melding"><div class="top"><span class="pill grijs">Melding</span></div><div class="tx">Greep nabestellen</div><div class="acts"><span class="mini">✎ Bewerken</span><span class="mini rood">🗑</span></div></div>
-      <div style="margin-top:14px;" class="btn primary">▶ Rapportage starten<div class="bar"></div></div>
-      <div class="verwijder"><span>🗑 Opdracht verwijderen</span></div>
-    </div></div>
-  </div>
-
-  <!-- M4 -->
-  <div class="col" id="m4">
-    <h2>M4 · Compacte top + vaste actiebalk onder</h2>
-    <p class="concept">Terug-knop weg van boven; onderaan twee knoppen: Werkpool en Rapportage.</p>
-    <div class="phone"><div class="scr">
-      <div class="hdr" style="margin-top:0;"><div class="kk">KKS / Opdracht</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="meta">ref 7407 · 📍 Hoge Morsweg 37 · 🕒 di 2 juni</div>
-      <div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div>
-      <div class="h2">Documenten (3) &nbsp; [+]</div>
-      <div class="doc">📄 7407-orderbon.pdf</div><div class="doc">📄 leidingschema.pdf</div>
-      <div class="zonebar">Meldingen (2)<div class="bar"></div></div>
-      <div class="btn add" style="margin-top:12px;">+ Melding toevoegen<div class="bar"></div></div>
-      <div class="melding"><div class="top"><span class="pill rood">Spoed</span></div><div class="tx">Front beschadigd bij ontvangst</div><div class="acts"><span class="mini">✎</span><span class="mini rood">🗑</span></div></div>
-      <div class="melding"><div class="top"><span class="pill grijs">Melding</span></div><div class="tx">Greep nabestellen</div><div class="acts"><span class="mini">✎</span><span class="mini rood">🗑</span></div></div>
-      <div class="verwijder"><span>🗑 Opdracht verwijderen</span></div>
-      <div class="sticky"><span class="btn outline">‹ Werkpool</span><span class="btn primary">Rapportage ›<div class="bar"></div></span></div>
-    </div></div>
-  </div>
-
-</div>
-
-<h1 class="page">Rapportage-pagina – 4 indelingen</h1>
-<p class="intro">"Rapport voorvertonen" staat hier nu vlak vóór "Rapport versturen".</p>
-<div class="grid">
-
-  <!-- R1 -->
-  <div class="col" id="r1">
-    <h2>R1 · Genummerde kaarten (aanrader)</h2>
-    <p class="concept">Elke stap een kaart. Versturen-kaart bundelt ontvanger + voorvertonen + versturen.</p>
-    <div class="phone"><div class="scr">
-      <span class="back">‹ Terug naar meldingen</span>
-      <div class="hdr"><div class="kk">Oplevering</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
+      <div class="hdr top"><div class="kk">Oplevering</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
       <div class="orange"><div class="t">Meldingen in dit rapport (2)</div><ul><li>Front beschadigd…</li><li>Greep nabestellen</li></ul></div>
-      <div class="card titled"><div class="ct"><span class="stepnum">1</span>Eindresultaat</div>
+      <div class="card"><div class="ct"><span class="stepnum">1</span>Eindresultaat</div>
         <div class="row2"><div class="dashed">📷 Camera</div><div class="dashed">🖼 Galerij</div></div>
         <div class="row2" style="margin-top:8px;"><div class="dashed">🎬 Opnemen</div><div class="dashed">🖼 Galerij</div></div>
       </div>
-      <div class="card titled"><div class="ct"><span class="stepnum">2</span>Opmerking</div>
+      <div class="card"><div class="ct"><span class="stepnum">2</span>Opmerking</div>
         <div class="textarea">Typ hier of spreek in…</div>
         <div class="dashed" style="margin-top:8px;">🎤 Inspreken</div>
       </div>
-      <div class="card titled"><div class="ct"><span class="stepnum">3</span>Handtekening (optioneel)</div>
+      <div class="card"><div class="ct"><span class="stepnum">3</span>Handtekening (optioneel)</div>
         <div class="btn outline">✎ Klant laten tekenen</div>
       </div>
-      <div class="card titled"><div class="ct">Versturen</div>
-        <div class="select">Keukenzaak: Keukensale Katwijk <span>▾</span></div>
-        <div class="btn outline" style="margin-top:8px;">👁 Rapport voorvertonen</div>
-        <div class="btn primary" style="margin-top:8px;">▶ Rapport versturen<div class="bar"></div></div>
+      <div class="card"><div class="ct">Rapport naar</div>
+        <div class="select">Keukensale Katwijk <span>▾</span></div>
       </div>
-    </div></div>
-  </div>
-
-  <!-- R2 -->
-  <div class="col" id="r2">
-    <h2>R2 · Checklist met status</h2>
-    <p class="concept">In één blik zien wat al vastligt (✓). Compact.</p>
-    <div class="phone"><div class="scr">
-      <span class="back">‹ Terug naar meldingen</span>
-      <div class="hdr"><div class="kk">Oplevering</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="orange"><div class="t">2 meldingen in dit rapport</div></div>
-      <div class="h2">Vastleggen</div>
-      <div class="card" style="margin-top:6px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span><span class="check">✓</span> Foto's (3)</span><span class="row2" style="display:flex;gap:6px;"><span class="mini">📷</span><span class="mini">🖼</span></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line);"><span>☐ Video</span><span style="display:flex;gap:6px;"><span class="mini">🎬</span><span class="mini">🖼</span></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line);"><span><span class="check">✓</span> Opmerking</span><span style="display:flex;gap:6px;"><span class="mini">✎</span><span class="mini">🎤</span></span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line);"><span>☐ Handtekening</span><span class="mini">✎ Tekenen</span></div>
+      <div class="bottombar">
+        <div class="btn outline" style="min-height:48px;">👁 Rapport voorvertonen</div>
+        <div class="row">
+          <span class="b-half outline">‹ Meldingen</span>
+          <span class="b-half primary">▶ Versturen<div class="bar"></div></span>
+        </div>
       </div>
-      <div class="select">Rapport naar: Keukensale Katwijk <span>▾</span></div>
-      <div class="btn outline" style="margin-top:10px;">👁 Rapport voorvertonen</div>
-      <div class="btn primary" style="margin-top:8px;">▶ Rapport versturen<div class="bar"></div></div>
-    </div></div>
-  </div>
-
-  <!-- R3 -->
-  <div class="col" id="r3">
-    <h2>R3 · "Wat gaat erin" bovenaan</h2>
-    <p class="concept">Eerst een samenvatting van het rapport, daaronder de invoer.</p>
-    <div class="phone"><div class="scr">
-      <span class="back">‹ Terug naar meldingen</span>
-      <div class="hdr"><div class="kk">Oplevering</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="orange"><div class="t">Dit gaat in het rapport</div><ul><li>Meldingen (2)</li><li>Foto's: 3 · Video: ja</li><li>Handtekening: nog niet</li></ul></div>
-      <div class="label">Eindresultaat</div>
-      <div class="row2" style="margin-top:6px;"><div class="dashed">📷 Camera</div><div class="dashed">🖼 Galerij</div></div>
-      <div class="row2" style="margin-top:8px;"><div class="dashed">🎬 Opnemen</div><div class="dashed">🖼 Galerij</div></div>
-      <div class="label">Opmerking</div>
-      <div class="textarea">Typ hier of spreek in…</div>
-      <div class="dashed" style="margin-top:8px;">🎤 Inspreken</div>
-      <div class="label">Handtekening</div>
-      <div class="btn outline" style="margin-top:6px;">✎ Klant laten tekenen</div>
-      <div class="select">Rapport naar: Keukensale Katwijk <span>▾</span></div>
-      <div class="row2" style="margin-top:10px;"><div class="btn outline">👁 Voorvertonen</div><div class="btn primary">▶ Versturen<div class="bar"></div></div></div>
-    </div></div>
-  </div>
-
-  <!-- R4 -->
-  <div class="col" id="r4">
-    <h2>R4 · Doorlopende flow + vaste verzendbalk</h2>
-    <p class="concept">Alles onder elkaar; voorvertonen + versturen staan vast onderaan.</p>
-    <div class="phone"><div class="scr">
-      <span class="back">‹ Terug naar meldingen</span>
-      <div class="hdr"><div class="kk">Oplevering</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="orange"><div class="t">2 meldingen in dit rapport</div></div>
-      <div class="label">Eindresultaat</div>
-      <div class="row2" style="margin-top:6px;"><div class="dashed">📷 Camera</div><div class="dashed">🖼 Galerij</div></div>
-      <div class="row2" style="margin-top:8px;"><div class="dashed">🎬 Opnemen</div><div class="dashed">🖼 Galerij</div></div>
-      <div class="label">Opmerking</div>
-      <div class="textarea">Typ hier of spreek in…</div>
-      <div class="label">Handtekening</div>
-      <div class="btn outline" style="margin-top:6px;">✎ Klant laten tekenen</div>
-      <div class="select">Rapport naar: Keukensale Katwijk <span>▾</span></div>
-      <div class="sticky"><span class="btn outline">👁 Voorvertonen</span><span class="btn primary">▶ Rapport versturen<div class="bar"></div></span></div>
     </div></div>
   </div>
 
