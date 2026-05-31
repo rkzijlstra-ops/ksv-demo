@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>App-icoon — rapport-varianten</title>
+<style>
+  :root{--ink:#27272a; --ink2:#0f172a; --muted:#475569; --line:#cbd5e1; --surface:#f1f5f9; --accent:#f97316; --success:#16a34a; --bg:#e2e8f0;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink2); font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;}
+  .bar{position:sticky; top:0; z-index:5; background:#fff; border-bottom:2px solid var(--line); padding:14px 20px}
+  .bar h1{font-size:16px; margin:0} .bar h1 span{color:var(--muted); font-weight:500}
+  .note{background:#fff; border:1px solid var(--line); border-left:4px solid var(--accent); margin:18px 20px 0; padding:14px 16px; font-size:13px; color:var(--muted); line-height:1.55; max-width:1000px}
+  .note b{color:var(--ink2)}
+  h2.sec{margin:26px 20px 4px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:18px; padding:14px 20px 8px; max-width:1000px}
+  .card{background:#fff; border:1px solid var(--line); padding:16px; text-align:center}
+  .ico{width:96px; height:96px; border-radius:22.5%; margin:0 auto; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(15,23,42,.18); overflow:hidden}
+  .card b{display:block; margin-top:12px; font-size:13px}
+  .card small{display:block; color:var(--muted); font-size:11.5px; margin-top:3px; line-height:1.4}
+  .phonewrap{display:flex; justify-content:center; padding:10px 20px 60px}
+  .phone{width:300px; border:10px solid #1e293b; border-radius:42px; overflow:hidden; box-shadow:0 20px 50px rgba(15,23,42,.35); background:#000}
+  .screen{background:linear-gradient(160deg,#0f172a 0%,#334155 55%,#f97316 140%); height:560px; position:relative}
+  .statusbar{display:flex; justify-content:space-between; align-items:center; padding:12px 22px 4px; color:#fff; font-size:12px; font-weight:700}
+  .notch{position:absolute; top:8px; left:50%; transform:translateX(-50%); width:90px; height:18px; background:#0b1220; border-radius:0 0 12px 12px}
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px 8px; padding:26px 18px}
+  .app{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .app .ic{width:54px; height:54px; border-radius:22.5%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,.3); overflow:hidden}
+  .app .lbl{color:#fff; font-size:10.5px; font-weight:600; text-shadow:0 1px 2px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+  <div class="bar"><h1>App-icoon · rapport <span>· varianten van concept 4</span></h1></div>
+  <div class="note">Zes uitwerkingen van het rapport-icoon in de app-kleuren (antraciet <b>#27272a</b>, oranje <b>#f97316</b>, groen <b>#16a34a</b>, wit). Onderaan klein op een beginscherm. Naam staat op "Oplever".</div>
+
+  <h2 class="sec">De varianten</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2 class="sec">Op een beginscherm</h2>
+  <div class="phonewrap"><div class="phone"><div class="screen">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>5G &nbsp; 100%</span></div>
+    <div class="grid" id="home"></div>
+  </div></div></div>
+
+<script>
+const W="#ffffff", INK="#27272a", OR="#f97316", GR="#16a34a";
+
+// klembord (omlijnd) met vinkje-badge in een hoek
+const clipboard = (s, badge)=>`
+  <rect x="27" y="22" width="46" height="56" rx="5" fill="none" stroke="${s}" stroke-width="5"/>
+  <rect x="42" y="15" width="16" height="9" rx="2.5" fill="${s}"/>
+  <line x1="36" y1="40" x2="58" y2="40" stroke="${s}" stroke-width="3.4" stroke-linecap="round"/>
+  <line x1="36" y1="50" x2="64" y2="50" stroke="${s}" stroke-width="3.4" stroke-linecap="round"/>
+  <line x1="36" y1="60" x2="52" y2="60" stroke="${s}" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="67" cy="69" r="13" fill="${badge}"/>
+  <path d="M61 69 l4 4 l8 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+// massief document met ezelsoor + vinkje-badge
+const docFilled = (fill, lineC, badge)=>`
+  <path d="M30 18 H58 L72 32 V82 H30 Z" fill="${fill}"/>
+  <path d="M58 18 V32 H72 Z" fill="rgba(0,0,0,.16)"/>
+  <line x1="38" y1="46" x2="64" y2="46" stroke="${lineC}" stroke-width="3"/>
+  <line x1="38" y1="55" x2="64" y2="55" stroke="${lineC}" stroke-width="3"/>
+  <line x1="38" y1="64" x2="56" y2="64" stroke="${lineC}" stroke-width="3"/>
+  <circle cx="68" cy="74" r="12" fill="${badge}"/>
+  <path d="M62.5 74 l3.7 3.7 l7.3 -8.4" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+// rapport-vel met oranje koplijn (oogt als een echt rapport, geen badge)
+const sheet = ()=>`
+  <rect x="28" y="18" width="44" height="62" rx="5" fill="#fff"/>
+  <path d="M28 23 a5 5 0 0 1 5 -5 h34 a5 5 0 0 1 5 5 v8 h-44 Z" fill="${OR}"/>
+  <line x1="35" y1="46" x2="65" y2="46" stroke="${INK}" stroke-width="3"/>
+  <line x1="35" y1="55" x2="65" y2="55" stroke="${INK}" stroke-width="3"/>
+  <line x1="35" y1="64" x2="55" y2="64" stroke="${INK}" stroke-width="3"/>`;
+
+// klembord met grote oranje vink eroverheen
+const bigCheck = ()=>`
+  <rect x="27" y="22" width="46" height="56" rx="5" fill="none" stroke="${W}" stroke-width="5"/>
+  <rect x="42" y="15" width="16" height="9" rx="2.5" fill="${W}"/>
+  <path d="M37 52 l9 9 l18 -22" fill="none" stroke="${OR}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+function svg(inner){return `<svg width="100%" height="100%" viewBox="0 0 100 100">${inner}</svg>`;}
+
+const varianten = [
+  {naam:"Origineel (antraciet)", desc:"Donker vlak, wit klembord, oranje vinkje. Het concept zoals je het koos.", bg:INK, glyph:clipboard(W, OR)},
+  {naam:"Oranje + groen", desc:"Oranje vlak, wit klembord, groen vinkje. Fris en positief.", bg:OR, glyph:clipboard(W, GR)},
+  {naam:"Licht", desc:"Wit vlak, antraciet klembord, oranje vinkje. Rustig.", bg:"#ffffff", glyph:clipboard(INK, OR)},
+  {naam:"Massief document", desc:"Gevuld wit document met ezelsoor en oranje vinkje. Leest sterk op klein formaat.", bg:INK, glyph:docFilled(W, INK, OR)},
+  {naam:"Rapport-vel", desc:"Wit vel met oranje koplijn en regels. Oogt als een echt rapport, geen vinkje.", bg:INK, glyph:sheet()},
+  {naam:"Grote vink", desc:"Wit klembord met een grote oranje vink. Krachtig en simpel.", bg:INK, glyph:bigCheck()},
+];
+
+const cards=document.getElementById("cards");
+varianten.forEach((v,i)=>{const el=document.createElement("div");el.className="card";
+  el.innerHTML=`<div class="ico" style="background:${v.bg}">${svg(v.glyph)}</div><b>${i+1}. ${v.naam}</b><small>${v.desc}</small>`;cards.appendChild(el);});
+
+const home=document.getElementById("home");
+varianten.forEach(v=>{const el=document.createElement("div");el.className="app";
+  el.innerHTML=`<div class="ic" style="background:${v.bg}">${svg(v.glyph)}</div><span class="lbl">Oplever</span>`;home.appendChild(el);});
+for(let i=0;i<2;i++){const p=document.createElement("div");p.className="app";p.innerHTML='<div class="ic" style="background:rgba(255,255,255,.22)"></div>';home.appendChild(p);}
+</script>
+</body>
+</html>
