@@ -11,6 +11,7 @@ import { Voortgang } from "@/components/Voortgang";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
+import { KEUKENZAKEN } from "@/lib/keukenzaken";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
@@ -18,6 +19,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
   const [rapportEmail, setRapportEmail] = useState("");
+  const [handmatig, setHandmatig] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [handtekeningDataUrl, setHandtekeningDataUrl] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
@@ -41,7 +43,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
             setOpmerking(oplevering.opmerking ?? "");
-            setRapportEmail(oplevering.rapport_email ?? "");
+            const em: string = oplevering.rapport_email ?? "";
+            setRapportEmail(em);
+            if (em && !KEUKENZAKEN.some((z) => z.email === em)) setHandmatig(true);
           }
         }
       } finally {
@@ -53,8 +57,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     };
   }, [opdrachtId]);
 
-  function bewaarConcept() {
+  function bewaarConcept(emailOverride?: string) {
     if (!geladenRef.current) return;
+    const rapport_email =
+      emailOverride !== undefined ? emailOverride.trim() || null : rapportEmail.trim() || null;
     void fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -62,7 +68,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         eindstaat_foto_urls: fotoUrls,
         video_url: videoUrl,
         opmerking: opmerking.trim() || null,
-        rapport_email: rapportEmail.trim() || null,
+        rapport_email,
       }),
     }).catch(() => {});
   }
@@ -168,7 +174,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <textarea
           value={opmerking}
           onChange={(e) => setOpmerking(e.target.value)}
-          onBlur={bewaarConcept}
+          onBlur={() => bewaarConcept()}
           rows={3}
           placeholder="Typ hier of spreek in…"
           className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
@@ -228,21 +234,47 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
 
       {/* Stap 3: versturen */}
       <section className="border-t border-line pt-6">
-        <label className="mb-3 flex flex-col gap-1 text-sm font-semibold text-ink">
-          Rapport naar (e-mail van de zaak)
-          <input
-            type="email"
-            inputMode="email"
-            value={rapportEmail}
-            onChange={(e) => setRapportEmail(e.target.value)}
-            onBlur={bewaarConcept}
-            placeholder="naam@keukenzaak.nl"
+        <div className="mb-3 flex flex-col gap-1">
+          <span className="text-sm font-semibold text-ink">Rapport naar</span>
+          <select
+            value={
+              handmatig
+                ? "__anders__"
+                : KEUKENZAKEN.find((z) => z.email === rapportEmail)?.email ?? ""
+            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "__anders__") {
+                setHandmatig(true);
+              } else {
+                setHandmatig(false);
+                setRapportEmail(v);
+                bewaarConcept(v);
+              }
+            }}
             className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-          />
-          <span className="text-xs font-normal text-ink-muted">
-            Leeg laten = naar het standaardadres (test).
-          </span>
-        </label>
+          >
+            <option value="">Kies de keukenzaak…</option>
+            {KEUKENZAKEN.map((z) => (
+              <option key={z.email} value={z.email}>
+                {z.naam}
+              </option>
+            ))}
+            <option value="__anders__">Anders (typ zelf)</option>
+          </select>
+          {handmatig && (
+            <input
+              type="email"
+              inputMode="email"
+              value={rapportEmail}
+              onChange={(e) => setRapportEmail(e.target.value)}
+              onBlur={() => bewaarConcept()}
+              placeholder="naam@keukenzaak.nl"
+              className="mt-1 min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+            />
+          )}
+          <span className="text-xs text-ink-muted">Leeg laten = naar het standaardadres (test).</span>
+        </div>
         {fout && (
           <p className="mb-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
             <AlertCircle size={18} strokeWidth={2.5} className="mt-0.5 shrink-0" aria-hidden="true" />
