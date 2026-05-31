@@ -297,7 +297,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
           >
             <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
-            Oplevering versturen
+            Rapport versturen
           </button>
         )}
       </section>
