@@ -19,14 +19,15 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "KSV Opdrachten",
-  description: "Meldingen en opdrachten voor monteurs van Keukenstudio Voorschoten",
+  title: "Oplever App",
+  description: "Monteur-app voor opleveringen, opdrachten en meldingen.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
   themeColor: "#27272a",
 };
 

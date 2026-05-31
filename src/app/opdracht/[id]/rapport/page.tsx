@@ -184,7 +184,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* vaste onderbalk: terug naar versturen */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto w-full max-w-2xl">
           <Link
             href={`/opdracht/${id}/opleveren`}

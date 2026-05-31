@@ -292,7 +292,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
       </section>
 
       {/* Vaste onderbalk: voorvertonen + navigatie + versturen */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 py-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
           {bezig ? (
             <Voortgang label="Rapport maken en versturen…" />
