@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>App-icoon — rolmaat-varianten</title>
+<style>
+  :root{--ink:#27272a; --ink2:#0f172a; --muted:#475569; --line:#cbd5e1; --surface:#f1f5f9; --accent:#f97316; --success:#16a34a; --bg:#e2e8f0;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink2); font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased;}
+  .bar{position:sticky; top:0; z-index:5; background:#fff; border-bottom:2px solid var(--line); padding:14px 20px}
+  .bar h1{font-size:16px; margin:0} .bar h1 span{color:var(--muted); font-weight:500}
+  .note{background:#fff; border:1px solid var(--line); border-left:4px solid var(--accent); margin:18px 20px 0; padding:14px 16px; font-size:13px; color:var(--muted); line-height:1.55; max-width:1000px}
+  .note b{color:var(--ink2)}
+  h2.sec{margin:26px 20px 4px; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:18px; padding:14px 20px 8px; max-width:1000px}
+  .card{background:#fff; border:1px solid var(--line); padding:16px; text-align:center}
+  .ico{width:96px; height:96px; border-radius:22.5%; margin:0 auto; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(15,23,42,.18); overflow:hidden}
+  .card b{display:block; margin-top:12px; font-size:13px}
+  .card small{display:block; color:var(--muted); font-size:11.5px; margin-top:3px; line-height:1.4}
+  .phonewrap{display:flex; justify-content:center; padding:10px 20px 60px}
+  .phone{width:300px; border:10px solid #1e293b; border-radius:42px; overflow:hidden; box-shadow:0 20px 50px rgba(15,23,42,.35); background:#000}
+  .screen{background:linear-gradient(160deg,#0f172a 0%,#334155 55%,#f97316 140%); height:560px; position:relative}
+  .statusbar{display:flex; justify-content:space-between; align-items:center; padding:12px 22px 4px; color:#fff; font-size:12px; font-weight:700}
+  .notch{position:absolute; top:8px; left:50%; transform:translateX(-50%); width:90px; height:18px; background:#0b1220; border-radius:0 0 12px 12px}
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px 8px; padding:26px 18px}
+  .app{display:flex; flex-direction:column; align-items:center; gap:6px}
+  .app .ic{width:54px; height:54px; border-radius:22.5%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,.3); overflow:hidden}
+  .app .lbl{color:#fff; font-size:10.5px; font-weight:600; text-shadow:0 1px 2px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+  <div class="bar"><h1>App-icoon · rolmaat <span>· varianten van concept 3</span></h1></div>
+  <div class="note">Zes uitwerkingen van het rolmaat-icoon in de app-kleuren (antraciet <b>#27272a</b>, oranje <b>#f97316</b>, groen <b>#16a34a</b>, wit). Onderaan klein op een beginscherm. Naam staat op "Oplever".</div>
+
+  <h2 class="sec">De varianten</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2 class="sec">Op een beginscherm</h2>
+  <div class="phonewrap"><div class="phone"><div class="screen">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>5G &nbsp; 100%</span></div>
+    <div class="grid" id="home"></div>
+  </div></div></div>
+
+<script>
+const W="#ffffff", INK="#27272a", OR="#f97316", GR="#16a34a";
+
+// klassieke rolmaat (omlijnd): behuizing + spoel + uitstekend tongetje met streepjes
+const outline = (c1, c2=c1)=>`
+  <rect x="20" y="30" width="46" height="44" rx="11" fill="none" stroke="${c1}" stroke-width="5"/>
+  <circle cx="43" cy="52" r="7" fill="none" stroke="${c2}" stroke-width="3"/>
+  <path d="M66 40 h16 v11 h-12" fill="none" stroke="${c1}" stroke-width="4" stroke-linejoin="round"/>
+  <line x1="70" y1="40" x2="70" y2="46" stroke="${c2}" stroke-width="2"/>
+  <line x1="75" y1="40" x2="75" y2="46" stroke="${c2}" stroke-width="2"/>
+  <line x1="80" y1="40" x2="80" y2="46" stroke="${c2}" stroke-width="2"/>`;
+
+// massief (gevuld): witte behuizing, holte als spoel
+const filled = (caseC, holeC)=>`
+  <rect x="20" y="30" width="48" height="44" rx="12" fill="${caseC}"/>
+  <circle cx="42" cy="52" r="11" fill="${holeC}"/>
+  <circle cx="42" cy="52" r="3.5" fill="${caseC}"/>
+  <rect x="66" y="45" width="18" height="13" rx="2.5" fill="${caseC}"/>
+  <line x1="71" y1="45" x2="71" y2="51" stroke="${holeC}" stroke-width="2"/>
+  <line x1="76" y1="45" x2="76" y2="51" stroke="${holeC}" stroke-width="2"/>
+  <line x1="81" y1="45" x2="81" y2="51" stroke="${holeC}" stroke-width="2"/>`;
+
+// uitrollende tape: rond huis met metalen lint omhoog
+const tape = (s, tick)=>`
+  <circle cx="42" cy="60" r="22" fill="none" stroke="${s}" stroke-width="5"/>
+  <circle cx="42" cy="60" r="6" fill="${s}"/>
+  <rect x="35" y="14" width="14" height="28" fill="${s}"/>
+  <rect x="33" y="12" width="18" height="5" rx="1.5" fill="${s}"/>
+  <line x1="35" y1="24" x2="49" y2="24" stroke="${tick}" stroke-width="2"/>
+  <line x1="35" y1="30" x2="49" y2="30" stroke="${tick}" stroke-width="2"/>
+  <line x1="35" y1="36" x2="49" y2="36" stroke="${tick}" stroke-width="2"/>`;
+
+// omlijnd met groen vinkje (oplevering klaar)
+const check = (s)=>`
+  <rect x="18" y="28" width="44" height="42" rx="10" fill="none" stroke="${s}" stroke-width="5"/>
+  <circle cx="40" cy="49" r="6.5" fill="none" stroke="${s}" stroke-width="3"/>
+  <path d="M62 38 h14 v10 h-10" fill="none" stroke="${s}" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="71" cy="71" r="13" fill="${GR}"/>
+  <path d="M65 71 l4 4 l8 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+function svg(inner){return `<svg width="100%" height="100%" viewBox="0 0 100 100">${inner}</svg>`;}
+
+const varianten = [
+  {naam:"Origineel (oranje)", desc:"Oranje vlak, witte rolmaat. Het concept zoals je het koos.", bg:OR, glyph:outline(W)},
+  {naam:"Antraciet", desc:"Donker vlak met oranje rolmaat. Rustiger, premium.", bg:INK, glyph:outline(OR)},
+  {naam:"Licht", desc:"Wit vlak, oranje behuizing met antraciet spoel. Fris.", bg:"#ffffff", glyph:outline(OR, INK)},
+  {naam:"Massief", desc:"Gevulde witte rolmaat op oranje. Leest het sterkst op klein formaat.", bg:OR, glyph:filled(W, OR)},
+  {naam:"Uitrollende tape", desc:"Wit vlak, oranje rolmaat met uitstekend meetlint. Dynamisch.", bg:"#ffffff", glyph:tape(OR, "#ffffff")},
+  {naam:"Met vinkje", desc:"Oranje vlak, witte rolmaat plus groen vinkje. Verwijst naar de oplevering.", bg:OR, glyph:check(W)},
+];
+
+const cards=document.getElementById("cards");
+varianten.forEach((v,i)=>{const el=document.createElement("div");el.className="card";
+  el.innerHTML=`<div class="ico" style="background:${v.bg}">${svg(v.glyph)}</div><b>${i+1}. ${v.naam}</b><small>${v.desc}</small>`;cards.appendChild(el);});
+
+const home=document.getElementById("home");
+varianten.forEach(v=>{const el=document.createElement("div");el.className="app";
+  el.innerHTML=`<div class="ic" style="background:${v.bg}">${svg(v.glyph)}</div><span class="lbl">Oplever</span>`;home.appendChild(el);});
+for(let i=0;i<2;i++){const p=document.createElement("div");p.className="app";p.innerHTML='<div class="ic" style="background:rgba(255,255,255,.22)"></div>';home.appendChild(p);}
+</script>
+</body>
+</html>
