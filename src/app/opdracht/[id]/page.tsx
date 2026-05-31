@@ -22,6 +22,7 @@ import { VerwijderKnop } from "@/components/VerwijderKnop";
 import { MeldingVerwijderKnop } from "@/components/MeldingVerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
+import { WhatsAppKnop } from "@/components/WhatsAppKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
 
@@ -106,6 +107,7 @@ export default async function OpdrachtDetailPage({
         <div className="mt-5 flex gap-3">
           {opdracht.klant_adres && <NavKnop adres={opdracht.klant_adres} />}
           <BelKnop telefoon={opdracht.klant_telefoon} />
+          <WhatsAppKnop telefoon={opdracht.klant_telefoon} />
         </div>
       )}
 
