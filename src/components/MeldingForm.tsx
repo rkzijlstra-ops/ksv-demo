@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
+import { Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
+import { TerugKnop } from "@/components/TerugKnop";
 import { FotoMaken } from "./FotoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
@@ -164,14 +164,7 @@ export function MeldingForm({
 
   return (
     <div className="flex flex-col gap-5">
-      <Link
-        href={terugHref}
-        onClick={handleTerugClick}
-        className="inline-flex min-h-[44px] items-center gap-1 text-base font-semibold text-primary hover:underline"
-      >
-        <ChevronLeft size={22} aria-hidden="true" />
-        Terug naar opdracht
-      </Link>
+      <TerugKnop href={terugHref} label="Terug naar opdracht" onClick={handleTerugClick} />
 
       {kop}
 

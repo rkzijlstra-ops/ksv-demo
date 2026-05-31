@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { OpleverFlow } from "@/components/OpleverFlow";
+import { TerugKnop } from "@/components/TerugKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +18,7 @@ export default async function OpleverenPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
-      <Link
-        href={`/opdracht/${id}`}
-        className="inline-flex min-h-[44px] items-center gap-1 text-base font-semibold text-primary hover:underline"
-      >
-        <ChevronLeft size={22} aria-hidden="true" />
-        Terug naar opdracht
-      </Link>
+      <TerugKnop href={`/opdracht/${id}`} label="Terug naar meldingen" />
 
       <header className="relative mt-2 bg-primary px-5 py-5 text-white">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-white/70">Oplevering</p>
