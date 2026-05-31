@@ -240,23 +240,28 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             value={
               handmatig
                 ? "__anders__"
-                : KEUKENZAKEN.find((z) => z.email === rapportEmail)?.email ?? ""
+                : KEUKENZAKEN.find((z) => z.email === rapportEmail)?.naam ?? ""
             }
             onChange={(e) => {
               const v = e.target.value;
               if (v === "__anders__") {
                 setHandmatig(true);
-              } else {
+              } else if (v === "") {
                 setHandmatig(false);
-                setRapportEmail(v);
-                bewaarConcept(v);
+                setRapportEmail("");
+                bewaarConcept("");
+              } else {
+                const email = KEUKENZAKEN.find((z) => z.naam === v)?.email ?? "";
+                setHandmatig(false);
+                setRapportEmail(email);
+                bewaarConcept(email);
               }
             }}
             className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
           >
             <option value="">Kies de keukenzaak…</option>
             {KEUKENZAKEN.map((z) => (
-              <option key={z.email} value={z.email}>
+              <option key={z.naam} value={z.naam}>
                 {z.naam}
               </option>
             ))}
