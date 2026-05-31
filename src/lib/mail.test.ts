@@ -62,6 +62,15 @@ describe("verstuurOpleverRapport", () => {
     expect(arg.text).toMatch(/oplever-videos\/v1\.mp4/);
   });
 
+  it("zet de opmerking in de body als die er is", async () => {
+    await verstuurOpleverRapport({
+      ...basis,
+      opdracht: opdracht(),
+      opmerking: "Muren waren niet haaks",
+    });
+    expect(mockSend.mock.calls[0][0].text).toMatch(/Muren waren niet haaks/);
+  });
+
   it("gebruikt onboarding@resend.dev als afzender wanneer RESEND_FROM leeg is", async () => {
     await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
     expect(mockSend.mock.calls[0][0].from).toBe("onboarding@resend.dev");

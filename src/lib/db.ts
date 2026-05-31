@@ -50,6 +50,7 @@ export interface Oplevering {
   eindstaat_foto_urls: string[];
   video_url: string | null;
   handtekening_url: string | null;
+  opmerking: string | null;
   rapport_url: string | null;
   user_id: string | null;
 }
@@ -57,10 +58,11 @@ export interface Oplevering {
 /** Input voor het opslaan/bijwerken van een oplevering-concept. */
 export interface OpleveringConceptInput {
   opdracht_id: string;
-  uitkomst: "afgerond" | "openstaande_punten";
+  uitkomst?: "afgerond" | "openstaande_punten";
   eindstaat_foto_urls: string[];
   video_url: string | null;
   handtekening_url: string | null;
+  opmerking?: string | null;
   user_id?: string | null;
 }
 
@@ -325,10 +327,11 @@ function createDbFromClient(client: SupabaseClient): Db {
         .upsert(
           {
             opdracht_id: input.opdracht_id,
-            uitkomst: input.uitkomst,
+            uitkomst: input.uitkomst ?? "afgerond",
             eindstaat_foto_urls: input.eindstaat_foto_urls,
             video_url: input.video_url,
             handtekening_url: input.handtekening_url,
+            opmerking: input.opmerking ?? null,
             user_id: input.user_id ?? null,
           },
           { onConflict: "opdracht_id" },

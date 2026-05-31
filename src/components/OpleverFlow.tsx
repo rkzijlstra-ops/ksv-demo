@@ -2,56 +2,51 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, AlertCircle, PackageCheck, PenLine } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic } from "lucide-react";
 import { FotoMaken } from "@/components/FotoMaken";
 import { VideoMaken } from "@/components/VideoMaken";
 import { Handtekening } from "@/components/Handtekening";
-import { controleerOplevering, type Uitkomst } from "@/lib/oplever-validatie";
+import { SpraakOpname } from "@/components/SpraakOpname";
+import { Voortgang } from "@/components/Voortgang";
+import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [uitkomst, setUitkomst] = useState<Uitkomst | null>(null);
+  const [opmerking, setOpmerking] = useState("");
   const [tekenen, setTekenen] = useState(false);
   const [handtekeningDataUrl, setHandtekeningDataUrl] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
+  const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
 
   const check = controleerOplevering({
     fotoCount: fotoUrls.length,
     heeftVideo: videoUrl !== null,
-    uitkomst,
   });
 
   async function versturen() {
-    if (!check.magVersturen) {
-      setFout("Kies eerst de uitkomst (Afgerond of Nog openstaande punten).");
-      return;
-    }
-    if (check.waarschuwing && !window.confirm(check.waarschuwing)) {
-      return;
-    }
+    if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
+
     setBezig(true);
     setFout("");
     try {
-      // 1. Handtekening (optioneel) uploaden.
       let handtekening_url: string | null = null;
       if (tekenen && handtekeningDataUrl) {
         const blob = dataUrlNaarBlob(handtekeningDataUrl);
         handtekening_url = (await uploadHandtekening(blob)).url;
       }
 
-      // 2. Concept opslaan.
       const conceptRes = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          uitkomst,
           eindstaat_foto_urls: fotoUrls,
           video_url: videoUrl,
           handtekening_url,
+          opmerking: opmerking.trim() || null,
         }),
       });
       if (!conceptRes.ok) {
@@ -59,22 +54,38 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         throw new Error(b.error ?? `Opslaan mislukt (${conceptRes.status})`);
       }
 
-      // 3. Versturen (rapport + mail + markeren).
-      const verstuurRes = await fetch(`/api/opdrachten/${opdrachtId}/opleveren`, {
-        method: "POST",
-      });
+      const verstuurRes = await fetch(`/api/opdrachten/${opdrachtId}/opleveren`, { method: "POST" });
       if (!verstuurRes.ok) {
         const b = await verstuurRes.json().catch(() => ({}));
         throw new Error(b.error ?? `Versturen mislukt (${verstuurRes.status})`);
       }
 
-      router.push(`/opdracht/${opdrachtId}`);
-      router.refresh();
+      // Belonend "klaar"-moment, dan terug naar de opdracht.
+      setKlaar(true);
+      setTimeout(() => {
+        router.push(`/opdracht/${opdrachtId}`);
+        router.refresh();
+      }, 1400);
     } catch (err) {
       setFout((err as Error).message);
-    } finally {
       setBezig(false);
     }
+  }
+
+  if (klaar) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <CheckCircle2
+          size={72}
+          strokeWidth={2.5}
+          className="animate-[ping_0.6s_ease-out_1] text-success"
+          aria-hidden="true"
+        />
+        <CheckCircle2 size={72} strokeWidth={2.5} className="-mt-[84px] text-success" aria-hidden="true" />
+        <p className="mt-2 font-mono text-2xl font-extrabold text-ink">Opgeleverd!</p>
+        <p className="text-sm text-ink-muted">Het rapport is naar de zaak verstuurd.</p>
+      </div>
+    );
   }
 
   return (
@@ -91,30 +102,30 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <div className="mt-3">
           <VideoMaken url={videoUrl} onChange={setVideoUrl} />
         </div>
+      </section>
 
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-ink">Uitkomst</p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {(
-              [
-                { v: "afgerond", label: "Afgerond" },
-                { v: "openstaande_punten", label: "Nog openstaande punten" },
-              ] as { v: Uitkomst; label: string }[]
-            ).map(({ v, label }) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setUitkomst(v)}
-                className={`min-h-[48px] flex-1 cursor-pointer border-2 px-4 text-base font-extrabold uppercase tracking-[0.04em] transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-accent ${
-                  uitkomst === v
-                    ? "border-primary bg-primary text-white"
-                    : "border-line bg-white text-ink hover:bg-surface"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* Notitie */}
+      <section className="border-t border-line pt-6">
+        <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
+          Opmerking (optioneel)
+        </h2>
+        <p className="mb-2 text-sm text-ink-muted">
+          Bijzonderheden die geen melding zijn. Bijvoorbeeld: klant belt nog voor smetplinten,
+          muren niet haaks.
+        </p>
+        <textarea
+          value={opmerking}
+          onChange={(e) => setOpmerking(e.target.value)}
+          rows={3}
+          placeholder="Typ hier of spreek in…"
+          className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+        />
+        <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+          <Mic size={16} aria-hidden="true" />
+          Of spreek het in:
+        </div>
+        <div className="mt-1">
+          <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
         </div>
       </section>
 
@@ -157,24 +168,20 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             {fout}
           </p>
         )}
-        <button
-          type="button"
-          onClick={versturen}
-          disabled={bezig}
-          className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
-        >
-          {bezig ? (
-            <>
-              <Loader2 size={22} className="animate-spin" aria-hidden="true" />
-              Versturen…
-            </>
-          ) : (
-            <>
-              <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
-              Oplevering versturen
-            </>
-          )}
-        </button>
+        {bezig ? (
+          <div className="rounded-none border border-line bg-surface px-4 py-4">
+            <Voortgang label="Rapport maken en versturen…" />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={versturen}
+            className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
+          >
+            <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
+            Oplevering versturen
+          </button>
+        )}
       </section>
     </div>
   );

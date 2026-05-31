@@ -109,7 +109,7 @@ export function OpdrachtAanmaken() {
         {bezig ? (
           <>
             <Loader2 size={22} className="animate-spin" aria-hidden="true" />
-            Bezig…
+            Informatie inlezen…
           </>
         ) : !online ? (
           <>

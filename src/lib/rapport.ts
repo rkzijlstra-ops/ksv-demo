@@ -4,14 +4,15 @@ import { formatDatumKort } from "./datum";
 
 export interface RapportSamenvatting {
   zaaknaam: string;
-  uitkomstLabel: string | null;
   videoUrl: string | null;
   ondertekend: boolean;
+  opmerking: string | null;
 }
 
 /**
  * Leidt de oplever-kop-gegevens af voor het rapport. Pure functie (geen IO), los te testen.
- * Zaaknaam komt van de opdracht (niet hardcoded), uitkomst/video/handtekening van de oplevering.
+ * Zaaknaam komt van de opdracht (niet hardcoded); video/handtekening/opmerking van de oplevering.
+ * De eindstaat-keuze is geschrapt, dus geen uitkomst-label meer.
  */
 export function rapportSamenvatting(
   opdracht: Melding,
@@ -19,13 +20,9 @@ export function rapportSamenvatting(
 ): RapportSamenvatting {
   return {
     zaaknaam: opdracht.keukenzaak?.trim() || "Keukenzaak onbekend",
-    uitkomstLabel: oplevering
-      ? oplevering.uitkomst === "afgerond"
-        ? "Afgerond"
-        : "Nog openstaande punten"
-      : null,
     videoUrl: oplevering?.video_url ?? null,
     ondertekend: Boolean(oplevering?.handtekening_url),
+    opmerking: oplevering?.opmerking?.trim() || null,
   };
 }
 
@@ -89,10 +86,6 @@ export async function genereerRapportPdf(
 
   // ===== Oplevering (eindstaat-bewijs, uitkomst, handtekening) =====
   if (oplevering) {
-    if (samenvatting.uitkomstLabel) {
-      tekst(`Uitkomst: ${samenvatting.uitkomstLabel}`, { size: 13, font: bold });
-    }
-
     if (oplevering.eindstaat_foto_urls.length > 0) {
       tekst("Eindstaat bij oplevering:", { font: bold });
       await tekenFotos(
@@ -107,6 +100,11 @@ export async function genereerRapportPdf(
 
     if (samenvatting.videoUrl) {
       tekst(`Video van de oplevering: ${samenvatting.videoUrl}`, { kleur: grijs });
+    }
+
+    if (samenvatting.opmerking) {
+      tekst("Opmerking:", { font: bold });
+      for (const regel of wikkel(samenvatting.opmerking, 90)) tekst(regel, { inspring: 6 });
     }
 
     if (oplevering.handtekening_url) {

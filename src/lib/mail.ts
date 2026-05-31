@@ -8,6 +8,8 @@ export interface OpleverMailInput {
   bestandsnaam: string;
   /** Optionele link naar de oplever-video (past niet in de PDF, gaat als link mee). */
   videoUrl?: string | null;
+  /** Optionele notitie/bijzonderheden van de monteur bij de oplevering. */
+  opmerking?: string | null;
 }
 
 export interface SpoedMailInput {
@@ -39,12 +41,15 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
   const ref = input.opdracht.referentienummer ? ` (ref ${input.opdracht.referentienummer})` : "";
   const zaaknaam = input.opdracht.keukenzaak?.trim() || "uw keukenzaak";
   const videoRegel = input.videoUrl ? `\n\nVideo van de oplevering:\n${input.videoUrl}` : "";
+  const opmerkingRegel = input.opmerking?.trim()
+    ? `\n\nOpmerking:\n${input.opmerking.trim()}`
+    : "";
 
   const { error } = await resend.emails.send({
     from,
     to: input.naar,
     subject: `Opleverrapport ${klant}${ref}`,
-    text: `In de bijlage het opleverrapport voor ${klant}${ref}.${videoRegel}\n\n${zaaknaam}`,
+    text: `In de bijlage het opleverrapport voor ${klant}${ref}.${opmerkingRegel}${videoRegel}\n\n${zaaknaam}`,
     attachments: [{ filename: input.bestandsnaam, content: Buffer.from(input.pdf) }],
   });
 

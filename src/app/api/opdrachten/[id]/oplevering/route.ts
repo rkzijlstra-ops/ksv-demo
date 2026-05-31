@@ -39,22 +39,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Ongeldige JSON" }, { status: 400 });
   }
 
-  if (!geldigeUitkomst(body.uitkomst)) {
-    return NextResponse.json(
-      { error: "Ongeldige of ontbrekende uitkomst (afgerond | openstaande_punten)" },
-      { status: 400 },
-    );
-  }
+  // Eindstaat-keuze is geschrapt; uitkomst is optioneel (default 'afgerond' in de db-laag).
+  const uitkomst = geldigeUitkomst(body.uitkomst) ? body.uitkomst : undefined;
 
   try {
     const { id: oplId } = await (await db()).upsertOpleveringConcept({
       opdracht_id: id,
-      uitkomst: body.uitkomst,
+      uitkomst,
       eindstaat_foto_urls: Array.isArray(body.eindstaat_foto_urls)
         ? (body.eindstaat_foto_urls as string[])
         : [],
       video_url: typeof body.video_url === "string" ? body.video_url : null,
       handtekening_url: typeof body.handtekening_url === "string" ? body.handtekening_url : null,
+      opmerking: typeof body.opmerking === "string" ? body.opmerking : null,
       user_id: userId,
     });
     return NextResponse.json({ id: oplId }, { status: 200 });

@@ -23,19 +23,52 @@ export function videoOpslagPad(uuid: string, bestandsnaam: string, contentType: 
   return `${uuid}.${videoExtensie(bestandsnaam, contentType)}`;
 }
 
+/** Bouwt de Supabase Storage upload-URL voor een bucket + pad. Pure functie. */
+export function storageUploadUrl(supabaseUrl: string, bucket: string, pad: string): string {
+  return `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${bucket}/${pad}`;
+}
+
 /**
  * Upload een video rechtstreeks vanuit de browser naar Supabase Storage (bucket
- * 'oplever-videos'). Bewust niet via een Next-API-route: video's zijn te groot voor de
- * Vercel-functie-payload. Geeft de publieke URL terug.
+ * 'oplever-videos') via XHR, zodat we echte upload-voortgang kunnen tonen. Bewust niet via
+ * een Next-API-route: video's zijn te groot voor de Vercel-functie-payload.
  */
-export async function uploadOpleverVideo(file: File): Promise<{ url: string }> {
+export async function uploadOpleverVideo(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<{ url: string }> {
   const client = createSupabaseBrowserClient();
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const apikey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+  const token = session?.access_token ?? apikey;
+
   const pad = videoOpslagPad(crypto.randomUUID(), file.name, file.type);
-  const { error } = await client.storage.from(VIDEO_BUCKET).upload(pad, file, {
-    contentType: file.type || "video/mp4",
-    upsert: false,
+  const uploadUrl = storageUploadUrl(supabaseUrl, VIDEO_BUCKET, pad);
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", uploadUrl);
+    xhr.setRequestHeader("authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("apikey", apikey);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.setRequestHeader("content-type", file.type || "video/mp4");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Video-upload mislukt (${xhr.status}): ${xhr.responseText || "geen details"}`));
+    };
+    xhr.onerror = () => reject(new Error("Netwerkfout bij video-upload"));
+    xhr.send(file);
   });
-  if (error) throw new Error(`Video-upload mislukt: ${error.message}`);
+
   const { data } = client.storage.from(VIDEO_BUCKET).getPublicUrl(pad);
   return { url: data.publicUrl };
 }

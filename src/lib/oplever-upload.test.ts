@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { videoExtensie, videoOpslagPad } from "./oplever-upload";
+import { videoExtensie, videoOpslagPad, storageUploadUrl } from "./oplever-upload";
+
+describe("storageUploadUrl", () => {
+  it("bouwt de storage object-URL", () => {
+    expect(storageUploadUrl("https://x.supabase.co", "oplever-videos", "a.mp4")).toBe(
+      "https://x.supabase.co/storage/v1/object/oplever-videos/a.mp4",
+    );
+  });
+  it("haalt een dubbele slash weg", () => {
+    expect(storageUploadUrl("https://x.supabase.co/", "b", "c.mov")).toBe(
+      "https://x.supabase.co/storage/v1/object/b/c.mov",
+    );
+  });
+});
 
 describe("videoExtensie", () => {
   it("haalt de extensie uit de bestandsnaam", () => {

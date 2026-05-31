@@ -11,6 +11,7 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     eindstaat_foto_urls: [],
     video_url: null,
     handtekening_url: null,
+    opmerking: null,
     rapport_url: null,
     user_id: null,
     ...over,
@@ -66,18 +67,11 @@ describe("rapportSamenvatting", () => {
     expect(rapportSamenvatting(maakMelding({ keukenzaak: null }), null).zaaknaam).toMatch(/onbekend/i);
   });
 
-  it("vertaalt uitkomst naar een label", () => {
+  it("neemt de opmerking over en maakt lege tekst null", () => {
     expect(
-      rapportSamenvatting(maakMelding({}), maakOplevering({ uitkomst: "afgerond" })).uitkomstLabel,
-    ).toBe("Afgerond");
-    expect(
-      rapportSamenvatting(maakMelding({}), maakOplevering({ uitkomst: "openstaande_punten" }))
-        .uitkomstLabel,
-    ).toBe("Nog openstaande punten");
-  });
-
-  it("geen oplevering betekent geen uitkomst-label", () => {
-    expect(rapportSamenvatting(maakMelding({}), null).uitkomstLabel).toBeNull();
+      rapportSamenvatting(maakMelding({}), maakOplevering({ opmerking: "Muren niet haaks" })).opmerking,
+    ).toBe("Muren niet haaks");
+    expect(rapportSamenvatting(maakMelding({}), maakOplevering({ opmerking: "   " })).opmerking).toBeNull();
   });
 
   it("meldt video en ondertekening", () => {

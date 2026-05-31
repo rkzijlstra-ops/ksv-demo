@@ -59,10 +59,18 @@ describe("POST /api/opdrachten/[id]/oplevering", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("400 bij ontbrekende/ongeldige uitkomst", async () => {
-    const res = await POST(postReq({ uitkomst: "klaar" }), params("opdr-1"));
-    expect(res.status).toBe(400);
-    expect(mockUpsert).not.toHaveBeenCalled();
+  it("slaat op zonder uitkomst (eindstaat-keuze geschrapt) en met opmerking", async () => {
+    const res = await POST(
+      postReq({
+        eindstaat_foto_urls: ["https://x/e1.jpg"],
+        opmerking: "Klant belt nog voor smetplinten",
+      }),
+      params("opdr-1"),
+    );
+    expect(res.status).toBe(200);
+    const arg = mockUpsert.mock.calls[0][0];
+    expect(arg.uitkomst).toBeUndefined();
+    expect(arg.opmerking).toBe("Klant belt nog voor smetplinten");
   });
 
   it("503 als opslaan mislukt", async () => {
