@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, CloudOff } from "lucide-react";
 import { FotoMaken } from "@/components/FotoMaken";
 import { VideoMaken } from "@/components/VideoMaken";
 import { HandtekeningModal } from "@/components/HandtekeningModal";
@@ -11,10 +11,12 @@ import { Voortgang } from "@/components/Voortgang";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
+import { useOfflineState } from "@/lib/use-offline-state";
 import { KEUKENZAKEN } from "@/lib/keukenzaken";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
+  const { online } = useOfflineState();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
@@ -118,10 +120,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         throw new Error(b.error ?? `Versturen mislukt (${verstuurRes.status})`);
       }
 
-      // Belonend "klaar"-moment, dan terug naar de opdracht.
+      // Belonend "klaar"-moment, daarna de opdracht verversen (toont 'opgeleverd').
       setKlaar(true);
       setTimeout(() => {
-        router.push(`/opdracht/${opdrachtId}`);
         router.refresh();
       }, 1400);
     } catch (err) {
@@ -294,10 +295,20 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           <button
             type="button"
             onClick={versturen}
-            className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
+            disabled={!online}
+            className="relative flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
           >
-            <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
-            Oplevering versturen
+            {!online ? (
+              <>
+                <CloudOff size={22} strokeWidth={2.5} aria-hidden="true" />
+                Netwerk nodig
+              </>
+            ) : (
+              <>
+                <PackageCheck size={22} strokeWidth={2.5} aria-hidden="true" />
+                Afronden en versturen
+              </>
+            )}
           </button>
         )}
       </section>
