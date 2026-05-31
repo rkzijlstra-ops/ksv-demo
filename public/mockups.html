@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mockup – flow + kleurvariaties</title>
+<title>Mockup V4 – Werkbak, Meldingen, Versturen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800;900&display=swap" rel="stylesheet" />
 <style>
@@ -22,27 +22,20 @@
   .col h2{font-size:15px;margin:0 0 6px;}
   .col .concept{font-size:13px;color:var(--muted);margin:0 0 10px;}
 
-  /* THEME: standaard = V1 (donkere info, oranje acties) */
+  /* V4-thema: lichte info-koppen met oranje accentlijn, donkere actie-knoppen */
   .phone{
-    --info-bg:#27272a; --info-text:#ffffff; --info-accent:#f97316;
-    --action-bg:#f97316; --action-text:#ffffff; --action-accent:#27272a;
+    --info-bg:#ffffff; --info-text:#0f172a; --info-accent:#f97316;
+    --action-bg:#27272a; --action-text:#ffffff; --action-accent:#f97316;
     position:relative;width:100%;max-width:400px;background:#fff;border:8px solid #0f172a;border-radius:22px;overflow:hidden;
   }
-  .phone.v2{--info-bg:#f97316;--info-text:#ffffff;--info-accent:#27272a;--action-bg:#27272a;--action-text:#ffffff;--action-accent:#f97316;}
-  .phone.v3{--info-bg:#27272a;--info-text:#ffffff;--info-accent:#f97316;--action-bg:#16a34a;--action-text:#ffffff;--action-accent:#0f5132;}
-  .phone.v4{--info-bg:#ffffff;--info-text:#0f172a;--info-accent:#f97316;--action-bg:#27272a;--action-text:#ffffff;--action-accent:#f97316;}
-
   .scr{padding:14px 14px 80px;}
-  .hdr{position:relative;background:var(--info-bg);color:var(--info-text);padding:16px;}
-  .phone.v4 .hdr{border:2px solid var(--line);border-bottom:none;}
-  .hdr .kk{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--info-text);opacity:.7;}
+  .hdr{position:relative;background:var(--info-bg);color:var(--info-text);padding:16px;border:2px solid var(--line);border-bottom:none;}
+  .hdr .kk{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--info-text);opacity:.6;}
   .hdr .klant{font-size:20px;font-weight:900;margin-top:2px;}
-  .hdr .sub{font-size:13px;margin-top:2px;opacity:.85;}
+  .hdr .sub{font-size:13px;margin-top:2px;opacity:.7;}
   .hdr .bar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--info-accent);}
-  .zonebar{position:relative;background:var(--info-bg);color:var(--info-text);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;margin-top:16px;}
-  .phone.v4 .zonebar{border:1px solid var(--line);}
+  .zonebar{position:relative;background:var(--info-bg);color:var(--info-text);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;margin-top:16px;border:1px solid var(--line);}
   .zonebar .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--info-accent);}
-
   .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12px;}
   .badge{background:var(--primary);color:#fff;padding:2px 8px;font-weight:700;}
   .meta{font-size:13px;margin-top:8px;line-height:1.7;}
@@ -54,13 +47,10 @@
   .card{border:1px solid var(--line);padding:12px;margin-top:12px;position:relative;}
   .card .ct{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:-2px 0 8px;}
   .doc{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line);}
-
-  /* ACTIE-knoppen volgen het thema */
   .btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.05em;width:100%;position:relative;}
   .btn.action{background:var(--action-bg);color:var(--action-text);}
   .btn.action .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--action-accent);}
   .btn.outline{border:2px solid var(--primary);color:var(--primary);background:#fff;}
-
   .melding{border:1px solid var(--line);padding:10px;margin-bottom:10px;}
   .pill{font-weight:800;font-size:10px;text-transform:uppercase;padding:2px 6px;}
   .pill.rood{background:var(--rood);color:#fff;}
@@ -74,12 +64,9 @@
   .orange ul{margin:4px 0 0;padding-left:16px;color:var(--muted);}
   .textarea{border:1px solid var(--line);min-height:56px;padding:8px 10px;color:var(--muted);font-size:14px;margin-top:6px;}
   .dashed{border:2px dashed var(--line);background:var(--surface);min-height:48px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:13px;}
-  .row2{display:flex;gap:8px;}
-  .row2>*{flex:1;}
+  .row2{display:flex;gap:8px;}.row2>*{flex:1;}
   .select{border:1px solid var(--line);min-height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;margin-top:6px;}
   .stepnum{display:inline-flex;width:20px;height:20px;background:var(--accent);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-right:6px;}
-
-  /* werkbak-kaart = bestaand blok + prullenbak */
   .opkaart{position:relative;display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-left-width:8px;border-left-color:var(--accent);background:#fff;padding:14px;margin-top:12px;}
   .opkaart.spoed{border-left-color:var(--rood);}
   .opkaart .body{min-width:0;flex:1;}
@@ -90,15 +77,12 @@
   .opkaart .dts{margin-top:6px;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
   .opkaart .chev{color:var(--muted);font-size:20px;}
   .opkaart .trash{position:absolute;top:8px;right:8px;width:30px;height:30px;border:1px solid var(--rood);color:var(--rood);display:flex;align-items:center;justify-content:center;font-size:14px;background:#fff;}
-
   .bottombar{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
-  .bottombar .brow{display:flex;gap:8px;}
-  .bottombar .brow>*{flex:1;}
+  .bottombar .brow{display:flex;gap:8px;}.bottombar .brow>*{flex:1;}
   .b-half{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;}
   .b-half.outline{border:2px solid var(--primary);color:var(--primary);}
   .b-half.action{background:var(--action-bg);color:var(--action-text);}
   .b-half.action .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--action-accent);}
-
   .dialog{position:absolute;inset:0;background:#0f172acc;display:flex;align-items:center;justify-content:center;padding:20px;}
   .dialog .box{background:#fff;padding:16px;width:100%;max-width:300px;}
   .dialog .box p{margin:0 0 14px;font-size:14px;}
@@ -107,19 +91,17 @@
 </style>
 </head>
 <body>
-<div class="nav">
-  <strong style="font-size:12px;align-self:center;margin-right:6px;">Naar:</strong>
-  <a href="#flow">Flow (V1)</a><a href="#v2">Kleur V2</a><a href="#v3">Kleur V3</a><a href="#v4">Kleur V4</a>
-</div>
+<div class="nav"><strong style="font-size:12px;align-self:center;margin-right:6px;">V4 – laatste check:</strong>
+  <a href="#w">Werkbak</a><a href="#m">Meldingen</a><a href="#v">Versturen</a></div>
 
-<h1 class="page" id="flow">De flow met de aanpassingen (kleur V1)</h1>
-<p class="intro">Werkbak met prullenbak in de bestaande kaart, "KKS / Meldingen", "Oplevering / Rapportage", navigatie onderaan, voorvertonen als eigen knop. V1 = donkere info-balken, oranje actie-knoppen.</p>
+<h1 class="page">V4 – de 3 pagina's, laatste check voor bouwen</h1>
+<p class="intro">Lichte koppen met oranje accentlijn, donkere actie-knoppen. Prullenbak in de werkbak-kaart, navigatie onderaan, voorvertonen als eigen knop.</p>
 <div class="grid">
 
   <!-- WERKBAK -->
-  <div class="col">
+  <div class="col" id="w">
     <h2>1 · Werkbak</h2>
-    <p class="concept">Bestaande kaart ongewijzigd, alleen een prullenbakje rechtsboven. Klik → bevestig-venster.</p>
+    <p class="concept">Bestaande kaart + prullenbakje rechtsboven. Klik → bevestig-venster.</p>
     <div class="phone"><div class="scr" style="padding-bottom:14px;">
       <div class="hdr"><div class="kk">Werkpool</div><div class="klant">Opdrachten</div><div class="sub">3 actieve klussen</div><div class="bar"></div></div>
       <div class="btn action" style="margin-top:12px;">⬆ Documenten toevoegen (PDF of foto)<div class="bar"></div></div>
@@ -133,10 +115,10 @@
     </div></div>
   </div>
 
-  <!-- MELDINGEN V1 -->
-  <div class="col">
+  <!-- MELDINGEN -->
+  <div class="col" id="m">
     <h2>2 · Meldingen</h2>
-    <p class="concept">"KKS / Meldingen". Onderaan: ‹ Werkpool en Rapportage ›.</p>
+    <p class="concept">"KKS / Meldingen". Onderaan ‹ Werkpool en Rapportage ›.</p>
     <div class="phone"><div class="scr">
       <div class="hdr"><div class="kk">KKS / Meldingen</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
       <div class="card"><div class="ct">Opdracht</div>
@@ -153,8 +135,8 @@
     </div></div>
   </div>
 
-  <!-- VERSTUREN V1 -->
-  <div class="col">
+  <!-- VERSTUREN -->
+  <div class="col" id="v">
     <h2>3 · Versturen</h2>
     <p class="concept">"Oplevering / Rapportage". Voorvertonen volle breedte, dan ‹ Meldingen en ▶ Versturen.</p>
     <div class="phone"><div class="scr">
@@ -168,57 +150,6 @@
         <div class="btn outline" style="min-height:48px;">👁 Rapport voorvertonen</div>
         <div class="brow"><span class="b-half outline">‹ Meldingen</span><span class="b-half action">▶ Versturen<div class="bar"></div></span></div>
       </div>
-    </div></div>
-  </div>
-
-</div>
-
-<h1 class="page">Kleurvariaties (op het meldingen-scherm)</h1>
-<p class="intro">Verschil tussen info-balken (boven) en actie-knoppen. Vormen en velden blijven gelijk; alleen kleuren wisselen.</p>
-<div class="grid">
-
-  <!-- V2 -->
-  <div class="col" id="v2">
-    <h2>V2 · Oranje info, donkere acties</h2>
-    <p class="concept">Warme oranje kopbalken, anthraciet actie-knoppen.</p>
-    <div class="phone v2"><div class="scr">
-      <div class="hdr"><div class="kk">KKS / Meldingen</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="card"><div class="ct">Opdracht</div><div class="meta">📍 Hoge Morsweg 37, Leiden</div><div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div></div>
-      <div class="card"><div class="ct">Meldingen (2)</div>
-        <div class="btn action" style="margin-bottom:10px;">+ Melding toevoegen<div class="bar"></div></div>
-        <div class="melding"><span class="pill rood">Spoed</span><div class="tx">Front beschadigd</div></div>
-      </div>
-      <div class="bottombar"><div class="brow"><span class="b-half outline">‹ Werkpool</span><span class="b-half action">Rapportage ›<div class="bar"></div></span></div></div>
-    </div></div>
-  </div>
-
-  <!-- V3 -->
-  <div class="col" id="v3">
-    <h2>V3 · Donkere info, groene acties</h2>
-    <p class="concept">Anthraciet kopbalken, groene actie-knoppen (groen = uitvoeren).</p>
-    <div class="phone v3"><div class="scr">
-      <div class="hdr"><div class="kk">KKS / Meldingen</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="card"><div class="ct">Opdracht</div><div class="meta">📍 Hoge Morsweg 37, Leiden</div><div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div></div>
-      <div class="card"><div class="ct">Meldingen (2)</div>
-        <div class="btn action" style="margin-bottom:10px;">+ Melding toevoegen<div class="bar"></div></div>
-        <div class="melding"><span class="pill rood">Spoed</span><div class="tx">Front beschadigd</div></div>
-      </div>
-      <div class="bottombar"><div class="brow"><span class="b-half outline">‹ Werkpool</span><span class="b-half action">Rapportage ›<div class="bar"></div></span></div></div>
-    </div></div>
-  </div>
-
-  <!-- V4 -->
-  <div class="col" id="v4">
-    <h2>V4 · Verrassing: lichte koppen, donkere acties</h2>
-    <p class="concept">Witte kopbalken met oranje accentlijn (luchtiger), anthraciet actie-knoppen.</p>
-    <div class="phone v4"><div class="scr">
-      <div class="hdr"><div class="kk">KKS / Meldingen</div><div class="klant">Familie de Vries</div><div class="bar"></div></div>
-      <div class="card"><div class="ct">Opdracht</div><div class="meta">📍 Hoge Morsweg 37, Leiden</div><div class="contact"><span class="b fill">Navigeer</span><span class="b">Bellen</span><span class="b wa">WhatsApp</span></div></div>
-      <div class="card"><div class="ct">Meldingen (2)</div>
-        <div class="btn action" style="margin-bottom:10px;">+ Melding toevoegen<div class="bar"></div></div>
-        <div class="melding"><span class="pill rood">Spoed</span><div class="tx">Front beschadigd</div></div>
-      </div>
-      <div class="bottombar"><div class="brow"><span class="b-half outline">‹ Werkpool</span><span class="b-half action">Rapportage ›<div class="bar"></div></span></div></div>
     </div></div>
   </div>
 
