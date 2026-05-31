@@ -238,7 +238,7 @@ export default async function OpdrachtDetailPage({
             )}
             <OpleverKnop
               opdrachtId={id}
-              label="Opnieuw opleveren"
+              label="Opnieuw rapporteren"
               accent="groen"
             />
           </div>

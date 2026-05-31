@@ -11,7 +11,7 @@ import { useOfflineState } from "@/lib/use-offline-state";
  */
 export function OpleverKnop({
   opdrachtId,
-  label = "Oplevering starten",
+  label = "Rapportage starten",
   accent = "oranje",
 }: {
   opdrachtId: string;
