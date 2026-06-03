@@ -12,6 +12,7 @@
   --color-urgent-rood: #dc2626;
   --color-urgent-geel: #fbbf24;
   --color-success: #16a34a;
+  --color-bevestigd: #1d4ed8;    /* blauw, dashboard-status 'bevestigd' (witte tekst, 7:1) */
 
   --font-sans: var(--font-lexend), system-ui, -apple-system, sans-serif;
   --font-body: var(--font-source), system-ui, sans-serif;

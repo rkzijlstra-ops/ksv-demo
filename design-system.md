@@ -14,21 +14,39 @@ Geen dark mode: zon op scherm leest slechter in dark mode. Light mode met hoog c
 
 ## Kleuren (high-contrast light)
 
+Bron van waarheid: de `@theme`-tokens in `src/app/globals.css`. Onderstaande tabel volgt die.
+
 | Token | Hex | Gebruik |
 |---|---|---|
 | `bg` | #FFFFFF | hoofdachtergrond |
 | `surface` | #F1F5F9 (slate-100) | kaarten, secties |
-| `text` | #0F172A (slate-900) | hoofdtekst, 7:1+ op wit |
-| `text-muted` | #475569 (slate-600) | secundaire tekst (minimaal, WCAG-veilig) |
-| `border` | #CBD5E1 (slate-300) | randen, zichtbaar |
-| `primary` | #1D4ED8 (blue-700) | primaire actie-knoppen, witte tekst |
-| `urgent-rood` | #DC2626 (red-600) | urgentie rood, witte tekst |
+| `ink` | #0F172A (slate-900) | hoofdtekst, 7:1+ op wit |
+| `ink-muted` | #475569 (slate-600) | secundaire tekst (minimaal, WCAG-veilig) |
+| `line` | #CBD5E1 (slate-300) | randen, zichtbaar |
+| `primary` | #27272A (anthraciet) | primaire actie-knoppen, witte tekst (industrieel D) |
+| `accent` | #F97316 (oranje) | merk-accent |
+| `urgent-rood` | #DC2626 (red-600) | urgentie/spoed rood, witte tekst |
 | `urgent-geel` | #FBBF24 (amber-400) | urgentie geel, ZWARTE tekst (#0F172A) voor contrast |
-| `success` | #16A34A (green-600) | verzonden-status |
+| `success` | #16A34A (green-600) | opgeleverd/verzonden, witte tekst |
+| `bevestigd` | #1D4ED8 (blue-700) | dashboard-status 'bevestigd', witte tekst |
+
+> Noot: een eerdere versie van dit document noemde `primary` als blue-700. Sinds sessie 2A.7 (industrieel D) is `primary` anthraciet en is oranje het merk-accent. De blauw is nu losgekoppeld en dient alleen nog als dashboard-status `bevestigd`.
 
 **Urgentie nooit alleen kleur**: altijd icoon + label.
 - ROOD = driehoek-waarschuwing-icoon + label "DIRECT"
 - GEEL = klok-icoon + label "ACHTERAF"
+
+## Dashboard-statuskleuren (opdrachtgever)
+
+Eén kleur + icoon + label per opdracht-status (consistent met de kleur-staat-taal van de monteur-app). Hergebruikt bestaande tokens, alleen `bevestigd`-blauw is nieuw.
+
+| Status | Kleur | Token |
+|---|---|---|
+| Binnen, nog te plannen | grijs | `surface` + `ink-muted` |
+| Gepland, nog te bevestigen | oranje | `accent` |
+| Bevestigd | blauw | `bevestigd` (nieuw) |
+| Opgeleverd | groen | `success` |
+| Geannuleerd | grijs + doorhaling | `ink-muted` + `line` |
 
 ## Typografie
 
