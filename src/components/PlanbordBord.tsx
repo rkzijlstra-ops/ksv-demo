@@ -13,7 +13,8 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import type { Melding } from "@/lib/db";
-import type { PlanbordPlaatsing } from "@/lib/planbord";
+import { monteurRijen, plaatsOpdrachten } from "@/lib/planbord";
+import { moetOpnieuwVersturen } from "@/lib/opdracht-status";
 import { PlanbordGrid } from "./PlanbordGrid";
 import { PlanbordPool } from "./PlanbordPool";
 
@@ -23,84 +24,111 @@ interface SleepData {
 }
 
 /**
- * Interactieve laag om het planbord: pool-opdrachten naar een cel slepen plant ze in
- * (concept_gepland, dagblok), een al geplande kaart naar een andere cel slepen verplaatst hem
- * (tijd/duur blijven, status blijft, gewijzigd-markering bij een verstuurde opdracht).
- * Precieze invoer (dagen/tijd) blijft via het inplan-formulier.
+ * Interactieve laag om het planbord. Houdt een eigen kopie van de opdrachten zodat een sleep-actie
+ * de kaart meteen op de nieuwe plek toont (optimistisch); de server wordt op de achtergrond
+ * bijgewerkt en daarna ververst. Zo geen terugspringen na het loslaten.
+ * - pool -> cel: inplannen (concept_gepland, dagblok)
+ * - kaart -> cel: verplaatsen (tijd/duur/status blijven; gewijzigd-markering bij verstuurde opdracht)
+ * - kaart -> pool: ontplannen (terug naar binnen)
  */
 export function PlanbordBord({
+  opdrachten,
   weekdagen,
-  monteurs,
-  plaatsingen,
-  pool,
   standaardDatum,
 }: {
+  opdrachten: Melding[];
   weekdagen: string[];
-  monteurs: string[];
-  plaatsingen: PlanbordPlaatsing<Melding>[];
-  pool: Melding[];
   standaardDatum: string;
 }) {
   const router = useRouter();
+  const [items, setItems] = useState<Melding[]>(opdrachten);
+  const [vorigeProp, setVorigeProp] = useState(opdrachten);
   const [actief, setActief] = useState<Melding | null>(null);
-  const [bezig, setBezig] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  // Na een server-refresh de lokale kopie weer gelijktrekken met de waarheid (React-patroon:
+  // state bijstellen tijdens render als de prop wijzigt, zonder useEffect).
+  if (opdrachten !== vorigeProp) {
+    setVorigeProp(opdrachten);
+    setItems(opdrachten);
+  }
+
+  const monteurs = monteurRijen(items);
+  const plaatsingen = plaatsOpdrachten(items, weekdagen);
+  const pool = items.filter((o) => o.dashboard_status === "binnen");
+
+  function pasLokaalToe(id: string, wijziging: Partial<Melding>) {
+    setItems((prev) => prev.map((o) => (o.id === id ? { ...o, ...wijziging } : o)));
+  }
 
   function onDragStart(e: DragStartEvent) {
     const data = e.active.data.current as SleepData | undefined;
     setActief(data?.opdracht ?? null);
   }
 
-  async function onDragEnd(e: DragEndEvent) {
+  function onDragEnd(e: DragEndEvent) {
     setActief(null);
     const over = e.over?.data.current as
       | { monteur?: string; dag?: string; zone?: string }
       | undefined;
     const data = e.active.data.current as SleepData | undefined;
     if (!over || !data) return;
+    const o = data.opdracht;
 
-    setBezig(true);
-    try {
-      // Terug naar de pool: een geplande kaart ontplannen.
-      if (over.zone === "pool") {
-        if (data.soort === "kaart") {
-          await fetch(`/api/opdrachten/${data.opdracht.id}/ontplannen`, { method: "POST" });
-          router.refresh();
-        }
-        return;
-      }
-      const cel = over as { monteur: string; dag: string };
-      if (!cel.dag) return;
-      if (data.soort === "pool") {
-        await fetch(`/api/opdrachten/${data.opdracht.id}/plannen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            monteur_naam: cel.monteur,
-            startdatum: cel.dag,
-            duur_dagen: 1,
-            starttijd: null,
-          }),
-        });
-      } else {
-        const o = data.opdracht;
-        if (o.monteur_naam === cel.monteur && o.startdatum === cel.dag) return; // niets veranderd
-        await fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            monteur_naam: cel.monteur,
-            startdatum: cel.dag,
-            starttijd: o.starttijd,
-            duur_dagen: o.duur_dagen,
-            huidigeStatus: o.dashboard_status,
-          }),
-        });
-      }
-      router.refresh();
-    } finally {
-      setBezig(false);
+    // Terug naar de pool: ontplannen.
+    if (over.zone === "pool") {
+      if (data.soort !== "kaart") return;
+      pasLokaalToe(o.id, {
+        dashboard_status: "binnen",
+        monteur_naam: null,
+        startdatum: null,
+        starttijd: null,
+        gewijzigd_te_versturen: false,
+      });
+      void fetch(`/api/opdrachten/${o.id}/ontplannen`, { method: "POST" }).then(() =>
+        router.refresh(),
+      );
+      return;
     }
+
+    if (!over.monteur || !over.dag) return;
+    const monteur = over.monteur;
+    const dag = over.dag;
+
+    if (data.soort === "pool") {
+      pasLokaalToe(o.id, {
+        monteur_naam: monteur,
+        startdatum: dag,
+        starttijd: null,
+        duur_dagen: 1,
+        dashboard_status: "concept_gepland",
+      });
+      void fetch(`/api/opdrachten/${o.id}/plannen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ monteur_naam: monteur, startdatum: dag, duur_dagen: 1, starttijd: null }),
+      }).then(() => router.refresh());
+      return;
+    }
+
+    // Verplaatsen van een al geplande kaart.
+    if (o.monteur_naam === monteur && o.startdatum === dag) return; // niets veranderd
+    pasLokaalToe(o.id, {
+      monteur_naam: monteur,
+      startdatum: dag,
+      gewijzigd_te_versturen: moetOpnieuwVersturen(o.dashboard_status) || o.gewijzigd_te_versturen,
+    });
+    void fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        monteur_naam: monteur,
+        startdatum: dag,
+        starttijd: o.starttijd,
+        duur_dagen: o.duur_dagen,
+        huidigeStatus: o.dashboard_status,
+      }),
+    }).then(() => router.refresh());
   }
 
   return (
@@ -110,16 +138,14 @@ export function PlanbordBord({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <div className={bezig ? "pointer-events-none opacity-70" : undefined}>
-        <PlanbordGrid weekdagen={weekdagen} monteurs={monteurs} plaatsingen={plaatsingen} />
+      <PlanbordGrid weekdagen={weekdagen} monteurs={monteurs} plaatsingen={plaatsingen} />
 
-        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-muted">
-          <span>Sleep een opdracht uit de strook naar een dag bij een monteur om in te plannen.</span>
-          <span>Brede balk = montage, kaartje met tijd = service.</span>
-        </p>
+      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-muted">
+        <span>Sleep een opdracht uit de strook naar een dag bij een monteur om in te plannen.</span>
+        <span>Brede balk = montage, kaartje met tijd = service.</span>
+      </p>
 
-        <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={standaardDatum} />
-      </div>
+      <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={standaardDatum} />
 
       <DragOverlay>
         {actief ? (

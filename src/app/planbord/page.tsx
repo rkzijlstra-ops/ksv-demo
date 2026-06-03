@@ -7,7 +7,6 @@ import {
   weeknummer,
   verschuifDagen,
   monteurRijen,
-  plaatsOpdrachten,
 } from "@/lib/planbord";
 import { formatDatumKort } from "@/lib/datum";
 import { PlanbordBord } from "@/components/PlanbordBord";
@@ -44,8 +43,6 @@ export default async function PlanbordPage({
 
   const opdrachten = await (await db()).getOpdrachtenVoorDashboard();
   const monteurs = monteurRijen(opdrachten);
-  const plaatsingen = plaatsOpdrachten(opdrachten, dagen);
-  const pool = opdrachten.filter((o) => o.dashboard_status === "binnen");
   const teVersturen = opdrachten
     .filter((o) => o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen)
     .map((o) => o.id);
@@ -88,13 +85,7 @@ export default async function PlanbordPage({
         <VerstuurKnop ids={teVersturen} />
       </div>
 
-      <PlanbordBord
-        weekdagen={dagen}
-        monteurs={monteurs}
-        plaatsingen={plaatsingen}
-        pool={pool}
-        standaardDatum={dagen[0]}
-      />
+      <PlanbordBord opdrachten={opdrachten} weekdagen={dagen} standaardDatum={dagen[0]} />
 
       <Link
         href="/dashboard"

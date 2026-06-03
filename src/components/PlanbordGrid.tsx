@@ -143,19 +143,20 @@ export function PlanbordGrid({
     );
   }
 
-  // Per monteur de lanes berekenen en de startrij in het raster bepalen.
-  let rij = 2;
-  const rijen = monteurs.map((m) => {
+  // Per monteur de lanes berekenen; daarna de startrijen als zuivere prefix-som (rij 1 = kop).
+  const perMonteur = monteurs.map((m) => {
     const eigen = plaatsingen.filter((p) => p.opdracht.monteur_naam === m);
     const kaarten = verdeelLanes(eigen);
     const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
-    const startRow = rij;
-    rij += laneCount;
-    const geplaatst: GeplaatstOpBord[] = kaarten.map((k) => ({
+    return { m, kaarten, laneCount };
+  });
+  const rijen = perMonteur.map((mb, i) => {
+    const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount, 0);
+    const geplaatst: GeplaatstOpBord[] = mb.kaarten.map((k) => ({
       ...k.plaatsing,
       gridRow: startRow + k.lane,
     }));
-    return { m, startRow, laneCount, geplaatst };
+    return { m: mb.m, startRow, laneCount: mb.laneCount, geplaatst };
   });
 
   return (
