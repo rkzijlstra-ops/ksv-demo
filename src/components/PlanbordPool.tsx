@@ -6,6 +6,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
+import { kapitaliseerEerste } from "@/lib/opdracht-weergave";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
 export function PlanbordPool({
@@ -161,7 +162,7 @@ function InplanFormulier({
           <input
             list="monteur-opties"
             value={monteur}
-            onChange={(e) => setMonteur(e.target.value)}
+            onChange={(e) => setMonteur(kapitaliseerEerste(e.target.value))}
             className={veld}
             placeholder="Naam monteur"
           />

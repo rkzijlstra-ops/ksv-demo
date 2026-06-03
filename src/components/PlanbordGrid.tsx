@@ -55,7 +55,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
     <Link
       ref={setNodeRef}
       href={`/opdracht/${o.id}`}
-      className={`m-1 grid h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
+      className={`m-1 grid min-h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
       style={{
         gridRow: p.gridRow,
         gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
@@ -82,7 +82,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
         </span>
         {nogTeVersturen && <MailMonteurKnop opdrachtId={o.id} />}
       </span>
-      <span className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10.5px] text-ink-muted">
+      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-ink-muted">
         {p.isService ? (
           <Wrench size={11} strokeWidth={2.2} className="shrink-0" aria-hidden="true" />
         ) : (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planningTijd, duurLabel, type PlanbareOpdracht } from "./opdracht-weergave";
+import { planningTijd, duurLabel, kapitaliseerEerste, type PlanbareOpdracht } from "./opdracht-weergave";
 
 function o(over: Partial<PlanbareOpdracht> = {}): PlanbareOpdracht {
   return {
@@ -31,5 +31,15 @@ describe("duurLabel", () => {
   it("meervoud bij meer dagen", () => {
     expect(duurLabel(2)).toBe("2 dagen");
     expect(duurLabel(3)).toBe("3 dagen");
+  });
+});
+
+describe("kapitaliseerEerste", () => {
+  it("maakt de eerste letter een hoofdletter", () => {
+    expect(kapitaliseerEerste("rein")).toBe("Rein");
+  });
+  it("laat een lege string en al-hoofdletter ongemoeid", () => {
+    expect(kapitaliseerEerste("")).toBe("");
+    expect(kapitaliseerEerste("Dani")).toBe("Dani");
   });
 });

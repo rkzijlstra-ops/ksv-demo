@@ -26,3 +26,9 @@ export function planningTijd(opdracht: PlanbareOpdracht): string {
 export function duurLabel(duurDagen: number): string {
   return `${duurDagen} ${duurDagen === 1 ? "dag" : "dagen"}`;
 }
+
+/** Eerste letter een hoofdletter (voor het netjes invoeren van een monteurnaam). */
+export function kapitaliseerEerste(tekst: string): string {
+  if (tekst === "") return tekst;
+  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+}
