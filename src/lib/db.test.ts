@@ -13,6 +13,7 @@ const h = vi.hoisted(() => {
     eq: vi.fn(),
     is: vi.fn(),
     not: vi.fn(),
+    in: vi.fn(),
     order: vi.fn(),
     single: vi.fn(),
     maybeSingle: vi.fn(),
@@ -29,6 +30,7 @@ const h = vi.hoisted(() => {
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
   builder.is = (...a: unknown[]) => (fns.is(...a), builder);
   builder.not = (...a: unknown[]) => (fns.not(...a), builder);
+  builder.in = (...a: unknown[]) => (fns.in(...a), builder);
   builder.order = (...a: unknown[]) => (fns.order(...a), builder);
   builder.single = () => (fns.single(), Promise.resolve(result));
   builder.maybeSingle = () => (fns.maybeSingle(), Promise.resolve(result));
@@ -621,5 +623,187 @@ describe("finaliseerOplevering", () => {
     await expect(
       createDb(cfg).finaliseerOplevering("opdr-1", "https://x/r.pdf"),
     ).rejects.toThrow(/finaliseer kapot/);
+  });
+});
+
+// ---- compleet-systeem blok 0: dashboard/planning ----
+
+const PEIL = new Date("2026-06-03T12:00:00.000Z");
+function dagenGeleden(n: number): string {
+  return new Date(PEIL.getTime() - n * 86_400_000).toISOString();
+}
+
+describe("getOpdrachtenVoorDashboard", () => {
+  it("selecteert opdracht-rijen (opdracht_id null, niet verwijderd) op created_at desc", async () => {
+    h.setResult({ data: [], error: null });
+    await createDb(cfg).getOpdrachtenVoorDashboard(PEIL);
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
+    expect(h.fns.is).toHaveBeenCalledWith("verwijderd_at", null);
+    expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
+  });
+
+  it("past de 14-dagen-scoping toe: actief blijft, oud opgeleverd valt af", async () => {
+    h.setResult({
+      data: [
+        { id: "actief", dashboard_status: "gepland", opgeleverd_at: null, created_at: dagenGeleden(400) },
+        { id: "recent", dashboard_status: "opgeleverd", opgeleverd_at: dagenGeleden(3), created_at: dagenGeleden(3) },
+        { id: "oud", dashboard_status: "opgeleverd", opgeleverd_at: dagenGeleden(20), created_at: dagenGeleden(20) },
+      ],
+      error: null,
+    });
+    const rows = await createDb(cfg).getOpdrachtenVoorDashboard(PEIL);
+    expect(rows.map((r) => r.id)).toEqual(["actief", "recent"]);
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "dashboard kapot" } });
+    await expect(createDb(cfg).getOpdrachtenVoorDashboard(PEIL)).rejects.toThrow(/dashboard kapot/);
+  });
+});
+
+describe("getOpdrachtById", () => {
+  it("haalt één opdracht-rij op id", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    const row = await createDb(cfg).getOpdrachtById("opdr-1");
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    expect(row?.id).toBe("opdr-1");
+  });
+
+  it("returnt null als de opdracht niet bestaat", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getOpdrachtById("weg")).toBeNull();
+  });
+});
+
+describe("zoekOpReferentie", () => {
+  it("zoekt op referentienummer, opdracht-rijen, nieuwste eerst", async () => {
+    h.setResult({ data: [{ id: "a" }, { id: "b" }], error: null });
+    const rows = await createDb(cfg).zoekOpReferentie("7444");
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("referentienummer", "7444");
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
+    expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(rows).toHaveLength(2);
+  });
+
+  it("returnt lege array bij onbekend referentienummer", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).zoekOpReferentie("0000")).toEqual([]);
+  });
+});
+
+describe("planOpdracht", () => {
+  it("zet monteur, datum, tijd en duur; status naar concept_gepland; synct uitvoerdatum", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).planOpdracht("opdr-1", {
+      toegewezen_aan: "piet",
+      startdatum: "2026-06-10",
+      starttijd: "10:00",
+      duur_dagen: 1,
+    });
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.toegewezen_aan).toBe("piet");
+    expect(patch.startdatum).toBe("2026-06-10");
+    expect(patch.starttijd).toBe("10:00");
+    expect(patch.duur_dagen).toBe(1);
+    expect(patch.dashboard_status).toBe("concept_gepland");
+    expect(patch.uitvoerdatum).toBe("2026-06-10");
+  });
+
+  it("staat een lege starttijd toe (dagblok, montage)", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).planOpdracht("opdr-2", {
+      toegewezen_aan: "henk",
+      startdatum: "2026-06-11",
+      starttijd: null,
+      duur_dagen: 2,
+    });
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.starttijd).toBeNull();
+    expect(patch.duur_dagen).toBe(2);
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "plan kapot" } });
+    await expect(
+      createDb(cfg).planOpdracht("x", { startdatum: "2026-06-10", starttijd: null, duur_dagen: 1 }),
+    ).rejects.toThrow(/plan kapot/);
+  });
+});
+
+describe("verstuurNaarMonteurs", () => {
+  it("zet de opgegeven opdrachten op gepland en reset de gewijzigd-marker", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).verstuurNaarMonteurs(["a", "b"]);
+
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.in).toHaveBeenCalledWith("id", ["a", "b"]);
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.dashboard_status).toBe("gepland");
+    expect(patch.gewijzigd_te_versturen).toBe(false);
+  });
+
+  it("doet niets en gooit niet bij een lege lijst", async () => {
+    await createDb(cfg).verstuurNaarMonteurs([]);
+    expect(h.fns.update).not.toHaveBeenCalled();
+  });
+
+  it("gooit Error bij DB-fout", async () => {
+    h.setResult({ data: null, error: { message: "verstuur kapot" } });
+    await expect(createDb(cfg).verstuurNaarMonteurs(["a"])).rejects.toThrow(/verstuur kapot/);
+  });
+});
+
+describe("bevestigOntvangst", () => {
+  it("zet de opdracht op bevestigd met een bevestigd_at-tijdstempel", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).bevestigOntvangst("opdr-1");
+
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.dashboard_status).toBe("bevestigd");
+    expect(typeof patch.bevestigd_at).toBe("string");
+  });
+});
+
+describe("wijzigOpdracht", () => {
+  it("past planning aan en zet gewijzigd-marker als de opdracht al verstuurd was", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).wijzigOpdracht(
+      "opdr-1",
+      { startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
+      "gepland",
+    );
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.startdatum).toBe("2026-06-20");
+    expect(patch.gewijzigd_te_versturen).toBe(true);
+  });
+
+  it("zet de marker NIET als de opdracht nog concept_gepland was", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).wijzigOpdracht(
+      "opdr-1",
+      { startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
+      "concept_gepland",
+    );
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.gewijzigd_te_versturen).toBeUndefined();
+  });
+});
+
+describe("annuleerOpdracht", () => {
+  it("zet de opdracht op geannuleerd", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).annuleerOpdracht("opdr-1");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    expect(h.fns.update.mock.calls[0][0].dashboard_status).toBe("geannuleerd");
   });
 });

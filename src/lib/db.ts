@@ -1,12 +1,27 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
 import { createSupabaseServerClient } from "./supabase-server";
+import { scopeVoorDashboard } from "./dashboard-scope";
+import { moetOpnieuwVersturen } from "./opdracht-status";
 import type { ParsedPdf, MeldingItem } from "./parser-schema";
 
 export interface DbConfig {
   url: string;
   secretKey: string;
 }
+
+/**
+ * Levenscyclus van een opdracht aan de opdrachtgeverskant (dashboard + planbord).
+ * Los van de monteur-melding-status (concept/verzonden) en opdracht_status (open/opgeleverd).
+ * Volgorde: binnen -> concept_gepland -> gepland -> bevestigd -> opgeleverd; geannuleerd is een zijtak.
+ */
+export type DashboardStatus =
+  | "binnen"
+  | "concept_gepland"
+  | "gepland"
+  | "bevestigd"
+  | "opgeleverd"
+  | "geannuleerd";
 
 /** Eén rij uit de meldingen-tabel. */
 export interface Melding {
@@ -41,6 +56,13 @@ export interface Melding {
   spoed_verzonden_at: string | null;
   // v2: soft-delete (prullenbak)
   verwijderd_at: string | null;
+  // compleet-systeem blok 0: opdrachtgeverskant (levenscyclus + planning)
+  dashboard_status: DashboardStatus;
+  startdatum: string | null;
+  starttijd: string | null;
+  duur_dagen: number;
+  gewijzigd_te_versturen: boolean;
+  bevestigd_at: string | null;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -134,6 +156,14 @@ export interface UpdateMeldingInput {
 /** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de werkpool). */
 export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: boolean }>;
 
+/** Planning-invoer voor een opdracht (één invoermodel: tijd leeg = dagblok, ingevuld = tijdkaart). */
+export interface PlanningInput {
+  toegewezen_aan?: string | null;
+  startdatum: string;
+  starttijd: string | null;
+  duur_dagen: number;
+}
+
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
@@ -160,6 +190,19 @@ export interface Db {
   verwijderMelding(id: string): Promise<void>;
   markeerSpoedVerzonden(id: string): Promise<void>;
   getMeldingTellingen(): Promise<MeldingTellingen>;
+  // compleet-systeem blok 0: dashboard/planning (opdrachtgeverskant)
+  getOpdrachtenVoorDashboard(peildatum?: Date): Promise<Melding[]>;
+  getOpdrachtById(id: string): Promise<Melding | null>;
+  zoekOpReferentie(referentienummer: string): Promise<Melding[]>;
+  planOpdracht(id: string, planning: PlanningInput): Promise<void>;
+  verstuurNaarMonteurs(ids: string[]): Promise<void>;
+  bevestigOntvangst(id: string): Promise<void>;
+  wijzigOpdracht(
+    id: string,
+    planning: PlanningInput,
+    huidigeStatus: DashboardStatus,
+  ): Promise<void>;
+  annuleerOpdracht(id: string): Promise<void>;
 }
 
 /**
@@ -443,6 +486,97 @@ function createDbFromClient(client: SupabaseClient): Db {
         result[rij.opdracht_id] = huidig;
       }
       return result;
+    },
+
+    async getOpdrachtenVoorDashboard(peildatum = new Date()) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .is("opdracht_id", null)
+        .is("verwijderd_at", null)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return scopeVoorDashboard((data ?? []) as Melding[], peildatum);
+    },
+
+    async getOpdrachtById(id: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Melding | null) ?? null;
+    },
+
+    async zoekOpReferentie(referentienummer: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .eq("referentienummer", referentienummer)
+        .is("opdracht_id", null)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
+    },
+
+    async planOpdracht(id, planning) {
+      const patch: Record<string, unknown> = {
+        startdatum: planning.startdatum,
+        starttijd: planning.starttijd,
+        duur_dagen: planning.duur_dagen,
+        dashboard_status: "concept_gepland",
+        // uitvoerdatum gelijkhouden aan startdatum: de monteur-werkpool leest die nog.
+        uitvoerdatum: planning.startdatum,
+      };
+      if (planning.toegewezen_aan !== undefined) {
+        patch.toegewezen_aan = planning.toegewezen_aan;
+      }
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
+      if (error) throw new Error(`DB plannen mislukt: ${error.message}`);
+    },
+
+    async verstuurNaarMonteurs(ids) {
+      if (ids.length === 0) return; // niets te versturen
+      const { error } = await client
+        .from("meldingen")
+        .update({ dashboard_status: "gepland", gewijzigd_te_versturen: false })
+        .in("id", ids);
+      if (error) throw new Error(`DB versturen mislukt: ${error.message}`);
+    },
+
+    async bevestigOntvangst(id) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ dashboard_status: "bevestigd", bevestigd_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw new Error(`DB bevestigen mislukt: ${error.message}`);
+    },
+
+    async wijzigOpdracht(id, planning, huidigeStatus) {
+      const patch: Record<string, unknown> = {
+        startdatum: planning.startdatum,
+        starttijd: planning.starttijd,
+        duur_dagen: planning.duur_dagen,
+        uitvoerdatum: planning.startdatum,
+      };
+      if (planning.toegewezen_aan !== undefined) {
+        patch.toegewezen_aan = planning.toegewezen_aan;
+      }
+      // Was de opdracht al naar de monteur, dan markeren als opnieuw te versturen (verstuur-poort).
+      if (moetOpnieuwVersturen(huidigeStatus)) {
+        patch.gewijzigd_te_versturen = true;
+      }
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
+      if (error) throw new Error(`DB wijzigen mislukt: ${error.message}`);
+    },
+
+    async annuleerOpdracht(id) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ dashboard_status: "geannuleerd" })
+        .eq("id", id);
+      if (error) throw new Error(`DB annuleren mislukt: ${error.message}`);
     },
   };
 }
