@@ -77,6 +77,39 @@ export interface PlanbordPlaatsing<T extends PlanbaarOpdracht = PlanbaarOpdracht
   isService: boolean;
 }
 
+export interface GeplaatsteKaart<T extends PlanbaarOpdracht = PlanbaarOpdracht> {
+  plaatsing: PlanbordPlaatsing<T>;
+  /** Sub-rij binnen de monteur-rij (0 = bovenste); voorkomt overlap bij gelijke dagen. */
+  lane: number;
+}
+
+/**
+ * Verdeelt de plaatsingen van één monteur over "lanes" (sub-rijen), zodat meerdaagse balken
+ * kunnen uitrekken én elkaar niet overlappen: wat op dezelfde dag(en) valt komt onder elkaar.
+ * Greedy interval-partitionering, gesorteerd op dag en daarna tijd. Pure functie.
+ */
+export function verdeelLanes<T extends PlanbaarOpdracht>(
+  plaatsingen: PlanbordPlaatsing<T>[],
+): GeplaatsteKaart<T>[] {
+  const gesorteerd = [...plaatsingen].sort(
+    (a, b) =>
+      a.dagIndex - b.dagIndex ||
+      (a.opdracht.starttijd ?? "").localeCompare(b.opdracht.starttijd ?? ""),
+  );
+  const laneEind: number[] = []; // exclusieve eind-kolom per lane
+  const result: GeplaatsteKaart<T>[] = [];
+  for (const p of gesorteerd) {
+    let lane = laneEind.findIndex((eind) => eind <= p.dagIndex);
+    if (lane === -1) {
+      lane = laneEind.length;
+      laneEind.push(0);
+    }
+    laneEind[lane] = p.dagIndex + p.span;
+    result.push({ plaatsing: p, lane });
+  }
+  return result;
+}
+
 /** Unieke, alfabetisch gesorteerde monteurs uit de geplande opdrachten (de rijen van het bord). */
 export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
   const set = new Set<string>();

@@ -6,6 +6,7 @@ import {
   weeknummer,
   monteurRijen,
   plaatsOpdrachten,
+  verdeelLanes,
   type PlanbaarOpdracht,
 } from "./planbord";
 import type { DashboardStatus } from "./db";
@@ -116,5 +117,48 @@ describe("plaatsOpdrachten", () => {
       WEEK,
     );
     expect(p.map((x) => x.opdracht.id)).toEqual(["g"]);
+  });
+});
+
+describe("verdeelLanes", () => {
+  it("zet niet-overlappende opdrachten op dezelfde lane", () => {
+    const ps = plaatsOpdrachten(
+      [opdr({ id: "a", startdatum: "2026-06-08" }), opdr({ id: "b", startdatum: "2026-06-10" })],
+      WEEK,
+    );
+    expect(verdeelLanes(ps).every((k) => k.lane === 0)).toBe(true);
+  });
+
+  it("stapelt overlappende opdrachten in aparte lanes", () => {
+    const ps = plaatsOpdrachten(
+      [
+        opdr({ id: "a", startdatum: "2026-06-09", starttijd: "08:00" }),
+        opdr({ id: "b", startdatum: "2026-06-09", starttijd: "10:00" }),
+      ],
+      WEEK,
+    );
+    expect(
+      verdeelLanes(ps)
+        .map((k) => k.lane)
+        .sort(),
+    ).toEqual([0, 1]);
+  });
+
+  it("laat een meerdaags blok en een overlappende dag in aparte lanes vallen", () => {
+    const ps = plaatsOpdrachten(
+      [
+        opdr({ id: "m", startdatum: "2026-06-08", duur_dagen: 2 }),
+        opdr({ id: "s", startdatum: "2026-06-09", starttijd: "10:00" }),
+      ],
+      WEEK,
+    );
+    const k = verdeelLanes(ps);
+    const mLane = k.find((x) => x.plaatsing.opdracht.id === "m")!.lane;
+    const sLane = k.find((x) => x.plaatsing.opdracht.id === "s")!.lane;
+    expect(mLane).not.toBe(sLane);
+  });
+
+  it("lege invoer geeft lege uitvoer", () => {
+    expect(verdeelLanes([])).toEqual([]);
   });
 });

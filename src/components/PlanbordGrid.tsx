@@ -5,7 +5,7 @@ import { Package, Wrench } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
-import type { PlanbordPlaatsing } from "@/lib/planbord";
+import { verdeelLanes, type PlanbordPlaatsing } from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
@@ -24,8 +24,11 @@ function dagLabel(iso: string): string {
   return String(parseInt(iso.split("-")[2], 10));
 }
 
-/** Uniforme, sleepbare kaart op het bord; klikken navigeert (sleepdrempel). */
-function Kaart({ p }: { p: PlanbordPlaatsing<Melding> }) {
+/** Plaatsing met de berekende grid-rij erbij (lane binnen de monteur-rij). */
+type GeplaatstOpBord = PlanbordPlaatsing<Melding> & { gridRow: number };
+
+/** Uniforme, sleepbare kaart/balk; montage rekt uit over meerdere dagen, service is één dag. */
+function Kaart({ p }: { p: GeplaatstOpBord }) {
   const o = p.opdracht;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `kaart-${o.id}`,
@@ -35,12 +38,14 @@ function Kaart({ p }: { p: PlanbordPlaatsing<Melding> }) {
     <Link
       ref={setNodeRef}
       href={`/opdracht/${o.id}`}
-      className={`block min-h-[54px] cursor-grab border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${KAART[o.dashboard_status]}`}
+      className={`m-1 block h-[56px] cursor-grab overflow-hidden border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${KAART[o.dashboard_status]}`}
       style={{
+        gridRow: p.gridRow,
+        gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.4 : 1,
         touchAction: "none",
-        zIndex: isDragging ? 10 : undefined,
+        zIndex: isDragging ? 10 : 5,
       }}
       {...listeners}
       {...attributes}
@@ -55,55 +60,54 @@ function Kaart({ p }: { p: PlanbordPlaatsing<Melding> }) {
           {o.klant_naam ?? "Onbekende klant"}
         </span>
       </span>
-      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-ink-muted">
+      <span className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10.5px] text-ink-muted">
         {p.isService ? (
-          <Wrench size={11} strokeWidth={2.2} aria-hidden="true" />
+          <Wrench size={11} strokeWidth={2.2} className="shrink-0" aria-hidden="true" />
         ) : (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex shrink-0 items-center gap-1">
             <Package size={11} strokeWidth={2.2} aria-hidden="true" />
             {duurLabel(o.duur_dagen)}
           </span>
         )}
         {o.referentienummer ? (
-          <span className="font-mono font-bold text-primary">{o.referentienummer}</span>
+          <span className="shrink-0 font-mono font-bold text-primary">{o.referentienummer}</span>
         ) : (
-          <span className="font-bold text-urgent-rood">geen ref</span>
+          <span className="shrink-0 font-bold text-urgent-rood">geen ref</span>
         )}
         {o.dashboard_status === "concept_gepland" && (
-          <span className="font-bold text-accent">te versturen</span>
+          <span className="shrink-0 font-bold text-accent">te versturen</span>
         )}
       </span>
     </Link>
   );
 }
 
-/** Lege/gevulde cel = drop-doel voor een opdracht (monteur + dag), kaarten gestapeld. */
+/** Lege cel = drop-doel (monteur + dag). */
 function DropCel({
   monteur,
   dag,
-  r,
-  c,
-  kaarten,
+  gridRow,
+  col,
+  laatsteLane,
 }: {
   monteur: string;
   dag: string;
-  r: number;
-  c: number;
-  kaarten: PlanbordPlaatsing<Melding>[];
+  gridRow: number;
+  col: number;
+  laatsteLane: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `cel-${r}-${c}`, data: { monteur, dag } });
+  const { setNodeRef, isOver } = useDroppable({
+    id: `cel-${monteur}-${dag}`,
+    data: { monteur, dag },
+  });
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-h-[96px] flex-col gap-1.5 border-b border-r border-line p-1 last:border-r-0 ${
-        isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""
-      }`}
-      style={{ gridRow: r + 2, gridColumn: c + 2 }}
-    >
-      {kaarten.map((p) => (
-        <Kaart key={p.opdracht.id} p={p} />
-      ))}
-    </div>
+      className={`min-h-[64px] border-r border-line last:border-r-0 ${
+        laatsteLane ? "border-b-2 border-b-ink" : "border-b border-b-line"
+      } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}`}
+      style={{ gridRow, gridColumn: col + 2 }}
+    />
   );
 }
 
@@ -126,17 +130,20 @@ export function PlanbordGrid({
     );
   }
 
-  // Kaarten per cel (monteur-rij + dag-kolom), gesorteerd: dagblokken eerst, dan op tijd.
-  const perCel = new Map<string, PlanbordPlaatsing<Melding>[]>();
-  for (const p of plaatsingen) {
-    const r = monteurs.indexOf(p.opdracht.monteur_naam ?? "");
-    if (r === -1) continue;
-    const key = `${r}-${p.dagIndex}`;
-    (perCel.get(key) ?? perCel.set(key, []).get(key)!).push(p);
-  }
-  for (const lijst of perCel.values()) {
-    lijst.sort((a, b) => (a.opdracht.starttijd ?? "").localeCompare(b.opdracht.starttijd ?? ""));
-  }
+  // Per monteur de lanes berekenen en de startrij in het raster bepalen.
+  let rij = 2;
+  const rijen = monteurs.map((m) => {
+    const eigen = plaatsingen.filter((p) => p.opdracht.monteur_naam === m);
+    const kaarten = verdeelLanes(eigen);
+    const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
+    const startRow = rij;
+    rij += laneCount;
+    const geplaatst: GeplaatstOpBord[] = kaarten.map((k) => ({
+      ...k.plaatsing,
+      gridRow: startRow + k.lane,
+    }));
+    return { m, startRow, laneCount, geplaatst };
+  });
 
   return (
     <div
@@ -156,30 +163,36 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {/* Monteur-labels */}
-      {monteurs.map((m, r) => (
-        <div
-          key={`label-${m}`}
-          className="flex items-center gap-2 border-b border-r border-line px-2.5 py-2 font-extrabold"
-          style={{ gridRow: r + 2, gridColumn: 1 }}
-        >
-          {m}
+      {rijen.map(({ m, startRow, laneCount, geplaatst }) => (
+        <div key={`blok-${m}`} className="contents">
+          {/* Monteur-label, overspant alle lanes van deze monteur */}
+          <div
+            className="flex items-center gap-2 border-b-2 border-b-ink border-r border-r-line px-2.5 py-2 font-extrabold"
+            style={{ gridRow: `${startRow} / span ${laneCount}`, gridColumn: 1 }}
+          >
+            {m}
+          </div>
+
+          {/* Droppable cellen per lane en dag */}
+          {Array.from({ length: laneCount }).map((_, lane) =>
+            weekdagen.map((d, c) => (
+              <DropCel
+                key={`cel-${m}-${lane}-${c}`}
+                monteur={m}
+                dag={d}
+                gridRow={startRow + lane}
+                col={c}
+                laatsteLane={lane === laneCount - 1}
+              />
+            )),
+          )}
+
+          {/* Kaarten/balken bovenop de cellen */}
+          {geplaatst.map((p) => (
+            <Kaart key={p.opdracht.id} p={p} />
+          ))}
         </div>
       ))}
-
-      {/* Droppable cellen met gestapelde kaarten */}
-      {monteurs.map((m, r) =>
-        weekdagen.map((d, c) => (
-          <DropCel
-            key={`cel-${r}-${c}`}
-            monteur={m}
-            dag={d}
-            r={r}
-            c={c}
-            kaarten={perCel.get(`${r}-${c}`) ?? []}
-          />
-        )),
-      )}
     </div>
   );
 }
