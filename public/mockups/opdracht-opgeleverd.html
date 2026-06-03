@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opdracht-detail — opgeleverd (klantdossier)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#FAFAFA; --surface:#F4F4F5; --ink:#18181B; --ink-muted:#525252; --line:#D4D4D8;
+    --ant:#27272A; --accent:#F97316;
+    --st-binnen:#94A3B8; --st-gepland:#F97316; --st-bevestigd:#1D4ED8; --st-opgeleverd:#16A34A;
+    --urgent:#DC2626; --amber:#FBBF24;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Lexend", ui-sans-serif, system-ui, sans-serif; font-size:16px; line-height:1.45; }
+  .ic { width:14px; height:14px; flex:none; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .mono { font-family:ui-monospace, "Consolas", monospace; letter-spacing:-.01em; }
+  main { max-width:760px; margin:0 auto; padding:16px 16px 80px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:10px; }
+  .topbar a { color:inherit; }
+  .topbar b { color:var(--ink); }
+
+  /* Header */
+  .h { position:relative; background:#FFF; border:2px solid var(--line); border-bottom:none; padding:20px 22px 22px; }
+  .h::after { content:""; display:block; height:6px; background:var(--st-opgeleverd); position:absolute; left:0; right:0; bottom:0; }
+  .h .stamp { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-muted); }
+  .h h1 { margin:4px 0 8px; font-size:28px; font-weight:800; letter-spacing:-.01em; }
+  .h .badges { display:flex; flex-wrap:wrap; gap:8px; }
+  .tag { display:inline-flex; gap:5px; align-items:center; background:#FFF; color:var(--ant); border:1.5px solid var(--ant); padding:3px 10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; font-size:12px; }
+  .tag.opg { color:#fff; background:var(--st-opgeleverd); border-color:var(--st-opgeleverd); }
+  .ref { font-size:12.5px; color:var(--ant); font-weight:700; background:var(--surface); padding:3px 9px; }
+
+  /* Kerngegevens */
+  .kern { border:2px solid var(--line); border-top:none; background:#FFF; display:grid; grid-template-columns:repeat(2,1fr); }
+  .kv { padding:11px 16px; border-top:1px solid var(--line); border-right:1px solid var(--line); }
+  .kv:nth-child(2n){ border-right:none; }
+  .kv .l { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); font-weight:700; }
+  .kv .v { font-size:15px; font-weight:700; margin-top:2px; display:flex; align-items:center; gap:7px; }
+
+  /* Secties */
+  .sec { margin-top:22px; }
+  .sec-h { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .sec-h .lbl { font-family:ui-monospace, monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); font-weight:700; }
+  .sec-h .bar { flex:1; height:2px; background:var(--line); }
+  .card { border:2px solid var(--line); background:#FFF; padding:16px; }
+
+  /* Rapport-status */
+  .verzonden { display:flex; align-items:center; gap:9px; color:#166534; background:#F0FDF4; border:1.5px solid var(--st-opgeleverd); padding:9px 12px; font-weight:700; font-size:13.5px; margin-bottom:16px; }
+  .verzonden svg { width:18px; height:18px; stroke:var(--st-opgeleverd); fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* Punten */
+  .punt { display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-bottom:1px solid var(--surface); font-size:14.5px; }
+  .punt:last-child { border-bottom:none; }
+  .punt svg { width:18px; height:18px; flex:none; margin-top:1px; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .punt.ok svg { stroke:var(--st-opgeleverd); }
+  .punt.rest svg { stroke:#B45309; }
+  .punt .rl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#B45309; margin-left:6px; }
+
+  /* Foto's */
+  .fotos { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .foto { aspect-ratio:1; background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; color:var(--ink-muted); }
+  .foto svg { width:22px; height:22px; stroke:var(--ink-muted); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .foto span { font-size:10.5px; }
+  .foto.video { background:#1F2937; color:#fff; text-decoration:none; }
+  .foto.video svg { width:30px; height:30px; stroke:#fff; }
+  @media (max-width:560px){ .fotos { grid-template-columns:repeat(2,1fr); } .kern { grid-template-columns:1fr; } .kv:nth-child(n){ border-right:none; } }
+
+  /* Handtekening */
+  .sig { margin-top:14px; border:1.5px dashed var(--line); background:#FFF; padding:14px 16px; }
+  .sig .lab { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); font-weight:700; }
+  .sig svg.scribble { display:block; height:46px; margin:4px 0; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .sig .who { font-size:13px; color:var(--ink-muted); }
+
+  /* Oplever-badges, opmerking, video, meldingen */
+  .obadges { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .ob { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; border:1.5px solid var(--line); color:var(--ink-muted); background:var(--surface); }
+  .ob svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .ob.ok { color:#166534; background:#F0FDF4; border-color:var(--st-opgeleverd); }
+  .ob.vid { color:#9A3412; background:#FFF7ED; border-color:var(--accent); }
+  .opm { border-left:3px solid var(--accent); background:var(--surface); padding:10px 14px; font-size:14px; margin-bottom:14px; }
+  .opm .l { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); font-weight:700; margin-bottom:3px; }
+  .vidlink { display:inline-flex; align-items:center; gap:11px; border:1.5px solid var(--ant); background:#FFF; padding:9px 14px; text-decoration:none; color:var(--ink); font-weight:700; font-size:13.5px; margin-bottom:16px; }
+  .vidlink .play { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--ant); color:#fff; font-size:10px; }
+  .melding { border:1.5px solid var(--line); background:#FFF; padding:12px 14px; margin-bottom:10px; }
+  .melding .mh { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .melding .mh .k { font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:6px; }
+  .melding .mh .k.spoed { color:var(--urgent); }
+  .melding .mh .dt { font-size:12px; color:var(--ink-muted); }
+  .melding .mt { margin-top:6px; font-size:14.5px; }
+  .melding .mfotos { margin-top:10px; display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .melding .mfoto { aspect-ratio:1; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+  .melding .mfoto svg { width:16px; height:16px; stroke:var(--ink-muted); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* Documenten */
+  .doc { display:flex; align-items:center; gap:12px; border:1.5px solid var(--line); background:#FFF; padding:11px 14px; text-decoration:none; color:inherit; margin-bottom:8px; }
+  .doc svg.f { width:20px; height:20px; stroke:var(--ant); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .doc .nm { font-weight:700; font-size:14px; }
+  .doc .meta { font-size:12px; color:var(--ink-muted); }
+  .doc .chev { margin-left:auto; color:var(--ant); font-size:20px; }
+  .doc .dt { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border:1px solid var(--line); color:var(--ink-muted); }
+
+  /* Historie */
+  .hist { border-left:3px solid var(--line); padding-left:14px; }
+  .hist .it { padding:9px 0; font-size:14px; display:flex; gap:10px; align-items:baseline; border-bottom:1px solid var(--surface); }
+  .hist .it:last-child { border-bottom:none; }
+  .hist .it .d { color:var(--ink-muted); font-size:12.5px; min-width:64px; flex:none; }
+  .hist .it.lk { text-decoration:none; color:inherit; cursor:pointer; }
+  .hist .it.lk:hover { color:var(--ant); }
+  .hist .it .chev { margin-left:auto; color:var(--ant); font-size:18px; align-self:center; }
+  .hist .it .docs { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-muted); border:1px solid var(--line); padding:1px 6px; }
+  .hint { font-size:13.5px; color:var(--ink-muted); margin-top:20px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pkg" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+</svg>
+<main>
+  <div class="topbar"><a href="dashboard.html">← dashboard</a> · <b>Opdracht-detail — opgeleverd</b></div>
+
+  <header class="h">
+    <div class="stamp mono">KSV / OPDRACHT</div>
+    <h1>Fam. Smit</h1>
+    <div class="badges">
+      <span class="ref mono">7398</span>
+      <span class="tag"><svg class="ic"><use href="#i-pkg"/></svg>Montage</span>
+      <span class="tag opg"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Opgeleverd</span>
+    </div>
+  </header>
+  <div class="kern">
+    <div class="kv"><div class="l">Monteur</div><div class="v"><svg class="ic"><use href="#i-user"/></svg>Rein</div></div>
+    <div class="kv"><div class="l">Opgeleverd op</div><div class="v"><svg class="ic"><use href="#i-cal"/></svg>22 mei 2026</div></div>
+    <div class="kv"><div class="l">Adres</div><div class="v"><svg class="ic"><use href="#i-pin"/></svg>Molenweg 8, Voorschoten</div></div>
+    <div class="kv"><div class="l">Duur</div><div class="v">2 dagen (20–21 mei)</div></div>
+  </div>
+
+  <!-- OPLEVERING -->
+  <div class="sec">
+    <div class="sec-h"><span class="lbl">Oplevering</span><span class="bar"></span></div>
+    <div class="card">
+      <div class="verzonden">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Rapport verstuurd naar klant op 22 mei
+      </div>
+
+      <div class="obadges">
+        <span class="ob ok"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Ondertekend door klant</span>
+        <span class="ob vid"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Video bijgevoegd</span>
+        <span class="ob">4 eindstaat-foto's</span>
+      </div>
+
+      <div class="opm">
+        <div class="l">Opmerking monteur</div>
+        Plint links nabesteld, wordt volgende week nageleverd en gemonteerd. Rest van de keuken volledig afgewerkt en getest.
+      </div>
+
+      <a class="vidlink" href="#"><span class="play">▶</span>Video van de oplevering · 0:48</a>
+
+      <div style="font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-muted); margin-bottom:8px">Eindstaat-foto's (4)</div>
+      <div class="fotos">
+        <div class="foto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="foto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="foto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="foto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      </div>
+
+      <div class="sig">
+        <div class="lab">Handtekening klant</div>
+        <svg class="scribble" viewBox="0 0 220 46" preserveAspectRatio="xMinYMid meet"><path d="M4 34c14-22 22 8 34-2s10-26 20-18-2 30 12 26 16-30 28-22 4 26 18 22 14-20 26-16 10 14 26 10"/></svg>
+        <div class="who">A. Smit · 22 mei 2026, 15:40</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MELDINGEN (tijdens de klus, elk met eigen tekst + foto's) -->
+  <div class="sec">
+    <div class="sec-h"><span class="lbl">Meldingen (2) · 3 foto's</span><span class="bar"></span></div>
+    <div class="melding">
+      <div class="mh"><span class="k"><svg class="ic"><use href="#i-pkg"/></svg>Melding</span><span class="dt mono">20 mei · 11:20</span></div>
+      <div class="mt">Muur achter de kasten niet vlak. Opgevuld met vulplaatjes zodat de kasten waterpas konden.</div>
+      <div class="mfotos">
+        <div class="mfoto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="mfoto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      </div>
+    </div>
+    <div class="melding">
+      <div class="mh"><span class="k"><svg class="ic"><use href="#i-pkg"/></svg>Melding</span><span class="dt mono">21 mei · 14:05</span></div>
+      <div class="mt">Afvoer spoelbak zat dicht, doorgespoten. Werkt nu zonder lekkage.</div>
+      <div class="mfotos">
+        <div class="mfoto"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-muted);margin:8px 0 0">De tekst hoort bij de melding, niet bij een losse foto. Een spoedmelding zou hier rood gemarkeerd staan.</p>
+  </div>
+
+  <!-- DOCUMENTEN -->
+  <div class="sec">
+    <div class="sec-h"><span class="lbl">Documenten</span><span class="bar"></span></div>
+    <a class="doc" href="#"><svg class="f" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><div class="nm">Opdracht 7398.pdf</div><div class="meta">oorspronkelijke opdracht · 0,2 MB</div></div><span class="dt">opdracht</span><span class="chev">›</span></a>
+    <a class="doc" href="#"><svg class="f" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><div class="nm">Keukentekening.pdf</div><div class="meta">toegevoegd 18 mei · 1,1 MB</div></div><span class="dt">tekening</span><span class="chev">›</span></a>
+    <a class="doc" href="#"><svg class="f" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><div><div class="nm">Opleverrapport 7398.pdf</div><div class="meta">automatisch gegenereerd · verstuurd 22 mei</div></div><span class="dt">rapport</span><span class="chev">›</span></a>
+  </div>
+
+  <!-- HISTORIE OP REFERENTIENUMMER -->
+  <div class="sec">
+    <div class="sec-h"><span class="lbl">Historie van deze keuken (ref 7398)</span><span class="bar"></span></div>
+    <div class="hist">
+      <a class="it lk" href="#"><span class="d mono">28 mei '26</span><span>Service: lade stelt niet · Rein · opgeleverd</span><span class="docs">2 docs</span><span class="chev">›</span></a>
+      <div class="it"><span class="d mono">22 mei '26</span><span><b>Montage opgeleverd</b> · Rein · dit dossier</span></div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-muted);margin:8px 0 0">Alles onder ref 7398: de montage en de service die daaruit volgde. Een andere keuken van dezelfde klant zou een eigen referentienummer en een eigen dossier hebben.</p>
+  </div>
+
+  <p class="hint">Detail-mockup, laag-fidelity, in dezelfde opbouw als het echte opleverrapport. Twee delen: <b>Oplevering/rapportage</b> (eindstaat-foto's, handtekening, video, vrije opmerking van de monteur) en <b>Meldingen</b> die tijdens de klus zijn gemaakt, elk met tekst en eigen foto's. De tekst hoort bij een melding, niet bij een losse foto. <b>Oudere werkzaamheden</b> staan onder Historie als aanklikbare regels; elke opent zijn eigen dossier met eigen PDF's. Bewerken gebeurt in de monteur-app; hier lees en sla je na.</p>
+</main>
+</body>
+</html>

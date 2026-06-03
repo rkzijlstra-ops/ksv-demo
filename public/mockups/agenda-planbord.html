@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda — planbord met te-plannen-strook (optie 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #F4F4F5; --ink: #18181B; --ink-muted: #525252; --line: #D4D4D8;
+    --ant: #27272A; --accent: #F97316;
+    --st-binnen: #94A3B8; --st-gepland: #F97316; --st-bevestigd: #1D4ED8; --st-opgeleverd: #16A34A;
+    --urgent: #DC2626; --amber: #FBBF24;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Lexend", ui-sans-serif, system-ui, sans-serif; font-size:16px; line-height:1.4; }
+  .ic { width:13px; height:13px; flex:none; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .mono { font-family: ui-monospace, "Consolas", monospace; letter-spacing:-.01em; }
+  main { max-width:1040px; margin:0 auto; padding:16px 16px 80px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:10px; }
+  .topbar a { color:inherit; }
+  .topbar b { color:var(--ink); }
+
+  /* Header zoals de app */
+  .h { position:relative; background:#FFF; color:var(--ink); border:2px solid var(--line); border-bottom:none; padding:20px 22px 22px; }
+  .h::after { content:""; display:block; height:6px; background:var(--accent); position:absolute; left:0; right:0; bottom:0; }
+  .h .stamp { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-muted); }
+  .h h1 { margin:4px 0 0; font-size:30px; font-weight:800; letter-spacing:-.01em; }
+  .h .sub { margin-top:6px; font-size:14.5px; color:var(--ink-muted); }
+
+  /* Toolbar */
+  .toolbar { margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .nav { display:inline-flex; gap:6px; }
+  .pill { border:1.5px solid var(--ant); background:#FFF; min-height:40px; padding:0 14px; display:inline-flex; align-items:center; gap:6px;
+    font-weight:700; font-size:13.5px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .pill.ghost { border-color:var(--line); color:var(--ink-muted); }
+  .spacer { flex:1; }
+  .verstuur { border:2px solid var(--st-gepland); background:var(--st-gepland); color:#fff; font-family:inherit; font-weight:800; font-size:12.5px;
+    text-transform:uppercase; letter-spacing:.04em; padding:9px 14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  .verstuur svg { width:15px; height:15px; stroke:#fff; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* Legenda */
+  .leg { margin-top:12px; display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--ink-muted); align-items:center; }
+  .leg span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:2px; }
+
+  /* Planbord-raster */
+  .cal { margin-top:14px; border:2px solid var(--ant); background:#FFF; display:grid; grid-template-columns:104px repeat(5,1fr); }
+  .corner { background:var(--surface); border-bottom:2px solid var(--ant); border-right:1px solid var(--line); }
+  .dayh { background:var(--surface); border-bottom:2px solid var(--ant); border-right:1px solid var(--line); padding:8px 10px; }
+  .dayh:last-child { border-right:none; }
+  .dayh .dow { font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-muted); }
+  .dayh .dnum { font-weight:800; font-size:16px; }
+  .mlabel { border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:10px; display:flex; align-items:center; gap:8px; font-weight:800; }
+  .mdot { width:10px; height:10px; border-radius:50%; }
+  .cell { border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:92px; }
+  .cell.lastrow { border-bottom:none; }
+  .cell.lastcol { border-right:none; }
+
+  /* Montage = brede dagbalk */
+  .blk { margin:5px; display:grid; grid-template-columns:6px 1fr; background:#FFF; border:1.5px solid var(--line); text-decoration:none; color:inherit; overflow:hidden; align-self:start; }
+  .blk .bar { background:var(--line); }
+  .blk .in { padding:7px 9px; min-width:0; }
+  .blk .t { font-weight:800; font-size:13px; line-height:1.2; }
+  .blk .d { margin-top:2px; font-size:11.5px; color:var(--ink); }
+  .blk .m { margin-top:4px; color:var(--ink-muted); font-size:11px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .blk .m .mono { color:var(--ant); font-weight:700; display:inline-flex; gap:4px; align-items:center; }
+  .blk.bevestigd { border-color:var(--st-bevestigd); } .blk.bevestigd .bar { background:var(--st-bevestigd); }
+  .blk.gepland   { border-color:var(--st-gepland); }   .blk.gepland .bar { background:var(--st-gepland); }
+  .blk.concept   { border:1.5px dashed var(--st-gepland); } .blk.concept .bar { background:var(--st-gepland); }
+  .ntv { display:inline-flex; align-items:center; gap:4px; color:var(--st-gepland); border:1px dashed var(--st-gepland); padding:0 5px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+
+  /* Service = compacte kaartjes, gestapeld op tijd */
+  .stack { margin:5px; display:flex; flex-direction:column; gap:5px; align-self:start; min-width:0; }
+  .svc { border:1.5px solid var(--line); border-left:5px solid var(--line); background:#FFF; padding:5px 8px; text-decoration:none; color:inherit; }
+  .svc .top { display:flex; align-items:baseline; gap:7px; }
+  .svc .tm { font-weight:800; font-size:12px; color:var(--ant); }
+  .svc .nm { font-weight:700; font-size:12px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .svc .ds { margin-top:1px; font-size:10.5px; color:var(--ink-muted); display:flex; align-items:center; gap:5px; }
+  .svc.bevestigd { border-left-color:var(--st-bevestigd); }
+  .svc.gepland   { border-left-color:var(--st-gepland); }
+  .svc.gewijzigd { border:1.5px dashed var(--st-gepland); border-left:5px dashed var(--st-gepland); }
+  .svc .gw { margin-left:auto; display:inline-flex; align-items:center; color:var(--st-gepland); border:1px dashed var(--st-gepland); padding:0 4px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+
+  /* Inplannen-paneel (volle breedte, in lijn met raster en strook) */
+  .plan { margin-top:18px; border:2px solid var(--ant); background:#FFF; }
+  .plan-h { background:var(--surface); border-bottom:2px solid var(--ant); padding:11px 16px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .plan-h svg { width:17px; height:17px; stroke:var(--ant); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .plan-b { padding:16px; display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; }
+  .fld { flex:1 1 150px; display:flex; flex-direction:column; gap:6px; }
+  .fld.wide { flex:2 1 220px; }
+  .fld .lab { font-size:11.5px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; font-weight:700; }
+  .field { border:1.5px solid var(--ant); background:#FFF; padding:9px 12px; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .field.muted { color:var(--ink-muted); font-weight:600; background:var(--surface); }
+  .field .chev { color:var(--ink-muted); }
+  .fhint { padding:0 16px 14px; font-size:12px; color:var(--ink-muted); }
+  .plan-f { border-top:1px solid var(--line); padding:12px 16px; display:flex; justify-content:flex-end; gap:10px; }
+  .btn-ghost { border:1.5px solid var(--line); background:#FFF; color:var(--ink-muted); font-family:inherit; font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; padding:9px 16px; cursor:pointer; }
+  .btn-prim { border:2px solid var(--ant); background:var(--ant); color:#fff; font-family:inherit; font-weight:800; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; padding:9px 16px; cursor:pointer; }
+  .plan-note { margin-top:12px; font-size:12.5px; color:var(--ink-muted); border-left:3px solid var(--accent); padding-left:12px; }
+  .plan-note b { color:var(--ink); }
+
+  /* Te-plannen-strook */
+  .pool { margin-top:18px; border:2px solid var(--ant); background:#FFF; }
+  .pool-h { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:2px solid var(--ant); background:var(--surface); }
+  .pool-h .lbl { font-family:ui-monospace, monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; }
+  .pool-h .cnt { font-size:12px; color:var(--ink-muted); }
+  .pool-h .help { margin-left:auto; font-size:12px; color:var(--ink-muted); }
+  .pool-body { padding:14px; display:flex; flex-wrap:wrap; gap:10px; }
+  .pchip { display:grid; grid-template-columns:auto 1fr; gap:9px; align-items:start; border:2px solid var(--st-binnen); background:#FFF; padding:9px 12px; cursor:grab; min-width:240px; }
+  .pchip .grip { color:var(--st-binnen); font-size:16px; line-height:1.2; }
+  .pchip .t { font-weight:800; font-size:13.5px; }
+  .pchip .d { font-size:11.5px; color:var(--ink); margin-top:1px; }
+  .pchip .m { color:var(--ink-muted); font-size:11px; display:flex; gap:8px; align-items:center; margin-top:3px; }
+  .hint { font-size:13.5px; color:var(--ink-muted); margin-top:16px; }
+  .hint b { color:var(--ink); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pkg" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></symbol>
+</svg>
+<main>
+  <div class="topbar"><a href="index.html">← mockups</a> · <b>Agenda — optie 1: planbord met te-plannen-strook</b></div>
+
+  <header class="h">
+    <div class="stamp mono">KSV / AGENDA</div>
+    <h1 class="mono">Planbord</h1>
+    <div class="sub">Week 24 · 9 – 13 juni · 2 monteurs · 2 nog te versturen</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="nav">
+      <span class="pill ghost">‹ vorige</span>
+      <span class="pill">Vandaag</span>
+      <span class="pill ghost">volgende ›</span>
+    </div>
+    <span class="pill ghost">Week ▾</span>
+    <span class="spacer"></span>
+    <button class="verstuur"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Verstuur naar monteurs (2)</button>
+  </div>
+
+  <div class="leg">
+    <span><span class="dot" style="background:var(--st-gepland)"></span>Gepland (verstuurd)</span>
+    <span><span class="dot" style="background:#fff;border:1.5px dashed var(--st-gepland)"></span>Concept / gewijzigd (nog te versturen)</span>
+    <span><span class="dot" style="background:var(--st-bevestigd)"></span>Bevestigd</span>
+    <span><span class="dot" style="background:var(--st-binnen)"></span>Nog te plannen</span>
+    <span>· brede balk = montage, kaartje met tijd = service</span>
+  </div>
+
+  <!-- Planbord -->
+  <div class="cal">
+    <div class="corner"></div>
+    <div class="dayh"><div class="dow">ma</div><div class="dnum">9</div></div>
+    <div class="dayh"><div class="dow">di</div><div class="dnum">10</div></div>
+    <div class="dayh"><div class="dow">wo</div><div class="dnum">11</div></div>
+    <div class="dayh"><div class="dow">do</div><div class="dnum">12</div></div>
+    <div class="dayh lastcol"><div class="dow">vr</div><div class="dnum">13</div></div>
+
+    <!-- Rij Rein -->
+    <div class="mlabel" style="grid-row:2;grid-column:1"><span class="mdot" style="background:#0EA5E9"></span>Rein</div>
+    <div class="cell" style="grid-row:2;grid-column:2"></div>
+    <div class="cell" style="grid-row:2;grid-column:3"></div>
+    <div class="cell" style="grid-row:2;grid-column:4"></div>
+    <div class="cell" style="grid-row:2;grid-column:5"></div>
+    <div class="cell lastcol" style="grid-row:2;grid-column:6"></div>
+
+    <!-- Rij Dani -->
+    <div class="mlabel" style="grid-row:3;grid-column:1"><span class="mdot" style="background:#A855F7"></span>Dani</div>
+    <div class="cell lastrow" style="grid-row:3;grid-column:2"></div>
+    <div class="cell lastrow" style="grid-row:3;grid-column:3"></div>
+    <div class="cell lastrow" style="grid-row:3;grid-column:4"></div>
+    <div class="cell lastrow" style="grid-row:3;grid-column:5"></div>
+    <div class="cell lastrow lastcol" style="grid-row:3;grid-column:6"></div>
+
+    <!-- Montage Rein -->
+    <a class="blk bevestigd" href="#" style="grid-row:2;grid-column:2"><div class="bar"></div><div class="in">
+      <div class="t">Fam. el Amrani</div>
+      <div class="d">Keuken plaatsen + apparatuur</div>
+      <div class="m"><span class="mono">7510</span><span><svg class="ic"><use href="#i-pkg"/></svg> 1 dag</span></div>
+    </div></a>
+    <a class="blk concept" href="#" style="grid-row:2;grid-column:5 / 7"><div class="bar"></div><div class="in">
+      <div class="t">Mevr. Heesakkers</div>
+      <div class="d">Keuken plaatsen, hoekopstelling</div>
+      <div class="m"><span class="mono">7636</span><span><svg class="ic"><use href="#i-pkg"/></svg> 2 dagen</span><span class="ntv">nog te versturen</span></div>
+    </div></a>
+
+    <!-- Service Dani: di 10 één klus -->
+    <div class="stack" style="grid-row:3;grid-column:3">
+      <a class="svc gepland" href="#">
+        <div class="top"><span class="tm mono">10:00</span><span class="nm">Putman</span></div>
+        <div class="ds"><svg class="ic"><use href="#i-wrench"/></svg>Afzuigkap vervangen · 7320</div>
+      </a>
+    </div>
+
+    <!-- Service Dani: wo 11 drie klussen op één dag, gesorteerd op tijd -->
+    <div class="stack" style="grid-row:3;grid-column:4">
+      <a class="svc bevestigd" href="#">
+        <div class="top"><span class="tm mono">08:30</span><span class="nm">J. Jansen</span></div>
+        <div class="ds"><svg class="ic"><use href="#i-wrench"/></svg>Lekkage mengkraan · 7444</div>
+      </a>
+      <a class="svc gewijzigd" href="#">
+        <div class="top"><span class="tm mono">11:00</span><span class="nm">de Bruin</span><span class="gw">gewijzigd</span></div>
+        <div class="ds"><svg class="ic"><use href="#i-wrench"/></svg>Lade stelt niet · 7651</div>
+      </a>
+      <a class="svc bevestigd" href="#">
+        <div class="top"><span class="tm mono">14:00</span><span class="nm">J. Vermeer</span></div>
+        <div class="ds"><svg class="ic"><use href="#i-wrench"/></svg>Scharnier kastdeur · 7489</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Inplannen-popover: één control voor dagen + optionele tijd -->
+  <div class="plan">
+    <div class="plan-h"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>Inplannen: Fam. Bakker · 7588</div>
+    <div class="plan-b">
+      <div class="fld wide"><span class="lab">Monteur</span><span class="field">Rein <span class="chev">▾</span></span></div>
+      <div class="fld"><span class="lab">Startdatum</span><span class="field">12 jun <span class="chev">▾</span></span></div>
+      <div class="fld"><span class="lab">Aantal dagen</span><span class="field">2 <span class="chev">▾</span></span></div>
+      <div class="fld"><span class="lab">Tijd (optioneel)</span><span class="field muted">--:-- <span class="chev">▾</span></span></div>
+    </div>
+    <div class="fhint">Tijd leeg = hele dag (dagblok, zoals montage). Vul je een tijd, dan wordt het een kaartje op dat uur (zoals service).</div>
+    <div class="plan-f"><button class="btn-ghost">Annuleren</button><button class="btn-prim">Op planbord zetten</button></div>
+  </div>
+  <p class="plan-note">Eén control voor alles: <b>aantal dagen</b> bepaalt of het een meerdaags blok is, <b>tijd</b> is optioneel. Vul je geen tijd in, dan plant het systeem automatisch een dagblok (zoals montage). Vul je wel een tijd in, dan een kaartje op dat uur (zoals service). Zo zet je een montage van 2 dagen op en een service op tijd met hetzelfde scherm.</p>
+
+  <!-- Nog te plannen -->
+  <div class="pool">
+    <div class="pool-h">
+      <span class="lbl">Nog te plannen</span><span class="cnt">2</span>
+      <span class="help">Sleep een opdracht naar een dag bij een monteur</span>
+    </div>
+    <div class="pool-body">
+      <div class="pchip">
+        <span class="grip">⠿</span>
+        <div>
+          <div class="t">Fam. Bakker</div>
+          <div class="d">Montage keuken, eiland + spoelblok</div>
+          <div class="m"><span><svg class="ic"><use href="#i-pkg"/></svg> Montage</span><span class="mono">7588?</span><span>Voorschoten</span></div>
+        </div>
+      </div>
+      <div class="pchip">
+        <span class="grip">⠿</span>
+        <div>
+          <div class="t">Mevr. de Wit</div>
+          <div class="d">Service: deur vaatwasser valt niet dicht</div>
+          <div class="m"><span><svg class="ic"><use href="#i-wrench"/></svg> Service</span><span class="mono">7601</span><span>Noordwijkerhout</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">Optie 1, laag-fidelity. Elk blok toont nu <b>naam plus een regel wat de klus is</b> (volledige info bij aanklikken). <b>Montage</b> is een brede dagbalk zonder tijd, <b>service</b> een compact kaartje met tijd. Woensdag bij Dani zie je drie services op één dag, vanzelf op tijd gesorteerd. De tijd voer je in als veld bij het neerzetten, niet door naar een uur te slepen. De klus van 11:00 is na het versturen gewijzigd: gestreept gemarkeerd en meegeteld in de verstuur-knop (2), zodat het niet blijft hangen.</p>
+</main>
+</body>
+</html>
