@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
 import { verdeelLanes, type PlanbordPlaatsing } from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
+import { MailMonteurKnop } from "./MailMonteurKnop";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
 
@@ -62,15 +63,20 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
     >
       <span aria-hidden className={BALK[o.dashboard_status]} />
       <span className="min-w-0 px-2 py-1.5">
-      <span className="flex items-baseline gap-1.5">
-        {p.isService && (
-          <span className="font-mono text-[12px] font-extrabold text-primary">
-            {(o.starttijd ?? "").slice(0, 5)}
+      <span className="flex items-center justify-between gap-1.5">
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          {p.isService && (
+            <span className="font-mono text-[12px] font-extrabold text-primary">
+              {(o.starttijd ?? "").slice(0, 5)}
+            </span>
+          )}
+          <span className="truncate text-[12.5px] font-extrabold">
+            {o.klant_naam ?? "Onbekende klant"}
           </span>
-        )}
-        <span className="truncate text-[12.5px] font-extrabold">
-          {o.klant_naam ?? "Onbekende klant"}
         </span>
+        {(o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen) && (
+          <MailMonteurKnop opdrachtId={o.id} />
+        )}
       </span>
       <span className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10.5px] text-ink-muted">
         {p.isService ? (

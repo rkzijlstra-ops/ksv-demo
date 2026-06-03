@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockVerstuur } = vi.hoisted(() => ({ mockVerstuur: vi.fn() }));
-vi.mock("@/lib/db", () => ({ db: () => ({ verstuurNaarMonteurs: mockVerstuur }) }));
+const { mockVerstuur, mockGetById, mockMail } = vi.hoisted(() => ({
+  mockVerstuur: vi.fn(),
+  mockGetById: vi.fn(),
+  mockMail: vi.fn(),
+}));
+vi.mock("@/lib/db", () => ({
+  db: () => ({ verstuurNaarMonteurs: mockVerstuur, getOpdrachtById: mockGetById }),
+}));
+vi.mock("@/lib/mail", () => ({ verstuurMonteurMail: mockMail }));
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
 }));
@@ -18,15 +25,32 @@ function req(body: unknown): Request {
 describe("POST /api/dashboard/versturen", () => {
   beforeEach(() => {
     mockVerstuur.mockReset();
+    mockGetById.mockReset();
+    mockMail.mockReset();
     mockVerstuur.mockResolvedValue(undefined);
+    mockMail.mockResolvedValue(undefined);
+    mockGetById.mockImplementation((id: string) =>
+      Promise.resolve({ id, monteur_naam: "Rein", klant_naam: "Klant" }),
+    );
+    process.env.RAPPORT_EMAIL = "rein@example.com";
   });
 
-  it("verstuurt de opgegeven ids", async () => {
+  it("mailt gebundeld per monteur en zet de status", async () => {
     const res = await POST(req({ ids: ["a", "b"] }));
     const body = await res.json();
     expect(res.status).toBe(200);
+    expect(mockMail).toHaveBeenCalledTimes(1); // beide bij dezelfde monteur = 1 mail
+    expect(mockMail.mock.calls[0][0].opdrachten).toHaveLength(2);
     expect(mockVerstuur).toHaveBeenCalledWith(["a", "b"]);
     expect(body.aantal).toBe(2);
+  });
+
+  it("stuurt aparte mails voor verschillende monteurs", async () => {
+    mockGetById.mockImplementation((id: string) =>
+      Promise.resolve({ id, monteur_naam: id === "a" ? "Rein" : "Dani", klant_naam: "K" }),
+    );
+    await POST(req({ ids: ["a", "b"] }));
+    expect(mockMail).toHaveBeenCalledTimes(2);
   });
 
   it("lege lijst volgt 400", async () => {
@@ -35,9 +59,9 @@ describe("POST /api/dashboard/versturen", () => {
     expect(mockVerstuur).not.toHaveBeenCalled();
   });
 
-  it("503 bij een db-fout", async () => {
-    mockVerstuur.mockRejectedValue(new Error("db kapot"));
+  it("500 als RAPPORT_EMAIL ontbreekt", async () => {
+    delete process.env.RAPPORT_EMAIL;
     const res = await POST(req({ ids: ["a"] }));
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(500);
   });
 });

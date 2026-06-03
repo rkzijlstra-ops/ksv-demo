@@ -6,6 +6,7 @@ import { isActief } from "@/lib/opdracht-status";
 import { planningTijd, duurLabel } from "@/lib/opdracht-weergave";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtStatusBadge } from "./OpdrachtStatusBadge";
+import { MailMonteurKnop } from "./MailMonteurKnop";
 
 /** Kleur van de linker strip (8px) per status. Literal Tailwind-classes (JIT-veilig). */
 const STRIP: Record<DashboardStatus, string> = {
@@ -61,6 +62,9 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
               <AlertTriangle size={14} strokeWidth={2.5} aria-hidden="true" />
               Geen ref
             </span>
+          )}
+          {(status === "concept_gepland" || melding.gewijzigd_te_versturen) && (
+            <MailMonteurKnop opdrachtId={melding.id} label />
           )}
         </div>
 

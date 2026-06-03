@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import type { Melding } from "./db";
+import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -16,6 +17,12 @@ export interface SpoedMailInput {
   naar: string;
   opdracht: Melding;
   melding: Melding;
+}
+
+export interface MonteurMailInput {
+  naar: string;
+  monteurNaam: string;
+  opdrachten: MailbareOpdracht[];
 }
 
 function mailConfig() {
@@ -58,6 +65,25 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
       ? (error as { message: string }).message
       : JSON.stringify(error);
     throw new Error(`Mail versturen mislukt: ${msg}`);
+  }
+}
+
+/**
+ * Verstuurt een opdracht-melding naar een monteur (één of meer opdrachten, gebundeld).
+ * De ontvanger (`naar`) is in de demo het geconfigureerde adres; later het adres van de monteur.
+ */
+export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void> {
+  const { apiKey, from } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = monteurMailTekst(input.monteurNaam, input.opdrachten);
+
+  const { error } = await resend.emails.send({ from, to: input.naar, subject, text });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Monteur-mail versturen mislukt: ${msg}`);
   }
 }
 
