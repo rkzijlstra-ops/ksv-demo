@@ -25,18 +25,17 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
   const geannuleerd = status === "geannuleerd";
   const gepland = status === "concept_gepland" || status === "gepland" || status === "bevestigd";
   const geenRef = isActief(status) && !melding.referentienummer;
+  const nogTeVersturen = status === "concept_gepland" || melding.gewijzigd_te_versturen;
 
-  const cardRand =
-    status === "concept_gepland"
-      ? "border-accent border-dashed"
-      : "border-ink";
+  const cardRand = nogTeVersturen ? "border-accent border-dashed" : "border-ink";
+  const stripClass = nogTeVersturen ? "bg-accent" : STRIP[status];
 
   return (
     <Link
       href={`/opdracht/${melding.id}`}
       className={`relative flex min-h-[88px] cursor-pointer items-stretch gap-3 border-2 ${cardRand} bg-white pr-3 transition-colors duration-150 hover:brightness-[0.97] focus-visible:outline-3 focus-visible:outline-accent`}
     >
-      <span aria-hidden className={`w-2 shrink-0 ${STRIP[status]}`} />
+      <span aria-hidden className={`w-2 shrink-0 ${stripClass}`} />
 
       <div className="min-w-0 flex-1 py-3">
         <div className="flex items-baseline justify-between gap-2">
@@ -63,9 +62,12 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
               Geen ref
             </span>
           )}
-          {(status === "concept_gepland" || melding.gewijzigd_te_versturen) && (
-            <MailMonteurKnop opdrachtId={melding.id} label />
+          {melding.gewijzigd_te_versturen && status !== "concept_gepland" && (
+            <span className="inline-flex items-center border-[1.5px] border-dashed border-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-accent">
+              Gewijzigd
+            </span>
           )}
+          {nogTeVersturen && <MailMonteurKnop opdrachtId={melding.id} label />}
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">

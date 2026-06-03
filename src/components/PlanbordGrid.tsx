@@ -45,11 +45,17 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
     id: `kaart-${o.id}`,
     data: { soort: "kaart", opdracht: o },
   });
+  // Concept én "gewijzigd na versturen" krijgen dezelfde oranje-gestreepte behandeling + envelop.
+  const nogTeVersturen = o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen;
+  const randClass = nogTeVersturen ? "border-accent border-dashed" : RAND[o.dashboard_status];
+  const balkClass = nogTeVersturen ? "bg-accent" : BALK[o.dashboard_status];
+  const versturenLabel =
+    o.dashboard_status === "concept_gepland" ? "te versturen" : o.gewijzigd_te_versturen ? "gewijzigd" : null;
   return (
     <Link
       ref={setNodeRef}
       href={`/opdracht/${o.id}`}
-      className={`m-1 grid h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${RAND[o.dashboard_status]}`}
+      className={`m-1 grid h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
       style={{
         gridRow: p.gridRow,
         gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
@@ -61,7 +67,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
       {...listeners}
       {...attributes}
     >
-      <span aria-hidden className={BALK[o.dashboard_status]} />
+      <span aria-hidden className={balkClass} />
       <span className="min-w-0 px-2 py-1.5">
       <span className="flex items-center justify-between gap-1.5">
         <span className="flex min-w-0 items-baseline gap-1.5">
@@ -74,9 +80,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
             {o.klant_naam ?? "Onbekende klant"}
           </span>
         </span>
-        {(o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen) && (
-          <MailMonteurKnop opdrachtId={o.id} />
-        )}
+        {nogTeVersturen && <MailMonteurKnop opdrachtId={o.id} />}
       </span>
       <span className="mt-1 flex flex-nowrap items-center gap-x-2 overflow-hidden text-[10.5px] text-ink-muted">
         {p.isService ? (
@@ -92,9 +96,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
         ) : (
           <span className="shrink-0 font-bold text-urgent-rood">geen ref</span>
         )}
-        {o.dashboard_status === "concept_gepland" && (
-          <span className="shrink-0 font-bold text-accent">te versturen</span>
-        )}
+        {versturenLabel && <span className="shrink-0 font-bold text-accent">{versturenLabel}</span>}
       </span>
       </span>
     </Link>
