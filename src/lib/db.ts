@@ -56,6 +56,8 @@ export interface Melding {
   spoed_verzonden_at: string | null;
   // v2: soft-delete (prullenbak)
   verwijderd_at: string | null;
+  // toegewezen monteur (kolom bestond al via createOpdracht, ontbrak in dit type)
+  toegewezen_aan: string | null;
   // compleet-systeem blok 0: opdrachtgeverskant (levenscyclus + planning)
   dashboard_status: DashboardStatus;
   startdatum: string | null;
