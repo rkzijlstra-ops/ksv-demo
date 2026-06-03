@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   FileText,
   Image as ImageIcon,
@@ -9,6 +10,7 @@ import {
   Video,
   PenLine,
   AlertTriangle,
+  ChevronRight,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
@@ -51,6 +53,9 @@ export default async function OpdrachtgeverDetailPage({
   const documenten = await dbi.getDocumentenVoorOpdracht(id);
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const oplevering = await dbi.getOpleveringVoorOpdracht(id);
+  const historie = opdracht.referentienummer
+    ? (await dbi.zoekOpReferentie(opdracht.referentienummer)).filter((h) => h.id !== opdracht.id)
+    : [];
   const planning =
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
@@ -222,6 +227,35 @@ export default async function OpdrachtgeverDetailPage({
                   )}
                 </div>
                 {m.foto_urls.length > 0 && <FotoGalerij urls={m.foto_urls} />}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Keukenhistorie: eerdere klussen op dezelfde keuken (zelfde referentienummer) */}
+      {historie.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
+            Deze keuken eerder ({historie.length})
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {historie.map((h) => (
+              <li key={h.id}>
+                <Link
+                  href={`/dashboard/opdracht/${h.id}`}
+                  className="flex items-center gap-3 border border-line bg-white p-3 hover:opacity-80"
+                >
+                  <span className="w-16 shrink-0 font-mono text-xs font-bold text-primary">
+                    {formatDatumKort(h.opgeleverd_at ?? h.startdatum ?? h.created_at)}
+                  </span>
+                  <DocumenttypeBadge type={h.documenttype} />
+                  <OpdrachtStatusBadge status={h.dashboard_status} />
+                  {h.monteur_naam && (
+                    <span className="truncate text-sm text-ink-muted">{h.monteur_naam}</span>
+                  )}
+                  <ChevronRight size={18} className="ml-auto shrink-0 text-ink-muted" aria-hidden="true" />
+                </Link>
               </li>
             ))}
           </ul>
