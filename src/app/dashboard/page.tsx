@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
 import { db } from "@/lib/db";
 import { teDoenTelling } from "@/lib/te-doen";
 import { DashboardLijst } from "@/components/DashboardLijst";
@@ -35,6 +37,14 @@ export default async function DashboardPage() {
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      <Link
+        href="/planbord"
+        className="mb-4 inline-flex items-center gap-2 border-2 border-primary bg-white px-3.5 py-2 text-xs font-extrabold uppercase tracking-[0.04em] hover:bg-surface"
+      >
+        <CalendarDays size={16} strokeWidth={2.4} aria-hidden="true" />
+        Naar het planbord
+      </Link>
 
       <div className="mb-4">
         <InschietZone />
