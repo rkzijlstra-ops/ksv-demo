@@ -74,3 +74,28 @@ const REEDS_VERSTUURD: ReadonlySet<DashboardStatus> = new Set<DashboardStatus>([
 export function moetOpnieuwVersturen(huidigeStatus: DashboardStatus): boolean {
   return REEDS_VERSTUURD.has(huidigeStatus);
 }
+
+/** De plek (monteur + dag + tijd) waarop een opdracht stond toen hij verstuurd werd. */
+export interface VerzondenPlek {
+  monteur_naam: string | null;
+  startdatum: string | null;
+  starttijd: string | null;
+}
+
+/**
+ * Staat een nieuwe planning exact op de verzonden plek? Zo ja, dan is er feitelijk niets veranderd
+ * sinds het versturen en hoeft de opdracht niet opnieuw. Tijd wordt op HH:MM vergeleken
+ * ("10:00" == "10:00:00"). Nooit verstuurd (geen verzonden datum) telt niet als "op de plek".
+ */
+export function opVerzondenPlek(
+  nieuw: { monteur_naam: string | null; startdatum: string | null; starttijd: string | null },
+  verzonden: VerzondenPlek | null | undefined,
+): boolean {
+  if (!verzonden || !verzonden.startdatum) return false;
+  const hhmm = (t: string | null) => (t ? t.slice(0, 5) : null);
+  return (
+    nieuw.monteur_naam === verzonden.monteur_naam &&
+    nieuw.startdatum === verzonden.startdatum &&
+    hhmm(nieuw.starttijd) === hhmm(verzonden.starttijd)
+  );
+}

@@ -48,7 +48,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
-    await dbi.verstuurNaarMonteurs([id]); // status -> gepland, gewijzigd-marker reset
+    // status -> gepland, gewijzigd-marker uit, en de huidige plek onthouden als verzonden plek
+    await dbi.markeerVerzonden(id, {
+      monteur_naam: opdracht.monteur_naam,
+      startdatum: opdracht.startdatum,
+      starttijd: opdracht.starttijd,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: `Status zetten mislukt: ${(err as Error).message}` },

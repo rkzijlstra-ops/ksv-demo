@@ -3,6 +3,7 @@ import {
   ALLE_STATUSSEN,
   statusStijl,
   isActief,
+  opVerzondenPlek,
   type DashboardStatusStijl,
 } from "./opdracht-status";
 import type { DashboardStatus } from "./db";
@@ -64,5 +65,42 @@ describe("isActief", () => {
   it("opgeleverd en geannuleerd zijn niet actief (gaan naar archief-scoping)", () => {
     expect(isActief("opgeleverd")).toBe(false);
     expect(isActief("geannuleerd")).toBe(false);
+  });
+});
+
+describe("opVerzondenPlek", () => {
+  const verzonden = { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "10:00:00" };
+
+  it("true als monteur, dag en tijd gelijk zijn (tijd op HH:MM)", () => {
+    expect(
+      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
+    ).toBe(true);
+  });
+
+  it("false bij andere dag of andere monteur of andere tijd", () => {
+    expect(
+      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-11", starttijd: "10:00" }, verzonden),
+    ).toBe(false);
+    expect(
+      opVerzondenPlek({ monteur_naam: "Dani", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
+    ).toBe(false);
+    expect(
+      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "13:00" }, verzonden),
+    ).toBe(false);
+  });
+
+  it("dagblok zonder tijd matcht alleen een verzonden plek zonder tijd", () => {
+    const dagblok = { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null };
+    expect(opVerzondenPlek(dagblok, { ...verzonden, starttijd: null })).toBe(true);
+    expect(opVerzondenPlek(dagblok, verzonden)).toBe(false);
+  });
+
+  it("false als er nooit verstuurd is (geen verzonden datum)", () => {
+    expect(
+      opVerzondenPlek(
+        { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+        { monteur_naam: null, startdatum: null, starttijd: null },
+      ),
+    ).toBe(false);
   });
 });

@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
-import { db, type PlanningInput, type DashboardStatus } from "@/lib/db";
+import { db, type PlanningInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
-const STATUSSEN: DashboardStatus[] = [
-  "binnen",
-  "concept_gepland",
-  "gepland",
-  "bevestigd",
-  "opgeleverd",
-  "geannuleerd",
-];
-
 /**
- * Verplaatst een al geplande opdracht naar een andere monteur/dag (slepen op het planbord).
- * Behoudt tijd en duur; via wijzigOpdracht krijgt een al verstuurde opdracht de markering
- * "gewijzigd, nog te versturen". Anders dan /plannen verandert dit de status niet.
+ * Verplaatst een al geplande opdracht naar een andere monteur/dag/tijd (slepen op het planbord).
+ * Behoudt tijd/duur tenzij meegegeven. De huidige status en de verzonden plek worden server-side
+ * uit de opdracht gelezen, zodat terugzetten op de verzonden plek de gewijzigd-markering opheft.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getAuthenticatedUserId();
@@ -34,9 +25,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!startdatum) {
     return NextResponse.json({ error: "Startdatum is verplicht" }, { status: 400 });
   }
-  const huidigeStatus = STATUSSEN.includes(body.huidigeStatus as DashboardStatus)
-    ? (body.huidigeStatus as DashboardStatus)
-    : "concept_gepland";
+
+  const dbi = await db();
+  const opdracht = await dbi.getOpdrachtById(id);
+  if (!opdracht) {
+    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+  }
 
   const duur = Number(body.duur_dagen);
   const planning: PlanningInput = {
@@ -51,7 +45,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   };
 
   try {
-    await (await db()).wijzigOpdracht(id, planning, huidigeStatus);
+    await dbi.wijzigOpdracht(id, planning, opdracht.dashboard_status, {
+      monteur_naam: opdracht.verzonden_monteur,
+      startdatum: opdracht.verzonden_startdatum,
+      starttijd: opdracht.verzonden_starttijd,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: `Verplaatsen mislukt: ${(err as Error).message}` },

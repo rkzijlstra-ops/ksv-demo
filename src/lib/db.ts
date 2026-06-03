@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
 import { createSupabaseServerClient } from "./supabase-server";
 import { scopeVoorDashboard } from "./dashboard-scope";
-import { moetOpnieuwVersturen } from "./opdracht-status";
+import { moetOpnieuwVersturen, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
 import type { ParsedPdf, MeldingItem } from "./parser-schema";
 
 export interface DbConfig {
@@ -67,6 +67,10 @@ export interface Melding {
   duur_dagen: number;
   gewijzigd_te_versturen: boolean;
   bevestigd_at: string | null;
+  // de plek waarop de opdracht stond toen hij naar de monteur ging (om gewijzigd weer op te heffen)
+  verzonden_monteur: string | null;
+  verzonden_startdatum: string | null;
+  verzonden_starttijd: string | null;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -199,12 +203,14 @@ export interface Db {
   getOpdrachtById(id: string): Promise<Melding | null>;
   zoekOpReferentie(referentienummer: string): Promise<Melding[]>;
   planOpdracht(id: string, planning: PlanningInput): Promise<void>;
-  verstuurNaarMonteurs(ids: string[]): Promise<void>;
+  /** Markeer als verstuurd: status gepland, gewijzigd-marker uit, en onthoud de verzonden plek. */
+  markeerVerzonden(id: string, verzonden: VerzondenPlek): Promise<void>;
   bevestigOntvangst(id: string): Promise<void>;
   wijzigOpdracht(
     id: string,
     planning: PlanningInput,
     huidigeStatus: DashboardStatus,
+    verzonden?: VerzondenPlek | null,
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
@@ -539,12 +545,17 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (error) throw new Error(`DB plannen mislukt: ${error.message}`);
     },
 
-    async verstuurNaarMonteurs(ids) {
-      if (ids.length === 0) return; // niets te versturen
+    async markeerVerzonden(id, verzonden) {
       const { error } = await client
         .from("meldingen")
-        .update({ dashboard_status: "gepland", gewijzigd_te_versturen: false })
-        .in("id", ids);
+        .update({
+          dashboard_status: "gepland",
+          gewijzigd_te_versturen: false,
+          verzonden_monteur: verzonden.monteur_naam,
+          verzonden_startdatum: verzonden.startdatum,
+          verzonden_starttijd: verzonden.starttijd,
+        })
+        .eq("id", id);
       if (error) throw new Error(`DB versturen mislukt: ${error.message}`);
     },
 
@@ -556,18 +567,18 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (error) throw new Error(`DB bevestigen mislukt: ${error.message}`);
     },
 
-    async wijzigOpdracht(id, planning, huidigeStatus) {
+    async wijzigOpdracht(id, planning, huidigeStatus, verzonden) {
+      // Opnieuw versturen nodig als de opdracht al verstuurd was EN niet exact terug staat op de
+      // verzonden plek. Zo heft terugzetten op de oorspronkelijke plek de markering weer op.
+      const opnieuw = moetOpnieuwVersturen(huidigeStatus) && !opVerzondenPlek(planning, verzonden);
       const patch: Record<string, unknown> = {
         startdatum: planning.startdatum,
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
         monteur_naam: planning.monteur_naam,
         uitvoerdatum: planning.startdatum,
+        gewijzigd_te_versturen: opnieuw,
       };
-      // Was de opdracht al naar de monteur, dan markeren als opnieuw te versturen (verstuur-poort).
-      if (moetOpnieuwVersturen(huidigeStatus)) {
-        patch.gewijzigd_te_versturen = true;
-      }
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB wijzigen mislukt: ${error.message}`);
     },
@@ -591,6 +602,9 @@ function createDbFromClient(client: SupabaseClient): Db {
           starttijd: null,
           uitvoerdatum: null,
           gewijzigd_te_versturen: false,
+          verzonden_monteur: null,
+          verzonden_startdatum: null,
+          verzonden_starttijd: null,
         })
         .eq("id", id);
       if (error) throw new Error(`DB ontplannen mislukt: ${error.message}`);

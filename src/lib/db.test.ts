@@ -744,26 +744,29 @@ describe("planOpdracht", () => {
   });
 });
 
-describe("verstuurNaarMonteurs", () => {
-  it("zet de opgegeven opdrachten op gepland en reset de gewijzigd-marker", async () => {
+describe("markeerVerzonden", () => {
+  it("zet gepland, reset gewijzigd en onthoudt de verzonden plek", async () => {
     h.setResult({ data: null, error: null });
-    await createDb(cfg).verstuurNaarMonteurs(["a", "b"]);
+    await createDb(cfg).markeerVerzonden("opdr-1", {
+      monteur_naam: "Rein",
+      startdatum: "2026-06-10",
+      starttijd: "10:00",
+    });
 
-    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
-    expect(h.fns.in).toHaveBeenCalledWith("id", ["a", "b"]);
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
     const patch = h.fns.update.mock.calls[0][0];
     expect(patch.dashboard_status).toBe("gepland");
     expect(patch.gewijzigd_te_versturen).toBe(false);
-  });
-
-  it("doet niets en gooit niet bij een lege lijst", async () => {
-    await createDb(cfg).verstuurNaarMonteurs([]);
-    expect(h.fns.update).not.toHaveBeenCalled();
+    expect(patch.verzonden_monteur).toBe("Rein");
+    expect(patch.verzonden_startdatum).toBe("2026-06-10");
+    expect(patch.verzonden_starttijd).toBe("10:00");
   });
 
   it("gooit Error bij DB-fout", async () => {
     h.setResult({ data: null, error: { message: "verstuur kapot" } });
-    await expect(createDb(cfg).verstuurNaarMonteurs(["a"])).rejects.toThrow(/verstuur kapot/);
+    await expect(
+      createDb(cfg).markeerVerzonden("a", { monteur_naam: "x", startdatum: "2026-06-10", starttijd: null }),
+    ).rejects.toThrow(/verstuur kapot/);
   });
 });
 
@@ -780,27 +783,39 @@ describe("bevestigOntvangst", () => {
 });
 
 describe("wijzigOpdracht", () => {
-  it("past planning aan en zet gewijzigd-marker als de opdracht al verstuurd was", async () => {
+  it("zet de gewijzigd-marker als een verstuurde opdracht naar een andere plek gaat", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(
       "opdr-1",
       { monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
       "gepland",
+      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
     );
     const patch = h.fns.update.mock.calls[0][0];
     expect(patch.startdatum).toBe("2026-06-20");
     expect(patch.gewijzigd_te_versturen).toBe(true);
   });
 
-  it("zet de marker NIET als de opdracht nog concept_gepland was", async () => {
+  it("heft de gewijzigd-marker op als hij exact terug op de verzonden plek staat", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).wijzigOpdracht(
+      "opdr-1",
+      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null, duur_dagen: 1 },
+      "gepland",
+      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+    );
+    expect(h.fns.update.mock.calls[0][0].gewijzigd_te_versturen).toBe(false);
+  });
+
+  it("een nog niet verstuurde opdracht (concept) krijgt geen marker", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(
       "opdr-1",
       { monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
       "concept_gepland",
+      null,
     );
-    const patch = h.fns.update.mock.calls[0][0];
-    expect(patch.gewijzigd_te_versturen).toBeUndefined();
+    expect(h.fns.update.mock.calls[0][0].gewijzigd_te_versturen).toBe(false);
   });
 });
 

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetById, mockVerstuur, mockMail } = vi.hoisted(() => ({
+const { mockGetById, mockMarkeer, mockMail } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
-  mockVerstuur: vi.fn(),
+  mockMarkeer: vi.fn(),
   mockMail: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
-  db: () => ({ getOpdrachtById: mockGetById, verstuurNaarMonteurs: mockVerstuur }),
+  db: () => ({ getOpdrachtById: mockGetById, markeerVerzonden: mockMarkeer }),
 }));
 vi.mock("@/lib/mail", () => ({ verstuurMonteurMail: mockMail }));
 vi.mock("@/lib/auth", () => ({
@@ -23,20 +23,30 @@ function req(): Request {
 describe("POST /api/opdrachten/[id]/mail-monteur", () => {
   beforeEach(() => {
     mockGetById.mockReset();
-    mockVerstuur.mockReset();
+    mockMarkeer.mockReset();
     mockMail.mockReset();
-    mockVerstuur.mockResolvedValue(undefined);
+    mockMarkeer.mockResolvedValue(undefined);
     mockMail.mockResolvedValue(undefined);
-    mockGetById.mockResolvedValue({ id: "opdr-1", monteur_naam: "Rein", klant_naam: "Bakker" });
+    mockGetById.mockResolvedValue({
+      id: "opdr-1",
+      monteur_naam: "Rein",
+      klant_naam: "Bakker",
+      startdatum: "2026-06-10",
+      starttijd: null,
+    });
     process.env.RAPPORT_EMAIL = "rein@example.com";
   });
 
-  it("mailt de opdracht naar de monteur en zet hem op gepland", async () => {
+  it("mailt de opdracht naar de monteur en markeert hem als verzonden", async () => {
     const res = await POST(req(), { params });
     expect(res.status).toBe(200);
     expect(mockMail).toHaveBeenCalledOnce();
     expect(mockMail.mock.calls[0][0].monteurNaam).toBe("Rein");
-    expect(mockVerstuur).toHaveBeenCalledWith(["opdr-1"]);
+    expect(mockMarkeer).toHaveBeenCalledWith("opdr-1", {
+      monteur_naam: "Rein",
+      startdatum: "2026-06-10",
+      starttijd: null,
+    });
   });
 
   it("400 als er geen monteur is toegewezen", async () => {

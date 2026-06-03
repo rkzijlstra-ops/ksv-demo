@@ -23,7 +23,7 @@ import {
   monteurRijen,
   plaatsOpdrachten,
 } from "@/lib/planbord";
-import { moetOpnieuwVersturen } from "@/lib/opdracht-status";
+import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
 import { formatDatumKort } from "@/lib/datum";
 import { PlanbordGrid } from "./PlanbordGrid";
 import { PlanbordPool } from "./PlanbordPool";
@@ -91,6 +91,16 @@ export function PlanbordBord({
     setItems((prev) => prev.map((o) => (o.id === id ? { ...o, ...wijziging } : o)));
   }
 
+  // Of een verplaatste opdracht "gewijzigd, nog te versturen" wordt: alleen als hij al verstuurd
+  // was én niet exact terug op de verzonden plek staat (gelijk aan de server-logica).
+  function gewijzigdNa(o: Melding, monteur: string | null, dag: string, tijd: string | null) {
+    const opPlek = opVerzondenPlek(
+      { monteur_naam: monteur, startdatum: dag, starttijd: tijd },
+      { monteur_naam: o.verzonden_monteur, startdatum: o.verzonden_startdatum, starttijd: o.verzonden_starttijd },
+    );
+    return moetOpnieuwVersturen(o.dashboard_status) && !opPlek;
+  }
+
   function onDragStart(e: DragStartEvent) {
     const data = e.active.data.current as SleepData | undefined;
     setActief(data?.opdracht ?? null);
@@ -112,7 +122,7 @@ export function PlanbordBord({
       const nieuweDatum = verschuifDagen(o.startdatum, richting);
       pasLokaalToe(o.id, {
         startdatum: nieuweDatum,
-        gewijzigd_te_versturen: moetOpnieuwVersturen(o.dashboard_status) || o.gewijzigd_te_versturen,
+        gewijzigd_te_versturen: gewijzigdNa(o, o.monteur_naam, nieuweDatum, o.starttijd),
       });
       setWeekAnker(verschuifDagen(maandag, richting));
       void verplaats(o, o.monteur_naam, nieuweDatum);
@@ -160,7 +170,7 @@ export function PlanbordBord({
     pasLokaalToe(o.id, {
       monteur_naam: monteur,
       startdatum: dag,
-      gewijzigd_te_versturen: moetOpnieuwVersturen(o.dashboard_status) || o.gewijzigd_te_versturen,
+      gewijzigd_te_versturen: gewijzigdNa(o, monteur, dag, o.starttijd),
     });
     void verplaats(o, monteur, dag);
   }

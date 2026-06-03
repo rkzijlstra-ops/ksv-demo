@@ -57,9 +57,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    await dbi.verstuurNaarMonteurs(ids);
+    for (const o of opdrachten) {
+      // status -> gepland, gewijzigd uit, huidige plek onthouden als verzonden plek
+      await dbi.markeerVerzonden(o.id, {
+        monteur_naam: o.monteur_naam,
+        startdatum: o.startdatum,
+        starttijd: o.starttijd,
+      });
+    }
   } catch (err) {
     return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
   }
-  return NextResponse.json({ ok: true, aantal: ids.length, monteurs: perMonteur.size }, { status: 200 });
+  return NextResponse.json({ ok: true, aantal: opdrachten.length, monteurs: perMonteur.size }, { status: 200 });
 }
