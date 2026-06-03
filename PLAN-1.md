@@ -188,7 +188,7 @@ Status-legenda: `[ ]` open, `[x]` afgevinkt + werkelijke tijd erbij.
 
 ### G2: Logboek-entry
 - Status: `[x]` 5 min
-- Bestand(en): `c:\Users\rkzij\Mainframe\07_logboek\2026-05-26_ksv-demo-sessie-1.md`
+- Bestand(en): `07_logboek/2026-05-26_ksv-demo-sessie-1.md` (in deze projectmap)
 
 ### G3: Finale commit
 - Status: `[x]` 1 min
