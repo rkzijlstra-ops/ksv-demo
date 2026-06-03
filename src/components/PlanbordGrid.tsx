@@ -10,8 +10,18 @@ import { duurLabel } from "@/lib/opdracht-weergave";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
 
-/** Rand-class per status (gestreept = nog te versturen). Eén kleur per status. */
-const KAART: Record<DashboardStatus, string> = {
+/** Solide kleurbalk links per status (altijd doorgetrokken). */
+const BALK: Record<DashboardStatus, string> = {
+  binnen: "bg-ink-muted",
+  concept_gepland: "bg-accent",
+  gepland: "bg-accent",
+  bevestigd: "bg-bevestigd",
+  opgeleverd: "bg-success",
+  geannuleerd: "bg-line",
+};
+
+/** Dunne buitenrand per status; gestreept = nog te versturen (concept). */
+const RAND: Record<DashboardStatus, string> = {
   binnen: "border-ink-muted",
   concept_gepland: "border-accent border-dashed",
   gepland: "border-accent",
@@ -38,7 +48,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
     <Link
       ref={setNodeRef}
       href={`/opdracht/${o.id}`}
-      className={`m-1 block h-[56px] cursor-grab overflow-hidden border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${KAART[o.dashboard_status]}`}
+      className={`m-1 grid h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${RAND[o.dashboard_status]}`}
       style={{
         gridRow: p.gridRow,
         gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
@@ -50,6 +60,8 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
       {...listeners}
       {...attributes}
     >
+      <span aria-hidden className={BALK[o.dashboard_status]} />
+      <span className="min-w-0 px-2 py-1.5">
       <span className="flex items-baseline gap-1.5">
         {p.isService && (
           <span className="font-mono text-[12px] font-extrabold text-primary">
@@ -77,6 +89,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
         {o.dashboard_status === "concept_gepland" && (
           <span className="shrink-0 font-bold text-accent">te versturen</span>
         )}
+      </span>
       </span>
     </Link>
   );
