@@ -1,10 +1,21 @@
-import Link from "next/link";
-import { FileText, Image as ImageIcon, ExternalLink, User, MapPin, Phone, FileCheck } from "lucide-react";
+import {
+  FileText,
+  Image as ImageIcon,
+  ExternalLink,
+  User,
+  MapPin,
+  Phone,
+  FileCheck,
+  Video,
+  PenLine,
+  AlertTriangle,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { planningTijd, duurLabel } from "@/lib/opdracht-weergave";
 import { OpdrachtStatusBadge } from "@/components/OpdrachtStatusBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
+import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +50,7 @@ export default async function OpdrachtgeverDetailPage({
 
   const documenten = await dbi.getDocumentenVoorOpdracht(id);
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
+  const oplevering = await dbi.getOpleveringVoorOpdracht(id);
   const planning =
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
@@ -90,17 +102,68 @@ export default async function OpdrachtgeverDetailPage({
         </div>
       </section>
 
-      {/* Opgeleverd rapport (voorlopig als link; volledige leesweergave volgt in blok 5) */}
-      {opdracht.rapport_url && (
-        <a
-          href={opdracht.rapport_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-2 border-2 border-success bg-white px-4 py-2 text-sm font-extrabold uppercase tracking-[0.04em] text-success hover:bg-surface"
-        >
-          <FileText size={16} strokeWidth={2.4} aria-hidden="true" />
-          Opleverrapport (PDF)
-        </a>
+      {/* Opleverrapport als leesweergave */}
+      {oplevering && (
+        <section className="mt-6 border-2 border-success bg-white">
+          <div className="flex items-center justify-between gap-2 border-b-2 border-success bg-success/10 px-4 py-2.5">
+            <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-success">
+              Opleverrapport
+            </h2>
+            {(opdracht.rapport_url ?? oplevering.rapport_url) && (
+              <a
+                href={opdracht.rapport_url ?? oplevering.rapport_url ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.03em] text-success hover:underline"
+              >
+                <FileText size={14} strokeWidth={2.4} aria-hidden="true" /> PDF
+              </a>
+            )}
+          </div>
+          <div className="flex flex-col gap-4 p-4">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
+                Eindstaat ({oplevering.eindstaat_foto_urls.length} foto
+                {oplevering.eindstaat_foto_urls.length === 1 ? "" : "'s"})
+              </p>
+              <FotoGalerij urls={oplevering.eindstaat_foto_urls} />
+            </div>
+
+            {oplevering.video_url && (
+              <a
+                href={oplevering.video_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+              >
+                <Video size={16} strokeWidth={2.2} aria-hidden="true" /> Video van de oplevering
+              </a>
+            )}
+
+            {oplevering.opmerking && (
+              <div>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
+                  Opmerking monteur
+                </p>
+                <p className="text-sm text-ink">{oplevering.opmerking}</p>
+              </div>
+            )}
+
+            {oplevering.handtekening_url && (
+              <div>
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
+                  <PenLine size={13} aria-hidden="true" /> Handtekening
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={oplevering.handtekening_url}
+                  alt="Handtekening klant"
+                  className="h-24 border border-line bg-white object-contain"
+                />
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       {/* Documenten */}
@@ -141,21 +204,24 @@ export default async function OpdrachtgeverDetailPage({
         )}
       </section>
 
-      {/* Meldingen van de monteur (samenvatting; volledige weergave volgt in blok 5) */}
+      {/* Meldingen van de monteur, met foto's */}
       {meldingen.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
             Meldingen ({meldingen.length})
           </h2>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {meldingen.map((m) => (
-              <li key={m.id} className="border border-line bg-white p-3 text-sm">
-                <p className="text-ink">{m.ruwe_tekst ?? "(geen tekst)"}</p>
-                {m.foto_urls.length > 0 && (
-                  <p className="mt-1 text-xs text-ink-muted">
-                    {m.foto_urls.length} foto{m.foto_urls.length === 1 ? "" : "'s"}
-                  </p>
-                )}
+              <li key={m.id} className="border border-line bg-white p-3">
+                <div className="mb-1.5 flex items-start justify-between gap-2">
+                  <p className="text-sm text-ink">{m.ruwe_tekst ?? "(geen tekst)"}</p>
+                  {m.spoed && (
+                    <span className="inline-flex shrink-0 items-center gap-1 border-[1.5px] border-urgent-rood bg-urgent-rood px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+                      <AlertTriangle size={13} strokeWidth={2.5} aria-hidden="true" /> Spoed
+                    </span>
+                  )}
+                </div>
+                {m.foto_urls.length > 0 && <FotoGalerij urls={m.foto_urls} />}
               </li>
             ))}
           </ul>
