@@ -60,7 +60,7 @@ export function weeknummer(iso: string): number {
 /** Minimale velden die het planbord van een opdracht nodig heeft (een Melding voldoet hieraan). */
 export interface PlanbaarOpdracht {
   id: string;
-  toegewezen_aan: string | null;
+  monteur_naam: string | null;
   startdatum: string | null;
   starttijd: string | null;
   duur_dagen: number;
@@ -81,7 +81,7 @@ export interface PlanbordPlaatsing<T extends PlanbaarOpdracht = PlanbaarOpdracht
 export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
   const set = new Set<string>();
   for (const o of opdrachten) {
-    if (OP_BORD.has(o.dashboard_status) && o.toegewezen_aan) set.add(o.toegewezen_aan);
+    if (OP_BORD.has(o.dashboard_status) && o.monteur_naam) set.add(o.monteur_naam);
   }
   return [...set].sort((a, b) => a.localeCompare(b, "nl"));
 }
@@ -98,7 +98,7 @@ export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
 ): PlanbordPlaatsing<T>[] {
   const plaatsingen: PlanbordPlaatsing<T>[] = [];
   for (const o of opdrachten) {
-    if (!OP_BORD.has(o.dashboard_status) || !o.toegewezen_aan || !o.startdatum) continue;
+    if (!OP_BORD.has(o.dashboard_status) || !o.monteur_naam || !o.startdatum) continue;
     const dagIndex = weekDagenArr.indexOf(o.startdatum.split("T")[0]);
     if (dagIndex === -1) continue;
     const isService = o.starttijd != null && o.starttijd !== "";

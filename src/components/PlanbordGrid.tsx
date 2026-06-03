@@ -101,7 +101,7 @@ export function PlanbordGrid({
   const serviceCellen = new Map<string, PlanbordPlaatsing<Melding>[]>();
   for (const p of plaatsingen) {
     if (!p.isService) continue;
-    const r = monteurs.indexOf(p.opdracht.toegewezen_aan ?? "");
+    const r = monteurs.indexOf(p.opdracht.monteur_naam ?? "");
     if (r === -1) continue;
     const key = `${r}-${p.dagIndex}`;
     (serviceCellen.get(key) ?? serviceCellen.set(key, []).get(key)!).push(p);
@@ -143,7 +143,7 @@ export function PlanbordGrid({
 
       {/* Montage = brede dagbalk (sleepbaar) */}
       {montages.map((p) => {
-        const r = monteurs.indexOf(p.opdracht.toegewezen_aan ?? "");
+        const r = monteurs.indexOf(p.opdracht.monteur_naam ?? "");
         if (r === -1) return null;
         const k = KLEUR[p.opdracht.dashboard_status];
         return (

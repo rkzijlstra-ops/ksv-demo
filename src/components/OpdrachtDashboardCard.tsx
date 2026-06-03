@@ -72,10 +72,10 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
                 {planningTijd(melding)}
               </span>
               {melding.startdatum && !melding.starttijd && <span>{duurLabel(melding.duur_dagen)}</span>}
-              {melding.toegewezen_aan && (
+              {melding.monteur_naam && (
                 <span className="inline-flex items-center gap-1">
                   <User size={15} strokeWidth={2} aria-hidden="true" />
-                  {melding.toegewezen_aan}
+                  {melding.monteur_naam}
                 </span>
               )}
             </>

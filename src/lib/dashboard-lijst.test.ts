@@ -13,7 +13,7 @@ function o(
   return {
     klant_naam: over.klant_naam ?? "J. Jansen",
     referentienummer: over.referentienummer ?? "7444",
-    toegewezen_aan: over.toegewezen_aan ?? null,
+    monteur_naam: over.monteur_naam ?? null,
     klant_adres: over.klant_adres ?? "Hoofdstraat 12",
     dashboard_status: over.dashboard_status ?? "binnen",
   };
@@ -31,7 +31,7 @@ describe("zoekMatch", () => {
 
   it("matcht op referentienummer en monteur en adres", () => {
     expect(zoekMatch(o({ referentienummer: "7588" }), "7588")).toBe(true);
-    expect(zoekMatch(o({ toegewezen_aan: "Rein" }), "rein")).toBe(true);
+    expect(zoekMatch(o({ monteur_naam: "Rein" }), "rein")).toBe(true);
     expect(zoekMatch(o({ klant_adres: "Dorpsstraat 3" }), "dorp")).toBe(true);
   });
 

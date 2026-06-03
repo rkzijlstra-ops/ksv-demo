@@ -8,7 +8,7 @@ export type StatusFilter = DashboardStatus | "alle";
 export interface ZoekbareOpdracht {
   klant_naam: string | null;
   referentienummer: string | null;
-  toegewezen_aan: string | null;
+  monteur_naam: string | null;
   klant_adres: string | null;
   dashboard_status: DashboardStatus;
 }
@@ -20,7 +20,7 @@ export function zoekMatch(opdracht: ZoekbareOpdracht, zoekterm: string): boolean
   const velden = [
     opdracht.klant_naam,
     opdracht.referentienummer,
-    opdracht.toegewezen_aan,
+    opdracht.monteur_naam,
     opdracht.klant_adres,
   ];
   return velden.some((v) => v != null && v.toLowerCase().includes(q));

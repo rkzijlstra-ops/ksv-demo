@@ -123,7 +123,7 @@ function InplanFormulier({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          toegewezen_aan: monteur.trim(),
+          monteur_naam: monteur.trim(),
           startdatum: datum,
           duur_dagen: dagen,
           starttijd: tijd.trim() || null,

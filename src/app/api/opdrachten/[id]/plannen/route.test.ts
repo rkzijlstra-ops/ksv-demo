@@ -24,12 +24,12 @@ describe("POST /api/opdrachten/[id]/plannen", () => {
 
   it("plant met monteur, datum, dagen en tijd", async () => {
     const res = await POST(
-      req({ toegewezen_aan: "Rein", startdatum: "2026-06-10", duur_dagen: 2, starttijd: "10:00" }),
+      req({ monteur_naam: "Rein", startdatum: "2026-06-10", duur_dagen: 2, starttijd: "10:00" }),
       { params },
     );
     expect(res.status).toBe(200);
     expect(mockPlan).toHaveBeenCalledWith("opdr-1", {
-      toegewezen_aan: "Rein",
+      monteur_naam: "Rein",
       startdatum: "2026-06-10",
       starttijd: "10:00",
       duur_dagen: 2,
@@ -37,14 +37,14 @@ describe("POST /api/opdrachten/[id]/plannen", () => {
   });
 
   it("lege tijd wordt null (dagblok); ontbrekende duur wordt 1", async () => {
-    await POST(req({ toegewezen_aan: "Rein", startdatum: "2026-06-10" }), { params });
+    await POST(req({ monteur_naam: "Rein", startdatum: "2026-06-10" }), { params });
     const arg = mockPlan.mock.calls[0][1];
     expect(arg.starttijd).toBeNull();
     expect(arg.duur_dagen).toBe(1);
   });
 
   it("zonder startdatum volgt 400", async () => {
-    const res = await POST(req({ toegewezen_aan: "Rein" }), { params });
+    const res = await POST(req({ monteur_naam: "Rein" }), { params });
     expect(res.status).toBe(400);
     expect(mockPlan).not.toHaveBeenCalled();
   });

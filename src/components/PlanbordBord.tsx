@@ -64,7 +64,7 @@ export function PlanbordBord({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            toegewezen_aan: cel.monteur,
+            monteur_naam: cel.monteur,
             startdatum: cel.dag,
             duur_dagen: 1,
             starttijd: null,
@@ -72,12 +72,12 @@ export function PlanbordBord({
         });
       } else {
         const o = data.opdracht;
-        if (o.toegewezen_aan === cel.monteur && o.startdatum === cel.dag) return; // niets veranderd
+        if (o.monteur_naam === cel.monteur && o.startdatum === cel.dag) return; // niets veranderd
         await fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            toegewezen_aan: cel.monteur,
+            monteur_naam: cel.monteur,
             startdatum: cel.dag,
             starttijd: o.starttijd,
             duur_dagen: o.duur_dagen,

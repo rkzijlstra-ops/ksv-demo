@@ -52,7 +52,7 @@ function opdr(
 ): PlanbaarOpdracht {
   return {
     id: over.id,
-    toegewezen_aan: "toegewezen_aan" in over ? (over.toegewezen_aan ?? null) : "Rein",
+    monteur_naam: "monteur_naam" in over ? (over.monteur_naam ?? null) : "Rein",
     startdatum: over.startdatum ?? "2026-06-08",
     starttijd: over.starttijd ?? null,
     duur_dagen: over.duur_dagen ?? 1,
@@ -65,14 +65,14 @@ const WEEK = weekDagen("2026-06-08");
 describe("monteurRijen", () => {
   it("geeft unieke monteurs gesorteerd", () => {
     const rijen = monteurRijen([
-      opdr({ id: "a", toegewezen_aan: "Rein" }),
-      opdr({ id: "b", toegewezen_aan: "Dani" }),
-      opdr({ id: "c", toegewezen_aan: "Rein" }),
+      opdr({ id: "a", monteur_naam: "Rein" }),
+      opdr({ id: "b", monteur_naam: "Dani" }),
+      opdr({ id: "c", monteur_naam: "Rein" }),
     ]);
     expect(rijen).toEqual(["Dani", "Rein"]);
   });
   it("negeert opdrachten zonder monteur", () => {
-    expect(monteurRijen([opdr({ id: "a", toegewezen_aan: null })])).toEqual([]);
+    expect(monteurRijen([opdr({ id: "a", monteur_naam: null })])).toEqual([]);
   });
 });
 

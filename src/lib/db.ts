@@ -56,8 +56,10 @@ export interface Melding {
   spoed_verzonden_at: string | null;
   // v2: soft-delete (prullenbak)
   verwijderd_at: string | null;
-  // toegewezen monteur (kolom bestond al via createOpdracht, ontbrak in dit type)
+  // toegewezen monteur als uuid (auth-koppeling, blok 6) - kolom bestond al via createOpdracht
   toegewezen_aan: string | null;
+  // monteur-naam voor de planning (vrije tekst, los van de uuid-koppeling)
+  monteur_naam: string | null;
   // compleet-systeem blok 0: opdrachtgeverskant (levenscyclus + planning)
   dashboard_status: DashboardStatus;
   startdatum: string | null;
@@ -160,7 +162,7 @@ export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: bool
 
 /** Planning-invoer voor een opdracht (één invoermodel: tijd leeg = dagblok, ingevuld = tijdkaart). */
 export interface PlanningInput {
-  toegewezen_aan?: string | null;
+  monteur_naam: string | null;
   startdatum: string;
   starttijd: string | null;
   duur_dagen: number;
@@ -528,12 +530,10 @@ function createDbFromClient(client: SupabaseClient): Db {
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
         dashboard_status: "concept_gepland",
+        monteur_naam: planning.monteur_naam,
         // uitvoerdatum gelijkhouden aan startdatum: de monteur-werkpool leest die nog.
         uitvoerdatum: planning.startdatum,
       };
-      if (planning.toegewezen_aan !== undefined) {
-        patch.toegewezen_aan = planning.toegewezen_aan;
-      }
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB plannen mislukt: ${error.message}`);
     },
@@ -560,11 +560,9 @@ function createDbFromClient(client: SupabaseClient): Db {
         startdatum: planning.startdatum,
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
+        monteur_naam: planning.monteur_naam,
         uitvoerdatum: planning.startdatum,
       };
-      if (planning.toegewezen_aan !== undefined) {
-        patch.toegewezen_aan = planning.toegewezen_aan;
-      }
       // Was de opdracht al naar de monteur, dan markeren als opnieuw te versturen (verstuur-poort).
       if (moetOpnieuwVersturen(huidigeStatus)) {
         patch.gewijzigd_te_versturen = true;

@@ -25,7 +25,7 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
   it("verplaatst met behoud van tijd/duur en geeft de huidige status door", async () => {
     const res = await POST(
       req({
-        toegewezen_aan: "Dani",
+        monteur_naam: "Dani",
         startdatum: "2026-06-11",
         starttijd: "10:00",
         duur_dagen: 1,
@@ -36,7 +36,7 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
     expect(res.status).toBe(200);
     expect(mockWijzig).toHaveBeenCalledWith(
       "opdr-1",
-      { toegewezen_aan: "Dani", startdatum: "2026-06-11", starttijd: "10:00", duur_dagen: 1 },
+      { monteur_naam: "Dani", startdatum: "2026-06-11", starttijd: "10:00", duur_dagen: 1 },
       "gepland",
     );
   });
@@ -47,7 +47,7 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
   });
 
   it("zonder startdatum volgt 400", async () => {
-    const res = await POST(req({ toegewezen_aan: "Dani" }), { params });
+    const res = await POST(req({ monteur_naam: "Dani" }), { params });
     expect(res.status).toBe(400);
     expect(mockWijzig).not.toHaveBeenCalled();
   });
