@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { teDoenTelling } from "@/lib/te-doen";
 import { DashboardLijst } from "@/components/DashboardLijst";
+import { InschietZone } from "@/components/InschietZone";
 import { UserMenu } from "@/components/UserMenu";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
@@ -34,6 +35,10 @@ export default async function DashboardPage() {
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      <div className="mb-4">
+        <InschietZone />
+      </div>
 
       <DashboardLijst opdrachten={opdrachten} telling={telling} />
     </main>
