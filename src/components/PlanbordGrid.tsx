@@ -54,7 +54,7 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
   return (
     <Link
       ref={setNodeRef}
-      href={`/opdracht/${o.id}`}
+      href={`/dashboard/opdracht/${o.id}`}
       className={`m-1 grid min-h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
       style={{
         gridRow: p.gridRow,

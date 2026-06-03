@@ -32,7 +32,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
 
   return (
     <Link
-      href={`/opdracht/${melding.id}`}
+      href={`/dashboard/opdracht/${melding.id}`}
       className={`relative flex min-h-[88px] cursor-pointer items-stretch gap-3 border-2 ${cardRand} bg-white pr-3 transition-colors duration-150 hover:brightness-[0.97] focus-visible:outline-3 focus-visible:outline-accent`}
     >
       <span aria-hidden className={`w-2 shrink-0 ${stripClass}`} />
