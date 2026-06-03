@@ -207,6 +207,7 @@ export interface Db {
     huidigeStatus: DashboardStatus,
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
+  ontplanOpdracht(id: string): Promise<void>;
 }
 
 /**
@@ -577,6 +578,22 @@ function createDbFromClient(client: SupabaseClient): Db {
         .update({ dashboard_status: "geannuleerd" })
         .eq("id", id);
       if (error) throw new Error(`DB annuleren mislukt: ${error.message}`);
+    },
+
+    async ontplanOpdracht(id) {
+      // Terug naar de pool: status binnen, planning leeg, gewijzigd-marker reset.
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          dashboard_status: "binnen",
+          monteur_naam: null,
+          startdatum: null,
+          starttijd: null,
+          uitvoerdatum: null,
+          gewijzigd_te_versturen: false,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB ontplannen mislukt: ${error.message}`);
     },
   };
 }

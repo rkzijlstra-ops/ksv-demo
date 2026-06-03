@@ -812,3 +812,16 @@ describe("annuleerOpdracht", () => {
     expect(h.fns.update.mock.calls[0][0].dashboard_status).toBe("geannuleerd");
   });
 });
+
+describe("ontplanOpdracht", () => {
+  it("zet de opdracht terug op binnen en wist de planning", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).ontplanOpdracht("opdr-1");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.dashboard_status).toBe("binnen");
+    expect(patch.monteur_naam).toBeNull();
+    expect(patch.startdatum).toBeNull();
+    expect(patch.starttijd).toBeNull();
+  });
+});

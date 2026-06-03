@@ -10,61 +10,33 @@ import { duurLabel } from "@/lib/opdracht-weergave";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
 
-/** Rand/streep-classes per status voor blokken en kaarten op het bord. */
-const KLEUR: Record<DashboardStatus, { rand: string; streep: string; links: string }> = {
-  binnen: { rand: "border-ink-muted", streep: "bg-ink-muted", links: "border-l-ink-muted" },
-  concept_gepland: {
-    rand: "border-accent border-dashed",
-    streep: "bg-accent",
-    links: "border-l-accent",
-  },
-  gepland: { rand: "border-accent", streep: "bg-accent", links: "border-l-accent" },
-  bevestigd: { rand: "border-bevestigd", streep: "bg-bevestigd", links: "border-l-bevestigd" },
-  opgeleverd: { rand: "border-success", streep: "bg-success", links: "border-l-success" },
-  geannuleerd: { rand: "border-line", streep: "bg-line", links: "border-l-line" },
+/** Rand-class per status (gestreept = nog te versturen). Eén kleur per status. */
+const KAART: Record<DashboardStatus, string> = {
+  binnen: "border-ink-muted",
+  concept_gepland: "border-accent border-dashed",
+  gepland: "border-accent",
+  bevestigd: "border-bevestigd",
+  opgeleverd: "border-success",
+  geannuleerd: "border-line",
 };
 
 function dagLabel(iso: string): string {
   return String(parseInt(iso.split("-")[2], 10));
 }
 
-/** Lege cel = drop-doel voor een opdracht (monteur + dag). */
-function DropCel({ monteur, dag, r, c }: { monteur: string; dag: string; r: number; c: number }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `cel-${r}-${c}`, data: { monteur, dag } });
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[92px] border-b border-r border-line last:border-r-0 ${
-        isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""
-      }`}
-      style={{ gridRow: r + 2, gridColumn: c + 2 }}
-    />
-  );
-}
-
-/** Sleepbare wrapper om een geplande kaart/blok; klikken blijft navigeren (sleepdrempel). */
-function KaartDraggable({
-  opdracht,
-  children,
-  className,
-  style,
-}: {
-  opdracht: Melding;
-  children: React.ReactNode;
-  className: string;
-  style: React.CSSProperties;
-}) {
+/** Uniforme, sleepbare kaart op het bord; klikken navigeert (sleepdrempel). */
+function Kaart({ p }: { p: PlanbordPlaatsing<Melding> }) {
+  const o = p.opdracht;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `kaart-${opdracht.id}`,
-    data: { soort: "kaart", opdracht },
+    id: `kaart-${o.id}`,
+    data: { soort: "kaart", opdracht: o },
   });
   return (
     <Link
       ref={setNodeRef}
-      href={`/opdracht/${opdracht.id}`}
-      className={className}
+      href={`/opdracht/${o.id}`}
+      className={`block min-h-[54px] cursor-grab border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${KAART[o.dashboard_status]}`}
       style={{
-        ...style,
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.4 : 1,
         touchAction: "none",
@@ -73,8 +45,65 @@ function KaartDraggable({
       {...listeners}
       {...attributes}
     >
-      {children}
+      <span className="flex items-baseline gap-1.5">
+        {p.isService && (
+          <span className="font-mono text-[12px] font-extrabold text-primary">
+            {(o.starttijd ?? "").slice(0, 5)}
+          </span>
+        )}
+        <span className="truncate text-[12.5px] font-extrabold">
+          {o.klant_naam ?? "Onbekende klant"}
+        </span>
+      </span>
+      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-ink-muted">
+        {p.isService ? (
+          <Wrench size={11} strokeWidth={2.2} aria-hidden="true" />
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <Package size={11} strokeWidth={2.2} aria-hidden="true" />
+            {duurLabel(o.duur_dagen)}
+          </span>
+        )}
+        {o.referentienummer ? (
+          <span className="font-mono font-bold text-primary">{o.referentienummer}</span>
+        ) : (
+          <span className="font-bold text-urgent-rood">geen ref</span>
+        )}
+        {o.dashboard_status === "concept_gepland" && (
+          <span className="font-bold text-accent">te versturen</span>
+        )}
+      </span>
     </Link>
+  );
+}
+
+/** Lege/gevulde cel = drop-doel voor een opdracht (monteur + dag), kaarten gestapeld. */
+function DropCel({
+  monteur,
+  dag,
+  r,
+  c,
+  kaarten,
+}: {
+  monteur: string;
+  dag: string;
+  r: number;
+  c: number;
+  kaarten: PlanbordPlaatsing<Melding>[];
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `cel-${r}-${c}`, data: { monteur, dag } });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex min-h-[96px] flex-col gap-1.5 border-b border-r border-line p-1 last:border-r-0 ${
+        isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""
+      }`}
+      style={{ gridRow: r + 2, gridColumn: c + 2 }}
+    >
+      {kaarten.map((p) => (
+        <Kaart key={p.opdracht.id} p={p} />
+      ))}
+    </div>
   );
 }
 
@@ -97,14 +126,16 @@ export function PlanbordGrid({
     );
   }
 
-  const montages = plaatsingen.filter((p) => !p.isService);
-  const serviceCellen = new Map<string, PlanbordPlaatsing<Melding>[]>();
+  // Kaarten per cel (monteur-rij + dag-kolom), gesorteerd: dagblokken eerst, dan op tijd.
+  const perCel = new Map<string, PlanbordPlaatsing<Melding>[]>();
   for (const p of plaatsingen) {
-    if (!p.isService) continue;
     const r = monteurs.indexOf(p.opdracht.monteur_naam ?? "");
     if (r === -1) continue;
     const key = `${r}-${p.dagIndex}`;
-    (serviceCellen.get(key) ?? serviceCellen.set(key, []).get(key)!).push(p);
+    (perCel.get(key) ?? perCel.set(key, []).get(key)!).push(p);
+  }
+  for (const lijst of perCel.values()) {
+    lijst.sort((a, b) => (a.opdracht.starttijd ?? "").localeCompare(b.opdracht.starttijd ?? ""));
   }
 
   return (
@@ -136,89 +167,19 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {/* Lege, droppable cellen */}
+      {/* Droppable cellen met gestapelde kaarten */}
       {monteurs.map((m, r) =>
-        weekdagen.map((d, c) => <DropCel key={`cel-${r}-${c}`} monteur={m} dag={d} r={r} c={c} />),
+        weekdagen.map((d, c) => (
+          <DropCel
+            key={`cel-${r}-${c}`}
+            monteur={m}
+            dag={d}
+            r={r}
+            c={c}
+            kaarten={perCel.get(`${r}-${c}`) ?? []}
+          />
+        )),
       )}
-
-      {/* Montage = brede dagbalk (sleepbaar) */}
-      {montages.map((p) => {
-        const r = monteurs.indexOf(p.opdracht.monteur_naam ?? "");
-        if (r === -1) return null;
-        const k = KLEUR[p.opdracht.dashboard_status];
-        return (
-          <KaartDraggable
-            key={p.opdracht.id}
-            opdracht={p.opdracht}
-            className={`m-1 grid grid-cols-[6px_1fr] cursor-grab self-start overflow-hidden border-[1.5px] bg-white ${k.rand}`}
-            style={{ gridRow: r + 2, gridColumn: `${p.dagIndex + 2} / span ${p.span}` }}
-          >
-            <span aria-hidden className={k.streep} />
-            <span className="min-w-0 px-2 py-1.5">
-              <span className="block text-[13px] font-extrabold leading-tight">
-                {p.opdracht.klant_naam ?? "Onbekende klant"}
-              </span>
-              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-muted">
-                {p.opdracht.referentienummer && (
-                  <span className="font-mono font-bold text-primary">
-                    {p.opdracht.referentienummer}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1">
-                  <Package size={12} strokeWidth={2.2} aria-hidden="true" />
-                  {duurLabel(p.opdracht.duur_dagen)}
-                </span>
-                {p.opdracht.dashboard_status === "concept_gepland" && (
-                  <span className="font-bold text-accent">nog te versturen</span>
-                )}
-              </span>
-            </span>
-          </KaartDraggable>
-        );
-      })}
-
-      {/* Service = compacte kaartjes per cel, gestapeld op tijd (sleepbaar) */}
-      {[...serviceCellen.entries()].map(([key, cel]) => {
-        const [r, c] = key.split("-").map(Number);
-        const gesorteerd = [...cel].sort((a, b) =>
-          (a.opdracht.starttijd ?? "").localeCompare(b.opdracht.starttijd ?? ""),
-        );
-        return (
-          <div
-            key={`svc-${key}`}
-            className="m-1 flex flex-col gap-1.5 self-start"
-            style={{ gridRow: r + 2, gridColumn: c + 2 }}
-          >
-            {gesorteerd.map((p) => {
-              const k = KLEUR[p.opdracht.dashboard_status];
-              return (
-                <KaartDraggable
-                  key={p.opdracht.id}
-                  opdracht={p.opdracht}
-                  className={`block cursor-grab border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${k.rand} ${k.links}`}
-                  style={{}}
-                >
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-[12px] font-extrabold text-primary">
-                      {(p.opdracht.starttijd ?? "").slice(0, 5)}
-                    </span>
-                    <span className="truncate text-[12px] font-bold">
-                      {p.opdracht.klant_naam ?? "Onbekende klant"}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 flex items-center gap-1 text-[10.5px] text-ink-muted">
-                    <Wrench size={11} strokeWidth={2.2} aria-hidden="true" />
-                    {p.opdracht.referentienummer ?? "geen ref"}
-                    {p.opdracht.dashboard_status === "concept_gepland" && (
-                      <span className="ml-auto font-bold text-accent">te versturen</span>
-                    )}
-                  </span>
-                </KaartDraggable>
-              );
-            })}
-          </div>
-        );
-      })}
     </div>
   );
 }

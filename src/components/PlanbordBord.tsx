@@ -53,12 +53,24 @@ export function PlanbordBord({
 
   async function onDragEnd(e: DragEndEvent) {
     setActief(null);
-    const cel = e.over?.data.current as { monteur: string; dag: string } | undefined;
+    const over = e.over?.data.current as
+      | { monteur?: string; dag?: string; zone?: string }
+      | undefined;
     const data = e.active.data.current as SleepData | undefined;
-    if (!cel?.dag || !data) return;
+    if (!over || !data) return;
 
     setBezig(true);
     try {
+      // Terug naar de pool: een geplande kaart ontplannen.
+      if (over.zone === "pool") {
+        if (data.soort === "kaart") {
+          await fetch(`/api/opdrachten/${data.opdracht.id}/ontplannen`, { method: "POST" });
+          router.refresh();
+        }
+        return;
+      }
+      const cel = over as { monteur: string; dag: string };
+      if (!cel.dag) return;
       if (data.soort === "pool") {
         await fetch(`/api/opdrachten/${data.opdracht.id}/plannen`, {
           method: "POST",

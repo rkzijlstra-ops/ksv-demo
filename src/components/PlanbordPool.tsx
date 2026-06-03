@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDraggable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
@@ -18,15 +18,22 @@ export function PlanbordPool({
   standaardDatum: string;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const { setNodeRef, isOver } = useDroppable({ id: "pool", data: { zone: "pool" } });
 
   return (
     <div className="mt-5 border-2 border-ink bg-white">
       <div className="flex items-center gap-2.5 border-b-2 border-ink bg-surface px-3.5 py-3">
         <span className="font-mono text-xs font-bold uppercase tracking-[0.14em]">Nog te plannen</span>
         <span className="text-xs text-ink-muted">{pool.length}</span>
+        <span className="ml-auto text-[11.5px] text-ink-muted">
+          Sleep een afspraak hierheen om hem terug te halen
+        </span>
       </div>
+      <div ref={setNodeRef} className={isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}>
       {pool.length === 0 ? (
-        <p className="p-4 text-sm text-ink-muted">Niets meer te plannen. Alles staat op het bord.</p>
+        <p className="p-4 text-sm text-ink-muted">
+          Niets meer te plannen. Sleep een afspraak van het bord hierheen om hem terug te halen.
+        </p>
       ) : (
         <div className="flex flex-col gap-3 p-3.5">
           {pool.map((o) => (
@@ -67,6 +74,7 @@ export function PlanbordPool({
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
