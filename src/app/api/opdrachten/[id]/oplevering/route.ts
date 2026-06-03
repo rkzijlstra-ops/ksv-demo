@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, type OpleveringConceptInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 const UITKOMSTEN = ["afgerond", "openstaande_punten"] as const;
@@ -42,19 +42,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Eindstaat-keuze is geschrapt; uitkomst is optioneel (default 'afgerond' in de db-laag).
   const uitkomst = geldigeUitkomst(body.uitkomst) ? body.uitkomst : undefined;
 
+  const concept: OpleveringConceptInput = {
+    opdracht_id: id,
+    uitkomst,
+    eindstaat_foto_urls: Array.isArray(body.eindstaat_foto_urls)
+      ? (body.eindstaat_foto_urls as string[])
+      : [],
+    video_url: typeof body.video_url === "string" ? body.video_url : null,
+    opmerking: typeof body.opmerking === "string" ? body.opmerking : null,
+    rapport_email: typeof body.rapport_email === "string" ? body.rapport_email : null,
+    user_id: userId,
+  };
+  // Handtekening alleen meeschrijven als de body hem bevat. Een tussentijdse opslag laat hem
+  // weg en mag de eerder gezette handtekening dus niet wissen.
+  if ("handtekening_url" in body) {
+    concept.handtekening_url = typeof body.handtekening_url === "string" ? body.handtekening_url : null;
+  }
+
   try {
-    const { id: oplId } = await (await db()).upsertOpleveringConcept({
-      opdracht_id: id,
-      uitkomst,
-      eindstaat_foto_urls: Array.isArray(body.eindstaat_foto_urls)
-        ? (body.eindstaat_foto_urls as string[])
-        : [],
-      video_url: typeof body.video_url === "string" ? body.video_url : null,
-      handtekening_url: typeof body.handtekening_url === "string" ? body.handtekening_url : null,
-      opmerking: typeof body.opmerking === "string" ? body.opmerking : null,
-      rapport_email: typeof body.rapport_email === "string" ? body.rapport_email : null,
-      user_id: userId,
-    });
+    const { id: oplId } = await (await db()).upsertOpleveringConcept(concept);
     return NextResponse.json({ id: oplId }, { status: 200 });
   } catch (err) {
     return NextResponse.json(

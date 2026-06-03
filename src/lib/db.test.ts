@@ -547,6 +547,41 @@ describe("upsertOpleveringConcept", () => {
     h.setResult({ data: null, error: { message: "upsert kapot" } });
     await expect(createDb(cfg).upsertOpleveringConcept(input)).rejects.toThrow(/upsert kapot/);
   });
+
+  it("laat handtekening_url uit de payload als die niet is meegegeven (overschrijft niet)", async () => {
+    h.setResult({ data: { id: "opl-1" }, error: null });
+    await createDb(cfg).upsertOpleveringConcept({
+      opdracht_id: "opdr-1",
+      eindstaat_foto_urls: [],
+      video_url: null,
+    });
+    const payload = h.fns.upsert.mock.calls[0][0];
+    expect("handtekening_url" in payload).toBe(false);
+  });
+
+  it("neemt handtekening_url op als die als string is meegegeven", async () => {
+    h.setResult({ data: { id: "opl-1" }, error: null });
+    await createDb(cfg).upsertOpleveringConcept({
+      opdracht_id: "opdr-1",
+      eindstaat_foto_urls: [],
+      video_url: null,
+      handtekening_url: "https://x/h.png",
+    });
+    expect(h.fns.upsert.mock.calls[0][0].handtekening_url).toBe("https://x/h.png");
+  });
+
+  it("wist handtekening_url bij expliciete null", async () => {
+    h.setResult({ data: { id: "opl-1" }, error: null });
+    await createDb(cfg).upsertOpleveringConcept({
+      opdracht_id: "opdr-1",
+      eindstaat_foto_urls: [],
+      video_url: null,
+      handtekening_url: null,
+    });
+    const payload = h.fns.upsert.mock.calls[0][0];
+    expect("handtekening_url" in payload).toBe(true);
+    expect(payload.handtekening_url).toBeNull();
+  });
 });
 
 describe("getOpleveringVoorOpdracht", () => {

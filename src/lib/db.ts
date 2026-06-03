@@ -64,7 +64,11 @@ export interface OpleveringConceptInput {
   uitkomst?: "afgerond" | "openstaande_punten";
   eindstaat_foto_urls: string[];
   video_url: string | null;
-  handtekening_url: string | null;
+  /**
+   * Weggelaten (undefined) = niet wijzigen, zodat een tussentijdse opslag de eerder gezette
+   * handtekening niet per ongeluk wist. Expliciet null = wissen, een string = zetten.
+   */
+  handtekening_url?: string | null;
   opmerking?: string | null;
   rapport_email?: string | null;
   user_id?: string | null;
@@ -330,21 +334,23 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async upsertOpleveringConcept(input) {
+      const payload: Record<string, unknown> = {
+        opdracht_id: input.opdracht_id,
+        uitkomst: input.uitkomst ?? "afgerond",
+        eindstaat_foto_urls: input.eindstaat_foto_urls,
+        video_url: input.video_url,
+        opmerking: input.opmerking ?? null,
+        rapport_email: input.rapport_email ?? null,
+        user_id: input.user_id ?? null,
+      };
+      // Alleen meeschrijven als de aanroeper de handtekening expliciet meegeeft (string of null).
+      // Weggelaten = kolom ongemoeid laten, zodat een tussentijdse opslag de handtekening niet wist.
+      if (input.handtekening_url !== undefined) {
+        payload.handtekening_url = input.handtekening_url;
+      }
       const { data: row, error } = await client
         .from("opleveringen")
-        .upsert(
-          {
-            opdracht_id: input.opdracht_id,
-            uitkomst: input.uitkomst ?? "afgerond",
-            eindstaat_foto_urls: input.eindstaat_foto_urls,
-            video_url: input.video_url,
-            handtekening_url: input.handtekening_url,
-            opmerking: input.opmerking ?? null,
-            rapport_email: input.rapport_email ?? null,
-            user_id: input.user_id ?? null,
-          },
-          { onConflict: "opdracht_id" },
-        )
+        .upsert(payload, { onConflict: "opdracht_id" })
         .select("id")
         .single();
       if (error) throw new Error(`DB upsert mislukt: ${error.message}`);

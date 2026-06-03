@@ -78,6 +78,27 @@ describe("POST /api/opdrachten/[id]/oplevering", () => {
     const res = await POST(postReq({ uitkomst: "afgerond" }), params("opdr-1"));
     expect(res.status).toBe(503);
   });
+
+  it("laat handtekening_url ongemoeid als die niet in de body zit (tussentijdse opslag)", async () => {
+    await POST(
+      postReq({ eindstaat_foto_urls: ["https://x/e1.jpg"], video_url: null }),
+      params("opdr-1"),
+    );
+    const arg = mockUpsert.mock.calls[0][0];
+    expect("handtekening_url" in arg).toBe(false);
+  });
+
+  it("geeft handtekening_url door als die als string is meegegeven", async () => {
+    await POST(postReq({ handtekening_url: "https://x/h.png" }), params("opdr-1"));
+    expect(mockUpsert.mock.calls[0][0].handtekening_url).toBe("https://x/h.png");
+  });
+
+  it("wist handtekening_url bij expliciete null in de body", async () => {
+    await POST(postReq({ handtekening_url: null }), params("opdr-1"));
+    const arg = mockUpsert.mock.calls[0][0];
+    expect("handtekening_url" in arg).toBe(true);
+    expect(arg.handtekening_url).toBeNull();
+  });
 });
 
 describe("GET /api/opdrachten/[id]/oplevering", () => {

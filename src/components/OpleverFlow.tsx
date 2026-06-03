@@ -24,7 +24,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [rapportEmail, setRapportEmail] = useState("");
   const [handmatig, setHandmatig] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [handtekeningDataUrl, setHandtekeningDataUrl] = useState<string | null>(null);
+  // De handtekening wordt meteen bij "Klaar" geüpload en als URL bewaard (net als foto's en video),
+  // zodat hij in elke tussentijdse opslag meegaat en een herlaad/terugkeer overleeft.
+  const [handtekeningUrl, setHandtekeningUrl] = useState<string | null>(null);
+  const [handtekeningBezig, setHandtekeningBezig] = useState(false);
   const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
@@ -45,6 +48,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           if (oplevering) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
+            setHandtekeningUrl(oplevering.handtekening_url ?? null);
             setOpmerking(oplevering.opmerking ?? "");
             const em: string = oplevering.rapport_email ?? "";
             setRapportEmail(em);
@@ -70,17 +74,18 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
       body: JSON.stringify({
         eindstaat_foto_urls: fotoUrls,
         video_url: videoUrl,
+        handtekening_url: handtekeningUrl,
         opmerking: opmerking.trim() || null,
         rapport_email,
       }),
     }).catch(() => {});
   }
 
-  // Foto's/video meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
+  // Foto's/video/handtekening meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
   useEffect(() => {
     bewaarConcept();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotoUrls, videoUrl]);
+  }, [fotoUrls, videoUrl, handtekeningUrl]);
 
   const check = controleerOplevering({
     fotoCount: fotoUrls.length,
@@ -93,19 +98,15 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     setBezig(true);
     setFout("");
     try {
-      let handtekening_url: string | null = null;
-      if (handtekeningDataUrl) {
-        const blob = dataUrlNaarBlob(handtekeningDataUrl);
-        handtekening_url = (await uploadHandtekening(blob)).url;
-      }
-
+      // De handtekening is bij "Klaar" al geüpload en in elke tussenopslag bewaard; hier alleen
+      // nog expliciet meesturen voor de zekerheid.
       const conceptRes = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eindstaat_foto_urls: fotoUrls,
           video_url: videoUrl,
-          handtekening_url,
+          handtekening_url: handtekeningUrl,
           opmerking: opmerking.trim() || null,
           rapport_email: rapportEmail.trim() || null,
         }),
@@ -196,7 +197,11 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           2. Handtekening (optioneel)
         </h2>
-        {!handtekeningDataUrl ? (
+        {handtekeningBezig ? (
+          <div className="rounded-none border border-line bg-surface px-3 py-3">
+            <Voortgang label="Handtekening opslaan…" />
+          </div>
+        ) : !handtekeningUrl ? (
           <button
             type="button"
             onClick={() => setModalOpen(true)}
@@ -210,7 +215,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={handtekeningDataUrl}
+              src={handtekeningUrl}
               alt="Handtekening klant"
               className="h-10 w-20 shrink-0 border border-line bg-white object-contain"
             />
@@ -225,7 +230,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
               </button>
               <button
                 type="button"
-                onClick={() => setHandtekeningDataUrl(null)}
+                onClick={() => setHandtekeningUrl(null)}
                 className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
               >
                 Wis
@@ -339,9 +344,19 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
 
       {modalOpen && (
         <HandtekeningModal
-          onOpslaan={(d) => {
-            setHandtekeningDataUrl(d);
+          onOpslaan={async (d) => {
             setModalOpen(false);
+            setHandtekeningBezig(true);
+            setFout("");
+            try {
+              const blob = dataUrlNaarBlob(d);
+              const { url } = await uploadHandtekening(blob);
+              setHandtekeningUrl(url);
+            } catch (err) {
+              setFout(`Handtekening opslaan mislukt: ${(err as Error).message}`);
+            } finally {
+              setHandtekeningBezig(false);
+            }
           }}
           onSluiten={() => setModalOpen(false)}
         />
