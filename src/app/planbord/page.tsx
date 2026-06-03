@@ -10,8 +10,7 @@ import {
   plaatsOpdrachten,
 } from "@/lib/planbord";
 import { formatDatumKort } from "@/lib/datum";
-import { PlanbordGrid } from "@/components/PlanbordGrid";
-import { PlanbordPool } from "@/components/PlanbordPool";
+import { PlanbordBord } from "@/components/PlanbordBord";
 import { VerstuurKnop } from "@/components/VerstuurKnop";
 import { UserMenu } from "@/components/UserMenu";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
@@ -89,12 +88,13 @@ export default async function PlanbordPage({
         <VerstuurKnop ids={teVersturen} />
       </div>
 
-      <PlanbordGrid weekdagen={dagen} monteurs={monteurs} plaatsingen={plaatsingen} />
-
-      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-muted">
-        <span>Brede balk = montage (dagblok), kaartje met tijd = service.</span>
-        <span>Oranje gestreept = nog te versturen, oranje = gepland, blauw = bevestigd.</span>
-      </p>
+      <PlanbordBord
+        weekdagen={dagen}
+        monteurs={monteurs}
+        plaatsingen={plaatsingen}
+        pool={pool}
+        standaardDatum={dagen[0]}
+      />
 
       <Link
         href="/dashboard"
@@ -102,8 +102,6 @@ export default async function PlanbordPage({
       >
         ← Naar het dashboard
       </Link>
-
-      <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={dagen[0]} />
     </main>
   );
 }

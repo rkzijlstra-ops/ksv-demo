@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Package, Wrench } from "lucide-react";
+import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
 import type { PlanbordPlaatsing } from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
@@ -24,6 +28,56 @@ function dagLabel(iso: string): string {
   return String(parseInt(iso.split("-")[2], 10));
 }
 
+/** Lege cel = drop-doel voor een opdracht (monteur + dag). */
+function DropCel({ monteur, dag, r, c }: { monteur: string; dag: string; r: number; c: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `cel-${r}-${c}`, data: { monteur, dag } });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[92px] border-b border-r border-line last:border-r-0 ${
+        isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""
+      }`}
+      style={{ gridRow: r + 2, gridColumn: c + 2 }}
+    />
+  );
+}
+
+/** Sleepbare wrapper om een geplande kaart/blok; klikken blijft navigeren (sleepdrempel). */
+function KaartDraggable({
+  opdracht,
+  children,
+  className,
+  style,
+}: {
+  opdracht: Melding;
+  children: React.ReactNode;
+  className: string;
+  style: React.CSSProperties;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `kaart-${opdracht.id}`,
+    data: { soort: "kaart", opdracht },
+  });
+  return (
+    <Link
+      ref={setNodeRef}
+      href={`/opdracht/${opdracht.id}`}
+      className={className}
+      style={{
+        ...style,
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.4 : 1,
+        touchAction: "none",
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      {...listeners}
+      {...attributes}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function PlanbordGrid({
   weekdagen,
   monteurs,
@@ -36,14 +90,14 @@ export function PlanbordGrid({
   if (monteurs.length === 0) {
     return (
       <p className="mt-4 border-2 border-dashed border-line bg-white p-6 text-center text-sm text-ink-muted">
-        Nog niets ingepland deze week. Plan hieronder een opdracht in, dan verschijnt de monteur hier
-        als rij.
+        Nog niets ingepland deze week. Plan hieronder een opdracht in via Inplannen (typ daar de
+        monteur), dan verschijnt de monteur hier als rij en kun je daarna opdrachten naar een dag
+        slepen.
       </p>
     );
   }
 
   const montages = plaatsingen.filter((p) => !p.isService);
-  // Service-kaarten groeperen per cel (monteur + dag), gesorteerd op tijd.
   const serviceCellen = new Map<string, PlanbordPlaatsing<Melding>[]>();
   for (const p of plaatsingen) {
     if (!p.isService) continue;
@@ -71,7 +125,7 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {/* Monteur-labels + lege cellen (rasterlijnen) */}
+      {/* Monteur-labels */}
       {monteurs.map((m, r) => (
         <div
           key={`label-${m}`}
@@ -81,26 +135,22 @@ export function PlanbordGrid({
           {m}
         </div>
       ))}
+
+      {/* Lege, droppable cellen */}
       {monteurs.map((m, r) =>
-        weekdagen.map((d, c) => (
-          <div
-            key={`cel-${r}-${c}`}
-            className="min-h-[92px] border-b border-r border-line last:border-r-0"
-            style={{ gridRow: r + 2, gridColumn: c + 2 }}
-          />
-        )),
+        weekdagen.map((d, c) => <DropCel key={`cel-${r}-${c}`} monteur={m} dag={d} r={r} c={c} />),
       )}
 
-      {/* Montage = brede dagbalk */}
+      {/* Montage = brede dagbalk (sleepbaar) */}
       {montages.map((p) => {
         const r = monteurs.indexOf(p.opdracht.toegewezen_aan ?? "");
         if (r === -1) return null;
         const k = KLEUR[p.opdracht.dashboard_status];
         return (
-          <Link
+          <KaartDraggable
             key={p.opdracht.id}
-            href={`/opdracht/${p.opdracht.id}`}
-            className={`m-1 grid grid-cols-[6px_1fr] self-start overflow-hidden border-[1.5px] bg-white ${k.rand}`}
+            opdracht={p.opdracht}
+            className={`m-1 grid grid-cols-[6px_1fr] cursor-grab self-start overflow-hidden border-[1.5px] bg-white ${k.rand}`}
             style={{ gridRow: r + 2, gridColumn: `${p.dagIndex + 2} / span ${p.span}` }}
           >
             <span aria-hidden className={k.streep} />
@@ -123,11 +173,11 @@ export function PlanbordGrid({
                 )}
               </span>
             </span>
-          </Link>
+          </KaartDraggable>
         );
       })}
 
-      {/* Service = compacte kaartjes, gestapeld op tijd */}
+      {/* Service = compacte kaartjes per cel, gestapeld op tijd (sleepbaar) */}
       {[...serviceCellen.entries()].map(([key, cel]) => {
         const [r, c] = key.split("-").map(Number);
         const gesorteerd = [...cel].sort((a, b) =>
@@ -142,10 +192,11 @@ export function PlanbordGrid({
             {gesorteerd.map((p) => {
               const k = KLEUR[p.opdracht.dashboard_status];
               return (
-                <Link
+                <KaartDraggable
                   key={p.opdracht.id}
-                  href={`/opdracht/${p.opdracht.id}`}
-                  className={`border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${k.rand} ${k.links}`}
+                  opdracht={p.opdracht}
+                  className={`block cursor-grab border-[1.5px] border-l-[5px] bg-white px-2 py-1.5 ${k.rand} ${k.links}`}
+                  style={{}}
                 >
                   <span className="flex items-baseline gap-1.5">
                     <span className="font-mono text-[12px] font-extrabold text-primary">
@@ -162,7 +213,7 @@ export function PlanbordGrid({
                       <span className="ml-auto font-bold text-accent">te versturen</span>
                     )}
                   </span>
-                </Link>
+                </KaartDraggable>
               );
             })}
           </div>

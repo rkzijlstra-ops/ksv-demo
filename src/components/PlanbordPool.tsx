@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
@@ -29,8 +31,8 @@ export function PlanbordPool({
         <div className="flex flex-col gap-3 p-3.5">
           {pool.map((o) => (
             <div key={o.id} className="border-2 border-ink-muted bg-white">
-              <div className="flex items-start gap-2.5 p-3">
-                <GripVertical size={18} className="mt-0.5 shrink-0 text-ink-muted" aria-hidden="true" />
+              <div className="flex items-start gap-1 p-3">
+                <SleepGreep opdracht={o} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-extrabold">{o.klant_naam ?? "Onbekende klant"}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -66,6 +68,27 @@ export function PlanbordPool({
         </div>
       )}
     </div>
+  );
+}
+
+/** Sleepgreep van een pool-opdracht; sleep naar een cel op het planbord om in te plannen. */
+function SleepGreep({ opdracht }: { opdracht: Melding }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `pool-${opdracht.id}`,
+    data: { soort: "pool", opdracht },
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      aria-label="Sleep naar het planbord"
+      className="mt-0.5 shrink-0 cursor-grab touch-none text-ink-muted"
+      style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
+      {...listeners}
+      {...attributes}
+    >
+      <GripVertical size={18} aria-hidden="true" />
+    </button>
   );
 }
 
