@@ -41,6 +41,25 @@ export function rapportSamenvatting(
   };
 }
 
+/**
+ * Label voor de eindstaat-foto-badge in het rapport. Telt bewust alléén de eindstaat-foto's
+ * uit de oplever-flow, niet de meldingfoto's (die hebben een eigen telling in de meldingen-kop).
+ * Pure functie, los te testen.
+ */
+export function eindstaatFotoLabel(aantal: number): string {
+  return `${aantal} eindstaat-foto${aantal === 1 ? "" : "'s"}`;
+}
+
+/**
+ * Kop voor de meldingen-sectie: het aantal meldingen, plus het aantal meldingfoto's als die er zijn.
+ * Pure functie, los te testen.
+ */
+export function meldingenKop(aantalMeldingen: number, aantalFotos: number): string {
+  const basis = `Meldingen (${aantalMeldingen})`;
+  if (aantalFotos <= 0) return basis;
+  return `${basis} · ${aantalFotos} foto${aantalFotos === 1 ? "" : "'s"}`;
+}
+
 const A4 = { breedte: 595, hoogte: 842 } as const;
 const MARGE = 48;
 const CONTENT = A4.breedte - MARGE * 2;
@@ -143,7 +162,7 @@ export async function genereerRapportPdf(
     samenvatting.videoUrl
       ? { label: "Video bijgevoegd", bg: ACCENT_SOFT, rand: ACCENT, ink: ACCENT_INK }
       : { label: "Geen video", bg: SURFACE, rand: LINE, ink: MUTED },
-    { label: `${fotos.length} foto${fotos.length === 1 ? "" : "'s"}`, bg: ACCENT_SOFT, rand: ACCENT, ink: ACCENT_INK },
+    { label: eindstaatFotoLabel(fotos.length), bg: ACCENT_SOFT, rand: ACCENT, ink: ACCENT_INK },
   ]);
 
   if (samenvatting.opmerking) {
@@ -171,7 +190,8 @@ export async function genereerRapportPdf(
   y -= 8;
 
   // ---- sectie: Meldingen ----
-  sectieKop(`Meldingen (${meldingen.length})`, INK);
+  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+  sectieKop(meldingenKop(meldingen.length, meldingFotoAantal), INK);
 
   if (meldingen.length === 0) {
     tekst("Geen meldingen op deze opdracht.", { size: 10, kleur: MUTED });

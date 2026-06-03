@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { genereerRapportPdf, rapportSamenvatting } from "./rapport";
+import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop } from "./rapport";
 import type { Melding, Oplevering } from "./db";
 
 function maakOplevering(over: Partial<Oplevering>): Oplevering {
@@ -87,6 +87,30 @@ describe("rapportSamenvatting", () => {
 
   it("zonder handtekening niet ondertekend", () => {
     expect(rapportSamenvatting(maakMelding({}), maakOplevering({ handtekening_url: null })).ondertekend).toBe(false);
+  });
+});
+
+describe("eindstaatFotoLabel", () => {
+  it("telt nul eindstaat-foto's in het meervoud", () => {
+    expect(eindstaatFotoLabel(0)).toBe("0 eindstaat-foto's");
+  });
+  it("gebruikt enkelvoud bij precies 1", () => {
+    expect(eindstaatFotoLabel(1)).toBe("1 eindstaat-foto");
+  });
+  it("gebruikt meervoud bij meer dan 1", () => {
+    expect(eindstaatFotoLabel(3)).toBe("3 eindstaat-foto's");
+  });
+});
+
+describe("meldingenKop", () => {
+  it("toont alleen het aantal meldingen als er geen foto's zijn", () => {
+    expect(meldingenKop(2, 0)).toBe("Meldingen (2)");
+  });
+  it("toont het aantal meldingen plus het aantal foto's", () => {
+    expect(meldingenKop(3, 4)).toBe("Meldingen (3) · 4 foto's");
+  });
+  it("gebruikt enkelvoud bij precies 1 foto", () => {
+    expect(meldingenKop(1, 1)).toBe("Meldingen (1) · 1 foto");
   });
 });
 
