@@ -172,6 +172,32 @@ export interface PlanningInput {
   duur_dagen: number;
 }
 
+/** Rol van een ingelogde gebruiker (blok 6). */
+export type Rol = "beheerder" | "opdrachtgever" | "monteur";
+
+/** Een zaak (opdrachtgever); voor nu één: Keukenstudio Voorschoten. */
+export interface Opdrachtgever {
+  id: string;
+  naam: string;
+  created_at: string;
+}
+
+/** Profiel van een gebruiker: rol, naam en (voor monteur/opdrachtgever) de zaak. */
+export interface Profiel {
+  id: string;
+  rol: Rol;
+  naam: string;
+  opdrachtgever_id: string | null;
+  created_at: string;
+}
+
+export interface ProfielInput {
+  id: string;
+  rol: Rol;
+  naam: string;
+  opdrachtgever_id: string | null;
+}
+
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
@@ -214,6 +240,11 @@ export interface Db {
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
+  // blok 6: accounts/rollen
+  getProfiel(userId: string): Promise<Profiel | null>;
+  getProfielen(): Promise<Profiel[]>;
+  getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
+  upsertProfiel(input: ProfielInput): Promise<void>;
 }
 
 /**
@@ -608,6 +639,47 @@ function createDbFromClient(client: SupabaseClient): Db {
         })
         .eq("id", id);
       if (error) throw new Error(`DB ontplannen mislukt: ${error.message}`);
+    },
+
+    async getProfiel(userId: string) {
+      const { data, error } = await client
+        .from("profielen")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Profiel | null) ?? null;
+    },
+
+    async getProfielen() {
+      const { data, error } = await client
+        .from("profielen")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Profiel[];
+    },
+
+    async getStandaardOpdrachtgever() {
+      const { data, error } = await client
+        .from("opdrachtgevers")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return ((data ?? []) as Opdrachtgever[])[0] ?? null;
+    },
+
+    async upsertProfiel(input) {
+      const { error } = await client.from("profielen").upsert(
+        {
+          id: input.id,
+          rol: input.rol,
+          naam: input.naam,
+          opdrachtgever_id: input.opdrachtgever_id,
+        },
+        { onConflict: "id" },
+      );
+      if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
     },
   };
 }

@@ -1,6 +1,7 @@
 import { Resend } from "resend";
-import type { Melding } from "./db";
+import type { Melding, Rol } from "./db";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
+import { uitnodigingTekst } from "./uitnodig-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -23,6 +24,13 @@ export interface MonteurMailInput {
   naar: string;
   monteurNaam: string;
   opdrachten: MailbareOpdracht[];
+}
+
+export interface UitnodigingMailInput {
+  naar: string;
+  naam: string;
+  rol: Rol;
+  appUrl: string;
 }
 
 function mailConfig() {
@@ -84,6 +92,22 @@ export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Monteur-mail versturen mislukt: ${msg}`);
+  }
+}
+
+/** Verstuurt een uitnodiging aan een nieuwe gebruiker (monteur/opdrachtgever) via Resend. */
+export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<void> {
+  const { apiKey, from } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = uitnodigingTekst(input.naam, input.rol, input.appUrl);
+
+  const { error } = await resend.emails.send({ from, to: input.naar, subject, text });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Uitnodiging versturen mislukt: ${msg}`);
   }
 }
 

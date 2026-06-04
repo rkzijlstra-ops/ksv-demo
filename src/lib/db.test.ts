@@ -840,3 +840,34 @@ describe("ontplanOpdracht", () => {
     expect(patch.starttijd).toBeNull();
   });
 });
+
+describe("profielen", () => {
+  it("getProfiel haalt het profiel op id op", async () => {
+    h.setResult({ data: { id: "u1", rol: "monteur", naam: "Piet" }, error: null });
+    const p = await createDb(cfg).getProfiel("u1");
+    expect(h.fns.from).toHaveBeenCalledWith("profielen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "u1");
+    expect(p?.rol).toBe("monteur");
+  });
+
+  it("getProfiel returnt null als er geen profiel is", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).getProfiel("weg")).toBeNull();
+  });
+
+  it("getStandaardOpdrachtgever pakt de eerste zaak", async () => {
+    h.setResult({ data: [{ id: "z1", naam: "KSV" }, { id: "z2", naam: "Ander" }], error: null });
+    const z = await createDb(cfg).getStandaardOpdrachtgever();
+    expect(h.fns.from).toHaveBeenCalledWith("opdrachtgevers");
+    expect(z?.id).toBe("z1");
+  });
+
+  it("upsertProfiel schrijft id/rol/naam/zaak met onConflict id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).upsertProfiel({ id: "u1", rol: "monteur", naam: "Piet", opdrachtgever_id: "z1" });
+    expect(h.fns.from).toHaveBeenCalledWith("profielen");
+    const [payload, opts] = h.fns.upsert.mock.calls[0];
+    expect(payload).toMatchObject({ id: "u1", rol: "monteur", naam: "Piet", opdrachtgever_id: "z1" });
+    expect(opts).toEqual({ onConflict: "id" });
+  });
+});
