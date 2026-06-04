@@ -28,6 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const duur = Number(body.duur_dagen);
   const planning: PlanningInput = {
+    toegewezen_aan: typeof body.toegewezen_aan === "string" && body.toegewezen_aan ? body.toegewezen_aan : null,
     monteur_naam:
       typeof body.monteur_naam === "string" && body.monteur_naam.trim()
         ? body.monteur_naam.trim()

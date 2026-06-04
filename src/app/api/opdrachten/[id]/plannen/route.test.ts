@@ -24,11 +24,18 @@ describe("POST /api/opdrachten/[id]/plannen", () => {
 
   it("plant met monteur, datum, dagen en tijd", async () => {
     const res = await POST(
-      req({ monteur_naam: "Rein", startdatum: "2026-06-10", duur_dagen: 2, starttijd: "10:00" }),
+      req({
+        toegewezen_aan: "rein-uid",
+        monteur_naam: "Rein",
+        startdatum: "2026-06-10",
+        duur_dagen: 2,
+        starttijd: "10:00",
+      }),
       { params },
     );
     expect(res.status).toBe(200);
     expect(mockPlan).toHaveBeenCalledWith("opdr-1", {
+      toegewezen_aan: "rein-uid",
       monteur_naam: "Rein",
       startdatum: "2026-06-10",
       starttijd: "10:00",

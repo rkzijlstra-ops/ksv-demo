@@ -701,6 +701,7 @@ describe("planOpdracht", () => {
   it("zet monteur, datum, tijd en duur; status naar concept_gepland; synct uitvoerdatum", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).planOpdracht("opdr-1", {
+      toegewezen_aan: "piet-uid",
       monteur_naam: "piet",
       startdatum: "2026-06-10",
       starttijd: "10:00",
@@ -711,6 +712,7 @@ describe("planOpdracht", () => {
     expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
     const patch = h.fns.update.mock.calls[0][0];
     expect(patch.monteur_naam).toBe("piet");
+    expect(patch.toegewezen_aan).toBe("piet-uid");
     expect(patch.startdatum).toBe("2026-06-10");
     expect(patch.starttijd).toBe("10:00");
     expect(patch.duur_dagen).toBe(1);
@@ -721,6 +723,7 @@ describe("planOpdracht", () => {
   it("staat een lege starttijd toe (dagblok, montage)", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).planOpdracht("opdr-2", {
+      toegewezen_aan: "henk-uid",
       monteur_naam: "henk",
       startdatum: "2026-06-11",
       starttijd: null,
@@ -735,6 +738,7 @@ describe("planOpdracht", () => {
     h.setResult({ data: null, error: { message: "plan kapot" } });
     await expect(
       createDb(cfg).planOpdracht("x", {
+        toegewezen_aan: null,
         monteur_naam: null,
         startdatum: "2026-06-10",
         starttijd: null,
@@ -787,9 +791,9 @@ describe("wijzigOpdracht", () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(
       "opdr-1",
-      { monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
       "gepland",
-      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
     );
     const patch = h.fns.update.mock.calls[0][0];
     expect(patch.startdatum).toBe("2026-06-20");
@@ -800,9 +804,9 @@ describe("wijzigOpdracht", () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(
       "opdr-1",
-      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null, duur_dagen: 1 },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null, duur_dagen: 1 },
       "gepland",
-      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
     );
     expect(h.fns.update.mock.calls[0][0].gewijzigd_te_versturen).toBe(false);
   });
@@ -811,7 +815,7 @@ describe("wijzigOpdracht", () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(
       "opdr-1",
-      { monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-20", starttijd: null, duur_dagen: 1 },
       "concept_gepland",
       null,
     );
@@ -860,6 +864,14 @@ describe("profielen", () => {
     const z = await createDb(cfg).getStandaardOpdrachtgever();
     expect(h.fns.from).toHaveBeenCalledWith("opdrachtgevers");
     expect(z?.id).toBe("z1");
+  });
+
+  it("getMonteurs haalt alleen monteur-profielen op", async () => {
+    h.setResult({ data: [{ id: "m1", rol: "monteur", naam: "Piet" }], error: null });
+    const m = await createDb(cfg).getMonteurs();
+    expect(h.fns.from).toHaveBeenCalledWith("profielen");
+    expect(h.fns.eq).toHaveBeenCalledWith("rol", "monteur");
+    expect(m).toHaveLength(1);
   });
 
   it("upsertProfiel schrijft id/rol/naam/zaak met onConflict id", async () => {

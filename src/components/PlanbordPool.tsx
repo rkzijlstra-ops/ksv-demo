@@ -6,7 +6,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
-import { kapitaliseerEerste } from "@/lib/opdracht-weergave";
+import type { MonteurOptie } from "@/lib/planbord";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
 export function PlanbordPool({
@@ -15,7 +15,7 @@ export function PlanbordPool({
   standaardDatum,
 }: {
   pool: Melding[];
-  monteurs: string[];
+  monteurs: MonteurOptie[];
   standaardDatum: string;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -108,12 +108,12 @@ function InplanFormulier({
   onKlaar,
 }: {
   opdrachtId: string;
-  monteurs: string[];
+  monteurs: MonteurOptie[];
   standaardDatum: string;
   onKlaar: () => void;
 }) {
   const router = useRouter();
-  const [monteur, setMonteur] = useState(monteurs[0] ?? "");
+  const [monteurId, setMonteurId] = useState(monteurs[0]?.id ?? "");
   const [datum, setDatum] = useState(standaardDatum);
   const [dagen, setDagen] = useState(1);
   const [tijd, setTijd] = useState("");
@@ -121,8 +121,9 @@ function InplanFormulier({
   const [fout, setFout] = useState("");
 
   async function opslaan() {
-    if (!monteur.trim()) {
-      setFout("Kies of typ een monteur");
+    const gekozen = monteurs.find((m) => m.id === monteurId);
+    if (!gekozen) {
+      setFout("Kies een monteur");
       return;
     }
     setBezig(true);
@@ -132,7 +133,8 @@ function InplanFormulier({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          monteur_naam: monteur.trim(),
+          toegewezen_aan: gekozen.id,
+          monteur_naam: gekozen.naam,
           startdatum: datum,
           duur_dagen: dagen,
           starttijd: tijd.trim() || null,
@@ -159,18 +161,14 @@ function InplanFormulier({
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-[2_1_180px] flex-col gap-1 text-[11.5px] font-bold uppercase tracking-[0.04em] text-ink-muted">
           Monteur
-          <input
-            list="monteur-opties"
-            value={monteur}
-            onChange={(e) => setMonteur(kapitaliseerEerste(e.target.value))}
-            className={veld}
-            placeholder="Naam monteur"
-          />
-          <datalist id="monteur-opties">
+          <select value={monteurId} onChange={(e) => setMonteurId(e.target.value)} className={veld}>
+            {monteurs.length === 0 && <option value="">Geen monteurs</option>}
             {monteurs.map((m) => (
-              <option key={m} value={m} />
+              <option key={m.id} value={m.id}>
+                {m.naam}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
         <label className="flex flex-1 flex-col gap-1 text-[11.5px] font-bold uppercase tracking-[0.04em] text-ink-muted">
           Startdatum

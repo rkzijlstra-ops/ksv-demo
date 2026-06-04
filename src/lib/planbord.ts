@@ -77,6 +77,12 @@ export interface PlanbordPlaatsing<T extends PlanbaarOpdracht = PlanbaarOpdracht
   isService: boolean;
 }
 
+/** Een monteur-account als keuze/rij op het planbord. */
+export interface MonteurOptie {
+  id: string;
+  naam: string;
+}
+
 export interface GeplaatsteKaart<T extends PlanbaarOpdracht = PlanbaarOpdracht> {
   plaatsing: PlanbordPlaatsing<T>;
   /** Sub-rij binnen de monteur-rij (0 = bovenste); voorkomt overlap bij gelijke dagen. */

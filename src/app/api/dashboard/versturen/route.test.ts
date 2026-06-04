@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockMarkeer, mockGetById, mockMail } = vi.hoisted(() => ({
+const { mockMarkeer, mockGetById, mockMail, mockEmail } = vi.hoisted(() => ({
   mockMarkeer: vi.fn(),
   mockGetById: vi.fn(),
   mockMail: vi.fn(),
+  mockEmail: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
   db: () => ({ markeerVerzonden: mockMarkeer, getOpdrachtById: mockGetById }),
 }));
 vi.mock("@/lib/mail", () => ({ verstuurMonteurMail: mockMail }));
+vi.mock("@/lib/supabase-admin", () => ({ getGebruikerEmail: mockEmail }));
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
 }));
@@ -27,13 +29,15 @@ describe("POST /api/dashboard/versturen", () => {
     mockMarkeer.mockReset();
     mockGetById.mockReset();
     mockMail.mockReset();
+    mockEmail.mockReset();
     mockMarkeer.mockResolvedValue(undefined);
     mockMail.mockResolvedValue(undefined);
+    mockEmail.mockResolvedValue("piet@monteur.nl");
     mockGetById.mockImplementation((id: string) =>
       Promise.resolve({
         id,
-        monteur_naam: "Rein",
-        klant_naam: "Klant",
+        toegewezen_aan: "piet-uid",
+        monteur_naam: "Piet",
         startdatum: "2026-06-10",
         starttijd: null,
       }),
@@ -41,20 +45,26 @@ describe("POST /api/dashboard/versturen", () => {
     process.env.RAPPORT_EMAIL = "rein@example.com";
   });
 
-  it("mailt gebundeld per monteur en markeert elke opdracht als verzonden", async () => {
+  it("mailt gebundeld naar het monteur-adres en markeert elke opdracht", async () => {
     const res = await POST(req({ ids: ["a", "b"] }));
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(mockMail).toHaveBeenCalledTimes(1); // beide bij dezelfde monteur = 1 mail
+    expect(mockMail.mock.calls[0][0].naar).toBe("piet@monteur.nl");
     expect(mockMail.mock.calls[0][0].opdrachten).toHaveLength(2);
     expect(mockMarkeer).toHaveBeenCalledTimes(2);
-    expect(mockMarkeer.mock.calls[0][1]).toMatchObject({ monteur_naam: "Rein", startdatum: "2026-06-10" });
     expect(body.aantal).toBe(2);
   });
 
   it("stuurt aparte mails voor verschillende monteurs", async () => {
     mockGetById.mockImplementation((id: string) =>
-      Promise.resolve({ id, monteur_naam: id === "a" ? "Rein" : "Dani", startdatum: "2026-06-10", starttijd: null }),
+      Promise.resolve({
+        id,
+        toegewezen_aan: id === "a" ? "piet-uid" : "dani-uid",
+        monteur_naam: id === "a" ? "Piet" : "Dani",
+        startdatum: "2026-06-10",
+        starttijd: null,
+      }),
     );
     await POST(req({ ids: ["a", "b"] }));
     expect(mockMail).toHaveBeenCalledTimes(2);
@@ -66,9 +76,12 @@ describe("POST /api/dashboard/versturen", () => {
     expect(mockMarkeer).not.toHaveBeenCalled();
   });
 
-  it("500 als RAPPORT_EMAIL ontbreekt", async () => {
+  it("zonder monteur-adres en zonder RAPPORT_EMAIL: geen mail, wel status", async () => {
+    mockEmail.mockResolvedValue(null);
     delete process.env.RAPPORT_EMAIL;
     const res = await POST(req({ ids: ["a"] }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    expect(mockMail).not.toHaveBeenCalled();
+    expect(mockMarkeer).toHaveBeenCalledTimes(1);
   });
 });

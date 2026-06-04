@@ -5,7 +5,7 @@ import { Package, Wrench } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
-import { verdeelLanes, type PlanbordPlaatsing } from "@/lib/planbord";
+import { verdeelLanes, type PlanbordPlaatsing, type MonteurOptie } from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
 import { MailMonteurKnop } from "./MailMonteurKnop";
 
@@ -103,23 +103,25 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
   );
 }
 
-/** Lege cel = drop-doel (monteur + dag). */
+/** Lege cel = drop-doel (monteur-account + dag). */
 function DropCel({
-  monteur,
+  toegewezenAan,
+  monteurNaam,
   dag,
   gridRow,
   col,
   laatsteLane,
 }: {
-  monteur: string;
+  toegewezenAan: string;
+  monteurNaam: string;
   dag: string;
   gridRow: number;
   col: number;
   laatsteLane: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `cel-${monteur}-${dag}`,
-    data: { monteur, dag },
+    id: `cel-${toegewezenAan}-${dag}`,
+    data: { toegewezen_aan: toegewezenAan, monteur_naam: monteurNaam, dag },
   });
   return (
     <div
@@ -138,25 +140,24 @@ export function PlanbordGrid({
   plaatsingen,
 }: {
   weekdagen: string[];
-  monteurs: string[];
+  monteurs: MonteurOptie[];
   plaatsingen: PlanbordPlaatsing<Melding>[];
 }) {
   if (monteurs.length === 0) {
     return (
       <p className="mt-4 border-2 border-dashed border-line bg-white p-6 text-center text-sm text-ink-muted">
-        Nog niets ingepland deze week. Plan hieronder een opdracht in via Inplannen (typ daar de
-        monteur), dan verschijnt de monteur hier als rij en kun je daarna opdrachten naar een dag
-        slepen.
+        Nog geen monteurs. Voeg eerst monteurs toe via het scherm Mensen; dan verschijnen ze hier
+        als rij en kun je opdrachten naar een dag slepen.
       </p>
     );
   }
 
-  // Per monteur de lanes berekenen; daarna de startrijen als zuivere prefix-som (rij 1 = kop).
-  const perMonteur = monteurs.map((m) => {
-    const eigen = plaatsingen.filter((p) => p.opdracht.monteur_naam === m);
+  // Per monteur-account de lanes berekenen; daarna de startrijen als zuivere prefix-som (rij 1 = kop).
+  const perMonteur = monteurs.map((a) => {
+    const eigen = plaatsingen.filter((p) => p.opdracht.monteur_naam === a.naam);
     const kaarten = verdeelLanes(eigen);
     const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
-    return { m, kaarten, laneCount };
+    return { account: a, kaarten, laneCount };
   });
   const rijen = perMonteur.map((mb, i) => {
     const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount, 0);
@@ -164,7 +165,7 @@ export function PlanbordGrid({
       ...k.plaatsing,
       gridRow: startRow + k.lane,
     }));
-    return { m: mb.m, startRow, laneCount: mb.laneCount, geplaatst };
+    return { account: mb.account, startRow, laneCount: mb.laneCount, geplaatst };
   });
 
   return (
@@ -185,22 +186,23 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {rijen.map(({ m, startRow, laneCount, geplaatst }) => (
-        <div key={`blok-${m}`} className="contents">
+      {rijen.map(({ account, startRow, laneCount, geplaatst }) => (
+        <div key={`blok-${account.id}`} className="contents">
           {/* Monteur-label, overspant alle lanes van deze monteur */}
           <div
             className="flex items-center gap-2 border-b-2 border-b-ink border-r border-r-line px-2.5 py-2 font-extrabold"
             style={{ gridRow: `${startRow} / span ${laneCount}`, gridColumn: 1 }}
           >
-            {m}
+            {account.naam}
           </div>
 
           {/* Droppable cellen per lane en dag */}
           {Array.from({ length: laneCount }).map((_, lane) =>
             weekdagen.map((d, c) => (
               <DropCel
-                key={`cel-${m}-${lane}-${c}`}
-                monteur={m}
+                key={`cel-${account.id}-${lane}-${c}`}
+                toegewezenAan={account.id}
+                monteurNaam={account.naam}
                 dag={d}
                 gridRow={startRow + lane}
                 col={c}

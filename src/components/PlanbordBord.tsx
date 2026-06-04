@@ -20,8 +20,8 @@ import {
   weekDagen,
   weeknummer,
   verschuifDagen,
-  monteurRijen,
   plaatsOpdrachten,
+  type MonteurOptie,
 } from "@/lib/planbord";
 import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
 import { formatDatumKort } from "@/lib/datum";
@@ -57,10 +57,12 @@ function RandZone({ zone, kant }: { zone: string; kant: "links" | "rechts" }) {
  */
 export function PlanbordBord({
   opdrachten,
+  monteurs,
   ankerInit,
   vandaag,
 }: {
   opdrachten: Melding[];
+  monteurs: MonteurOptie[];
   ankerInit: string;
   vandaag: string;
 }) {
@@ -80,7 +82,6 @@ export function PlanbordBord({
   const maandag = maandagVan(weekAnker);
   const dagen = weekDagen(maandag);
   const weeknr = weeknummer(maandag);
-  const monteurs = monteurRijen(items);
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const pool = items.filter((o) => o.dashboard_status === "binnen");
   const teVersturen = items
@@ -109,7 +110,7 @@ export function PlanbordBord({
   function onDragEnd(e: DragEndEvent) {
     setActief(null);
     const over = e.over?.data.current as
-      | { monteur?: string; dag?: string; zone?: string }
+      | { toegewezen_aan?: string; monteur_naam?: string; dag?: string; zone?: string }
       | undefined;
     const data = e.active.data.current as SleepData | undefined;
     if (!over || !data) return;
@@ -125,7 +126,7 @@ export function PlanbordBord({
         gewijzigd_te_versturen: gewijzigdNa(o, o.monteur_naam, nieuweDatum, o.starttijd),
       });
       setWeekAnker(verschuifDagen(maandag, richting));
-      void verplaats(o, o.monteur_naam, nieuweDatum);
+      void verplaats(o, o.toegewezen_aan, o.monteur_naam, nieuweDatum);
       return;
     }
 
@@ -145,13 +146,15 @@ export function PlanbordBord({
       return;
     }
 
-    if (!over.monteur || !over.dag) return;
-    const monteur = over.monteur;
+    if (!over.dag || !over.toegewezen_aan) return;
+    const toegewezenAan = over.toegewezen_aan;
+    const monteurNaam = over.monteur_naam ?? null;
     const dag = over.dag;
 
     if (data.soort === "pool") {
       pasLokaalToe(o.id, {
-        monteur_naam: monteur,
+        toegewezen_aan: toegewezenAan,
+        monteur_naam: monteurNaam,
         startdatum: dag,
         starttijd: null,
         duur_dagen: 1,
@@ -160,31 +163,38 @@ export function PlanbordBord({
       void fetch(`/api/opdrachten/${o.id}/plannen`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ monteur_naam: monteur, startdatum: dag, duur_dagen: 1, starttijd: null }),
+        body: JSON.stringify({
+          toegewezen_aan: toegewezenAan,
+          monteur_naam: monteurNaam,
+          startdatum: dag,
+          duur_dagen: 1,
+          starttijd: null,
+        }),
       }).then(() => router.refresh());
       return;
     }
 
     // Verplaatsen van een al geplande kaart.
-    if (o.monteur_naam === monteur && o.startdatum === dag) return; // niets veranderd
+    if (o.toegewezen_aan === toegewezenAan && o.startdatum === dag) return; // niets veranderd
     pasLokaalToe(o.id, {
-      monteur_naam: monteur,
+      toegewezen_aan: toegewezenAan,
+      monteur_naam: monteurNaam,
       startdatum: dag,
-      gewijzigd_te_versturen: gewijzigdNa(o, monteur, dag, o.starttijd),
+      gewijzigd_te_versturen: gewijzigdNa(o, monteurNaam, dag, o.starttijd),
     });
-    void verplaats(o, monteur, dag);
+    void verplaats(o, toegewezenAan, monteurNaam, dag);
   }
 
-  function verplaats(o: Melding, monteur: string | null, dag: string) {
+  function verplaats(o: Melding, toegewezenAan: string | null, monteurNaam: string | null, dag: string) {
     return fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        monteur_naam: monteur,
+        toegewezen_aan: toegewezenAan,
+        monteur_naam: monteurNaam,
         startdatum: dag,
         starttijd: o.starttijd,
         duur_dagen: o.duur_dagen,
-        huidigeStatus: o.dashboard_status,
       }),
     }).then(() => router.refresh());
   }

@@ -37,13 +37,25 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
 
   it("verplaatst met de status en verzonden plek uit de opdracht (niet van de client)", async () => {
     const res = await POST(
-      req({ monteur_naam: "Dani", startdatum: "2026-06-11", starttijd: "10:00", duur_dagen: 1 }),
+      req({
+        toegewezen_aan: "dani-uid",
+        monteur_naam: "Dani",
+        startdatum: "2026-06-11",
+        starttijd: "10:00",
+        duur_dagen: 1,
+      }),
       { params },
     );
     expect(res.status).toBe(200);
     expect(mockWijzig).toHaveBeenCalledWith(
       "opdr-1",
-      { monteur_naam: "Dani", startdatum: "2026-06-11", starttijd: "10:00", duur_dagen: 1 },
+      {
+        toegewezen_aan: "dani-uid",
+        monteur_naam: "Dani",
+        startdatum: "2026-06-11",
+        starttijd: "10:00",
+        duur_dagen: 1,
+      },
       "gepland",
       { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
     );

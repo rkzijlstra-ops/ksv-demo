@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type Melding } from "@/lib/db";
 import { verstuurMonteurMail } from "@/lib/mail";
+import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
@@ -26,17 +27,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Geen opdrachten om te versturen" }, { status: 400 });
   }
 
-  const naar = process.env.RAPPORT_EMAIL?.trim();
-  if (!naar) {
-    return NextResponse.json(
-      { error: "RAPPORT_EMAIL ontbreekt in de serverconfig (.env.local)" },
-      { status: 500 },
-    );
-  }
+  const fallback = process.env.RAPPORT_EMAIL?.trim() ?? null;
 
   const dbi = await db();
 
-  // Opdrachten ophalen en per monteur bundelen.
+  // Opdrachten ophalen en per monteur (account) bundelen.
   const opdrachten: Melding[] = [];
   for (const id of ids) {
     const o = await dbi.getOpdrachtById(id);
@@ -44,13 +39,22 @@ export async function POST(req: Request) {
   }
   const perMonteur = new Map<string, Melding[]>();
   for (const o of opdrachten) {
-    if (!o.monteur_naam) continue;
-    (perMonteur.get(o.monteur_naam) ?? perMonteur.set(o.monteur_naam, []).get(o.monteur_naam)!).push(o);
+    const sleutel = o.toegewezen_aan ?? o.monteur_naam;
+    if (!sleutel) continue;
+    (perMonteur.get(sleutel) ?? perMonteur.set(sleutel, []).get(sleutel)!).push(o);
   }
 
   try {
-    for (const [monteurNaam, eigen] of perMonteur) {
-      await verstuurMonteurMail({ naar, monteurNaam, opdrachten: eigen });
+    for (const eigen of perMonteur.values()) {
+      const eerste = eigen[0];
+      const monteurEmail = eerste.toegewezen_aan ? await getGebruikerEmail(eerste.toegewezen_aan) : null;
+      const naar = monteurEmail ?? fallback;
+      if (!naar) continue; // geen adres bekend; sla de mail over, status volgt wel
+      await verstuurMonteurMail({
+        naar,
+        monteurNaam: eerste.monteur_naam ?? "monteur",
+        opdrachten: eigen,
+      });
     }
   } catch (err) {
     return NextResponse.json({ error: `Mailen mislukt: ${(err as Error).message}` }, { status: 502 });

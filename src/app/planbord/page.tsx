@@ -25,7 +25,9 @@ export default async function PlanbordPage({
 
   const vandaag = vandaagISO();
   const ankerInit = week && DATUM_PATROON.test(week) ? week : vandaag;
-  const opdrachten = await (await db()).getOpdrachtenVoorDashboard();
+  const dbi = await db();
+  const opdrachten = await dbi.getOpdrachtenVoorDashboard();
+  const monteurs = (await dbi.getMonteurs()).map((m) => ({ id: m.id, naam: m.naam }));
 
   return (
     <main className="mx-auto w-full max-w-[1040px] p-4 pb-24">
@@ -40,7 +42,12 @@ export default async function PlanbordPage({
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
 
-      <PlanbordBord opdrachten={opdrachten} ankerInit={ankerInit} vandaag={vandaag} />
+      <PlanbordBord
+        opdrachten={opdrachten}
+        monteurs={monteurs}
+        ankerInit={ankerInit}
+        vandaag={vandaag}
+      />
 
       <Link
         href="/dashboard"

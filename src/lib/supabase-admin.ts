@@ -11,3 +11,10 @@ export function supabaseAdmin() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+/** Haalt het e-mailadres van een gebruiker (account) op; null als onbekend. */
+export async function getGebruikerEmail(userId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin().auth.admin.getUserById(userId);
+  if (error || !data?.user?.email) return null;
+  return data.user.email;
+}

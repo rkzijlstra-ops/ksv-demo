@@ -166,6 +166,9 @@ export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: bool
 
 /** Planning-invoer voor een opdracht (één invoermodel: tijd leeg = dagblok, ingevuld = tijdkaart). */
 export interface PlanningInput {
+  /** Account (uuid) van de toegewezen monteur; nodig voor afscherming en mail. */
+  toegewezen_aan: string | null;
+  /** Naam van de monteur voor de weergave. */
   monteur_naam: string | null;
   startdatum: string;
   starttijd: string | null;
@@ -243,6 +246,7 @@ export interface Db {
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
   getProfielen(): Promise<Profiel[]>;
+  getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
   upsertProfiel(input: ProfielInput): Promise<void>;
 }
@@ -569,6 +573,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         duur_dagen: planning.duur_dagen,
         dashboard_status: "concept_gepland",
         monteur_naam: planning.monteur_naam,
+        toegewezen_aan: planning.toegewezen_aan,
         // uitvoerdatum gelijkhouden aan startdatum: de monteur-werkpool leest die nog.
         uitvoerdatum: planning.startdatum,
       };
@@ -607,6 +612,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
         monteur_naam: planning.monteur_naam,
+        toegewezen_aan: planning.toegewezen_aan,
         uitvoerdatum: planning.startdatum,
         gewijzigd_te_versturen: opnieuw,
       };
@@ -656,6 +662,16 @@ function createDbFromClient(client: SupabaseClient): Db {
         .from("profielen")
         .select("*")
         .order("created_at", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Profiel[];
+    },
+
+    async getMonteurs() {
+      const { data, error } = await client
+        .from("profielen")
+        .select("*")
+        .eq("rol", "monteur")
+        .order("naam", { ascending: true });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Profiel[];
     },
