@@ -40,7 +40,10 @@ describe("POST /api/mensen/uitnodigen", () => {
     mockCreateUser.mockReset();
     mockListUsers.mockReset();
     mockMail.mockReset();
-    mockGetProfiel.mockResolvedValue({ id: "beheerder-uid", rol: "beheerder" });
+    // Beller (beheerder-uid) = beheerder; een nieuw uitgenodigd account heeft nog geen profiel.
+    mockGetProfiel.mockImplementation((id: string) =>
+      Promise.resolve(id === "beheerder-uid" ? { id, rol: "beheerder" } : null),
+    );
     mockGetZaak.mockResolvedValue({ id: "z1", naam: "KSV" });
     mockUpsert.mockResolvedValue(undefined);
     mockCreateUser.mockResolvedValue({ data: { user: { id: "new-uid" } }, error: null });
@@ -67,6 +70,14 @@ describe("POST /api/mensen/uitnodigen", () => {
     mockListUsers.mockResolvedValue({ data: { users: [{ id: "bestaand", email: "piet@x.nl" }] } });
     await POST(req({ naam: "Piet", email: "piet@x.nl", rol: "monteur" }));
     expect(mockUpsert.mock.calls[0][0].id).toBe("bestaand");
+  });
+
+  it("degradeert een bestaande beheerder niet (409)", async () => {
+    // Account dat al beheerder is, opnieuw uitnodigen als monteur -> geblokkeerd.
+    mockCreateUser.mockResolvedValue({ data: { user: { id: "beheerder-uid" } }, error: null });
+    const res = await POST(req({ naam: "Reinier", email: "bkm@x.nl", rol: "monteur" }));
+    expect(res.status).toBe(409);
+    expect(mockUpsert).not.toHaveBeenCalled();
   });
 
   it("niet-beheerder krijgt 403", async () => {

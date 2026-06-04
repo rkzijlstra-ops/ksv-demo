@@ -866,11 +866,11 @@ describe("profielen", () => {
     expect(z?.id).toBe("z1");
   });
 
-  it("getMonteurs haalt alleen monteur-profielen op", async () => {
+  it("getMonteurs haalt monteurs én beheerders op (beheerder werkt mee)", async () => {
     h.setResult({ data: [{ id: "m1", rol: "monteur", naam: "Piet" }], error: null });
     const m = await createDb(cfg).getMonteurs();
     expect(h.fns.from).toHaveBeenCalledWith("profielen");
-    expect(h.fns.eq).toHaveBeenCalledWith("rol", "monteur");
+    expect(h.fns.in).toHaveBeenCalledWith("rol", ["monteur", "beheerder"]);
     expect(m).toHaveLength(1);
   });
 

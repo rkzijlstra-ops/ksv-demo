@@ -60,6 +60,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Bescherming: een bestaand beheerder-account niet per ongeluk degraderen (bv. jezelf toevoegen).
+  const bestaand = await dbi.getProfiel(inviteeId);
+  if (bestaand?.rol === "beheerder" && rol !== "beheerder") {
+    return NextResponse.json(
+      { error: "Dit account is beheerder; de rol is niet gewijzigd. (Jezelf hoef je niet toe te voegen.)" },
+      { status: 409 },
+    );
+  }
+
   try {
     await dbi.upsertProfiel({ id: inviteeId, rol, naam, opdrachtgever_id: zaak?.id ?? null });
   } catch (err) {

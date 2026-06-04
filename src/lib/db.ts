@@ -667,10 +667,12 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async getMonteurs() {
+      // Inplanbare mensen: monteurs én de beheerder (die werkt zelf ook mee en moet klussen
+      // naar zichzelf kunnen plannen). Opdrachtgevers staan hier bewust niet bij.
       const { data, error } = await client
         .from("profielen")
         .select("*")
-        .eq("rol", "monteur")
+        .in("rol", ["monteur", "beheerder"])
         .order("naam", { ascending: true });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Profiel[];
