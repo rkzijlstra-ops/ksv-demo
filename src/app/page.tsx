@@ -6,13 +6,12 @@ import { HistorySection } from "@/components/HistorySection";
 import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
 import { UserMenu } from "@/components/UserMenu";
 import { PrefetchOpdrachten } from "@/components/PrefetchOpdrachten";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
 export default async function WerkpoolPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { email } = await vereisRol(["monteur", "beheerder"]);
 
   const dbi = await db();
   const meldingen = await dbi.getMeldingen();
@@ -35,7 +34,7 @@ export default async function WerkpoolPage() {
               {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
             </p>
           </div>
-          {user?.email && <UserMenu email={user.email} />}
+          {email && <UserMenu email={email} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

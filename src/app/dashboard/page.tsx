@@ -5,15 +5,12 @@ import { teDoenTelling } from "@/lib/te-doen";
 import { DashboardLijst } from "@/components/DashboardLijst";
 import { InschietZone } from "@/components/InschietZone";
 import { UserMenu } from "@/components/UserMenu";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { email } = await vereisRol(["opdrachtgever", "beheerder"]);
 
   const dbi = await db();
   const opdrachten = await dbi.getOpdrachtenVoorDashboard();
@@ -33,7 +30,7 @@ export default async function DashboardPage() {
               {telling.aandacht > 0 && ` · ${telling.aandacht} ${telling.aandacht === 1 ? "vraagt" : "vragen"} aandacht`}
             </p>
           </div>
-          {user?.email && <UserMenu email={user.email} />}
+          {email && <UserMenu email={email} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

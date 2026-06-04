@@ -19,6 +19,7 @@ import { OpdrachtStatusBadge } from "@/components/OpdrachtStatusBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
+import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function OpdrachtgeverDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await vereisRol(["opdrachtgever", "beheerder"]);
   const dbi = await db();
   const opdracht = await dbi.getOpdrachtById(id);
 

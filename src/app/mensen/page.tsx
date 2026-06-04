@@ -2,8 +2,7 @@ import { Shield, Wrench, Building2 } from "lucide-react";
 import { db, type Rol } from "@/lib/db";
 import { UitnodigForm } from "@/components/UitnodigForm";
 import { UserMenu } from "@/components/UserMenu";
-import { TerugKnop } from "@/components/TerugKnop";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
@@ -20,25 +19,8 @@ function RolIcoon({ rol }: { rol: Rol }) {
 }
 
 export default async function MensenPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { email } = await vereisRol(["beheerder"]);
   const dbi = await db();
-  const eigen = user ? await dbi.getProfiel(user.id) : null;
-
-  if (eigen?.rol !== "beheerder") {
-    return (
-      <main className="mx-auto w-full max-w-md p-4 pb-24">
-        <TerugKnop href="/" label="Terug" />
-        <p className="mt-6 text-sm text-ink-muted">
-          Deze pagina is alleen voor de beheerder.
-        </p>
-      </main>
-    );
-  }
-
   const profielen = await dbi.getProfielen();
 
   return (
@@ -52,7 +34,7 @@ export default async function MensenPage() {
               Nodig monteurs en opdrachtgevers uit. Ze krijgen een inloglink, geen wachtwoord.
             </p>
           </div>
-          {user?.email && <UserMenu email={user.email} />}
+          {email && <UserMenu email={email} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
