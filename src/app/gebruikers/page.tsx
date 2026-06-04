@@ -2,6 +2,7 @@ import { Shield, Wrench, Building2 } from "lucide-react";
 import { db, type Rol } from "@/lib/db";
 import { UitnodigForm } from "@/components/UitnodigForm";
 import { UserMenu } from "@/components/UserMenu";
+import { TerugKnop } from "@/components/TerugKnop";
 import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ export default async function GebruikersPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
+      <div className="mb-4">
+        <TerugKnop href="/dashboard" label="Dashboard" />
+      </div>
       <header className="relative mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <div className="flex items-start justify-between gap-3">
           <div>
