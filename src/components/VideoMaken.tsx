@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Video, Image as ImageIcon, AlertCircle, CheckCircle2, Play, Trash2 } from "lucide-react";
 import { uploadOpleverVideo } from "@/lib/oplever-upload";
+import { isGrootBestand, bytesNaarMB } from "@/lib/video-opname";
+import { VideoOpnemen } from "@/components/VideoOpnemen";
 import { Voortgang } from "@/components/Voortgang";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 
@@ -21,13 +23,12 @@ export function VideoMaken({
   const [pct, setPct] = useState(0);
   const [fout, setFout] = useState("");
   const [speel, setSpeel] = useState(false);
+  const [opnemen, setOpnemen] = useState(false);
+  const [tip, setTip] = useState("");
 
   useVerlaatWaarschuwing(bezig);
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  async function verwerkBestand(file: File) {
     setBezig(true);
     setPct(0);
     setFout("");
@@ -39,6 +40,24 @@ export function VideoMaken({
     } finally {
       setBezig(false);
     }
+  }
+
+  function handleGalerij(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setTip(
+      isGrootBestand(file.size)
+        ? `Groot bestand (~${bytesNaarMB(file.size)} MB), uploaden kan even duren. Tip: opnemen in de app gaat sneller.`
+        : "",
+    );
+    void verwerkBestand(file);
+  }
+
+  function handleOpname(file: File) {
+    setOpnemen(false);
+    setTip("");
+    void verwerkBestand(file);
   }
 
   if (url) {
@@ -89,19 +108,31 @@ export function VideoMaken({
         <div className="rounded-none border border-line bg-surface px-3 py-3">
           <Voortgang label="Video uploaden…" percent={pct} />
         </div>
+      ) : opnemen ? (
+        <VideoOpnemen onCapture={handleOpname} onAnnuleer={() => setOpnemen(false)} />
       ) : (
         <div className="flex gap-2">
-          <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
-            <input type="file" accept="video/*" capture="environment" hidden onChange={handleFile} />
+          <button
+            type="button"
+            onClick={() => {
+              setFout("");
+              setTip("");
+              setOpnemen(true);
+            }}
+            className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
+          >
             <Video size={22} strokeWidth={2.5} aria-hidden="true" />
             Opnemen
-          </label>
+          </button>
           <label className="flex min-h-[56px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-line/40 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-primary">
-            <input type="file" accept="video/*" hidden onChange={handleFile} />
+            <input type="file" accept="video/*" hidden onChange={handleGalerij} />
             <ImageIcon size={22} strokeWidth={2.5} aria-hidden="true" />
             Galerij
           </label>
         </div>
+      )}
+      {tip && !fout && (
+        <p className="mt-2 text-sm font-medium text-ink/70">{tip}</p>
       )}
       {fout && (
         <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-urgent-rood">

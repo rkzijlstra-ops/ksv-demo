@@ -63,6 +63,12 @@ export async function uploadOpleverVideo(
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else if (xhr.status === 413)
+        reject(
+          new Error(
+            "Video te groot voor de huidige opslaglimiet. Neem een kortere video op of verlaag de opnamekwaliteit (1080p i.p.v. 4K).",
+          ),
+        );
       else reject(new Error(`Video-upload mislukt (${xhr.status}): ${xhr.responseText || "geen details"}`));
     };
     xhr.onerror = () => reject(new Error("Netwerkfout bij video-upload"));
