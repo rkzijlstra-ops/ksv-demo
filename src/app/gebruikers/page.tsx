@@ -18,7 +18,7 @@ function RolIcoon({ rol }: { rol: Rol }) {
   return <Wrench size={14} aria-hidden="true" />;
 }
 
-export default async function MensenPage() {
+export default async function GebruikersPage() {
   const { email } = await vereisRol(["beheerder"]);
   const dbi = await db();
   const profielen = await dbi.getProfielen();
@@ -34,7 +34,7 @@ export default async function MensenPage() {
               Nodig monteurs en opdrachtgevers uit. Ze krijgen een inloglink, geen wachtwoord.
             </p>
           </div>
-          {email && <UserMenu email={email} />}
+          {email && <UserMenu email={email} isBeheerder />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

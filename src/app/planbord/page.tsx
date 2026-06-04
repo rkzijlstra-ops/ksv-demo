@@ -21,7 +21,7 @@ export default async function PlanbordPage({
   searchParams: Promise<{ week?: string }>;
 }) {
   const { week } = await searchParams;
-  const { email } = await vereisRol(["opdrachtgever", "beheerder"]);
+  const { email, profiel } = await vereisRol(["opdrachtgever", "beheerder"]);
 
   const vandaag = vandaagISO();
   const ankerInit = week && DATUM_PATROON.test(week) ? week : vandaag;
@@ -37,7 +37,7 @@ export default async function PlanbordPage({
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">KSV / Agenda</p>
             <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Planbord</h1>
           </div>
-          {email && <UserMenu email={email} />}
+          {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

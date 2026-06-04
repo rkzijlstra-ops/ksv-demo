@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const dbi = await db();
   const eigen = await dbi.getProfiel(userId);
   if (eigen?.rol !== "beheerder") {
-    return NextResponse.json({ error: "Alleen de beheerder mag mensen uitnodigen" }, { status: 403 });
+    return NextResponse.json({ error: "Alleen de beheerder mag gebruikers uitnodigen" }, { status: 403 });
   }
 
   let body: Record<string, unknown>;

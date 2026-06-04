@@ -10,7 +10,7 @@ import { vereisRol } from "@/lib/toegang";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const { email } = await vereisRol(["opdrachtgever", "beheerder"]);
+  const { email, profiel } = await vereisRol(["opdrachtgever", "beheerder"]);
 
   const dbi = await db();
   const opdrachten = await dbi.getOpdrachtenVoorDashboard();
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
               {telling.aandacht > 0 && ` · ${telling.aandacht} ${telling.aandacht === 1 ? "vraagt" : "vragen"} aandacht`}
             </p>
           </div>
-          {email && <UserMenu email={email} />}
+          {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

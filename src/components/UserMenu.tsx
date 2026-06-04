@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, Info, Trash2 } from "lucide-react";
+import { LogOut, User, Info, Trash2, Users } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { APP_VERSIE } from "@/lib/versie";
 
-export function UserMenu({ email }: { email: string }) {
+export function UserMenu({ email, isBeheerder = false }: { email: string; isBeheerder?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [bezig, setBezig] = useState(false);
@@ -61,6 +61,17 @@ export function UserMenu({ email }: { email: string }) {
             <Info size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
             Over de app
           </Link>
+          {isBeheerder && (
+            <Link
+              href="/gebruikers"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+            >
+              <Users size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+              Gebruikers
+            </Link>
+          )}
           <Link
             href="/prullenbak"
             role="menuitem"

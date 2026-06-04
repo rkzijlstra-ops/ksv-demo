@@ -11,7 +11,7 @@ import { vereisRol } from "@/lib/toegang";
 export const dynamic = "force-dynamic";
 
 export default async function WerkpoolPage() {
-  const { email } = await vereisRol(["monteur", "beheerder"]);
+  const { email, profiel } = await vereisRol(["monteur", "beheerder"]);
 
   const dbi = await db();
   const meldingen = await dbi.getMeldingen();
@@ -34,7 +34,7 @@ export default async function WerkpoolPage() {
               {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
             </p>
           </div>
-          {email && <UserMenu email={email} />}
+          {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
