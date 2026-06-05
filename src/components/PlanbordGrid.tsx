@@ -136,6 +136,7 @@ function DropCel({
   return (
     <div
       ref={setNodeRef}
+      data-testid={`cel-${toegewezenAan}-${dag}`}
       className={`min-h-[64px] border-r border-line last:border-r-0 ${
         laatsteLane ? "border-b-2 border-b-ink" : "border-b border-b-line"
       } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}`}
