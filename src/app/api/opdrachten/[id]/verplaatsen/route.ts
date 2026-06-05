@@ -32,17 +32,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
   }
 
+  // Behoudt de bestaande waarde van een veld als het niet in de body zit ("meegegeven" = aanwezig).
+  // Zo wist een sleep-actie die alleen dag/monteur stuurt nooit per ongeluk een meerdaagse montage
+  // of een service-tijd. Expliciet null in de body wist wel (bv. service -> dagblok).
+  const heeft = (k: string) => Object.prototype.hasOwnProperty.call(body, k);
   const duur = Number(body.duur_dagen);
   const planning: PlanningInput = {
-    toegewezen_aan: typeof body.toegewezen_aan === "string" && body.toegewezen_aan ? body.toegewezen_aan : null,
-    monteur_naam:
-      typeof body.monteur_naam === "string" && body.monteur_naam.trim()
-        ? body.monteur_naam.trim()
-        : null,
+    toegewezen_aan: heeft("toegewezen_aan")
+      ? (typeof body.toegewezen_aan === "string" && body.toegewezen_aan ? body.toegewezen_aan : null)
+      : opdracht.toegewezen_aan,
+    monteur_naam: heeft("monteur_naam")
+      ? (typeof body.monteur_naam === "string" && body.monteur_naam.trim()
+          ? body.monteur_naam.trim()
+          : null)
+      : opdracht.monteur_naam,
     startdatum,
-    starttijd:
-      typeof body.starttijd === "string" && body.starttijd.trim() ? body.starttijd.trim() : null,
-    duur_dagen: Number.isFinite(duur) && duur >= 1 ? Math.floor(duur) : 1,
+    starttijd: heeft("starttijd")
+      ? (typeof body.starttijd === "string" && body.starttijd.trim() ? body.starttijd.trim() : null)
+      : opdracht.starttijd,
+    duur_dagen: Number.isFinite(duur) && duur >= 1 ? Math.floor(duur) : opdracht.duur_dagen,
   };
 
   try {

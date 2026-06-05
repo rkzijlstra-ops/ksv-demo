@@ -73,4 +73,39 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
     expect(res.status).toBe(400);
     expect(mockWijzig).not.toHaveBeenCalled();
   });
+
+  it("behoudt duur, tijd en monteur als die niet worden meegestuurd", async () => {
+    mockGetById.mockResolvedValue({
+      id: "opdr-1",
+      dashboard_status: "gepland",
+      toegewezen_aan: "m1",
+      monteur_naam: "Jan",
+      starttijd: "09:00",
+      duur_dagen: 3,
+      verzonden_monteur: null,
+      verzonden_startdatum: null,
+      verzonden_starttijd: null,
+    });
+    const res = await POST(req({ startdatum: "2026-06-11" }), { params });
+    expect(res.status).toBe(200);
+    const planning = mockWijzig.mock.calls[0][1];
+    expect(planning.startdatum).toBe("2026-06-11");
+    expect(planning.duur_dagen).toBe(3); // niet teruggezet naar 1
+    expect(planning.starttijd).toBe("09:00"); // niet gewist
+    expect(planning.toegewezen_aan).toBe("m1");
+    expect(planning.monteur_naam).toBe("Jan");
+  });
+
+  it("wist de tijd als starttijd expliciet null is", async () => {
+    mockGetById.mockResolvedValue({
+      id: "opdr-1",
+      dashboard_status: "gepland",
+      toegewezen_aan: "m1",
+      monteur_naam: "Jan",
+      starttijd: "09:00",
+      duur_dagen: 3,
+    });
+    await POST(req({ startdatum: "2026-06-11", starttijd: null }), { params });
+    expect(mockWijzig.mock.calls[0][1].starttijd).toBeNull();
+  });
 });
