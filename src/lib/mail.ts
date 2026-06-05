@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import type { Melding, Rol } from "./db";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 import { uitnodigingTekst } from "./uitnodig-mail";
+import { afmeldingTekst } from "./afmeld-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -32,6 +33,13 @@ export interface UitnodigingMailInput {
   rol: Rol;
   appUrl: string;
   /** Naam van de keukenzaak namens wie de uitnodiging gaat; wordt de afsluiter van de mail. */
+  organisatie?: string;
+}
+
+export interface AfmeldingMailInput {
+  naar: string;
+  naam: string;
+  /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
   organisatie?: string;
 }
 
@@ -125,6 +133,28 @@ export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Uitnodiging versturen mislukt: ${msg}`);
+  }
+}
+
+/** Meldt een gebruiker netjes af: hij is uit de planning-app verwijderd. */
+export async function verstuurAfmelding(input: AfmeldingMailInput): Promise<void> {
+  const { apiKey, from, replyTo } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = afmeldingTekst(input.naam, input.organisatie);
+
+  const { error } = await resend.emails.send({
+    from,
+    to: input.naar,
+    ...(replyTo ? { replyTo } : {}),
+    subject,
+    text,
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Afmelding versturen mislukt: ${msg}`);
   }
 }
 

@@ -10,7 +10,7 @@ vi.mock("resend", () => ({
   },
 }));
 
-import { verstuurOpleverRapport, verstuurSpoedMelding } from "./mail";
+import { verstuurOpleverRapport, verstuurSpoedMelding, verstuurAfmelding } from "./mail";
 
 function opdracht(over: Partial<Melding> = {}): Melding {
   return {
@@ -139,5 +139,27 @@ describe("verstuurSpoedMelding", () => {
     await expect(
       verstuurSpoedMelding({ naar: "rein@example.com", opdracht: opdracht(), melding }),
     ).rejects.toThrow(/RESEND_API_KEY/);
+  });
+});
+
+describe("verstuurAfmelding", () => {
+  it("mailt de afmelding naar de gebruiker met de zaaknaam als afsluiter", async () => {
+    await verstuurAfmelding({
+      naar: "piet@example.com",
+      naam: "Piet",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend).toHaveBeenCalledOnce();
+    const arg = mockSend.mock.calls[0][0];
+    expect(arg.to).toBe("piet@example.com");
+    expect(arg.subject).toMatch(/afgemeld/i);
+    expect(arg.text).toContain("Hoi Piet,");
+    expect(arg.text.trimEnd().endsWith("Keukenstudio Voorschoten")).toBe(true);
+  });
+
+  it("zet reply-to ook op de afmeld-mail", async () => {
+    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
   });
 });
