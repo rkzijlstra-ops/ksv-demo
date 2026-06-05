@@ -14,8 +14,12 @@ export function uitnodigingTekst(
   naam: string,
   rol: Rol,
   appUrl: string,
+  organisatie = "",
 ): { subject: string; text: string } {
   const subject = "Je bent toegevoegd aan de planning-app";
+  // Afsluiter = de keukenzaak namens wie gemaild wordt (komt uit de database), zodat hij klopt
+  // met de afzender. Geen zaak bekend: neutrale terugval.
+  const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${naam},
 
 Je bent toegevoegd aan de planning-app als ${rolLabel(rol)}.
@@ -27,6 +31,6 @@ Inloggen:
 
 De app onthoudt je daarna, dus je hoeft normaal niet opnieuw in te loggen.
 
-BKM Keukenmontage`;
+${afzender}`;
   return { subject, text };
 }

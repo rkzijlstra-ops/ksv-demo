@@ -31,6 +31,8 @@ export interface UitnodigingMailInput {
   naam: string;
   rol: Rol;
   appUrl: string;
+  /** Naam van de keukenzaak namens wie de uitnodiging gaat; wordt de afsluiter van de mail. */
+  organisatie?: string;
 }
 
 function mailConfig() {
@@ -108,7 +110,7 @@ export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void
 export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<void> {
   const { apiKey, from, replyTo } = mailConfig();
   const resend = new Resend(apiKey);
-  const { subject, text } = uitnodigingTekst(input.naam, input.rol, input.appUrl);
+  const { subject, text } = uitnodigingTekst(input.naam, input.rol, input.appUrl, input.organisatie);
 
   const { error } = await resend.emails.send({
     from,

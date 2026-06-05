@@ -81,7 +81,13 @@ export async function POST(req: Request) {
   // Uitnodigingsmail; mislukt dit, dan staat het account er wel (Reinier kan handmatig melden).
   let mailVerstuurd = true;
   try {
-    await verstuurUitnodiging({ naar: email, naam, rol, appUrl: new URL(req.url).origin });
+    await verstuurUitnodiging({
+      naar: email,
+      naam,
+      rol,
+      appUrl: new URL(req.url).origin,
+      organisatie: zaak?.naam ?? "",
+    });
   } catch {
     mailVerstuurd = false;
   }
