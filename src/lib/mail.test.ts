@@ -82,6 +82,17 @@ describe("verstuurOpleverRapport", () => {
     expect(mockSend.mock.calls[0][0].from).toBe("rapport@mijndomein.nl");
   });
 
+  it("zet reply-to wanneer RESEND_REPLY_TO ingevuld is", async () => {
+    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
+  });
+
+  it("laat reply-to weg wanneer RESEND_REPLY_TO leeg is", async () => {
+    await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
+    expect(mockSend.mock.calls[0][0].replyTo).toBeUndefined();
+  });
+
   it("gooit een duidelijke error als RESEND_API_KEY ontbreekt", async () => {
     delete process.env.RESEND_API_KEY;
     await expect(
@@ -115,6 +126,12 @@ describe("verstuurSpoedMelding", () => {
     expect(arg.text).toMatch(/Vaatwasser lekt/);
     expect(arg.text).toMatch(/foto1\.jpg/);
     expect(arg.attachments).toBeUndefined();
+  });
+
+  it("zet reply-to ook op de spoed-mail wanneer RESEND_REPLY_TO ingevuld is", async () => {
+    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    await verstuurSpoedMelding({ naar: "rein@example.com", opdracht: opdracht(), melding });
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
   });
 
   it("gooit een error als RESEND_API_KEY ontbreekt", async () => {
