@@ -116,6 +116,58 @@ export function verdeelLanes<T extends PlanbaarOpdracht>(
   return result;
 }
 
+/** Minimale velden om dubbele boekingen te detecteren (een Melding voldoet hieraan). */
+export interface BoekbaarOpdracht {
+  id: string;
+  toegewezen_aan: string | null;
+  startdatum: string | null;
+  starttijd: string | null;
+  duur_dagen: number;
+  dashboard_status: DashboardStatus;
+}
+
+/** De dagen die een opdracht bezet: montage = de hele span, service = alleen de startdag. */
+function bezetteDagen(o: BoekbaarOpdracht): string[] {
+  if (!o.startdatum) return [];
+  const dag = o.startdatum.split("T")[0];
+  const aantal = o.starttijd ? 1 : Math.max(1, o.duur_dagen || 1);
+  return Array.from({ length: aantal }, (_, i) => verschuifDagen(dag, i));
+}
+
+/**
+ * Vindt opdrachten die dubbel geboekt zijn: zelfde monteur (account) met overlappende dagen.
+ * Twee montages of een montage en een service op dezelfde dag = conflict (montage vult de dag).
+ * Twee services op dezelfde dag botsen alleen bij dezelfde starttijd. Pure functie.
+ */
+export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string> {
+  const actief = opdrachten.filter(
+    (o) => o.toegewezen_aan && o.startdatum && OP_BORD.has(o.dashboard_status),
+  );
+  const perMonteur = new Map<string, BoekbaarOpdracht[]>();
+  for (const o of actief) {
+    const k = o.toegewezen_aan as string;
+    (perMonteur.get(k) ?? perMonteur.set(k, []).get(k)!).push(o);
+  }
+  const hhmm = (t: string | null) => (t ? t.slice(0, 5) : null);
+  const conflict = new Set<string>();
+  for (const groep of perMonteur.values()) {
+    for (let i = 0; i < groep.length; i++) {
+      for (let j = i + 1; j < groep.length; j++) {
+        const a = groep[i];
+        const b = groep[j];
+        const dagenA = bezetteDagen(a);
+        const dagenB = bezetteDagen(b);
+        if (!dagenA.some((d) => dagenB.includes(d))) continue;
+        const beideService = !!a.starttijd && !!b.starttijd;
+        if (beideService && hhmm(a.starttijd) !== hhmm(b.starttijd)) continue;
+        conflict.add(a.id);
+        conflict.add(b.id);
+      }
+    }
+  }
+  return conflict;
+}
+
 /** Unieke, alfabetisch gesorteerde monteurs uit de geplande opdrachten (de rijen van het bord). */
 export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
   const set = new Set<string>();

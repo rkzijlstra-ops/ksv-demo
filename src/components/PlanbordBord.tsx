@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -21,6 +21,7 @@ import {
   weeknummer,
   verschuifDagen,
   plaatsOpdrachten,
+  vindDubbeleBoekingen,
   type MonteurOptie,
 } from "@/lib/planbord";
 import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
@@ -83,6 +84,7 @@ export function PlanbordBord({
   const dagen = weekDagen(maandag);
   const weeknr = weeknummer(maandag);
   const plaatsingen = plaatsOpdrachten(items, dagen);
+  const conflicten = vindDubbeleBoekingen(items);
   const pool = items.filter((o) => o.dashboard_status === "binnen");
   const teVersturen = items
     .filter((o) => o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen)
@@ -245,10 +247,23 @@ export function PlanbordBord({
         {monteurs.length === 1 ? "monteur" : "monteurs"}
       </p>
 
+      {conflicten.size > 0 && (
+        <p className="mt-2 flex items-center gap-2 border-2 border-urgent-rood bg-urgent-rood/10 px-3 py-2 text-sm font-bold text-urgent-rood">
+          <AlertTriangle size={16} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+          Let op: dubbele boeking. Een of meer monteurs staan op dezelfde dag/tijd dubbel ingepland
+          (rood gemarkeerd).
+        </p>
+      )}
+
       <div className="flex items-stretch gap-1">
         <RandZone zone="week-prev" kant="links" />
         <div className="min-w-0 flex-1">
-          <PlanbordGrid weekdagen={dagen} monteurs={monteurs} plaatsingen={plaatsingen} />
+          <PlanbordGrid
+            weekdagen={dagen}
+            monteurs={monteurs}
+            plaatsingen={plaatsingen}
+            conflicten={conflicten}
+          />
         </div>
         <RandZone zone="week-next" kant="rechts" />
       </div>

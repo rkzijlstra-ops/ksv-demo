@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Wrench } from "lucide-react";
+import { Package, Wrench, AlertTriangle } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
@@ -39,7 +39,7 @@ function dagLabel(iso: string): string {
 type GeplaatstOpBord = PlanbordPlaatsing<Melding> & { gridRow: number };
 
 /** Uniforme, sleepbare kaart/balk; montage rekt uit over meerdere dagen, service is één dag. */
-function Kaart({ p }: { p: GeplaatstOpBord }) {
+function Kaart({ p, dubbel }: { p: GeplaatstOpBord; dubbel: boolean }) {
   const o = p.opdracht;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `kaart-${o.id}`,
@@ -47,7 +47,12 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
   });
   // Concept én "gewijzigd na versturen" krijgen dezelfde oranje-gestreepte behandeling + envelop.
   const nogTeVersturen = o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen;
-  const randClass = nogTeVersturen ? "border-accent border-dashed" : RAND[o.dashboard_status];
+  // Een dubbele boeking krijgt voorrang qua rand: dikke rode kaderlijn als waarschuwing.
+  const randClass = dubbel
+    ? "border-urgent-rood"
+    : nogTeVersturen
+      ? "border-accent border-dashed"
+      : RAND[o.dashboard_status];
   const balkClass = nogTeVersturen ? "bg-accent" : BALK[o.dashboard_status];
   const versturenLabel =
     o.dashboard_status === "concept_gepland" ? "te versturen" : o.gewijzigd_te_versturen ? "gewijzigd" : null;
@@ -97,6 +102,11 @@ function Kaart({ p }: { p: GeplaatstOpBord }) {
           <span className="shrink-0 font-bold text-urgent-rood">geen ref</span>
         )}
         {versturenLabel && <span className="shrink-0 font-bold text-accent">{versturenLabel}</span>}
+        {dubbel && (
+          <span className="inline-flex shrink-0 items-center gap-0.5 font-bold text-urgent-rood">
+            <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> dubbel
+          </span>
+        )}
       </span>
       </span>
     </Link>
@@ -138,10 +148,13 @@ export function PlanbordGrid({
   weekdagen,
   monteurs,
   plaatsingen,
+  conflicten,
 }: {
   weekdagen: string[];
   monteurs: MonteurOptie[];
   plaatsingen: PlanbordPlaatsing<Melding>[];
+  /** Ids van dubbel geboekte opdrachten (rode waarschuwing op de kaart). */
+  conflicten: Set<string>;
 }) {
   if (monteurs.length === 0) {
     return (
@@ -213,7 +226,7 @@ export function PlanbordGrid({
 
           {/* Kaarten/balken bovenop de cellen */}
           {geplaatst.map((p) => (
-            <Kaart key={p.opdracht.id} p={p} />
+            <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} />
           ))}
         </div>
       ))}

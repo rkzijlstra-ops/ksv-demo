@@ -7,7 +7,9 @@ import {
   monteurRijen,
   plaatsOpdrachten,
   verdeelLanes,
+  vindDubbeleBoekingen,
   type PlanbaarOpdracht,
+  type BoekbaarOpdracht,
 } from "./planbord";
 import type { DashboardStatus } from "./db";
 
@@ -160,5 +162,64 @@ describe("verdeelLanes", () => {
 
   it("lege invoer geeft lege uitvoer", () => {
     expect(verdeelLanes([])).toEqual([]);
+  });
+});
+
+describe("vindDubbeleBoekingen", () => {
+  const basis = { duur_dagen: 1, dashboard_status: "gepland" as DashboardStatus };
+  function b(over: Partial<BoekbaarOpdracht>): BoekbaarOpdracht {
+    return {
+      id: over.id ?? "x",
+      toegewezen_aan: over.toegewezen_aan ?? "m1",
+      startdatum: over.startdatum ?? "2026-06-10",
+      starttijd: over.starttijd ?? null,
+      duur_dagen: over.duur_dagen ?? basis.duur_dagen,
+      dashboard_status: over.dashboard_status ?? basis.dashboard_status,
+    };
+  }
+
+  it("twee montages, zelfde monteur, zelfde dag = conflict", () => {
+    const set = vindDubbeleBoekingen([b({ id: "a" }), b({ id: "c" })]);
+    expect(set.has("a")).toBe(true);
+    expect(set.has("c")).toBe(true);
+  });
+
+  it("verschillende monteurs op dezelfde dag = geen conflict", () => {
+    const set = vindDubbeleBoekingen([b({ id: "a", toegewezen_aan: "m1" }), b({ id: "c", toegewezen_aan: "m2" })]);
+    expect(set.size).toBe(0);
+  });
+
+  it("twee services zelfde dag, andere tijd = geen conflict", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a", starttijd: "09:00" }),
+      b({ id: "c", starttijd: "13:00" }),
+    ]);
+    expect(set.size).toBe(0);
+  });
+
+  it("twee services zelfde dag, zelfde tijd = conflict", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a", starttijd: "09:00" }),
+      b({ id: "c", starttijd: "09:00:00" }),
+    ]);
+    expect(set.has("a")).toBe(true);
+    expect(set.has("c")).toBe(true);
+  });
+
+  it("meerdaagse montage die over een andere klus heen valt = conflict", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a", startdatum: "2026-06-10", duur_dagen: 3 }),
+      b({ id: "c", startdatum: "2026-06-12", starttijd: "10:00" }),
+    ]);
+    expect(set.has("a")).toBe(true);
+    expect(set.has("c")).toBe(true);
+  });
+
+  it("geannuleerde opdracht telt niet mee", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a" }),
+      b({ id: "c", dashboard_status: "geannuleerd" }),
+    ]);
+    expect(set.size).toBe(0);
   });
 });
