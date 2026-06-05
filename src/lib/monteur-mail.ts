@@ -49,6 +49,7 @@ function opdrachtBlok(o: MailbareOpdracht): string {
 export function monteurMailTekst(
   monteurNaam: string,
   opdrachten: MailbareOpdracht[],
+  zaaknaam = "",
 ): { subject: string; text: string } {
   const n = opdrachten.length;
   const subject =
@@ -60,6 +61,7 @@ export function monteurMailTekst(
       ? `Hoi ${monteurNaam},\n\nEr staat een opdracht voor je klaar:`
       : `Hoi ${monteurNaam},\n\nEr staan ${n} opdrachten voor je klaar:`;
   const blokken = opdrachten.map(opdrachtBlok).join("\n\n----------------\n\n");
-  const text = `${intro}\n\n${blokken}\n\nBevestig de ontvangst in de app.\n\nKeukenstudio Voorschoten`;
+  const afzender = zaaknaam.trim() || "Het planning-team";
+  const text = `${intro}\n\n${blokken}\n\nBevestig de ontvangst in de app.\n\n${afzender}`;
   return { subject, text };
 }

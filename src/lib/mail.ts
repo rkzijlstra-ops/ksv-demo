@@ -25,6 +25,8 @@ export interface MonteurMailInput {
   naar: string;
   monteurNaam: string;
   opdrachten: MailbareOpdracht[];
+  /** Naam van de zaak namens wie de opdracht gaat; wordt de afsluiter van de mail. */
+  zaaknaam?: string;
 }
 
 export interface UitnodigingMailInput {
@@ -96,7 +98,7 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
 export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void> {
   const { apiKey, from, replyTo } = mailConfig();
   const resend = new Resend(apiKey);
-  const { subject, text } = monteurMailTekst(input.monteurNaam, input.opdrachten);
+  const { subject, text } = monteurMailTekst(input.monteurNaam, input.opdrachten, input.zaaknaam);
 
   const { error } = await resend.emails.send({
     from,
@@ -179,7 +181,7 @@ export async function verstuurSpoedMelding(input: SpoedMailInput): Promise<void>
     to: input.naar,
     ...(replyTo ? { replyTo } : {}),
     subject: `SPOED - ${klant}${ref}`,
-    text: `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\nKeukenstudio Voorschoten`,
+    text: `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\n${input.opdracht.keukenzaak?.trim() || "Het planning-team"}`,
   });
 
   if (error) {

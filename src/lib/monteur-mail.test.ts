@@ -51,4 +51,13 @@ describe("monteurMailTekst", () => {
     ]);
     expect(text).toContain("Melding: Lekkage mengkraan");
   });
+
+  it("sluit af met de meegegeven zaaknaam", () => {
+    const { text } = monteurMailTekst("Rein", [o()], "Keukenstudio Voorschoten");
+    expect(text.trimEnd().endsWith("Keukenstudio Voorschoten")).toBe(true);
+  });
+
+  it("valt terug op een neutrale afsluiter zonder zaaknaam", () => {
+    expect(monteurMailTekst("Rein", [o()], "").text.trimEnd().endsWith("Het planning-team")).toBe(true);
+  });
 });

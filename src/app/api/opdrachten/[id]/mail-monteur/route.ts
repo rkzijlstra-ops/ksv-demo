@@ -42,6 +42,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       naar,
       monteurNaam: opdracht.monteur_naam,
       opdrachten: [opdracht],
+      zaaknaam: opdracht.keukenzaak ?? undefined,
     });
   } catch (err) {
     return NextResponse.json(

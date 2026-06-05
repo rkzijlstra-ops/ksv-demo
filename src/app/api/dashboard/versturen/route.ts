@@ -54,6 +54,7 @@ export async function POST(req: Request) {
         naar,
         monteurNaam: eerste.monteur_naam ?? "monteur",
         opdrachten: eigen,
+        zaaknaam: eerste.keukenzaak ?? undefined,
       });
     }
   } catch (err) {
