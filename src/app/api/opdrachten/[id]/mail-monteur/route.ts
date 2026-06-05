@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verstuurMonteurMail } from "@/lib/mail";
+import { historieVoorMonteur } from "@/lib/monteur-mail";
 import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
@@ -38,10 +39,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   try {
+    const historie = opdracht.referentienummer
+      ? historieVoorMonteur(await dbi.zoekOpReferentie(opdracht.referentienummer), opdracht.id)
+      : undefined;
     await verstuurMonteurMail({
       naar,
       monteurNaam: opdracht.monteur_naam,
-      opdrachten: [opdracht],
+      opdrachten: [{ ...opdracht, historie }],
       zaaknaam: opdracht.keukenzaak ?? undefined,
     });
   } catch (err) {

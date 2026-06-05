@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
+import { monteurMailTekst, historieVoorMonteur, type MailbareOpdracht } from "./monteur-mail";
 
 function o(over: Partial<MailbareOpdracht> = {}): MailbareOpdracht {
   return {
@@ -11,6 +11,7 @@ function o(over: Partial<MailbareOpdracht> = {}): MailbareOpdracht {
     starttijd: over.starttijd ?? null,
     duur_dagen: over.duur_dagen ?? 2,
     meldingen: over.meldingen ?? [],
+    historie: over.historie,
   };
 }
 
@@ -59,5 +60,27 @@ describe("monteurMailTekst", () => {
 
   it("valt terug op een neutrale afsluiter zonder zaaknaam", () => {
     expect(monteurMailTekst("Rein", [o()], "").text.trimEnd().endsWith("Het planning-team")).toBe(true);
+  });
+
+  it("zet eerdere bezoeken met rapport-link in de mail", () => {
+    const { text } = monteurMailTekst("Rein", [
+      o({ historie: [{ datum: "2026-05-01", rapportUrl: "https://x/oud.pdf", monteurNaam: "Jan" }] }),
+    ]);
+    expect(text).toContain("Deze keuken is eerder bezocht");
+    expect(text).toContain("https://x/oud.pdf");
+    expect(text).toContain("Jan");
+  });
+});
+
+describe("historieVoorMonteur", () => {
+  it("pakt opgeleverde klussen met rapport, zonder de huidige opdracht", () => {
+    const rijen = [
+      { id: "self", opgeleverd_at: null, startdatum: "2026-06-10", rapport_url: "https://x/r.pdf", monteur_naam: "A" },
+      { id: "oud1", opgeleverd_at: "2026-05-01", startdatum: "2026-04-30", rapport_url: "https://x/oud.pdf", monteur_naam: "Jan" },
+      { id: "geenrapport", opgeleverd_at: "2026-05-02", startdatum: null, rapport_url: null, monteur_naam: "Piet" },
+    ];
+    const items = historieVoorMonteur(rijen, "self");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toEqual({ datum: "2026-05-01", rapportUrl: "https://x/oud.pdf", monteurNaam: "Jan" });
   });
 });

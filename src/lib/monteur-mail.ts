@@ -13,7 +13,40 @@ export type MailbareOpdracht = Pick<
   | "starttijd"
   | "duur_dagen"
   | "meldingen"
->;
+> & {
+  /** Eerdere bezoeken aan dezelfde keuken (zelfde referentie), met rapport-link voor de monteur. */
+  historie?: KeukenHistorieItem[];
+};
+
+/** Eén eerder bezoek aan dezelfde keuken, zoals meegestuurd in de monteur-mail. */
+export interface KeukenHistorieItem {
+  datum: string | null;
+  rapportUrl: string;
+  monteurNaam: string | null;
+}
+
+/** Minimale opdracht-velden die nodig zijn om de keukenhistorie voor de mail op te bouwen. */
+type HistorieBron = {
+  id: string;
+  opgeleverd_at: string | null;
+  startdatum: string | null;
+  rapport_url: string | null;
+  monteur_naam: string | null;
+};
+
+/**
+ * Bouwt de lijst eerdere bezoeken voor de monteur-mail uit opdrachten met dezelfde referentie:
+ * alleen opgeleverde klussen met een rapport, de huidige opdracht zelf uitgesloten.
+ */
+export function historieVoorMonteur(rijen: HistorieBron[], huidigeId: string): KeukenHistorieItem[] {
+  return rijen
+    .filter((r) => r.id !== huidigeId && r.rapport_url)
+    .map((r) => ({
+      datum: r.opgeleverd_at ?? r.startdatum,
+      rapportUrl: r.rapport_url as string,
+      monteurNaam: r.monteur_naam,
+    }));
+}
 
 function typeLabel(documenttype: Melding["documenttype"]): string | null {
   if (documenttype === "orderbevestiging") return "Montage";
@@ -39,6 +72,15 @@ function opdrachtBlok(o: MailbareOpdracht): string {
     .filter(Boolean)
     .join("; ");
   if (meldingTekst) regels.push(`Melding: ${meldingTekst}`);
+
+  if (o.historie && o.historie.length > 0) {
+    regels.push("", `Deze keuken is eerder bezocht (${o.historie.length}x):`);
+    for (const h of o.historie) {
+      const datum = h.datum ? formatDatumKort(h.datum) : "eerder";
+      const wie = h.monteurNaam ? ` (${h.monteurNaam})` : "";
+      regels.push(`- ${datum}${wie}, rapport: ${h.rapportUrl}`);
+    }
+  }
   return regels.join("\n");
 }
 

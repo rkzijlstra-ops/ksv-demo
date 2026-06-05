@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type Melding } from "@/lib/db";
 import { verstuurMonteurMail } from "@/lib/mail";
+import { historieVoorMonteur } from "@/lib/monteur-mail";
 import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
@@ -50,10 +51,19 @@ export async function POST(req: Request) {
       const monteurEmail = eerste.toegewezen_aan ? await getGebruikerEmail(eerste.toegewezen_aan) : null;
       const naar = monteurEmail ?? fallback;
       if (!naar) continue; // geen adres bekend; sla de mail over, status volgt wel
+      // Per opdracht de eerdere bezoeken op dezelfde referentie meesturen (rapport-links).
+      const metHistorie = await Promise.all(
+        eigen.map(async (o) => ({
+          ...o,
+          historie: o.referentienummer
+            ? historieVoorMonteur(await dbi.zoekOpReferentie(o.referentienummer), o.id)
+            : undefined,
+        })),
+      );
       await verstuurMonteurMail({
         naar,
         monteurNaam: eerste.monteur_naam ?? "monteur",
-        opdrachten: eigen,
+        opdrachten: metHistorie,
         zaaknaam: eerste.keukenzaak ?? undefined,
       });
     }
