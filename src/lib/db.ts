@@ -138,6 +138,16 @@ export interface OpdrachtInput {
   opdrachtgever_id?: string | null;
 }
 
+/** Corrigeerbare kop-gegevens van een opdracht (parser-fouten herstellen na inschieten). */
+export interface OpdrachtGegevensInput {
+  klant_naam: string | null;
+  klant_adres: string | null;
+  klant_telefoon: string | null;
+  referentienummer: string | null;
+  keukenzaak: string | null;
+  documenttype: "orderbevestiging" | "werkbon_service" | "tekst" | "onbekend";
+}
+
 export interface DocumentInput {
   opdracht_id: string;
   type: "pdf" | "afbeelding";
@@ -210,6 +220,8 @@ export interface ProfielInput {
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
+  /** Corrigeert de kop-gegevens van een opdracht (klant, adres, referentie, keukenzaak, type). */
+  updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput): Promise<void>;
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   getMeldingen(): Promise<Melding[]>;
@@ -306,6 +318,21 @@ function createDbFromClient(client: SupabaseClient): Db {
         throw new Error("DB insert lukte maar geen id terug");
       }
       return { id: row.id };
+    },
+
+    async updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          klant_naam: input.klant_naam,
+          klant_adres: input.klant_adres,
+          klant_telefoon: input.klant_telefoon,
+          referentienummer: input.referentienummer,
+          keukenzaak: input.keukenzaak,
+          documenttype: input.documenttype,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 
     async addDocument(input: DocumentInput) {

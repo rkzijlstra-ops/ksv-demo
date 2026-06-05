@@ -918,4 +918,26 @@ describe("gebruikersbeheer", () => {
     expect(h.fns.is).toHaveBeenCalledWith("verwijderd_at", null);
     expect(h.fns.eq).toHaveBeenCalledWith("toegewezen_aan", "m1");
   });
+
+  it("updateOpdrachtGegevens corrigeert de kop-velden op het juiste id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateOpdrachtGegevens("o1", {
+      klant_naam: "Fam. de Wit",
+      klant_adres: "Kerkstraat 1",
+      klant_telefoon: "0612345678",
+      referentienummer: "9001",
+      keukenzaak: "Keukenstudio Voorschoten",
+      documenttype: "werkbon_service",
+    });
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "o1");
+    expect(h.fns.update).toHaveBeenCalledWith({
+      klant_naam: "Fam. de Wit",
+      klant_adres: "Kerkstraat 1",
+      klant_telefoon: "0612345678",
+      referentienummer: "9001",
+      keukenzaak: "Keukenstudio Voorschoten",
+      documenttype: "werkbon_service",
+    });
+  });
 });

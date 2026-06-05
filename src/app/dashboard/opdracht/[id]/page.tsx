@@ -19,6 +19,7 @@ import { OpdrachtStatusBadge } from "@/components/OpdrachtStatusBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
+import { OpdrachtBewerken } from "@/components/OpdrachtBewerken";
 import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
@@ -107,6 +108,15 @@ export default async function OpdrachtgeverDetailPage({
             />
           )}
         </div>
+        <OpdrachtBewerken
+          id={opdracht.id}
+          klant_naam={opdracht.klant_naam}
+          klant_adres={opdracht.klant_adres}
+          klant_telefoon={opdracht.klant_telefoon}
+          referentienummer={opdracht.referentienummer}
+          keukenzaak={opdracht.keukenzaak}
+          documenttype={opdracht.documenttype ?? "onbekend"}
+        />
       </section>
 
       {/* Opleverrapport als leesweergave */}

@@ -1,24 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetById, mockVerwijder } = vi.hoisted(() => ({
-  mockGetById: vi.fn(),
-  mockVerwijder: vi.fn(),
-}));
+const { mockGetById, mockVerwijder, mockGetProfiel, mockGetOpdrachtById, mockUpdateGegevens, mockAuthId } =
+  vi.hoisted(() => ({
+    mockGetById: vi.fn(),
+    mockVerwijder: vi.fn(),
+    mockGetProfiel: vi.fn(),
+    mockGetOpdrachtById: vi.fn(),
+    mockUpdateGegevens: vi.fn(),
+    mockAuthId: vi.fn(),
+  }));
 
 vi.mock("@/lib/db", () => ({
-  db: () => ({ getMeldingById: mockGetById, verwijderOpdracht: mockVerwijder }),
+  db: () => ({
+    getMeldingById: mockGetById,
+    verwijderOpdracht: mockVerwijder,
+    getProfiel: mockGetProfiel,
+    getOpdrachtById: mockGetOpdrachtById,
+    updateOpdrachtGegevens: mockUpdateGegevens,
+  }),
 }));
+vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockAuthId }));
 
-import { DELETE } from "./route";
+import { DELETE, PATCH } from "./route";
 
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 const req = () => new Request("http://localhost/api/opdrachten/opdr-1", { method: "DELETE" });
+function patchReq(body: Record<string, unknown>) {
+  return new Request("http://localhost/api/opdrachten/opdr-1", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+    headers: { "content-type": "application/json" },
+  });
+}
 
 beforeEach(() => {
-  mockGetById.mockReset();
-  mockVerwijder.mockReset();
+  vi.clearAllMocks();
   mockGetById.mockResolvedValue({ id: "opdr-1", klant_naam: "van Dijk" });
   mockVerwijder.mockResolvedValue(undefined);
+  mockAuthId.mockResolvedValue("beheerder-uid");
+  mockGetProfiel.mockResolvedValue({ id: "beheerder-uid", rol: "beheerder" });
+  mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", documenttype: "onbekend" });
+  mockUpdateGegevens.mockResolvedValue(undefined);
 });
 
 describe("DELETE /api/opdrachten/[id]", () => {
@@ -42,5 +64,41 @@ describe("DELETE /api/opdrachten/[id]", () => {
     mockVerwijder.mockRejectedValue(new Error("fk locked"));
     const res = await DELETE(req(), params("opdr-1"));
     expect(res.status).toBe(503);
+  });
+});
+
+describe("PATCH /api/opdrachten/[id]", () => {
+  it("403 als een monteur de gegevens probeert te corrigeren", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "m1", rol: "monteur" });
+    const res = await PATCH(patchReq({ klant_naam: "X" }), params("opdr-1"));
+    expect(res.status).toBe(403);
+    expect(mockUpdateGegevens).not.toHaveBeenCalled();
+  });
+
+  it("404 als de opdracht niet bestaat", async () => {
+    mockGetOpdrachtById.mockResolvedValue(null);
+    const res = await PATCH(patchReq({ klant_naam: "X" }), params("weg"));
+    expect(res.status).toBe(404);
+  });
+
+  it("corrigeert de kop-velden (getrimd, leeg = null) en behoudt onbekend type", async () => {
+    const res = await PATCH(
+      patchReq({
+        klant_naam: "  Fam. de Wit  ",
+        referentienummer: "9001",
+        klant_adres: "",
+        documenttype: "werkbon_service",
+      }),
+      params("opdr-1"),
+    );
+    expect(res.status).toBe(200);
+    expect(mockUpdateGegevens).toHaveBeenCalledWith("opdr-1", {
+      klant_naam: "Fam. de Wit",
+      klant_adres: null,
+      klant_telefoon: null,
+      referentienummer: "9001",
+      keukenzaak: null,
+      documenttype: "werkbon_service",
+    });
   });
 });
