@@ -32,10 +32,19 @@ slepen op het planbord en de afgeschermde schermen.
   aangemaakt; benigne, en de echte login blijft werken.
 - **Geen mail** geraakt (de e2e raakt de planning-flow, niet de Resend-routes).
 
+## Monteur-rol (toegevoegd)
+
+Tweede ingelogde sessie (testmonteur rk) in global-setup. `monteur.spec.ts` controleert in de browser:
+- de monteur ziet in de werkpool **alleen zijn eigen toegewezen klus**, niet die van een ander
+  (dat is de afscherming/RLS in de praktijk, nu sessie-gebaseerd geverifieerd);
+- hij wordt van `/dashboard` en `/planbord` weggestuurd naar zijn werkpool.
+
+Totaal nu 7 e2e-tests groen (2 smoke + 2 planbord + 3 monteur).
+
 ## Niet gedekt (vervolg)
 
-- Monteur-rol e2e (alleen-eigen-klussen in de browser) en opdrachtgever-rol; nu alleen beheerder.
-- De monteur-PWA-flows (melding, opleveren) in de browser.
+- Opdrachtgever-rol e2e (Ed: alleen eigen zaak).
+- De monteur-PWA-flows (melding maken, opleveren met foto's) in de browser.
 - Echte mail-verzending in een e2e (bewust buiten gehouden).
 
 Hiermee is de browser-kant, inclusief het echte slepen, nu geautomatiseerd te testen.
