@@ -1,26 +1,14 @@
-import { Shield, Wrench, Building2 } from "lucide-react";
-import { db, type Rol } from "@/lib/db";
+import { db } from "@/lib/db";
 import { UitnodigForm } from "@/components/UitnodigForm";
+import { GebruikerRij } from "@/components/GebruikerRij";
 import { UserMenu } from "@/components/UserMenu";
 import { TerugKnop } from "@/components/TerugKnop";
 import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
-const ROL_LABEL: Record<Rol, string> = {
-  beheerder: "Beheerder",
-  opdrachtgever: "Opdrachtgever",
-  monteur: "Monteur",
-};
-
-function RolIcoon({ rol }: { rol: Rol }) {
-  if (rol === "beheerder") return <Shield size={14} aria-hidden="true" />;
-  if (rol === "opdrachtgever") return <Building2 size={14} aria-hidden="true" />;
-  return <Wrench size={14} aria-hidden="true" />;
-}
-
 export default async function GebruikersPage() {
-  const { email } = await vereisRol(["beheerder"]);
+  const { email, profiel } = await vereisRol(["beheerder"]);
   const dbi = await db();
   const profielen = await dbi.getProfielen();
 
@@ -51,16 +39,13 @@ export default async function GebruikersPage() {
         </h2>
         <ul className="flex flex-col gap-2">
           {profielen.map((p) => (
-            <li
+            <GebruikerRij
               key={p.id}
-              className="flex items-center justify-between gap-3 border border-line bg-white p-3"
-            >
-              <span className="font-semibold text-ink">{p.naam || "(naam onbekend)"}</span>
-              <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-ink">
-                <RolIcoon rol={p.rol} />
-                {ROL_LABEL[p.rol]}
-              </span>
-            </li>
+              id={p.id}
+              naam={p.naam}
+              rol={p.rol}
+              isZelf={p.id === profiel.id}
+            />
           ))}
         </ul>
       </section>
