@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:int": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
     "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts",
     "generate:fake-pdf": "node --experimental-strip-types scripts/generate-fake-pdf.ts"
   },
@@ -28,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^20.19.41",
     "@types/react": "^19",

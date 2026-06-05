@@ -13,6 +13,13 @@
 # testing
 /coverage
 
+# playwright (browser-e2e); .auth bevat sessie-cookies, nooit committen
+/test-results
+/playwright-report
+/blob-report
+/e2e/.auth
+/playwright/.cache
+
 # echte klant-data (PII): nooit committen
 /test-pdfs/week23/
 
