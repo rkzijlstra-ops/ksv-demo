@@ -16,6 +16,10 @@ const BEHEERDER = {
   uid: "443dff43-dc74-4216-8173-076f22973245",
   email: "bkmkeukenmontage@gmail.com",
 };
+const MONTEUR = {
+  uid: "f0a2a56d-ccd9-434c-93b8-5f7257aa59c9",
+  email: "r.k.zijlstra@gmail.com",
+};
 
 const ENV_PATH = path.join(process.cwd(), ".env.local");
 const AUTH_DIR = path.join(process.cwd(), "e2e", ".auth");
@@ -77,4 +81,5 @@ export default async function globalSetup() {
   if (!url || !anon || !secret) throw new Error("Supabase-env ontbreekt in .env.local");
 
   await schrijfSessie({ url, anon, secret, ...BEHEERDER, bestand: "beheerder.json" });
+  await schrijfSessie({ url, anon, secret, ...MONTEUR, bestand: "monteur.json" });
 }
