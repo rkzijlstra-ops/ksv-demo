@@ -39,12 +39,25 @@ Tweede ingelogde sessie (testmonteur rk) in global-setup. `monteur.spec.ts` cont
   (dat is de afscherming/RLS in de praktijk, nu sessie-gebaseerd geverifieerd);
 - hij wordt van `/dashboard` en `/planbord` weggestuurd naar zijn werkpool.
 
-Totaal nu 7 e2e-tests groen (2 smoke + 2 planbord + 3 monteur).
+## Monteur-PWA-flows (toegevoegd)
+
+`monteur-pwa.spec.ts` (monteur-sessie):
+- **Melding met foto**: een echte foto wordt client-side gecomprimeerd en naar Supabase Storage
+  geupload, de melding komt als kind-rij bij de opdracht. Geen mail.
+- **Oplevering vastleggen**: eindstaat-foto + handtekening (op het canvas getekend), met
+  DB-bevestiging dat de concept-oplevering de foto en handtekening-URL heeft. De test stopt bij het
+  concept en klikt NIET op "Versturen", dus er wordt geen rapport gemaild.
+
+Praktisch geleerd: de service-worker uitschakelen in e2e (anders onderschept hij fetches), en een
+geldige test-PNG genereren met zlib (een willekeurige base64 werd niet gedecodeerd door
+createImageBitmap). Storage-objecten van de test-foto's blijven staan (throwaway, pre-Ed).
+
+Totaal nu **9 e2e-tests groen** (2 smoke + 2 planbord + 3 monteur + 2 monteur-PWA).
 
 ## Niet gedekt (vervolg)
 
 - Opdrachtgever-rol e2e (Ed: alleen eigen zaak).
-- De monteur-PWA-flows (melding maken, opleveren met foto's) in de browser.
-- Echte mail-verzending in een e2e (bewust buiten gehouden).
+- De finale "Versturen" van de oplevering (PDF + mail) - bewust buiten gehouden om niet te mailen.
+- Echte mail-verzending in een e2e.
 
 Hiermee is de browser-kant, inclusief het echte slepen, nu geautomatiseerd te testen.
