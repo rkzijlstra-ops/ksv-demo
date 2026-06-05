@@ -249,6 +249,9 @@ export interface Db {
   getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
   upsertProfiel(input: ProfielInput): Promise<void>;
+  telBeheerders(): Promise<number>;
+  telToegewezenOpdrachten(monteurId: string): Promise<number>;
+  updateProfielRol(id: string, rol: Rol): Promise<void>;
 }
 
 /**
@@ -698,6 +701,32 @@ function createDbFromClient(client: SupabaseClient): Db {
         { onConflict: "id" },
       );
       if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
+    },
+
+    async telBeheerders() {
+      const { data, error } = await client
+        .from("profielen")
+        .select("id")
+        .eq("rol", "beheerder");
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []).length;
+    },
+
+    async telToegewezenOpdrachten(monteurId: string) {
+      // Openstaande klussen: top-level opdrachten van deze monteur die nog niet af/geannuleerd zijn.
+      const { data, error } = await client
+        .from("meldingen")
+        .select("id")
+        .eq("toegewezen_aan", monteurId)
+        .is("opdracht_id", null)
+        .not("dashboard_status", "in", '("opgeleverd","geannuleerd")');
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []).length;
+    },
+
+    async updateProfielRol(id: string, rol: Rol) {
+      const { error } = await client.from("profielen").update({ rol }).eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
     },
   };
 }

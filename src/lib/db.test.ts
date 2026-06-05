@@ -883,3 +883,30 @@ describe("profielen", () => {
     expect(opts).toEqual({ onConflict: "id" });
   });
 });
+
+describe("gebruikersbeheer", () => {
+  it("telBeheerders telt de profielen met rol beheerder", async () => {
+    h.setResult({ data: [{ id: "a" }, { id: "b" }], error: null });
+    const n = await createDb(cfg).telBeheerders();
+    expect(h.fns.from).toHaveBeenCalledWith("profielen");
+    expect(h.fns.eq).toHaveBeenCalledWith("rol", "beheerder");
+    expect(n).toBe(2);
+  });
+
+  it("telToegewezenOpdrachten telt openstaande klussen van een monteur", async () => {
+    h.setResult({ data: [{ id: "o1" }], error: null });
+    const n = await createDb(cfg).telToegewezenOpdrachten("m1");
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("toegewezen_aan", "m1");
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
+    expect(n).toBe(1);
+  });
+
+  it("updateProfielRol werkt alleen de rol bij op het juiste id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateProfielRol("u1", "opdrachtgever");
+    expect(h.fns.from).toHaveBeenCalledWith("profielen");
+    expect(h.fns.update).toHaveBeenCalledWith({ rol: "opdrachtgever" });
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "u1");
+  });
+});
