@@ -19,6 +19,8 @@ export default defineConfig({
     baseURL: `http://localhost:${process.env.PW_PORT ?? "3001"}`,
     storageState: "e2e/.auth/beheerder.json",
     trace: "on-first-retry",
+    // De PWA-service-worker testen we niet; uitschakelen voorkomt dat hij fetches onderschept.
+    serviceWorkers: "block",
   },
   webServer: {
     command: `npm run dev -- -p ${process.env.PW_PORT ?? "3001"}`,
