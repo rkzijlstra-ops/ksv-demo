@@ -69,28 +69,40 @@ describe("isActief", () => {
 });
 
 describe("opVerzondenPlek", () => {
-  const verzonden = { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "10:00:00" };
+  const verzonden = {
+    toegewezen_aan: "m1",
+    monteur_naam: "Rein",
+    startdatum: "2026-06-10",
+    starttijd: "10:00:00",
+  };
 
-  it("true als monteur, dag en tijd gelijk zijn (tijd op HH:MM)", () => {
+  it("true als account, dag en tijd gelijk zijn (tijd op HH:MM)", () => {
     expect(
-      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
+      opVerzondenPlek({ toegewezen_aan: "m1", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
     ).toBe(true);
   });
 
-  it("false bij andere dag of andere monteur of andere tijd", () => {
+  it("false bij ander account, andere dag of andere tijd", () => {
     expect(
-      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-11", starttijd: "10:00" }, verzonden),
+      opVerzondenPlek({ toegewezen_aan: "m1", startdatum: "2026-06-11", starttijd: "10:00" }, verzonden),
     ).toBe(false);
     expect(
-      opVerzondenPlek({ monteur_naam: "Dani", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
+      opVerzondenPlek({ toegewezen_aan: "m2", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
     ).toBe(false);
     expect(
-      opVerzondenPlek({ monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: "13:00" }, verzonden),
+      opVerzondenPlek({ toegewezen_aan: "m1", startdatum: "2026-06-10", starttijd: "13:00" }, verzonden),
+    ).toBe(false);
+  });
+
+  it("bevinding 3: gelijke naam maar ander account telt niet als 'op de plek'", () => {
+    // Zou met de oude naam-vergelijking ten onrechte true zijn geweest (twee monteurs 'Rein').
+    expect(
+      opVerzondenPlek({ toegewezen_aan: "m2", startdatum: "2026-06-10", starttijd: "10:00" }, verzonden),
     ).toBe(false);
   });
 
   it("dagblok zonder tijd matcht alleen een verzonden plek zonder tijd", () => {
-    const dagblok = { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null };
+    const dagblok = { toegewezen_aan: "m1", startdatum: "2026-06-10", starttijd: null };
     expect(opVerzondenPlek(dagblok, { ...verzonden, starttijd: null })).toBe(true);
     expect(opVerzondenPlek(dagblok, verzonden)).toBe(false);
   });
@@ -98,8 +110,8 @@ describe("opVerzondenPlek", () => {
   it("false als er nooit verstuurd is (geen verzonden datum)", () => {
     expect(
       opVerzondenPlek(
-        { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
-        { monteur_naam: null, startdatum: null, starttijd: null },
+        { toegewezen_aan: "m1", startdatum: "2026-06-10", starttijd: null },
+        { toegewezen_aan: null, monteur_naam: null, startdatum: null, starttijd: null },
       ),
     ).toBe(false);
   });

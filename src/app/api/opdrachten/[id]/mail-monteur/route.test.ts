@@ -46,6 +46,7 @@ describe("POST /api/opdrachten/[id]/mail-monteur", () => {
     expect(mockEmail).toHaveBeenCalledWith("piet-uid");
     expect(mockMail.mock.calls[0][0].naar).toBe("piet@monteur.nl");
     expect(mockMarkeer).toHaveBeenCalledWith("opdr-1", {
+      toegewezen_aan: "piet-uid",
       monteur_naam: "Piet",
       startdatum: "2026-06-10",
       starttijd: null,

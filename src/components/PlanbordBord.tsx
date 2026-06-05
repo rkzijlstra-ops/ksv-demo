@@ -94,10 +94,15 @@ export function PlanbordBord({
 
   // Of een verplaatste opdracht "gewijzigd, nog te versturen" wordt: alleen als hij al verstuurd
   // was én niet exact terug op de verzonden plek staat (gelijk aan de server-logica).
-  function gewijzigdNa(o: Melding, monteur: string | null, dag: string, tijd: string | null) {
+  function gewijzigdNa(o: Melding, toegewezenAan: string | null, dag: string, tijd: string | null) {
     const opPlek = opVerzondenPlek(
-      { monteur_naam: monteur, startdatum: dag, starttijd: tijd },
-      { monteur_naam: o.verzonden_monteur, startdatum: o.verzonden_startdatum, starttijd: o.verzonden_starttijd },
+      { toegewezen_aan: toegewezenAan, startdatum: dag, starttijd: tijd },
+      {
+        toegewezen_aan: o.verzonden_toegewezen_aan,
+        monteur_naam: o.verzonden_monteur,
+        startdatum: o.verzonden_startdatum,
+        starttijd: o.verzonden_starttijd,
+      },
     );
     return moetOpnieuwVersturen(o.dashboard_status) && !opPlek;
   }
@@ -123,7 +128,7 @@ export function PlanbordBord({
       const nieuweDatum = verschuifDagen(o.startdatum, richting);
       pasLokaalToe(o.id, {
         startdatum: nieuweDatum,
-        gewijzigd_te_versturen: gewijzigdNa(o, o.monteur_naam, nieuweDatum, o.starttijd),
+        gewijzigd_te_versturen: gewijzigdNa(o, o.toegewezen_aan, nieuweDatum, o.starttijd),
       });
       setWeekAnker(verschuifDagen(maandag, richting));
       void verplaats(o, o.toegewezen_aan, o.monteur_naam, nieuweDatum);
@@ -180,7 +185,7 @@ export function PlanbordBord({
       toegewezen_aan: toegewezenAan,
       monteur_naam: monteurNaam,
       startdatum: dag,
-      gewijzigd_te_versturen: gewijzigdNa(o, monteurNaam, dag, o.starttijd),
+      gewijzigd_te_versturen: gewijzigdNa(o, toegewezenAan, dag, o.starttijd),
     });
     void verplaats(o, toegewezenAan, monteurNaam, dag);
   }

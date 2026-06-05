@@ -1,16 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ParsedPdf } from "@/lib/parser-schema";
 
-const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload } = vi.hoisted(() => ({
-  mockParse: vi.fn(),
-  mockCreateOpdracht: vi.fn(),
-  mockAddDocument: vi.fn(),
-  mockUpload: vi.fn(),
-}));
+const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload, mockGetProfiel, mockGetZaak } =
+  vi.hoisted(() => ({
+    mockParse: vi.fn(),
+    mockCreateOpdracht: vi.fn(),
+    mockAddDocument: vi.fn(),
+    mockUpload: vi.fn(),
+    mockGetProfiel: vi.fn(),
+    mockGetZaak: vi.fn(),
+  }));
 
 vi.mock("@/lib/claude-client", () => ({ parsePdfWithClaude: mockParse }));
 vi.mock("@/lib/db", () => ({
-  db: () => ({ createOpdracht: mockCreateOpdracht, addDocument: mockAddDocument }),
+  db: () => ({
+    createOpdracht: mockCreateOpdracht,
+    addDocument: mockAddDocument,
+    getProfiel: mockGetProfiel,
+    getStandaardOpdrachtgever: mockGetZaak,
+  }),
 }));
 vi.mock("@/lib/storage", () => ({ storage: () => ({ uploadOpdrachtDocument: mockUpload }) }));
 vi.mock("@/lib/auth", () => ({
@@ -54,6 +62,24 @@ describe("POST /api/dashboard/inschieten", () => {
     mockCreateOpdracht.mockImplementation(() => Promise.resolve({ id: `opdr-${++opdrachtTeller}` }));
     mockAddDocument.mockResolvedValue({ id: "doc-x" });
     mockUpload.mockResolvedValue({ pad: "uuid.pdf", publieke_url: "https://x/uuid.pdf" });
+    mockGetProfiel.mockReset();
+    mockGetZaak.mockReset();
+    // Standaard: een beheerder schiet in, er is één zaak (KSV).
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "beheerder", opdrachtgever_id: null });
+    mockGetZaak.mockResolvedValue({ id: "zaak-ksv", naam: "Keukenstudio Voorschoten" });
+  });
+
+  it("hangt de inschoten opdracht aan de (enige) kantoor-zaak", async () => {
+    mockParse.mockResolvedValue(parsed("7444"));
+    await POST(multipart([pdf("a.pdf")]));
+    expect(mockCreateOpdracht.mock.calls[0][0].opdrachtgever_id).toBe("zaak-ksv");
+  });
+
+  it("gebruikt de eigen zaak van een opdrachtgever-inschieter", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "ed", rol: "opdrachtgever", opdrachtgever_id: "zaak-ed" });
+    mockParse.mockResolvedValue(parsed("7445"));
+    await POST(multipart([pdf("a.pdf")]));
+    expect(mockCreateOpdracht.mock.calls[0][0].opdrachtgever_id).toBe("zaak-ed");
   });
 
   it("twee PDF's met dezelfde referentie worden één opdracht met twee documenten", async () => {

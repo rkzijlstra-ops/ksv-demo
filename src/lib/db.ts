@@ -71,6 +71,10 @@ export interface Melding {
   verzonden_monteur: string | null;
   verzonden_startdatum: string | null;
   verzonden_starttijd: string | null;
+  // welk monteur-account de opdracht had toen hij verstuurd werd (identiteit, los van de naam)
+  verzonden_toegewezen_aan: string | null;
+  // compleet-systeem blok 6e: welke kantoor-zaak deze opdracht mag zien (null = ad-hoc, geen kantoor)
+  opdrachtgever_id: string | null;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -130,6 +134,8 @@ export interface OpdrachtInput {
   meldingen?: MeldingItem[];
   user_id?: string | null;
   toegewezen_aan?: string | null;
+  /** Kantoor-zaak waar de opdracht bij hoort; null = ad-hoc (zelf ingeschoten, geen kantoor). */
+  opdrachtgever_id?: string | null;
 }
 
 export interface DocumentInput {
@@ -291,6 +297,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           meldingen: input.meldingen ?? [],
           user_id: input.user_id ?? null,
           toegewezen_aan: input.toegewezen_aan ?? null,
+          opdrachtgever_id: input.opdrachtgever_id ?? null,
         })
         .select("id")
         .single();
@@ -557,6 +564,9 @@ function createDbFromClient(client: SupabaseClient): Db {
         .select("*")
         .is("opdracht_id", null)
         .is("verwijderd_at", null)
+        // Alleen kantoor-opdrachten (met een zaak). Ad-hoc/zelf-ingeschoten klussen horen niet op
+        // het dashboard of planbord; die staan in de oplever-werkpool van de monteur.
+        .not("opdrachtgever_id", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return scopeVoorDashboard((data ?? []) as Melding[], peildatum);
@@ -605,6 +615,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           dashboard_status: "gepland",
           gewijzigd_te_versturen: false,
           verzonden_monteur: verzonden.monteur_naam,
+          verzonden_toegewezen_aan: verzonden.toegewezen_aan,
           verzonden_startdatum: verzonden.startdatum,
           verzonden_starttijd: verzonden.starttijd,
         })

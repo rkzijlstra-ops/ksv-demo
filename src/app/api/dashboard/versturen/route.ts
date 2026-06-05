@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     for (const o of opdrachten) {
       // status -> gepland, gewijzigd uit, huidige plek onthouden als verzonden plek
       await dbi.markeerVerzonden(o.id, {
+        toegewezen_aan: o.toegewezen_aan,
         monteur_naam: o.monteur_naam,
         startdatum: o.startdatum,
         starttijd: o.starttijd,

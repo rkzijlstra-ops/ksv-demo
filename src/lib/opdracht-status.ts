@@ -75,8 +75,13 @@ export function moetOpnieuwVersturen(huidigeStatus: DashboardStatus): boolean {
   return REEDS_VERSTUURD.has(huidigeStatus);
 }
 
-/** De plek (monteur + dag + tijd) waarop een opdracht stond toen hij verstuurd werd. */
+/**
+ * De plek waarop een opdracht stond toen hij verstuurd werd. Identiteit van de monteur =
+ * `toegewezen_aan` (het account), niet de naam: twee monteurs kunnen dezelfde naam hebben.
+ * `monteur_naam` blijft erbij voor de weergave (kolom verzonden_monteur).
+ */
 export interface VerzondenPlek {
+  toegewezen_aan: string | null;
   monteur_naam: string | null;
   startdatum: string | null;
   starttijd: string | null;
@@ -84,17 +89,17 @@ export interface VerzondenPlek {
 
 /**
  * Staat een nieuwe planning exact op de verzonden plek? Zo ja, dan is er feitelijk niets veranderd
- * sinds het versturen en hoeft de opdracht niet opnieuw. Tijd wordt op HH:MM vergeleken
- * ("10:00" == "10:00:00"). Nooit verstuurd (geen verzonden datum) telt niet als "op de plek".
+ * sinds het versturen en hoeft de opdracht niet opnieuw. Vergelijkt op account (toegewezen_aan),
+ * dag en tijd (HH:MM, "10:00" == "10:00:00"). Nooit verstuurd (geen verzonden datum) telt niet mee.
  */
 export function opVerzondenPlek(
-  nieuw: { monteur_naam: string | null; startdatum: string | null; starttijd: string | null },
+  nieuw: { toegewezen_aan: string | null; startdatum: string | null; starttijd: string | null },
   verzonden: VerzondenPlek | null | undefined,
 ): boolean {
   if (!verzonden || !verzonden.startdatum) return false;
   const hhmm = (t: string | null) => (t ? t.slice(0, 5) : null);
   return (
-    nieuw.monteur_naam === verzonden.monteur_naam &&
+    nieuw.toegewezen_aan === verzonden.toegewezen_aan &&
     nieuw.startdatum === verzonden.startdatum &&
     hhmm(nieuw.starttijd) === hhmm(verzonden.starttijd)
   );

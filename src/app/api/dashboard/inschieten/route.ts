@@ -86,6 +86,21 @@ export async function POST(req: Request) {
   const groepen = groepeerOpRef(koppen.map((k) => ({ referentienummer: k.referentienummer })));
 
   const dbi = await db();
+
+  // Welke kantoor-zaak hoort bij deze inschiet? Opdrachtgever = zijn eigen zaak; beheerder = de
+  // meegestuurde zaak, of de enige zaak als terugval (keuze-veld komt pas bij 2+ zaken).
+  const eigenProfiel = await dbi.getProfiel(userId);
+  let opdrachtgeverId: string | null = null;
+  if (eigenProfiel?.rol === "opdrachtgever") {
+    opdrachtgeverId = eigenProfiel.opdrachtgever_id;
+  } else {
+    const gekozen = formData.get("opdrachtgever_id");
+    opdrachtgeverId =
+      typeof gekozen === "string" && gekozen.trim()
+        ? gekozen.trim()
+        : (await dbi.getStandaardOpdrachtgever())?.id ?? null;
+  }
+
   const aangemaakt: Array<{
     id: string;
     klant_naam: string | null;
@@ -97,7 +112,7 @@ export async function POST(req: Request) {
   try {
     for (const groep of groepen) {
       const kop = koppen[groep.indexen[0]];
-      const { id: opdrachtId } = await dbi.createOpdracht(kop);
+      const { id: opdrachtId } = await dbi.createOpdracht({ ...kop, opdrachtgever_id: opdrachtgeverId });
 
       for (const idx of groep.indexen) {
         const f = files[idx];

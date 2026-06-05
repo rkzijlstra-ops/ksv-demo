@@ -55,6 +55,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   try {
     await dbi.wijzigOpdracht(id, planning, opdracht.dashboard_status, {
+      toegewezen_aan: opdracht.verzonden_toegewezen_aan,
       monteur_naam: opdracht.verzonden_monteur,
       startdatum: opdracht.verzonden_startdatum,
       starttijd: opdracht.verzonden_starttijd,
