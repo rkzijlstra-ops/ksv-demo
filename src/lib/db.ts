@@ -684,17 +684,21 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async ontplanOpdracht(id) {
-      // Terug naar de pool: status binnen, planning leeg, gewijzigd-marker reset.
+      // Terug naar de pool: status binnen, planning leeg, gewijzigd-marker reset. Ook de
+      // monteur-toewijzing wissen, anders blijft de klus in de werkpool van die monteur hangen
+      // (getWerkpoolVoor filtert op toegewezen_aan, en RLS toont de monteur zijn toegewezen rijen).
       const { error } = await client
         .from("meldingen")
         .update({
           dashboard_status: "binnen",
+          toegewezen_aan: null,
           monteur_naam: null,
           startdatum: null,
           starttijd: null,
           uitvoerdatum: null,
           gewijzigd_te_versturen: false,
           verzonden_monteur: null,
+          verzonden_toegewezen_aan: null,
           verzonden_startdatum: null,
           verzonden_starttijd: null,
         })

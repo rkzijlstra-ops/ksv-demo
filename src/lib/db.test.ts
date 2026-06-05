@@ -842,6 +842,9 @@ describe("ontplanOpdracht", () => {
     expect(patch.monteur_naam).toBeNull();
     expect(patch.startdatum).toBeNull();
     expect(patch.starttijd).toBeNull();
+    // Ook de toewijzing wissen, anders blijft de klus in de werkpool van de monteur (6d/RLS).
+    expect(patch.toegewezen_aan).toBeNull();
+    expect(patch.verzonden_toegewezen_aan).toBeNull();
   });
 });
 
