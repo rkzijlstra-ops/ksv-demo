@@ -909,4 +909,13 @@ describe("gebruikersbeheer", () => {
     expect(h.fns.update).toHaveBeenCalledWith({ rol: "opdrachtgever" });
     expect(h.fns.eq).toHaveBeenCalledWith("id", "u1");
   });
+
+  it("getWerkpoolVoor haalt alleen de top-level opdrachten van die monteur op", async () => {
+    h.setResult({ data: [{ id: "o1" }], error: null });
+    await createDb(cfg).getWerkpoolVoor("m1");
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
+    expect(h.fns.is).toHaveBeenCalledWith("verwijderd_at", null);
+    expect(h.fns.eq).toHaveBeenCalledWith("toegewezen_aan", "m1");
+  });
 });

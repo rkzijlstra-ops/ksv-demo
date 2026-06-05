@@ -53,6 +53,8 @@ export async function POST(req: Request) {
         leverweek: null,
         keukenzaak,
         user_id: userId,
+        // Zelf inschieten in de oplever-app = de opdracht is meteen van jou (verschijnt in je werkpool).
+        toegewezen_aan: userId,
       });
       return NextResponse.json({ id, documenttype: "tekst", documenten: [] }, { status: 200 });
     } catch (err) {
@@ -85,6 +87,8 @@ export async function POST(req: Request) {
     leverweek: null,
     meldingen: [],
     user_id: userId,
+    // Zelf inschieten in de oplever-app = de opdracht is meteen van jou (verschijnt in je werkpool).
+    toegewezen_aan: userId,
   };
 
   if (primair) {
@@ -101,6 +105,7 @@ export async function POST(req: Request) {
         keukenzaak: parsed.keukenzaak,
         meldingen: parsed.meldingen,
         user_id: userId,
+        toegewezen_aan: userId,
       };
     } catch {
       // Parser faalt: opdracht tóch aanmaken met lege kop, origineel blijft bewaard.

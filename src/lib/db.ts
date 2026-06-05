@@ -207,6 +207,8 @@ export interface Db {
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   getMeldingen(): Promise<Melding[]>;
+  /** De oplever-werkpool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
+  getWerkpoolVoor(userId: string): Promise<Melding[]>;
   getMeldingById(id: string): Promise<Melding | null>;
   getMeldingenVoorOpdracht(opdrachtId: string): Promise<Melding[]>;
   createMonteurMelding(data: MonteurMeldingInput): Promise<{ id: string }>;
@@ -350,6 +352,18 @@ function createDbFromClient(client: SupabaseClient): Db {
         .maybeSingle();
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data as Melding | null) ?? null;
+    },
+
+    async getWerkpoolVoor(userId: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .is("opdracht_id", null)
+        .is("verwijderd_at", null)
+        .eq("toegewezen_aan", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
     },
 
     async getMeldingenVoorOpdracht(opdrachtId: string) {

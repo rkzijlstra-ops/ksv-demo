@@ -14,7 +14,9 @@ export default async function WerkpoolPage() {
   const { email, profiel } = await vereisRol(["monteur", "beheerder"]);
 
   const dbi = await db();
-  const meldingen = await dbi.getMeldingen();
+  // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
+  // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
+  const meldingen = await dbi.getWerkpoolVoor(profiel.id);
   const tellingen = await dbi.getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
 
