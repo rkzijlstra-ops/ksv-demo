@@ -30,7 +30,7 @@ export function PlanbordPool({
           Sleep een afspraak hierheen om hem terug te halen
         </span>
       </div>
-      <div ref={setNodeRef} className={isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}>
+      <div ref={setNodeRef} data-testid="pool-zone" className={isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}>
       {pool.length === 0 ? (
         <p className="p-4 text-sm text-ink-muted">
           Niets meer te plannen. Sleep een afspraak van het bord hierheen om hem terug te halen.

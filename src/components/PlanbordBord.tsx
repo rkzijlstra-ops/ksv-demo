@@ -298,7 +298,7 @@ export function PlanbordBord({
         <span>Sleep naar de rand (‹ ›) om een week te schuiven.</span>
       </p>
 
-      <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={vandaag} />
+      <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={maandag} />
 
       <DragOverlay>
         {actief ? (

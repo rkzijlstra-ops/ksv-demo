@@ -13,6 +13,15 @@ function vandaagISO(): string {
   return `${d.getFullYear()}-${m}-${dag}`;
 }
 
+// Op zaterdag/zondag de volgende maandag als anker, zodat het bord meteen de komende werkweek toont.
+function ankerVoorDatum(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const dow = d.getUTCDay();
+  if (dow === 6) d.setUTCDate(d.getUTCDate() + 2);
+  else if (dow === 0) d.setUTCDate(d.getUTCDate() + 1);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 const DATUM_PATROON = /^\d{4}-\d{2}-\d{2}$/;
 
 export default async function PlanbordPage({
@@ -24,7 +33,7 @@ export default async function PlanbordPage({
   const { email, profiel } = await vereisRol(["opdrachtgever", "beheerder"]);
 
   const vandaag = vandaagISO();
-  const ankerInit = week && DATUM_PATROON.test(week) ? week : vandaag;
+  const ankerInit = week && DATUM_PATROON.test(week) ? week : ankerVoorDatum(vandaag);
   const dbi = await db();
   const opdrachten = await dbi.getOpdrachtenVoorDashboard();
   const monteurs = (await dbi.getMonteurs()).map((m) => ({ id: m.id, naam: m.naam }));

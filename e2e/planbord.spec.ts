@@ -18,6 +18,15 @@ function vandaagISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// Dezelfde logica als ankerVoorDatum in de planbord-page: op za/zo naar de volgende maandag.
+function ankerVoorDatum(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const dow = d.getUTCDay();
+  if (dow === 6) d.setUTCDate(d.getUTCDate() + 2);
+  else if (dow === 0) d.setUTCDate(d.getUTCDate() + 1);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 let uniek = "";
 let seededId = "";
 
@@ -60,19 +69,25 @@ test("inplannen via het pool-formulier zet de status op concept_gepland", async 
   await kaart.getByRole("button", { name: "Inplannen" }).click();
   await kaart.getByRole("button", { name: "Op planbord zetten" }).click();
 
+  // Database: status en planning kloppen.
   await expect
     .poll(async () => (await statusVan(seededId))?.dashboard_status, { timeout: 12_000, intervals: [500] })
     .toBe("concept_gepland");
   const data = await statusVan(seededId);
   expect(data?.toegewezen_aan).toBeTruthy();
   expect(data?.startdatum).toBeTruthy();
+
+  // Visueel: kaart staat op het planbord (als Link naar de opdracht-detailpagina).
+  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
+  // Visueel: kaart is weg uit de pool.
+  await expect(kaart).not.toBeVisible();
 });
 
 test("inplannen door slepen van de pool naar een cel werkt", async ({ page }) => {
   const monteurs = await db.getMonteurs();
   test.skip(monteurs.length === 0, "Geen monteur-accounts om naar te slepen");
   const monteur = monteurs[0];
-  const maandag = maandagVan(vandaagISO());
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
 
   await page.goto("/planbord");
   const kaart = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
@@ -93,10 +108,17 @@ test("inplannen door slepen van de pool naar een cel werkt", async ({ page }) =>
   await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 12 });
   await page.mouse.up();
 
+  // Database: status, monteur en datum kloppen.
   await expect
     .poll(async () => (await statusVan(seededId))?.dashboard_status, { timeout: 12_000, intervals: [500] })
     .toBe("concept_gepland");
   const data = await statusVan(seededId);
   expect(data?.toegewezen_aan).toBe(monteur.id);
   expect(data?.startdatum).toBe(maandag);
+
+  // Visueel: kaart staat op het planbord op de juiste dag.
+  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
+  // Visueel: kaart is weg uit de pool.
+  const kaartInPool = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
+  await expect(kaartInPool).not.toBeVisible();
 });

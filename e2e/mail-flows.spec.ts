@@ -25,18 +25,20 @@ const db: Db = createDb({ url: URL_, secretKey: KEY });
 let oId = "";
 let mId = "";
 let accUid = "";
+let accNieuwAangemaakt = false;
 
 test.beforeEach(() => {
   test.skip(!process.env.E2E_MAIL, "Verstuurt echt een mail; draai met E2E_MAIL=1");
   oId = "";
   mId = "";
   accUid = "";
+  accNieuwAangemaakt = false;
 });
 
 test.afterEach(async () => {
   if (mId) await admin.from("meldingen").delete().eq("id", mId);
   if (oId) await admin.from("meldingen").delete().eq("id", oId);
-  if (accUid) await admin.auth.admin.deleteUser(accUid).catch(() => {});
+  if (accUid && accNieuwAangemaakt) await admin.auth.admin.deleteUser(accUid).catch(() => {});
 });
 
 async function zoekUidOpEmail(email: string): Promise<string | null> {
@@ -91,6 +93,7 @@ test("uitnodigingsmail wordt naar de nieuwe gebruiker verstuurd", async ({ page 
   });
   expect(res.ok()).toBeTruthy();
   accUid = (await zoekUidOpEmail(email)) ?? "";
+  accNieuwAangemaakt = true; // de API maakte dit account; altijd opruimen in afterEach
   console.log(`INVITEMAIL email=${email}`);
 });
 
@@ -99,27 +102,38 @@ test("afmeldmail wordt verstuurd als een gebruiker wordt verwijderd", async ({ p
   const email = `bkmkeukenmontage+afmtest${stamp}@gmail.com`;
   const zaak = await db.getStandaardOpdrachtgever();
   const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-  const uid = maak!.user.id;
+  accUid = maak!.user.id;
+  accNieuwAangemaakt = true; // veiligheidsvangnet: API ruimt op, afterEach ook als fallback
   await admin
     .from("profielen")
-    .insert({ id: uid, rol: "monteur", naam: `Afmtest ${stamp}`, opdrachtgever_id: zaak?.id ?? null });
+    .insert({ id: accUid, rol: "monteur", naam: `Afmtest ${stamp}`, opdrachtgever_id: zaak?.id ?? null });
 
-  const res = await page.request.delete(`/api/gebruikers/${uid}`);
+  const res = await page.request.delete(`/api/gebruikers/${accUid}`);
   expect(res.ok()).toBeTruthy(); // verwijdert het account + stuurt de afmeldmail
-  accUid = (await zoekUidOpEmail(email)) ?? ""; // mocht het account toch nog bestaan, ruim het op
+  // Na succesvolle verwijdering bestaat het account niet meer; afterEach-cleanup is dan no-op.
   console.log(`AFMELDMAIL email=${email}`);
 });
 
 test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus wordt geannuleerd", async ({ page }) => {
   const stamp = Date.now();
-  const email = `bkmkeukenmontage+anntest${stamp}@gmail.com`;
+  // Resend free tier staat in testmodus alleen toe te sturen naar het account-eigenaar-adres.
+  // Gebruik dat adres als testmonteur zodat de verzending slaagt.
+  const email = "bkmkeukenmontage@gmail.com";
   const klant = `ANNMAIL ${stamp}`;
   const zaak = await db.getStandaardOpdrachtgever();
-  const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-  accUid = maak!.user.id;
+  // Gebruiker bestaat mogelijk al in de test-DB van een vorige run; zoek of maak.
+  const { data: lijstData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const bestaand = lijstData?.users?.find((u) => u.email?.toLowerCase() === email);
+  if (bestaand) {
+    accUid = bestaand.id;
+  } else {
+    const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    accUid = maak!.user.id;
+    accNieuwAangemaakt = true;
+  }
   await admin
     .from("profielen")
-    .insert({ id: accUid, rol: "monteur", naam: "Anntest Monteur", opdrachtgever_id: zaak?.id ?? null });
+    .upsert({ id: accUid, rol: "monteur", naam: "Anntest Monteur", opdrachtgever_id: zaak?.id ?? null }, { onConflict: "id" });
   const o = await db.createOpdracht({
     documenttype: "werkbon_service",
     klant_naam: klant,

@@ -24,6 +24,7 @@ const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: 
 const db: Db = createDb({ url: URL_, secretKey: KEY });
 
 let testMonteurId = "";
+let testMonteurNieuwAangemaakt = false;
 let priorId = "";
 let currentId = "";
 let klant = "";
@@ -31,6 +32,10 @@ let rapportUrl = "";
 
 test.beforeEach(async () => {
   test.skip(!process.env.E2E_MAIL, "Verstuurt echt een mail; draai met E2E_MAIL=1");
+  testMonteurId = "";
+  testMonteurNieuwAangemaakt = false;
+  priorId = "";
+  currentId = "";
 
   const stamp = Date.now();
   klant = `OPDRMAIL ${stamp}`;
@@ -38,16 +43,23 @@ test.beforeEach(async () => {
   rapportUrl = `https://storage.example/rapport-${ref}.pdf`;
   const zaak = await db.getStandaardOpdrachtgever();
 
-  // Testmonteur op een leesbaar +adres (mail komt zo in de BKM-inbox).
-  const { data: maak, error } = await admin.auth.admin.createUser({
-    email: `bkmkeukenmontage+optest${stamp}@gmail.com`,
-    email_confirm: true,
-  });
-  if (error || !maak?.user) throw new Error(`Testmonteur aanmaken mislukt: ${error?.message}`);
-  testMonteurId = maak.user.id;
+  // Resend free tier staat alleen berichten naar het account-eigenaar-adres toe in testmodus.
+  // Zoek of maak een testmonteur met dat adres zodat de mail slaagt.
+  const testEmail = "bkmkeukenmontage@gmail.com";
+  const { data: lijstData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const bestaand = lijstData?.users?.find((u) => u.email?.toLowerCase() === testEmail);
+  if (bestaand) {
+    testMonteurId = bestaand.id;
+    testMonteurNieuwAangemaakt = false;
+  } else {
+    const { data: maak, error } = await admin.auth.admin.createUser({ email: testEmail, email_confirm: true });
+    if (error || !maak?.user) throw new Error(`Testmonteur aanmaken mislukt: ${error?.message}`);
+    testMonteurId = maak.user.id;
+    testMonteurNieuwAangemaakt = true;
+  }
   await admin
     .from("profielen")
-    .insert({ id: testMonteurId, rol: "monteur", naam: "Optest Monteur", opdrachtgever_id: zaak?.id ?? null });
+    .upsert({ id: testMonteurId, rol: "monteur", naam: "Optest Monteur", opdrachtgever_id: zaak?.id ?? null }, { onConflict: "id" });
 
   // Eerdere, opgeleverde klus op dezelfde referentie (levert de historie + rapport-link).
   const prior = await db.createOpdracht({
@@ -92,7 +104,8 @@ test.afterEach(async () => {
   for (const id of [priorId, currentId]) {
     if (id) await admin.from("meldingen").delete().eq("id", id);
   }
-  if (testMonteurId) await admin.auth.admin.deleteUser(testMonteurId); // profiel cascadeert mee
+  // Profiel opruimen (hergebruikte beheerder-account niet verwijderen uit de test-DB).
+  if (testMonteurId && testMonteurNieuwAangemaakt) await admin.auth.admin.deleteUser(testMonteurId).catch(() => {});
 });
 
 test("monteur-opdracht-mail wordt verstuurd met de eerdere-rapporten-historie", async ({ page }) => {

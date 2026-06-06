@@ -159,7 +159,11 @@ export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string
         const dagenB = bezetteDagen(b);
         if (!dagenA.some((d) => dagenB.includes(d))) continue;
         const beideService = !!a.starttijd && !!b.starttijd;
+        const beideMontage = !a.starttijd && !b.starttijd;
+        // Twee services op andere tijden: geen conflict.
         if (beideService && hhmm(a.starttijd) !== hhmm(b.starttijd)) continue;
+        // Service (tijdstip) op dezelfde dag als montage: monteur plant dat bewust; geen conflict.
+        if (!beideMontage && !beideService) continue;
         conflict.add(a.id);
         conflict.add(b.id);
       }

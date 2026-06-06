@@ -206,10 +206,18 @@ describe("vindDubbeleBoekingen", () => {
     expect(set.has("c")).toBe(true);
   });
 
-  it("meerdaagse montage die over een andere klus heen valt = conflict", () => {
+  it("meerdaagse montage + service op dezelfde dag = geen conflict (bewust gepland)", () => {
     const set = vindDubbeleBoekingen([
       b({ id: "a", startdatum: "2026-06-10", duur_dagen: 3 }),
       b({ id: "c", startdatum: "2026-06-12", starttijd: "10:00" }),
+    ]);
+    expect(set.size).toBe(0);
+  });
+
+  it("meerdaagse montage + tweede montage op overlappende dag = conflict", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a", startdatum: "2026-06-10", duur_dagen: 3 }),
+      b({ id: "c", startdatum: "2026-06-12", duur_dagen: 1 }),
     ]);
     expect(set.has("a")).toBe(true);
     expect(set.has("c")).toBe(true);

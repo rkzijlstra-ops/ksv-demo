@@ -90,6 +90,25 @@ async function ensureOpdrachtgever(url: string, secret: string): Promise<string>
   return uid;
 }
 
+/**
+ * Zorgt dat beheerder en monteur een profielen-rij hebben. Zonder die rij geeft de RLS-functie
+ * mijn_rol() null terug, waardoor meldingen_select alle queries blokkeert en de planbord-pool
+ * leeg blijft in de browser. Idempotent: upsert op conflict (id).
+ */
+async function ensureProfielen(url: string, secret: string) {
+  const admin = createClient(url, secret, { auth: { persistSession: false } });
+  const { data: zaken } = await admin.from("opdrachtgevers").select("id").order("created_at").limit(1);
+  const zaakId = zaken?.[0]?.id ?? null;
+  await admin.from("profielen").upsert(
+    { id: BEHEERDER.uid, rol: "beheerder", naam: "E2E Beheerder", opdrachtgever_id: zaakId },
+    { onConflict: "id" },
+  );
+  await admin.from("profielen").upsert(
+    { id: MONTEUR.uid, rol: "monteur", naam: "E2E Monteur", opdrachtgever_id: zaakId },
+    { onConflict: "id" },
+  );
+}
+
 export default async function globalSetup() {
   const url = SUPABASE_URL;
   const anon = SUPABASE_ANON;
@@ -97,6 +116,7 @@ export default async function globalSetup() {
   if (!url || !anon || !secret) throw new Error("Supabase-env ontbreekt (.env.local of .env.test)");
 
   const VERCEL = APP_HOST;
+  await ensureProfielen(url, secret);
   const ogUid = await ensureOpdrachtgever(url, secret);
 
   // Per account ÉÉN keer inloggen; localhost voor de gewone e2e, vercel-domein voor de mail-e2e.
