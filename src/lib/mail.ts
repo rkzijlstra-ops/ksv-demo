@@ -3,6 +3,7 @@ import type { Melding, Rol } from "./db";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 import { uitnodigingTekst } from "./uitnodig-mail";
 import { afmeldingTekst } from "./afmeld-mail";
+import { annuleringTekst } from "./annuleer-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -41,6 +42,15 @@ export interface UitnodigingMailInput {
 export interface AfmeldingMailInput {
   naar: string;
   naam: string;
+  /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
+  organisatie?: string;
+}
+
+export interface AnnuleringMailInput {
+  naar: string;
+  monteurNaam: string;
+  klantNaam: string;
+  referentienummer: string | null;
   /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
   organisatie?: string;
 }
@@ -157,6 +167,33 @@ export async function verstuurAfmelding(input: AfmeldingMailInput): Promise<void
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Afmelding versturen mislukt: ${msg}`);
+  }
+}
+
+/** Meldt de monteur dat zijn toegewezen opdracht is geannuleerd. */
+export async function verstuurAnnulering(input: AnnuleringMailInput): Promise<void> {
+  const { apiKey, from, replyTo } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = annuleringTekst(
+    input.monteurNaam,
+    input.klantNaam,
+    input.referentienummer,
+    input.organisatie,
+  );
+
+  const { error } = await resend.emails.send({
+    from,
+    to: input.naar,
+    ...(replyTo ? { replyTo } : {}),
+    subject,
+    text,
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Annulering versturen mislukt: ${msg}`);
   }
 }
 

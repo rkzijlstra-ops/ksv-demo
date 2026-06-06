@@ -20,6 +20,7 @@ import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
 import { OpdrachtBewerken } from "@/components/OpdrachtBewerken";
+import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +117,11 @@ export default async function OpdrachtgeverDetailPage({
           referentienummer={opdracht.referentienummer}
           keukenzaak={opdracht.keukenzaak}
           documenttype={opdracht.documenttype ?? "onbekend"}
+        />
+        <AnnuleerKnop
+          opdrachtId={opdracht.id}
+          status={opdracht.dashboard_status}
+          opgeleverd={opdracht.opdracht_status === "opgeleverd"}
         />
       </section>
 

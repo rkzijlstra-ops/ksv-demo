@@ -109,3 +109,35 @@ test("afmeldmail wordt verstuurd als een gebruiker wordt verwijderd", async ({ p
   accUid = (await zoekUidOpEmail(email)) ?? ""; // mocht het account toch nog bestaan, ruim het op
   console.log(`AFMELDMAIL email=${email}`);
 });
+
+test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus wordt geannuleerd", async ({ page }) => {
+  const stamp = Date.now();
+  const email = `bkmkeukenmontage+anntest${stamp}@gmail.com`;
+  const klant = `ANNMAIL ${stamp}`;
+  const zaak = await db.getStandaardOpdrachtgever();
+  const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  accUid = maak!.user.id;
+  await admin
+    .from("profielen")
+    .insert({ id: accUid, rol: "monteur", naam: "Anntest Monteur", opdrachtgever_id: zaak?.id ?? null });
+  const o = await db.createOpdracht({
+    documenttype: "werkbon_service",
+    klant_naam: klant,
+    klant_adres: "Teststraat 1",
+    referentienummer: `AM${stamp}`,
+    adviseur: null,
+    klant_telefoon: null,
+    leverweek: null,
+    keukenzaak: "Keukenstudio Voorschoten",
+    user_id: BEHEERDER,
+    opdrachtgever_id: zaak?.id ?? null,
+  });
+  oId = o.id;
+  await db.planOpdracht(oId, { toegewezen_aan: accUid, monteur_naam: "Anntest Monteur", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 });
+  await db.markeerVerzonden(oId, { toegewezen_aan: accUid, monteur_naam: "Anntest Monteur", startdatum: "2026-06-15", starttijd: null });
+
+  const res = await page.request.post(`/api/opdrachten/${oId}/annuleren`);
+  expect(res.ok()).toBeTruthy();
+  expect((await res.json()).gemaild).toBe(true);
+  console.log(`ANNULEERMAIL klant="${klant}" naar=${email}`);
+});
