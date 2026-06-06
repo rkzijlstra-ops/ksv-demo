@@ -6,9 +6,8 @@ import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
- * Verstuur-poort: mailt de opgegeven opdrachten naar de monteurs (gebundeld per monteur, één mail
- * per monteur) en zet ze op 'gepland' (gewijzigd-marker reset). Ontvanger is in de demo
- * RAPPORT_EMAIL; later het adres van elke monteur (blok 6).
+ * Verstuur-poort: zet de opgegeven opdrachten op 'gepland' en mailt de monteurs.
+ * Statusupdate gaat altijd door; een mailfout is een waarschuwing, geen blokkade.
  */
 export async function POST(req: Request) {
   const userId = await getAuthenticatedUserId();
@@ -45,12 +44,29 @@ export async function POST(req: Request) {
     (perMonteur.get(sleutel) ?? perMonteur.set(sleutel, []).get(sleutel)!).push(o);
   }
 
+  // Statusupdate EERST: dit is de primaire actie. Mail is secundair.
+  try {
+    for (const o of opdrachten) {
+      // status -> gepland, gewijzigd uit, huidige plek onthouden als verzonden plek
+      await dbi.markeerVerzonden(o.id, {
+        toegewezen_aan: o.toegewezen_aan,
+        monteur_naam: o.monteur_naam,
+        startdatum: o.startdatum,
+        starttijd: o.starttijd,
+      });
+    }
+  } catch (err) {
+    return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
+  }
+
+  // Mail versturen: als dit mislukt, wordt een waarschuwing teruggegeven maar de status is al bijgewerkt.
+  let mailWaarschuwing: string | null = null;
   try {
     for (const eigen of perMonteur.values()) {
       const eerste = eigen[0];
       const monteurEmail = eerste.toegewezen_aan ? await getGebruikerEmail(eerste.toegewezen_aan) : null;
       const naar = monteurEmail ?? fallback;
-      if (!naar) continue; // geen adres bekend; sla de mail over, status volgt wel
+      if (!naar) continue; // geen adres bekend; sla de mail over
       // Per opdracht de eerdere bezoeken op dezelfde referentie meesturen (rapport-links).
       const metHistorie = await Promise.all(
         eigen.map(async (o) => ({
@@ -68,21 +84,11 @@ export async function POST(req: Request) {
       });
     }
   } catch (err) {
-    return NextResponse.json({ error: `Mailen mislukt: ${(err as Error).message}` }, { status: 502 });
+    mailWaarschuwing = `Mail niet verzonden: ${(err as Error).message}`;
   }
 
-  try {
-    for (const o of opdrachten) {
-      // status -> gepland, gewijzigd uit, huidige plek onthouden als verzonden plek
-      await dbi.markeerVerzonden(o.id, {
-        toegewezen_aan: o.toegewezen_aan,
-        monteur_naam: o.monteur_naam,
-        startdatum: o.startdatum,
-        starttijd: o.starttijd,
-      });
-    }
-  } catch (err) {
-    return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
-  }
-  return NextResponse.json({ ok: true, aantal: opdrachten.length, monteurs: perMonteur.size }, { status: 200 });
+  return NextResponse.json(
+    { ok: true, aantal: opdrachten.length, monteurs: perMonteur.size, mailWaarschuwing },
+    { status: 200 },
+  );
 }
