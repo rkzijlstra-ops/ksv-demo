@@ -1,33 +1,115 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockOntplan } = vi.hoisted(() => ({ mockOntplan: vi.fn() }));
-vi.mock("@/lib/db", () => ({ db: () => ({ ontplanOpdracht: mockOntplan }) }));
-vi.mock("@/lib/auth", () => ({
-  getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
+const { mockAuthId, mockGetProfiel, mockGetOpdracht, mockOntplan, mockEmail, mockMail } = vi.hoisted(
+  () => ({
+    mockAuthId: vi.fn(),
+    mockGetProfiel: vi.fn(),
+    mockGetOpdracht: vi.fn(),
+    mockOntplan: vi.fn(),
+    mockEmail: vi.fn(),
+    mockMail: vi.fn(),
+  }),
+);
+
+vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockAuthId }));
+vi.mock("@/lib/db", () => ({
+  db: () => ({
+    getProfiel: mockGetProfiel,
+    getOpdrachtById: mockGetOpdracht,
+    ontplanOpdracht: mockOntplan,
+  }),
 }));
+vi.mock("@/lib/supabase-admin", () => ({ getGebruikerEmail: mockEmail }));
+vi.mock("@/lib/mail", () => ({ verstuurOntplanning: mockMail }));
 
 import { POST } from "./route";
 
-const params = Promise.resolve({ id: "opdr-1" });
-function req(): Request {
-  return new Request("http://localhost/api/opdrachten/opdr-1/ontplannen", { method: "POST" });
-}
+const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+const verstuurd = {
+  id: "opdr-1",
+  klant_naam: "Fam. Bakker",
+  referentienummer: "7588",
+  keukenzaak: "Keukenstudio Voorschoten",
+  dashboard_status: "bevestigd",
+  toegewezen_aan: "rk-uid",
+  monteur_naam: "Rein RK",
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockAuthId.mockResolvedValue("kantoor-uid");
+  mockGetProfiel.mockResolvedValue({ rol: "beheerder" });
+  mockGetOpdracht.mockResolvedValue({ ...verstuurd });
+  mockOntplan.mockResolvedValue(undefined);
+  mockEmail.mockResolvedValue("rk@voorbeeld.nl");
+  mockMail.mockResolvedValue(undefined);
+});
 
 describe("POST /api/opdrachten/[id]/ontplannen", () => {
-  beforeEach(() => {
-    mockOntplan.mockReset();
-    mockOntplan.mockResolvedValue(undefined);
+  it("401 als niet ingelogd", async () => {
+    mockAuthId.mockResolvedValue(null);
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
+    expect(res.status).toBe(401);
+    expect(mockOntplan).not.toHaveBeenCalled();
   });
 
-  it("haalt de opdracht van het bord", async () => {
-    const res = await POST(req(), { params });
+  it("403 voor een monteur", async () => {
+    mockGetProfiel.mockResolvedValue({ rol: "monteur" });
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
+    expect(res.status).toBe(403);
+    expect(mockOntplan).not.toHaveBeenCalled();
+  });
+
+  it("404 als de opdracht niet bestaat", async () => {
+    mockGetOpdracht.mockResolvedValue(null);
+    const res = await POST(new Request("http://x"), ctx("weg"));
+    expect(res.status).toBe(404);
+    expect(mockOntplan).not.toHaveBeenCalled();
+  });
+
+  it("ontplant en mailt de monteur als de klus al verstuurd/bevestigd was", async () => {
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
     expect(res.status).toBe(200);
     expect(mockOntplan).toHaveBeenCalledWith("opdr-1");
+    expect(mockMail).toHaveBeenCalledTimes(1);
+    expect(mockMail.mock.calls[0][0]).toMatchObject({
+      naar: "rk@voorbeeld.nl",
+      monteurNaam: "Rein RK",
+      klantNaam: "Fam. Bakker",
+      referentienummer: "7588",
+    });
+    expect((await res.json()).gemaild).toBe(true);
   });
 
-  it("503 bij een db-fout", async () => {
+  it("mailt ook bij status 'gepland' (verstuurd, nog niet bevestigd)", async () => {
+    mockGetOpdracht.mockResolvedValue({ ...verstuurd, dashboard_status: "gepland" });
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockMail).toHaveBeenCalledTimes(1);
+  });
+
+  it("ontplant ZONDER mail als de klus nog niet verstuurd was (concept_gepland)", async () => {
+    mockGetOpdracht.mockResolvedValue({ ...verstuurd, dashboard_status: "concept_gepland" });
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockOntplan).toHaveBeenCalledWith("opdr-1");
+    expect(mockMail).not.toHaveBeenCalled();
+    expect((await res.json()).gemaild).toBe(false);
+  });
+
+  it("ontplant tóch (200) als de mail faalt, met mailFout in het antwoord", async () => {
+    mockMail.mockRejectedValue(new Error("resend down"));
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockOntplan).toHaveBeenCalledWith("opdr-1");
+    const body = await res.json();
+    expect(body.gemaild).toBe(false);
+    expect(body.mailFout).toContain("resend down");
+  });
+
+  it("503 bij een db-fout tijdens ontplannen", async () => {
     mockOntplan.mockRejectedValue(new Error("kapot"));
-    const res = await POST(req(), { params });
+    const res = await POST(new Request("http://x"), ctx("opdr-1"));
     expect(res.status).toBe(503);
   });
 });

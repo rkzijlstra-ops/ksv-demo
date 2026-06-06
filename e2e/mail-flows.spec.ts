@@ -4,7 +4,8 @@ import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, APP_URL, BEHEERDER as BEHEERDER_ACC } from "./test-env";
 
 /**
- * De overige mail-flows end-to-end tegen productie: spoedmelding, uitnodiging en afmelding.
+ * De overige mail-flows end-to-end tegen productie: spoedmelding, uitnodiging, afmelding,
+ * ontplannen (terug naar de pool) en annulering.
  * Triggert de echte routes met een beheerder-sessie; daarna in de BKM-mailbox te controleren.
  * Verstuurt echt, dus achter E2E_MAIL=1:
  *   E2E_MAIL=1 npx playwright test e2e/mail-flows.spec.ts
@@ -112,6 +113,39 @@ test("afmeldmail wordt verstuurd als een gebruiker wordt verwijderd", async ({ p
   expect(res.ok()).toBeTruthy(); // verwijdert het account + stuurt de afmeldmail
   // Na succesvolle verwijdering bestaat het account niet meer; afterEach-cleanup is dan no-op.
   console.log(`AFMELDMAIL email=${email}`);
+});
+
+test("ontplan-mail wordt naar de monteur verstuurd als een verstuurde klus terug naar de pool gaat", async ({ page }) => {
+  const stamp = Date.now();
+  const email = `bkmkeukenmontage+ontplantest${stamp}@gmail.com`;
+  const klant = `ONTPLANMAIL ${stamp}`;
+  const zaak = await db.getStandaardOpdrachtgever();
+  const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  accUid = maak!.user.id;
+  accNieuwAangemaakt = true;
+  await admin
+    .from("profielen")
+    .insert({ id: accUid, rol: "monteur", naam: "Ontplan Monteur", opdrachtgever_id: zaak?.id ?? null });
+  const o = await db.createOpdracht({
+    documenttype: "werkbon_service",
+    klant_naam: klant,
+    klant_adres: "Teststraat 1",
+    referentienummer: `OP${stamp}`,
+    adviseur: null,
+    klant_telefoon: null,
+    leverweek: null,
+    keukenzaak: "Keukenstudio Voorschoten",
+    user_id: BEHEERDER,
+    opdrachtgever_id: zaak?.id ?? null,
+  });
+  oId = o.id;
+  await db.planOpdracht(oId, { toegewezen_aan: accUid, monteur_naam: "Ontplan Monteur", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 });
+  await db.markeerVerzonden(oId, { toegewezen_aan: accUid, monteur_naam: "Ontplan Monteur", startdatum: "2026-06-15", starttijd: null });
+
+  const res = await page.request.post(`/api/opdrachten/${oId}/ontplannen`);
+  expect(res.ok()).toBeTruthy();
+  expect((await res.json()).gemaild).toBe(true);
+  console.log(`ONTPLANMAIL klant="${klant}" naar=${email} (planning@kluslus.nl)`);
 });
 
 test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus wordt geannuleerd", async ({ page }) => {

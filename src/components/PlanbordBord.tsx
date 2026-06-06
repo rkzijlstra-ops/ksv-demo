@@ -97,6 +97,9 @@ export function PlanbordBord({
   const [items, setItems] = useState<Melding[]>(opdrachten);
   const [vorigeProp, setVorigeProp] = useState(opdrachten);
   const [actief, setActief] = useState<Melding | null>(null);
+  // Een al verstuurde/bevestigde klus die naar de pool gesleept is, wacht op bevestiging (de monteur
+  // krijgt dan bericht). Concept-klussen gaan stil terug en zetten dit niet.
+  const [bevestigOntplan, setBevestigOntplan] = useState<Melding | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   // Na een server-refresh de lokale kopie weer gelijktrekken (render-patroon, geen useEffect).
@@ -162,19 +165,15 @@ export function PlanbordBord({
       return;
     }
 
-    // Terug naar de pool: ontplannen.
+    // Terug naar de pool: ontplannen. Was de klus al naar de monteur verstuurd (gepland/bevestigd),
+    // dan eerst bevestigen, want hij krijgt er bericht over. Een concept gaat stil terug.
     if (over.zone === "pool") {
       if (data.soort !== "kaart") return;
-      pasLokaalToe(o.id, {
-        dashboard_status: "binnen",
-        monteur_naam: null,
-        startdatum: null,
-        starttijd: null,
-        gewijzigd_te_versturen: false,
-      });
-      void fetch(`/api/opdrachten/${o.id}/ontplannen`, { method: "POST" }).then(() =>
-        router.refresh(),
-      );
+      if (moetOpnieuwVersturen(o.dashboard_status)) {
+        setBevestigOntplan(o);
+        return;
+      }
+      voerOntplanUit(o);
       return;
     }
 
@@ -215,6 +214,21 @@ export function PlanbordBord({
       gewijzigd_te_versturen: gewijzigdNa(o, toegewezenAan, dag, o.starttijd),
     });
     void verplaats(o, toegewezenAan, monteurNaam, dag);
+  }
+
+  // Voert het ontplannen daadwerkelijk uit: kaart optimistisch naar de pool, dan de server. De route
+  // mailt de monteur als de klus al verstuurd was.
+  function voerOntplanUit(o: Melding) {
+    pasLokaalToe(o.id, {
+      dashboard_status: "binnen",
+      monteur_naam: null,
+      startdatum: null,
+      starttijd: null,
+      gewijzigd_te_versturen: false,
+    });
+    void fetch(`/api/opdrachten/${o.id}/ontplannen`, { method: "POST" }).then(() =>
+      router.refresh(),
+    );
   }
 
   function verplaats(o: Melding, toegewezenAan: string | null, monteurNaam: string | null, dag: string) {
@@ -307,6 +321,54 @@ export function PlanbordBord({
           </div>
         ) : null}
       </DragOverlay>
+
+      {bevestigOntplan && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Opdracht van de planning halen"
+          onClick={() => setBevestigOntplan(null)}
+        >
+          <div
+            className="w-full max-w-md border-2 border-urgent-rood bg-white p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={20} strokeWidth={2.5} className="mt-0.5 shrink-0 text-urgent-rood" aria-hidden="true" />
+              <div>
+                <h2 className="font-mono text-lg font-extrabold text-ink">Van de planning halen?</h2>
+                <p className="mt-2 text-sm text-ink">
+                  De klus voor{" "}
+                  <span className="font-bold">{bevestigOntplan.klant_naam ?? "deze klant"}</span> is al
+                  naar de monteur verstuurd. Als je hem terug naar de pool zet, krijgt de monteur
+                  automatisch bericht en verdwijnt de klus uit zijn werkpool.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const o = bevestigOntplan;
+                  setBevestigOntplan(null);
+                  voerOntplanUit(o);
+                }}
+                className="inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 bg-urgent-rood px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                Ja, van planning halen
+              </button>
+              <button
+                type="button"
+                onClick={() => setBevestigOntplan(null)}
+                className="inline-flex min-h-[44px] cursor-pointer items-center justify-center border-2 border-ink px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                Nee
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DndContext>
   );
 }
