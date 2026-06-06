@@ -29,16 +29,14 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Bevestigen op de detailpagina | E | bevestigen.spec | groen |
 | Bevestigen vanaf de werkpool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
 | Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |
-| Oplevering: foto-upload + handtekening-canvas + opmerking als concept | U, E | rapport.test, opleveren.spec | groen |
+| Oplevering: foto-upload + handtekening-canvas + opmerking als concept (saves geserialiseerd) | U, E | rapport.test, opleveren.spec | groen |
 | Rapport genereren + mailen, status opgeleverd | U, M | mail.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
 ## Bekende gaten (eerlijk, nog te dekken)
 
-- **Latente race in de concept-opslag van de oplevering.** De saves zijn fire-and-forget (`void fetch`,
-  geen volgorde-garantie). Twee saves vlak na elkaar kunnen elkaar overschrijven; bij test-snelheid
-  reproduceerbaar (opmerking viel weg). In de praktijk vrijwel onmogelijk (een monteur typt seconden
-  later). Nog te beslissen of we dit dichten (bv. saves serialiseren of debouncen).
+- Geen openstaande functionele gaten meer. (De eerdere race in de concept-opslag van de oplevering is
+  gedicht: de saves zijn geserialiseerd in OpleverFlow; opleveren.spec bewaakt dit met snelle stappen.)
 - Component-test-laag (jsdom/RTL) bestaat niet; UI-gedrag hoort daarom in de Playwright-e2e.
 
 ## Hoe draaien

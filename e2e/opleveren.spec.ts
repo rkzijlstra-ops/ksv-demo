@@ -82,15 +82,13 @@ async function conceptVan(id: string) {
   return data;
 }
 
-// De concept-opslag is fire-and-forget (geen volgorde-garantie tussen opeenvolgende saves). Tussen de
-// stappen wachten tot de tussenstand in de database staat serialiseert de saves, net als de echte
-// cadans van een monteur (actie, verwerkt, volgende actie), en houdt de test deterministisch.
-async function wachtConcept(id: string, predikaat: (c: Awaited<ReturnType<typeof conceptVan>>) => boolean) {
-  await expect.poll(async () => predikaat(await conceptVan(id)), { timeout: 15_000, intervals: [400] }).toBe(true);
-}
-
 test("oplever-UI bewaart foto, handtekening en opmerking als concept (zonder mailen)", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/opleveren`);
+
+  // De stappen gaan bewust snel achter elkaar, zonder tussentijds op de database te wachten. Dat
+  // oefent de race in de concept-opslag uit: alleen door de saves te serialiseren (OpleverFlow) blijft
+  // de opmerking behouden. Zonder die fix overschrijft de handtekening-save (lege opmerking) de
+  // opmerking-save. Deze test bewaakt dus de serialisatie.
 
   // Foto uploaden; "Foto verwijderen" verschijnt zodra de upload klaar is.
   await page.locator('input[type="file"][multiple]').first().setInputFiles({
@@ -99,8 +97,6 @@ test("oplever-UI bewaart foto, handtekening en opmerking als concept (zonder mai
     buffer: PNG,
   });
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toBeVisible({ timeout: 20_000 });
-  // Wacht tot de foto in het concept staat voordat de volgende save komt (serialiseren).
-  await wachtConcept(opdrachtId, (c) => (c?.eindstaat_foto_urls?.length ?? 0) === 1);
 
   // Handtekening op het canvas zetten.
   await page.getByRole("button", { name: "Klant laten tekenen" }).click();
@@ -114,10 +110,8 @@ test("oplever-UI bewaart foto, handtekening en opmerking als concept (zonder mai
   await page.mouse.up();
   await page.getByRole("button", { name: "Klaar" }).click();
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
-  // Wacht tot de handtekening in het concept staat (foto blijft erin) voordat de opmerking-save komt.
-  await wachtConcept(opdrachtId, (c) => !!c?.handtekening_url && (c?.eindstaat_foto_urls?.length ?? 0) === 1);
 
-  // Opmerking typen en blur (Tab), zodat het concept ook de opmerking bevat.
+  // Meteen de opmerking typen en blur (Tab): dit is de race-trigger met de handtekening-save.
   const opmerking = `E2E oplevering ${Date.now()}`;
   await page.getByPlaceholder("Typ hier of spreek in…").fill(opmerking);
   await page.keyboard.press("Tab");

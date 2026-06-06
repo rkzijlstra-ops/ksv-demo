@@ -35,6 +35,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   useVerlaatWaarschuwing(bezig);
 
   const geladenRef = useRef(false);
+  // Concept-saves serialiseren: elke opslag wacht op de vorige. Zonder dit zijn de saves
+  // fire-and-forget en kan een eerdere (met verouderde state, bv. nog lege opmerking) een latere
+  // overschrijven door out-of-order aankomst bij de server. Nu wint altijd de laatst getriggerde.
+  const opslaanChainRef = useRef<Promise<unknown>>(Promise.resolve());
 
   // Bestaand concept laden bij binnenkomst, zodat een halve oplevering (incl. de geuploade
   // video) bewaard blijft als je tussendoor naar de werkpool gaat en terugkomt.
@@ -68,17 +72,23 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     if (!geladenRef.current) return;
     const rapport_email =
       emailOverride !== undefined ? emailOverride.trim() || null : rapportEmail.trim() || null;
-    void fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eindstaat_foto_urls: fotoUrls,
-        video_url: videoUrl,
-        handtekening_url: handtekeningUrl,
-        opmerking: opmerking.trim() || null,
-        rapport_email,
-      }),
-    }).catch(() => {});
+    const body = JSON.stringify({
+      eindstaat_foto_urls: fotoUrls,
+      video_url: videoUrl,
+      handtekening_url: handtekeningUrl,
+      opmerking: opmerking.trim() || null,
+      rapport_email,
+    });
+    // Achter de vorige save aanhaken, zodat saves in volgorde de server bereiken (geen overschrijving).
+    opslaanChainRef.current = opslaanChainRef.current
+      .catch(() => {})
+      .then(() =>
+        fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        }).catch(() => {}),
+      );
   }
 
   // Foto's/video/handtekening meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
@@ -98,6 +108,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     setBezig(true);
     setFout("");
     try {
+      // Eerst de lopende concept-saves afronden, zodat de definitieve opslag hieronder niet door een
+      // nog onderweg zijnde tussenopslag overschreven wordt.
+      await opslaanChainRef.current.catch(() => {});
       // De handtekening is bij "Klaar" al geüpload en in elke tussenopslag bewaard; hier alleen
       // nog expliciet meesturen voor de zekerheid.
       const conceptRes = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
