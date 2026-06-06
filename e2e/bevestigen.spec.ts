@@ -5,8 +5,9 @@ import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "./test-env";
 
 /**
  * De monteur bevestigt de ontvangst van een verstuurde klus (uit de opdracht-mail). Seedt een
- * geplande+verstuurde klus op rk, opent de detailpagina als rk, klikt "Ontvangst bevestigen" en
- * controleert dat de status in de database op 'bevestigd' staat.
+ * geplande+verstuurde klus op rk en test twee plekken: de detailpagina ("Ontvangst bevestigen") en
+ * de snelknop op de werkpool-kaart. Controleert telkens dat de status in de database op 'bevestigd'
+ * komt, en bij de kaart bovendien dat de klik niet naar detail navigeert en de badge omslaat.
  */
 
 test.use({ storageState: "e2e/.auth/monteur.json" });
@@ -15,12 +16,14 @@ const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth
 const db: Db = createDb({ url: SUPABASE_URL, secretKey: SUPABASE_SECRET });
 const RK = MONTEUR.uid;
 let id = "";
+let klant = "";
 
 test.beforeEach(async () => {
   const zaak = await db.getStandaardOpdrachtgever();
+  klant = `BEVESTIG ${Date.now()}`;
   const r = await db.createOpdracht({
     documenttype: "orderbevestiging",
-    klant_naam: `BEVESTIG ${Date.now()}`,
+    klant_naam: klant,
     klant_adres: "Teststraat 1",
     referentienummer: `BV${Date.now()}`,
     adviseur: null,
@@ -56,4 +59,33 @@ test("monteur bevestigt de ontvangst van zijn klus", async ({ page }) => {
 
   // UI toont de bevestiging.
   await expect(page.getByText("Ontvangst bevestigd")).toBeVisible();
+});
+
+test("monteur bevestigt direct vanaf de werkpool-kaart, zonder door te klikken", async ({ page }) => {
+  await page.goto("/");
+  // De kaart van déze klus (Link naar de detailpagina) en de bevestig-elementen daarbinnen.
+  const kaart = page.locator(`a[href="/opdracht/${id}"]`);
+  await expect(kaart).toBeVisible();
+  await expect(kaart.getByText("Te bevestigen")).toBeVisible();
+
+  await kaart.getByRole("button", { name: "Ontvangst bevestigen" }).click();
+
+  // De klik mag NIET naar de detailpagina navigeren; we blijven op de werkpool.
+  await expect(page.getByRole("heading", { name: "Opdrachten" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/");
+
+  // Database: status op 'bevestigd'.
+  await expect
+    .poll(
+      async () => {
+        const { data } = await admin.from("meldingen").select("dashboard_status").eq("id", id).single();
+        return data?.dashboard_status;
+      },
+      { timeout: 10_000, intervals: [400] },
+    )
+    .toBe("bevestigd");
+
+  // De kaart slaat om naar de groene "Bevestigd"-badge en de knop verdwijnt.
+  await expect(kaart.getByText("Bevestigd")).toBeVisible();
+  await expect(kaart.getByRole("button", { name: "Ontvangst bevestigen" })).toHaveCount(0);
 });

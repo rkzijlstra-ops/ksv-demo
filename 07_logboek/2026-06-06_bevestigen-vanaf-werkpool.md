@@ -31,9 +31,15 @@ volledige inhoud wil zien, klikt door en bevestigt op detail (knop blijft daar s
 ## Tests
 
 - `urgentie.test.ts`: 3 tests voor `bevestigBadgeConfig` (gepland/bevestigd/overige).
+- `e2e/bevestigen.spec.ts`: nieuwe Playwright-test voor de werkpool-flow: badge "Te bevestigen"
+  zichtbaar op de kaart, knop op de kaart bevestigt, de klik navigeert NIET naar detail (blijft op de
+  werkpool), status slaat in de db om naar 'bevestigd' en de badge wordt "Bevestigd". Naast de
+  bestaande test die op de detailpagina bevestigt.
 - Volledige unit-suite groen (419 tests). Productie-build slaagt.
-- De bevestig-route zelf was al getest. Component-tests bestaan niet in dit project (geen
-  jsdom/RTL); de testbare kern is daarom als pure functie in `urgentie.ts` gezet en daar getest.
+
+Noot: dit project heeft geen component-test-infra (jsdom/RTL), maar de UI-interactie hoort thuis in
+de Playwright-e2e en is daar nu gedekt. (Eerdere aanname dat dit alleen handmatig te checken was, was
+onjuist: Playwright is het juiste gereedschap en deed de detail-flow al.)
 
 ## Bekend, los hiervan
 
