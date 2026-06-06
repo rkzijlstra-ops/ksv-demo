@@ -95,4 +95,12 @@ export default async function globalSetup() {
     bestand: "monteur-prod.json",
     domein: "ksv-demo.vercel.app",
   });
+  await schrijfSessie({
+    url,
+    anon,
+    secret,
+    ...BEHEERDER,
+    bestand: "beheerder-prod.json",
+    domein: "ksv-demo.vercel.app",
+  });
 }
