@@ -16,7 +16,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
 | Planbord drag-drop: plannen, verplaatsen, week schuiven | E | planbord.spec, planbord-extra.spec | groen |
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
-| Ontplannen: bevestigingsdialoog op het planbord | (geen) | — | **GAT: UI niet e2e-gedekt** (drag-naar-pool van bevestigde klus) |
+| Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |
 | Versturen naar monteurs (verstuur-poort, gebundeld) | U, M | monteur-mail.test, mail-opdracht.spec | groen |
 | Annuleren + mail naar monteur bij verstuurd | U, E, M | annuleren/route.test, annuleren.spec, mail-flows.spec | groen |
 | Gebruikersbeheer, rollen, uitnodigen/afmelden | U, M | mail-flows.spec (uitnodiging/afmelding) | grotendeels |
@@ -35,8 +35,6 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 
 ## Bekende gaten (eerlijk, nog te dekken)
 
-- **Bevestigingsdialoog bij ontplannen op het planbord** is niet e2e-getest. Het is drag-and-drop-UI
-  (fragiel om te automatiseren). De server-kant (mail bij ontplannen) is wel gedekt.
 - **Oplevering-UI** (foto-upload, handtekening-canvas) leunt deels op handmatige controle; de
   rapport-mail end-to-end is wel gedekt via mail.spec.
 - Component-test-laag (jsdom/RTL) bestaat niet; UI-gedrag hoort daarom in de Playwright-e2e.
