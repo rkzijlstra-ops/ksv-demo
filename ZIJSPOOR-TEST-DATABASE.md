@@ -12,15 +12,12 @@ omgeving). Maak je `.env.test` aan, dan schakelt alles automatisch om naar het z
 
 1. **Tweede Supabase-project aanmaken** (gratis kan), los van het productie-project.
 
-2. **Structuur erin zetten.** Draai de migraties in `supabase/` in volgorde in de SQL-editor van het
-   test-project (de `*-RLS-UIT`- en `*-CLEANUP-*`-bestanden zijn GEEN migraties, die overslaan):
-   schema.sql → schema-2a.sql → schema-2a-datums.sql → schema-2a-versie.sql →
-   schema-2a-opdracht-koppeling.sql → schema-2a5-auth-step1.sql → schema-2a5-auth-step2.sql →
-   schema-2a6-documenten.sql → schema-2a7-spoed.sql → schema-oplevering.sql → schema-oplevering-v2.sql →
-   schema-oplevering-v3.sql → schema-compleet-0.sql → schema-compleet-3-monteur.sql →
-   schema-compleet-4-verzonden.sql → schema-compleet-6a-accounts.sql → schema-compleet-6c-rls.sql →
-   schema-compleet-6e-zaak.sql.
-   (Vraag Claude om er één samengevoegd `test-schema.sql` van te maken als je niet 18 keer wilt plakken.)
+2. **Structuur erin zetten.** Plak het kant-en-klare bestand **`supabase/test-schema.sql`** in één
+   keer in de SQL-editor van het verse test-project en draai het. Dat is alle migraties in de juiste
+   volgorde aan elkaar, dus dezelfde structuur + RLS als productie (de zaak "Keukenstudio Voorschoten"
+   wordt meteen aangemaakt). NIET op productie draaien.
+   (Het is gegenereerd uit de losse `supabase/schema*.sql`-migraties; de `*-RLS-UIT`- en `*-CLEANUP-*`-
+   bestanden horen er bewust niet in.)
 
 3. **Test-accounts aanmaken** in het test-project (Authentication → Users): een test-beheerder en een
    test-monteur. Noteer hun uids. Maak ze beheerder/monteur via de profielen-sjabloon onderaan
