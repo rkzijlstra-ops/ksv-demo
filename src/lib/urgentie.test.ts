@@ -4,6 +4,7 @@ import {
   documenttypeConfig,
   meldingStaatConfig,
   opgeleverdBadgeConfig,
+  bevestigBadgeConfig,
 } from "./urgentie";
 
 describe("bronConfig", () => {
@@ -75,5 +76,29 @@ describe("opgeleverdBadgeConfig", () => {
     expect(c.label).toBe("Opgeleverd");
     expect(c.bg).toContain("success");
     expect(c.icon).toBe("check");
+  });
+});
+
+describe("bevestigBadgeConfig (monteur-werkpool)", () => {
+  it("gepland: geel 'Te bevestigen', klok-icoon", () => {
+    const c = bevestigBadgeConfig("gepland");
+    expect(c).not.toBeNull();
+    expect(c!.label).toBe("Te bevestigen");
+    expect(c!.bg).toContain("urgent-geel");
+    expect(c!.icon).toBe("clock");
+  });
+
+  it("bevestigd: groen 'Bevestigd', check-icoon", () => {
+    const c = bevestigBadgeConfig("bevestigd");
+    expect(c).not.toBeNull();
+    expect(c!.label).toBe("Bevestigd");
+    expect(c!.bg).toContain("bevestigd");
+    expect(c!.icon).toBe("check");
+  });
+
+  it("geen bevestig-badge voor binnen, concept, opgeleverd of geannuleerd", () => {
+    for (const s of ["binnen", "concept_gepland", "opgeleverd", "geannuleerd"]) {
+      expect(bevestigBadgeConfig(s)).toBeNull();
+    }
   });
 });

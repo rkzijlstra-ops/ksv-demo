@@ -43,6 +43,21 @@ export function opgeleverdBadgeConfig(): BadgeConfig {
   return { label: "Opgeleverd", bg: "bg-success", ink: "text-white", border: "border-success", icon: "check" };
 }
 
+/**
+ * Bevestig-status van een klus als badge voor de monteur-werkpool. Geel "Te bevestigen" zolang de
+ * klus verstuurd maar niet bevestigd is (status gepland), groen "Bevestigd" daarna. Andere statussen
+ * (binnen, concept, opgeleverd, geannuleerd) geven null: daar valt niets te bevestigen.
+ */
+export function bevestigBadgeConfig(dashboardStatus: string): BadgeConfig | null {
+  if (dashboardStatus === "gepland") {
+    return { label: "Te bevestigen", bg: "bg-urgent-geel", ink: "text-ink", border: "border-urgent-geel", icon: "clock" };
+  }
+  if (dashboardStatus === "bevestigd") {
+    return { label: "Bevestigd", bg: "bg-bevestigd", ink: "text-white", border: "border-bevestigd", icon: "check" };
+  }
+  return null;
+}
+
 /** Badge-config voor documenttype (montage / service / handmatig). null = geen badge. */
 export function documenttypeConfig(type: Documenttype): BadgeConfig | null {
   // Outlined in industrieel D: wit met anthraciet rand en tekst.

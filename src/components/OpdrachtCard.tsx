@@ -2,10 +2,11 @@ import Link from "next/link";
 import { ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
-import { opgeleverdBadgeConfig } from "@/lib/urgentie";
+import { opgeleverdBadgeConfig, bevestigBadgeConfig } from "@/lib/urgentie";
 import { Badge } from "./Badge";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtVerwijderIcoon } from "./OpdrachtVerwijderIcoon";
+import { BevestigKaartKnop } from "./BevestigKaartKnop";
 
 export function OpdrachtCard({
   melding,
@@ -17,6 +18,7 @@ export function OpdrachtCard({
   const titel = melding.klant_naam ?? "Onbekende klant";
   const opgeleverd = melding.opdracht_status === "opgeleverd";
   const aantalOpen = telling?.aantal ?? 0;
+  const bevestig = opgeleverd ? null : bevestigBadgeConfig(melding.dashboard_status);
 
   // Kleur-staat: gekleurde linker strip (8px) per staat (rood=spoed, oranje=open, groen=opgeleverd)
   const stripKleur = opgeleverd
@@ -48,6 +50,7 @@ export function OpdrachtCard({
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
+          {bevestig && <Badge config={bevestig} />}
           <DocumenttypeBadge type={melding.documenttype} />
           {melding.referentienummer && (
             <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
@@ -87,6 +90,8 @@ export function OpdrachtCard({
             {formatDatumKort(melding.created_at)}
           </span>
         </div>
+
+        <BevestigKaartKnop opdrachtId={melding.id} status={melding.dashboard_status} />
       </div>
 
       <ChevronRight size={24} className="shrink-0 text-ink-muted" aria-hidden="true" />
