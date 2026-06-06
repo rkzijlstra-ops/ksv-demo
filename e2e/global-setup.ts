@@ -40,7 +40,10 @@ async function schrijfSessie(opts: {
   uid: string;
   email: string;
   bestand: string;
+  domein?: string;
 }) {
+  const domein = opts.domein ?? "localhost";
+  const secure = domein !== "localhost";
   const admin = createClient(opts.url, opts.secret, { auth: { persistSession: false } });
   const { error: pwFout } = await admin.auth.admin.updateUserById(opts.uid, { password: TEST_PW });
   if (pwFout) throw new Error(`Wachtwoord zetten mislukt: ${pwFout.message}`);
@@ -60,11 +63,11 @@ async function schrijfSessie(opts: {
     cookies: Object.values(cookies).map((c) => ({
       name: c.name,
       value: c.value,
-      domain: "localhost",
+      domain: domein,
       path: "/",
       expires: -1,
       httpOnly: false,
-      secure: false,
+      secure,
       sameSite: "Lax" as const,
     })),
     origins: [],
@@ -82,4 +85,14 @@ export default async function globalSetup() {
 
   await schrijfSessie({ url, anon, secret, ...BEHEERDER, bestand: "beheerder.json" });
   await schrijfSessie({ url, anon, secret, ...MONTEUR, bestand: "monteur.json" });
+  // Productie-sessie (Vercel) voor de mail-e2e, die tegen de live app draait waar de juiste
+  // afzender (planning@kluslus.nl) is ingesteld.
+  await schrijfSessie({
+    url,
+    anon,
+    secret,
+    ...MONTEUR,
+    bestand: "monteur-prod.json",
+    domein: "ksv-demo.vercel.app",
+  });
 }
