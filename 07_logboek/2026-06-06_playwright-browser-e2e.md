@@ -79,9 +79,23 @@ testaccounts). Lokale dev kon niet voor de mail-tests: next dev staat maar één
 en die van een parallelle chat draaide al (met de Resend-testafzender). Daarom tegen productie, met
 een beheerder- en monteur-productie-sessie (cookies voor de vercel-host) in global-setup.
 
-## Niet gedekt (vervolg)
+## Opdrachtgever-rol (toegevoegd)
 
-- Opdrachtgever-rol e2e (Ed: alleen eigen zaak).
-- De finale "skip inbox" voor de Kluslus-map (smaak; nu staan de app-mails ook nog in de inbox).
+`opdrachtgever.spec.ts`: een tijdelijke test-opdrachtgever (gekoppeld aan de standaard-zaak; door
+global-setup aangemaakt en global-teardown opgeruimd) controleert in de browser:
+- op het dashboard alleen de opdrachten van zijn **eigen zaak**, niet ad-hoc klussen en niet die van
+  een **andere zaak** (zaak-scheiding + RLS in de praktijk, inclusief cross-zaak-afscherming);
+- hij mag bij het planbord; en wordt van de monteur-werkpool weggestuurd naar zijn dashboard.
+
+Bug onderweg gevonden en gefixt: per account twee keer inloggen (één voor localhost, één voor de
+vercel-sessie) maakte de eerste sessie ongeldig, waardoor de beheerder/monteur-tests faalden. Nu
+één login per account, weggeschreven voor beide domeinen.
+
+Stand: **12 localhost-e2e + 5 mail-e2e** (achter E2E_MAIL=1). Na elke run database schoon (alleen de
+twee echte accounts).
+
+## Niet gedekt (smaak/optioneel)
+
+- "Inbox overslaan" voor de Kluslus-map (nu staan de app-mails ook nog in de inbox).
 
 Hiermee is de browser-kant, inclusief het echte slepen, nu geautomatiseerd te testen.
