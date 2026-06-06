@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { Navigation } from "lucide-react";
-import { detectPlatform, navUrl, type Platform } from "@/lib/nav";
+import { detectPlatform, navUrl } from "@/lib/nav";
+
+// Platform is een client-only waarde (navigator bestaat niet op de server). useSyncExternalStore
+// leest hem na hydratie uit, met "other" als veilige server-snapshot, zonder useEffect + setState
+// (dat laatste triggert cascading renders, zie react-hooks/set-state-in-effect). Het platform
+// verandert niet tijdens de sessie, dus subscribe is een no-op.
+const geenWijziging = () => () => {};
 
 export function NavKnop({ adres }: { adres: string }) {
-  const [platform, setPlatform] = useState<Platform>("other");
-
-  useEffect(() => {
-    setPlatform(detectPlatform(navigator.userAgent));
-  }, []);
+  const platform = useSyncExternalStore(
+    geenWijziging,
+    () => detectPlatform(navigator.userAgent),
+    () => "other" as const,
+  );
 
   return (
     <a
