@@ -43,23 +43,14 @@ test.beforeEach(async () => {
   rapportUrl = `https://storage.example/rapport-${ref}.pdf`;
   const zaak = await db.getStandaardOpdrachtgever();
 
-  // Resend free tier staat alleen berichten naar het account-eigenaar-adres toe in testmodus.
-  // Zoek of maak een testmonteur met dat adres zodat de mail slaagt.
-  const testEmail = "bkmkeukenmontage@gmail.com";
-  const { data: lijstData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const bestaand = lijstData?.users?.find((u) => u.email?.toLowerCase() === testEmail);
-  if (bestaand) {
-    testMonteurId = bestaand.id;
-    testMonteurNieuwAangemaakt = false;
-  } else {
-    const { data: maak, error } = await admin.auth.admin.createUser({ email: testEmail, email_confirm: true });
-    if (error || !maak?.user) throw new Error(`Testmonteur aanmaken mislukt: ${error?.message}`);
-    testMonteurId = maak.user.id;
-    testMonteurNieuwAangemaakt = true;
-  }
+  const testEmail = `bkmkeukenmontage+optest${stamp}@gmail.com`;
+  const { data: maak, error } = await admin.auth.admin.createUser({ email: testEmail, email_confirm: true });
+  if (error || !maak?.user) throw new Error(`Testmonteur aanmaken mislukt: ${error?.message}`);
+  testMonteurId = maak.user.id;
+  testMonteurNieuwAangemaakt = true;
   await admin
     .from("profielen")
-    .upsert({ id: testMonteurId, rol: "monteur", naam: "Optest Monteur", opdrachtgever_id: zaak?.id ?? null }, { onConflict: "id" });
+    .insert({ id: testMonteurId, rol: "monteur", naam: "Optest Monteur", opdrachtgever_id: zaak?.id ?? null });
 
   // Eerdere, opgeleverde klus op dezelfde referentie (levert de historie + rapport-link).
   const prior = await db.createOpdracht({

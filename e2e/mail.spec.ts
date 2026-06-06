@@ -24,8 +24,7 @@ test.use({
 const URL_ = SUPABASE_URL;
 const KEY = SUPABASE_SECRET;
 const RK = MONTEUR_ACC.uid;
-// Resend free tier staat alleen berichten toe aan het account-eigenaar-adres; plus-aliassen falen.
-const RAPPORT_NAAR = "bkmkeukenmontage@gmail.com";
+const RAPPORT_NAAR = "bkmkeukenmontage+kluslus@gmail.com";
 
 const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });
 const db: Db = createDb({ url: URL_, secretKey: KEY });

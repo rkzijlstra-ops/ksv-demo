@@ -116,24 +116,15 @@ test("afmeldmail wordt verstuurd als een gebruiker wordt verwijderd", async ({ p
 
 test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus wordt geannuleerd", async ({ page }) => {
   const stamp = Date.now();
-  // Resend free tier staat in testmodus alleen toe te sturen naar het account-eigenaar-adres.
-  // Gebruik dat adres als testmonteur zodat de verzending slaagt.
-  const email = "bkmkeukenmontage@gmail.com";
+  const email = `bkmkeukenmontage+anntest${stamp}@gmail.com`;
   const klant = `ANNMAIL ${stamp}`;
   const zaak = await db.getStandaardOpdrachtgever();
-  // Gebruiker bestaat mogelijk al in de test-DB van een vorige run; zoek of maak.
-  const { data: lijstData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const bestaand = lijstData?.users?.find((u) => u.email?.toLowerCase() === email);
-  if (bestaand) {
-    accUid = bestaand.id;
-  } else {
-    const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-    accUid = maak!.user.id;
-    accNieuwAangemaakt = true;
-  }
+  const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  accUid = maak!.user.id;
+  accNieuwAangemaakt = true;
   await admin
     .from("profielen")
-    .upsert({ id: accUid, rol: "monteur", naam: "Anntest Monteur", opdrachtgever_id: zaak?.id ?? null }, { onConflict: "id" });
+    .insert({ id: accUid, rol: "monteur", naam: "Anntest Monteur", opdrachtgever_id: zaak?.id ?? null });
   const o = await db.createOpdracht({
     documenttype: "werkbon_service",
     klant_naam: klant,
@@ -153,5 +144,5 @@ test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus word
   const res = await page.request.post(`/api/opdrachten/${oId}/annuleren`);
   expect(res.ok()).toBeTruthy();
   expect((await res.json()).gemaild).toBe(true);
-  console.log(`ANNULEERMAIL klant="${klant}" naar=${email}`);
+  console.log(`ANNULEERMAIL klant="${klant}" naar=${email} (planning@kluslus.nl)`);
 });
