@@ -24,6 +24,7 @@ import { BelKnop } from "@/components/BelKnop";
 import { WhatsAppKnop } from "@/components/WhatsAppKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
+import { BevestigOntvangstKnop } from "@/components/BevestigOntvangstKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,8 @@ export default async function OpdrachtDetailPage({
           Aangemaakt: {formatDatumKort(opdracht.created_at)}
         </span>
       </div>
+
+      <BevestigOntvangstKnop opdrachtId={id} status={opdracht.dashboard_status} />
 
       {(opdracht.klant_adres || opdracht.klant_telefoon) && (
         <div className="mt-5 flex gap-3">
