@@ -113,11 +113,12 @@ function Kaart({ p, dubbel }: { p: GeplaatstOpBord; dubbel: boolean }) {
   );
 }
 
-/** Lege cel = drop-doel (monteur-account + dag). */
+/** Lege cel = drop-doel (monteur-account + dag + lane). Lane zit in de ID om duplicaten te voorkomen. */
 function DropCel({
   toegewezenAan,
   monteurNaam,
   dag,
+  lane,
   gridRow,
   col,
   laatsteLane,
@@ -125,12 +126,13 @@ function DropCel({
   toegewezenAan: string;
   monteurNaam: string;
   dag: string;
+  lane: number;
   gridRow: number;
   col: number;
   laatsteLane: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `cel-${toegewezenAan}-${dag}`,
+    id: `cel-${toegewezenAan}-${dag}-${lane}`,
     data: { toegewezen_aan: toegewezenAan, monteur_naam: monteurNaam, dag },
   });
   return (
@@ -218,6 +220,7 @@ export function PlanbordGrid({
                 toegewezenAan={account.id}
                 monteurNaam={account.naam}
                 dag={d}
+                lane={lane}
                 gridRow={startRow + lane}
                 col={c}
                 laatsteLane={lane === laneCount - 1}

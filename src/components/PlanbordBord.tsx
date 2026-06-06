@@ -10,9 +10,11 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  pointerWithin,
   closestCenter,
   type DragStartEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import type { Melding } from "@/lib/db";
 import {
@@ -35,21 +37,44 @@ interface SleepData {
   opdracht: Melding;
 }
 
-/** Smalle drop-strook naast het raster: sleep een afspraak hierheen om een week te schuiven. */
-function RandZone({ zone, kant }: { zone: string; kant: "links" | "rechts" }) {
+/**
+ * Smalle drop-strook naast het raster: sleep een afspraak hierheen om een week te schuiven.
+ * Klikken op de strook doet hetzelfde als de Vorige/Volgende-knoppen boven het bord.
+ */
+function RandZone({
+  zone,
+  kant,
+  onClick,
+}: {
+  zone: string;
+  kant: "links" | "rechts";
+  onClick: () => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: zone, data: { zone } });
   return (
     <div
       ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
       title={kant === "links" ? "Vorige week" : "Volgende week"}
-      className={`mt-3 flex w-7 shrink-0 items-center justify-center border-2 ${
-        isOver ? "border-accent bg-accent/15 text-accent" : "border-dashed border-line text-ink-muted"
+      className={`mt-3 flex w-7 shrink-0 cursor-pointer select-none items-center justify-center border-2 transition-colors ${
+        isOver
+          ? "border-accent bg-accent/15 text-accent"
+          : "border-dashed border-line text-ink-muted hover:border-primary hover:text-primary"
       }`}
     >
       {kant === "links" ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
     </div>
   );
 }
+
+/** Eerst kijken wat er direct onder de pointer ligt; pas daarna geometrisch dichtstbijzijnde. */
+const collisionDetectie: CollisionDetection = (args) => {
+  const direct = pointerWithin(args);
+  return direct.length > 0 ? direct : closestCenter(args);
+};
 
 /**
  * Interactieve planbord-laag. Houdt zowel de getoonde week als een eigen kopie van de opdrachten
@@ -212,7 +237,7 @@ export function PlanbordBord({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectie}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
@@ -256,7 +281,7 @@ export function PlanbordBord({
       )}
 
       <div className="flex items-stretch gap-1">
-        <RandZone zone="week-prev" kant="links" />
+        <RandZone zone="week-prev" kant="links" onClick={() => setWeekAnker(verschuifDagen(maandag, -7))} />
         <div className="min-w-0 flex-1">
           <PlanbordGrid
             weekdagen={dagen}
@@ -265,7 +290,7 @@ export function PlanbordBord({
             conflicten={conflicten}
           />
         </div>
-        <RandZone zone="week-next" kant="rechts" />
+        <RandZone zone="week-next" kant="rechts" onClick={() => setWeekAnker(verschuifDagen(maandag, 7))} />
       </div>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-muted">
