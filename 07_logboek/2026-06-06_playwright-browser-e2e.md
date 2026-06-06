@@ -65,14 +65,23 @@ levert een opdracht op en verstuurt het rapport naar een leesbaar test-adres
 - **routing**: belandt in de map Kluslus/Klanten/Keukenstudio Voorschoten (het Gmail-filter pakt ook
   de uitgaande app-mails via het +kluslus-adres). Staat ook in de inbox (filter slaat de inbox niet over).
 
-Dit verstuurt een echte mail, dus achter een vlag: `E2E_MAIL=1 npx playwright test e2e/mail.spec.ts`
-(zonder de vlag wordt hij overgeslagen). global-setup schrijft daarvoor ook een productie-sessie
-(cookies voor de vercel-host). Lokale dev kon hier niet voor gebruikt worden: next dev staat maar één
-server per project toe en die van een parallelle chat draaide al (met de Resend-testafzender).
+**Alle vijf mail-flows end-to-end geverifieerd** (achter `E2E_MAIL=1`, tegen productie, met
+self-cleanup; in de BKM-mailbox via Gmail-MCP gecontroleerd, alle vanaf planning@kluslus.nl):
+1. **Opleverrapport**: PDF-bijlage, juiste inhoud, landt in map Kluslus/Klanten/Keukenstudio Voorschoten.
+2. **Monteur-opdracht-mail** (mail-opdracht.spec): mét de eerdere-rapporten-historie ("Deze keuken is
+   eerder bezocht ... rapport: <link>"), correcte opdrachtgegevens en afsluiter.
+3. **Spoedmelding** (mail-flows.spec): "SPOED - <klant>" naar kantoor (RAPPORT_EMAIL), met de meldingtekst.
+4. **Uitnodiging**: "Je bent toegevoegd aan de planning-app" met de login-URL.
+5. **Afmelding**: "Je bent afgemeld bij de planning-app".
+
+Na de runs: database schoon (0 opdrachten, alleen de 2 echte accounts, geen achtergebleven
+testaccounts). Lokale dev kon niet voor de mail-tests: next dev staat maar één server per project toe
+en die van een parallelle chat draaide al (met de Resend-testafzender). Daarom tegen productie, met
+een beheerder- en monteur-productie-sessie (cookies voor de vercel-host) in global-setup.
 
 ## Niet gedekt (vervolg)
 
 - Opdrachtgever-rol e2e (Ed: alleen eigen zaak).
-- De monteur-opdracht-mail (verstuur-poort) en spoedmail end-to-end uitlezen (zelfde aanpak mogelijk).
+- De finale "skip inbox" voor de Kluslus-map (smaak; nu staan de app-mails ook nog in de inbox).
 
 Hiermee is de browser-kant, inclusief het echte slepen, nu geautomatiseerd te testen.
