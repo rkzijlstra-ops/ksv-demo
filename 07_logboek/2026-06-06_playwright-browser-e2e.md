@@ -54,10 +54,25 @@ createImageBitmap). Storage-objecten van de test-foto's blijven staan (throwaway
 
 Totaal nu **9 e2e-tests groen** (2 smoke + 2 planbord + 3 monteur + 2 monteur-PWA).
 
+## Mail end-to-end (toegevoegd)
+
+`mail.spec.ts` draait tegen **productie** (Vercel, waar planning@kluslus.nl is ingesteld): de monteur
+levert een opdracht op en verstuurt het rapport naar een leesbaar test-adres
+(bkmkeukenmontage+kluslus@gmail.com). Daarna in de BKM-mailbox (via Gmail-MCP) geverifieerd:
+- afzender planning@kluslus.nl, onderwerp "Opleverrapport <klant> (ref ...)";
+- PDF-bijlage `opleverrapport-<ref>.pdf` aanwezig;
+- inhoud + afsluiter "Keukenstudio Voorschoten" kloppen;
+- **routing**: belandt in de map Kluslus/Klanten/Keukenstudio Voorschoten (het Gmail-filter pakt ook
+  de uitgaande app-mails via het +kluslus-adres). Staat ook in de inbox (filter slaat de inbox niet over).
+
+Dit verstuurt een echte mail, dus achter een vlag: `E2E_MAIL=1 npx playwright test e2e/mail.spec.ts`
+(zonder de vlag wordt hij overgeslagen). global-setup schrijft daarvoor ook een productie-sessie
+(cookies voor de vercel-host). Lokale dev kon hier niet voor gebruikt worden: next dev staat maar één
+server per project toe en die van een parallelle chat draaide al (met de Resend-testafzender).
+
 ## Niet gedekt (vervolg)
 
 - Opdrachtgever-rol e2e (Ed: alleen eigen zaak).
-- De finale "Versturen" van de oplevering (PDF + mail) - bewust buiten gehouden om niet te mailen.
-- Echte mail-verzending in een e2e.
+- De monteur-opdracht-mail (verstuur-poort) en spoedmail end-to-end uitlezen (zelfde aanpak mogelijk).
 
 Hiermee is de browser-kant, inclusief het echte slepen, nu geautomatiseerd te testen.
