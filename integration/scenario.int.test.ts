@@ -1,18 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
-import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { historieVoorMonteur } from "@/lib/monteur-mail";
 import { vindDubbeleBoekingen } from "@/lib/planbord";
+import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "../e2e/test-env";
 
-// ---- creds uit .env.local laden (vitest laadt dit niet automatisch) ----
-const env: Record<string, string> = {};
-for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split(/\r?\n/)) {
-  const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-  if (m) env[m[1]] = m[2];
-}
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
+// Creds uit test-env: .env.test (zijspoor) als die bestaat, anders .env.local.
+const URL_ = SUPABASE_URL;
+const KEY = SUPABASE_SECRET;
 
 const admin = createClient(URL_, KEY, { auth: { persistSession: false } });
 const db: Db = createDb({ url: URL_, secretKey: KEY });
@@ -31,8 +26,8 @@ const MONTEURS = [
 ];
 
 const PEIL = new Date("2026-06-15T12:00:00Z");
-// Het echte beheerder-account (geseed); meldingen.user_id is NOT NULL en heeft een auth-koppeling.
-const SEED_USER = "443dff43-dc74-4216-8173-076f22973245";
+// Het beheerder-account; meldingen.user_id is NOT NULL en heeft een auth-koppeling.
+const SEED_USER = BEHEERDER.uid;
 let zaakId: string;
 
 async function wipe() {

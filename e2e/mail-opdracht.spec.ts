@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { SUPABASE_URL, SUPABASE_SECRET, APP_URL } from "./test-env";
 
 /**
  * Mail end-to-end: de monteur-opdracht-mail uit de verstuur-poort, INCLUSIEF de eerdere-rapporten-
@@ -14,22 +13,12 @@ import path from "node:path";
  */
 
 test.use({
-  baseURL: "https://ksv-demo.vercel.app",
+  baseURL: APP_URL,
   storageState: "e2e/.auth/beheerder-prod.json",
 });
 
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(path.join(process.cwd(), ".env.local"), "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = leesEnv();
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
+const URL_ = SUPABASE_URL;
+const KEY = SUPABASE_SECRET;
 
 const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });
 const db: Db = createDb({ url: URL_, secretKey: KEY });

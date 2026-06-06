@@ -1,40 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import {
+  SUPABASE_URL,
+  SUPABASE_SECRET,
+  SUPABASE_ANON,
+  APP_HOST,
+  BEHEERDER,
+  MONTEUR,
+  OPDRACHTGEVER_EMAIL,
+} from "./test-env";
 
 /**
  * Login-horde voor de browser-e2e: een robot kan niet door Google/magic-link heen. Daarom zetten we
- * eenmalig een (test)wachtwoord op het beheerder-account, loggen we server-side in en laten we
- * @supabase/ssr zélf de auth-cookies maken (juiste naam/chunking). Die schrijven we als Playwright-
- * storageState weg, zodat elke test ingelogd start. Raakt geen echte klantdata; de magic-link/Google-
- * login van het account blijft gewoon werken.
+ * eenmalig een (test)wachtwoord op de accounts, loggen we server-side in en laten we @supabase/ssr
+ * zélf de auth-cookies maken (juiste naam/chunking). Die schrijven we als Playwright-storageState
+ * weg, zodat elke test ingelogd start. Accounts/omgeving komen uit test-env (zijspoor-bewust).
  */
 
 const TEST_PW = "e2e-Kluslus-test-2026!";
-const BEHEERDER = {
-  uid: "443dff43-dc74-4216-8173-076f22973245",
-  email: "bkmkeukenmontage@gmail.com",
-};
-const MONTEUR = {
-  uid: "f0a2a56d-ccd9-434c-93b8-5f7257aa59c9",
-  email: "r.k.zijlstra@gmail.com",
-};
-// Tijdelijke test-opdrachtgever (Ed bestaat nog niet als account). Aangemaakt in setup, weer
-// verwijderd in global-teardown.
-export const OPDRACHTGEVER_EMAIL = "e2e-opdrachtgever@kluslus.test";
-
-const ENV_PATH = path.join(process.cwd(), ".env.local");
 const AUTH_DIR = path.join(process.cwd(), "e2e", ".auth");
-
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(ENV_PATH, "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 
 /**
  * Logt een account EEN keer in en schrijft die ene sessie weg voor alle gevraagde domeinen.
@@ -105,13 +91,12 @@ async function ensureOpdrachtgever(url: string, secret: string): Promise<string>
 }
 
 export default async function globalSetup() {
-  const env = leesEnv();
-  const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
-  const anon = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_PUBLISHABLE_KEY;
-  const secret = env.SUPABASE_SECRET_KEY;
-  if (!url || !anon || !secret) throw new Error("Supabase-env ontbreekt in .env.local");
+  const url = SUPABASE_URL;
+  const anon = SUPABASE_ANON;
+  const secret = SUPABASE_SECRET;
+  if (!url || !anon || !secret) throw new Error("Supabase-env ontbreekt (.env.local of .env.test)");
 
-  const VERCEL = "ksv-demo.vercel.app";
+  const VERCEL = APP_HOST;
   const ogUid = await ensureOpdrachtgever(url, secret);
 
   // Per account ÉÉN keer inloggen; localhost voor de gewone e2e, vercel-domein voor de mail-e2e.

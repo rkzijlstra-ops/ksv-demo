@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER as BEHEERDER_ACC, MONTEUR as MONTEUR_ACC } from "./test-env";
 
 /**
  * Browser-e2e voor de monteur-rol: hij ziet ALLEEN zijn eigen toegewezen klussen in de werkpool
@@ -12,20 +11,10 @@ import path from "node:path";
 
 test.use({ storageState: "e2e/.auth/monteur.json" });
 
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(path.join(process.cwd(), ".env.local"), "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = leesEnv();
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
-const RK = "f0a2a56d-ccd9-434c-93b8-5f7257aa59c9"; // de testmonteur (ingelogd in deze tests)
-const BEHEERDER = "443dff43-dc74-4216-8173-076f22973245";
+const URL_ = SUPABASE_URL;
+const KEY = SUPABASE_SECRET;
+const RK = MONTEUR_ACC.uid; // de testmonteur (ingelogd in deze tests)
+const BEHEERDER = BEHEERDER_ACC.uid;
 const ANDERE_MONTEUR = "00000000-0000-4000-8000-000000000099";
 
 const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });

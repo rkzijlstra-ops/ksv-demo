@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER as BEHEERDER_ACC } from "./test-env";
 
 /**
  * Browser-e2e voor de opdrachtgever-rol (Ed): hij ziet op het dashboard alleen de opdrachten van
@@ -13,19 +12,9 @@ import path from "node:path";
 
 test.use({ storageState: "e2e/.auth/opdrachtgever.json" });
 
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(path.join(process.cwd(), ".env.local"), "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = leesEnv();
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
-const BEHEERDER = "443dff43-dc74-4216-8173-076f22973245";
+const URL_ = SUPABASE_URL;
+const KEY = SUPABASE_SECRET;
+const BEHEERDER = BEHEERDER_ACC.uid;
 
 const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });
 const db: Db = createDb({ url: URL_, secretKey: KEY });

@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR as MONTEUR_ACC } from "./test-env";
 import zlib from "node:zlib";
 
 /**
@@ -13,19 +12,9 @@ import zlib from "node:zlib";
 
 test.use({ storageState: "e2e/.auth/monteur.json" });
 
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(path.join(process.cwd(), ".env.local"), "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = leesEnv();
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
-const RK = "f0a2a56d-ccd9-434c-93b8-5f7257aa59c9";
+const URL_ = SUPABASE_URL;
+const KEY = SUPABASE_SECRET;
+const RK = MONTEUR_ACC.uid;
 
 const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });
 const db: Db = createDb({ url: URL_, secretKey: KEY });

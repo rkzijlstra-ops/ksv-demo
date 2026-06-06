@@ -2,8 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { maandagVan } from "@/lib/planbord";
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "./test-env";
 
 /**
  * Echte browser-e2e van het planbord: inplannen via het formulier én via slepen, telkens met een
@@ -11,22 +10,8 @@ import path from "node:path";
  * gedeelde test-database schoon blijft en andere data ongemoeid.
  */
 
-function leesEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of readFileSync(path.join(process.cwd(), ".env.local"), "utf8").split(/\r?\n/)) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = leesEnv();
-const URL_ = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const KEY = env.SUPABASE_SECRET_KEY;
-const BEHEERDER = "443dff43-dc74-4216-8173-076f22973245";
-
-const admin: SupabaseClient = createClient(URL_, KEY, { auth: { persistSession: false } });
-const db: Db = createDb({ url: URL_, secretKey: KEY });
+const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth: { persistSession: false } });
+const db: Db = createDb({ url: SUPABASE_URL, secretKey: SUPABASE_SECRET });
 
 function vandaagISO(): string {
   const d = new Date();
@@ -49,7 +34,7 @@ test.beforeEach(async () => {
     klant_telefoon: null,
     leverweek: null,
     keukenzaak: "Keukenstudio Voorschoten",
-    user_id: BEHEERDER,
+    user_id: BEHEERDER.uid,
     opdrachtgever_id: zaak.id,
   });
   seededId = id;
