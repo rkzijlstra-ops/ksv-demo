@@ -37,18 +37,28 @@ function Regel({ icon, label, waarde }: { icon: React.ReactNode; label: string; 
 
 export default async function OpdrachtgeverDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string; week?: string }>;
 }) {
   const { id } = await params;
+  const { from, week } = await searchParams;
   await vereisRol(["opdrachtgever", "beheerder"]);
+
+  // Terug naar waar je vandaan kwam: vanuit het planbord terug naar het planbord (zelfde week),
+  // anders naar het dashboard. De context reist mee in de "eerder"-links zodat hij behouden blijft.
+  const vanPlanbord = from === "planbord";
+  const terugHref = vanPlanbord ? `/planbord${week ? `?week=${week}` : ""}` : "/dashboard";
+  const terugLabel = vanPlanbord ? "Planbord" : "Dashboard";
+  const ctxQuery = vanPlanbord ? `?from=planbord${week ? `&week=${week}` : ""}` : "";
   const dbi = await db();
   const opdracht = await dbi.getOpdrachtById(id);
 
   if (!opdracht) {
     return (
       <main className="mx-auto w-full max-w-3xl p-4 pb-24">
-        <TerugKnop href="/dashboard" label="Dashboard" />
+        <TerugKnop href={terugHref} label={terugLabel} />
         <p className="mt-6 text-sm text-ink-muted">Opdracht niet gevonden.</p>
       </main>
     );
@@ -67,7 +77,7 @@ export default async function OpdrachtgeverDetailPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl p-4 pb-24">
-      <TerugKnop href="/dashboard" label="Dashboard" />
+      <TerugKnop href={terugHref} label={terugLabel} />
 
       <header className="relative mt-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">KSV / Opdracht</p>
@@ -255,13 +265,13 @@ export default async function OpdrachtgeverDetailPage({
       {historie.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
-            Deze keuken eerder ({historie.length})
+            Eerder op deze referentie ({historie.length})
           </h2>
           <ul className="flex flex-col gap-2">
             {historie.map((h) => (
               <li key={h.id}>
                 <Link
-                  href={`/dashboard/opdracht/${h.id}`}
+                  href={`/dashboard/opdracht/${h.id}${ctxQuery}`}
                   className="flex items-center gap-3 border border-line bg-white p-3 hover:opacity-80"
                 >
                   <span className="w-16 shrink-0 font-mono text-xs font-bold text-primary">

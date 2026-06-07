@@ -39,7 +39,7 @@ function dagLabel(iso: string): string {
 type GeplaatstOpBord = PlanbordPlaatsing<Melding> & { gridRow: number };
 
 /** Uniforme, sleepbare kaart/balk; montage rekt uit over meerdere dagen, service is één dag. */
-function Kaart({ p, dubbel }: { p: GeplaatstOpBord; dubbel: boolean }) {
+function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; maandag: string }) {
   const o = p.opdracht;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `kaart-${o.id}`,
@@ -59,7 +59,7 @@ function Kaart({ p, dubbel }: { p: GeplaatstOpBord; dubbel: boolean }) {
   return (
     <Link
       ref={setNodeRef}
-      href={`/dashboard/opdracht/${o.id}`}
+      href={`/dashboard/opdracht/${o.id}?from=planbord&week=${maandag}`}
       className={`m-1 grid min-h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
       style={{
         gridRow: p.gridRow,
@@ -230,7 +230,7 @@ export function PlanbordGrid({
 
           {/* Kaarten/balken bovenop de cellen */}
           {geplaatst.map((p) => (
-            <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} />
+            <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} maandag={weekdagen[0]} />
           ))}
         </div>
       ))}
