@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type Melding } from "@/lib/db";
-import { verstuurMonteurMail } from "@/lib/mail";
+import { notificeerNieuweOpdrachten } from "@/lib/notificaties";
 import { historieVoorMonteur } from "@/lib/monteur-mail";
-import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
@@ -26,8 +25,6 @@ export async function POST(req: Request) {
   if (ids.length === 0) {
     return NextResponse.json({ error: "Geen opdrachten om te versturen" }, { status: 400 });
   }
-
-  const fallback = process.env.RAPPORT_EMAIL?.trim() ?? null;
 
   const dbi = await db();
 
@@ -59,32 +56,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
   }
 
-  // Mail versturen: als dit mislukt, wordt een waarschuwing teruggegeven maar de status is al bijgewerkt.
+  // Melden naar de monteur (mail + SMS) via de dispatcher, gebundeld per monteur. Best-effort: een
+  // fout wordt een waarschuwing, de status is al bijgewerkt.
   let mailWaarschuwing: string | null = null;
-  try {
-    for (const eigen of perMonteur.values()) {
-      const eerste = eigen[0];
-      const monteurEmail = eerste.toegewezen_aan ? await getGebruikerEmail(eerste.toegewezen_aan) : null;
-      const naar = monteurEmail ?? fallback;
-      if (!naar) continue; // geen adres bekend; sla de mail over
-      // Per opdracht de eerdere bezoeken op dezelfde referentie meesturen (rapport-links).
-      const metHistorie = await Promise.all(
-        eigen.map(async (o) => ({
-          ...o,
-          historie: o.referentienummer
-            ? historieVoorMonteur(await dbi.zoekOpReferentie(o.referentienummer), o.id)
-            : undefined,
-        })),
-      );
-      await verstuurMonteurMail({
-        naar,
-        monteurNaam: eerste.monteur_naam ?? "monteur",
-        opdrachten: metHistorie,
-        zaaknaam: eerste.keukenzaak ?? undefined,
-      });
+  for (const eigen of perMonteur.values()) {
+    const eerste = eigen[0];
+    // Per opdracht de eerdere bezoeken op dezelfde referentie meesturen (rapport-links in de mail).
+    const metHistorie = await Promise.all(
+      eigen.map(async (o) => ({
+        ...o,
+        historie: o.referentienummer
+          ? historieVoorMonteur(await dbi.zoekOpReferentie(o.referentienummer), o.id)
+          : undefined,
+      })),
+    );
+    const r = await notificeerNieuweOpdrachten({
+      toegewezenAan: eerste.toegewezen_aan,
+      monteurNaam: eerste.monteur_naam ?? "monteur",
+      opdrachten: metHistorie,
+      zaaknaam: eerste.keukenzaak,
+    });
+    if (!mailWaarschuwing && (r.mailFout || r.smsFout)) {
+      mailWaarschuwing = r.mailFout ?? r.smsFout;
     }
-  } catch (err) {
-    mailWaarschuwing = `Mail niet verzonden: ${(err as Error).message}`;
   }
 
   return NextResponse.json(

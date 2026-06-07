@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verstuurOntplanning } from "@/lib/mail";
-import { getGebruikerEmail } from "@/lib/supabase-admin";
+import { notificeerOntplanning } from "@/lib/notificaties";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
@@ -43,25 +42,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  // Automatisch gevolg: de monteur op de hoogte brengen, maar alleen als hij de klus al had.
+  // Automatisch gevolg: de monteur op de hoogte brengen (mail + SMS), maar alleen als hij de klus al had.
   let gemaild = false;
   let mailFout: string | null = null;
   if (wasVerstuurd && toegewezenAan && monteurNaam) {
-    const email = (await getGebruikerEmail(toegewezenAan)) ?? process.env.RAPPORT_EMAIL?.trim();
-    if (email) {
-      try {
-        await verstuurOntplanning({
-          naar: email,
-          monteurNaam,
-          klantNaam: opdracht.klant_naam ?? "de opdracht",
-          referentienummer: opdracht.referentienummer,
-          organisatie: opdracht.keukenzaak ?? undefined,
-        });
-        gemaild = true;
-      } catch (err) {
-        mailFout = (err as Error).message;
-      }
-    }
+    const r = await notificeerOntplanning({
+      toegewezenAan,
+      monteurNaam,
+      klantNaam: opdracht.klant_naam ?? "de opdracht",
+      referentienummer: opdracht.referentienummer,
+      zaaknaam: opdracht.keukenzaak,
+    });
+    gemaild = r.gemaild;
+    mailFout = r.mailFout ?? r.smsFout;
   }
 
   return NextResponse.json({ ok: true, gemaild, ...(mailFout ? { mailFout } : {}) }, { status: 200 });

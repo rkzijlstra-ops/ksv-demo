@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockMarkeer, mockGetById, mockMail, mockEmail } = vi.hoisted(() => ({
+const { mockMarkeer, mockGetById, mockZoekRef, mockNotify } = vi.hoisted(() => ({
   mockMarkeer: vi.fn(),
   mockGetById: vi.fn(),
-  mockMail: vi.fn(),
-  mockEmail: vi.fn(),
+  mockZoekRef: vi.fn(),
+  mockNotify: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
-  db: () => ({ markeerVerzonden: mockMarkeer, getOpdrachtById: mockGetById }),
+  db: () => ({
+    markeerVerzonden: mockMarkeer,
+    getOpdrachtById: mockGetById,
+    zoekOpReferentie: mockZoekRef,
+  }),
 }));
-vi.mock("@/lib/mail", () => ({ verstuurMonteurMail: mockMail }));
-vi.mock("@/lib/supabase-admin", () => ({ getGebruikerEmail: mockEmail }));
+vi.mock("@/lib/notificaties", () => ({ notificeerNieuweOpdrachten: mockNotify }));
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
 }));
@@ -28,46 +31,49 @@ describe("POST /api/dashboard/versturen", () => {
   beforeEach(() => {
     mockMarkeer.mockReset();
     mockGetById.mockReset();
-    mockMail.mockReset();
-    mockEmail.mockReset();
+    mockZoekRef.mockReset();
+    mockNotify.mockReset();
     mockMarkeer.mockResolvedValue(undefined);
-    mockMail.mockResolvedValue(undefined);
-    mockEmail.mockResolvedValue("piet@monteur.nl");
+    mockZoekRef.mockResolvedValue([]);
+    mockNotify.mockResolvedValue({ gemaild: true, mailFout: null, gesmst: true, smsFout: null });
     mockGetById.mockImplementation((id: string) =>
       Promise.resolve({
         id,
         toegewezen_aan: "piet-uid",
         monteur_naam: "Piet",
+        referentienummer: null,
+        keukenzaak: "Keukenstudio Voorschoten",
         startdatum: "2026-06-10",
         starttijd: null,
       }),
     );
-    process.env.RAPPORT_EMAIL = "rein@example.com";
   });
 
-  it("mailt gebundeld naar het monteur-adres en markeert elke opdracht", async () => {
+  it("notificeert gebundeld per monteur en markeert elke opdracht", async () => {
     const res = await POST(req({ ids: ["a", "b"] }));
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(mockMail).toHaveBeenCalledTimes(1); // beide bij dezelfde monteur = 1 mail
-    expect(mockMail.mock.calls[0][0].naar).toBe("piet@monteur.nl");
-    expect(mockMail.mock.calls[0][0].opdrachten).toHaveLength(2);
+    expect(mockNotify).toHaveBeenCalledTimes(1); // beide bij dezelfde monteur = 1 melding
+    expect(mockNotify.mock.calls[0][0].toegewezenAan).toBe("piet-uid");
+    expect(mockNotify.mock.calls[0][0].opdrachten).toHaveLength(2);
     expect(mockMarkeer).toHaveBeenCalledTimes(2);
     expect(body.aantal).toBe(2);
   });
 
-  it("stuurt aparte mails voor verschillende monteurs", async () => {
+  it("stuurt aparte meldingen voor verschillende monteurs", async () => {
     mockGetById.mockImplementation((id: string) =>
       Promise.resolve({
         id,
         toegewezen_aan: id === "a" ? "piet-uid" : "dani-uid",
         monteur_naam: id === "a" ? "Piet" : "Dani",
+        referentienummer: null,
+        keukenzaak: "Keukenstudio Voorschoten",
         startdatum: "2026-06-10",
         starttijd: null,
       }),
     );
     await POST(req({ ids: ["a", "b"] }));
-    expect(mockMail).toHaveBeenCalledTimes(2);
+    expect(mockNotify).toHaveBeenCalledTimes(2);
   });
 
   it("lege lijst volgt 400", async () => {
@@ -76,12 +82,17 @@ describe("POST /api/dashboard/versturen", () => {
     expect(mockMarkeer).not.toHaveBeenCalled();
   });
 
-  it("zonder monteur-adres en zonder RAPPORT_EMAIL: geen mail, wel status", async () => {
-    mockEmail.mockResolvedValue(null);
-    delete process.env.RAPPORT_EMAIL;
+  it("status blijft 200 als de melding faalt; waarschuwing in het antwoord", async () => {
+    mockNotify.mockResolvedValue({
+      gemaild: false,
+      mailFout: "resend down",
+      gesmst: false,
+      smsFout: null,
+    });
     const res = await POST(req({ ids: ["a"] }));
+    const body = await res.json();
     expect(res.status).toBe(200);
-    expect(mockMail).not.toHaveBeenCalled();
     expect(mockMarkeer).toHaveBeenCalledTimes(1);
+    expect(body.mailWaarschuwing).toContain("resend down");
   });
 });

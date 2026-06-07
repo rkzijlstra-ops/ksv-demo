@@ -1,20 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockAuthId, mockGetProfiel, mockGetOpdracht, mockAnnuleer, mockEmail, mockMail } = vi.hoisted(() => ({
+const { mockAuthId, mockGetProfiel, mockGetOpdracht, mockAnnuleer, mockNotify } = vi.hoisted(() => ({
   mockAuthId: vi.fn(),
   mockGetProfiel: vi.fn(),
   mockGetOpdracht: vi.fn(),
   mockAnnuleer: vi.fn(),
-  mockEmail: vi.fn(),
-  mockMail: vi.fn(),
+  mockNotify: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockAuthId }));
 vi.mock("@/lib/db", () => ({
   db: () => ({ getProfiel: mockGetProfiel, getOpdrachtById: mockGetOpdracht, annuleerOpdracht: mockAnnuleer }),
 }));
-vi.mock("@/lib/supabase-admin", () => ({ getGebruikerEmail: mockEmail }));
-vi.mock("@/lib/mail", () => ({ verstuurAnnulering: mockMail }));
+vi.mock("@/lib/notificaties", () => ({ notificeerAnnulering: mockNotify }));
 
 import { POST } from "./route";
 
@@ -35,8 +33,7 @@ beforeEach(() => {
   mockGetProfiel.mockResolvedValue({ rol: "beheerder" });
   mockGetOpdracht.mockResolvedValue({ ...verstuurd });
   mockAnnuleer.mockResolvedValue(undefined);
-  mockEmail.mockResolvedValue("rk@voorbeeld.nl");
-  mockMail.mockResolvedValue(undefined);
+  mockNotify.mockResolvedValue({ gemaild: true, mailFout: null, gesmst: true, smsFout: null });
 });
 
 describe("POST /api/opdrachten/[id]/annuleren", () => {
@@ -60,13 +57,13 @@ describe("POST /api/opdrachten/[id]/annuleren", () => {
     expect(res.status).toBe(404);
   });
 
-  it("annuleert en mailt de monteur als de klus al verstuurd was", async () => {
+  it("annuleert en notificeert de monteur als de klus al verstuurd was", async () => {
     const res = await POST(new Request("http://x"), ctx("opdr-1"));
     expect(res.status).toBe(200);
     expect(mockAnnuleer).toHaveBeenCalledWith("opdr-1");
-    expect(mockMail).toHaveBeenCalledTimes(1);
-    expect(mockMail.mock.calls[0][0]).toMatchObject({
-      naar: "rk@voorbeeld.nl",
+    expect(mockNotify).toHaveBeenCalledTimes(1);
+    expect(mockNotify.mock.calls[0][0]).toMatchObject({
+      toegewezenAan: "rk-uid",
       monteurNaam: "Rein RK",
       klantNaam: "Fam. Bakker",
       referentienummer: "7588",
@@ -74,16 +71,16 @@ describe("POST /api/opdrachten/[id]/annuleren", () => {
     expect((await res.json()).gemaild).toBe(true);
   });
 
-  it("annuleert ZONDER mail als de klus nog niet verstuurd was", async () => {
+  it("annuleert ZONDER notificatie als de klus nog niet verstuurd was", async () => {
     mockGetOpdracht.mockResolvedValue({ ...verstuurd, dashboard_status: "binnen", toegewezen_aan: null, monteur_naam: null });
     const res = await POST(new Request("http://x"), ctx("opdr-1"));
     expect(res.status).toBe(200);
     expect(mockAnnuleer).toHaveBeenCalledWith("opdr-1");
-    expect(mockMail).not.toHaveBeenCalled();
+    expect(mockNotify).not.toHaveBeenCalled();
   });
 
-  it("annuleert tóch (200) als de mail faalt, met mailFout in het antwoord", async () => {
-    mockMail.mockRejectedValue(new Error("resend down"));
+  it("annuleert tóch (200) als de notificatie faalt, met mailFout in het antwoord", async () => {
+    mockNotify.mockResolvedValue({ gemaild: false, mailFout: "resend down", gesmst: false, smsFout: null });
     const res = await POST(new Request("http://x"), ctx("opdr-1"));
     expect(res.status).toBe(200);
     expect(mockAnnuleer).toHaveBeenCalledWith("opdr-1");
