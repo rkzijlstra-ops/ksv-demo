@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
+import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
@@ -78,7 +79,10 @@ export default async function OpdrachtDetailPage({
         <span className="inline-flex items-center gap-2 font-semibold text-ink">
           <CalendarClock size={16} strokeWidth={2.5} aria-hidden="true" />
           Uitvoer:{" "}
-          {opdracht.uitvoerdatum ? formatDatumKort(opdracht.uitvoerdatum) : "Nog niet gepland"}
+          {(() => {
+            const datum = uitvoerdatumVoorMonteur(opdracht);
+            return datum ? formatDatumKort(datum) : "Nog niet gepland";
+          })()}
         </span>
         {opdracht.leverweek && (
           <span className="inline-flex items-center gap-2 font-semibold text-ink">

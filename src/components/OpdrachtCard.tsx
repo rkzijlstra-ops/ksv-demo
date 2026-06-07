@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
+import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
 import { opgeleverdBadgeConfig, bevestigBadgeConfig } from "@/lib/urgentie";
 import { Badge } from "./Badge";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
@@ -77,7 +78,10 @@ export function OpdrachtCard({
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="inline-flex items-center gap-1 font-mono font-bold text-ink">
             <CalendarClock size={15} strokeWidth={2.5} aria-hidden="true" />
-            {melding.uitvoerdatum ? formatDatumKort(melding.uitvoerdatum) : "Nog niet gepland"}
+            {(() => {
+              const datum = uitvoerdatumVoorMonteur(melding);
+              return datum ? formatDatumKort(datum) : "Nog niet gepland";
+            })()}
           </span>
           {melding.leverweek && (
             <span className="inline-flex items-center gap-1 font-mono text-ink-muted">

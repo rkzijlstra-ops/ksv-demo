@@ -104,3 +104,18 @@ export function opVerzondenPlek(
     hhmm(nieuw.starttijd) === hhmm(verzonden.starttijd)
   );
 }
+
+/**
+ * De uitvoerdatum die de MONTEUR moet zien. Is er een wijziging na versturen die nog niet opnieuw
+ * verstuurd is (gewijzigd_te_versturen), dan ziet hij de afgesproken (verzonden) datum, niet de
+ * concept-wijziging van kantoor. Pas bij opnieuw versturen krijgt hij de nieuwe datum (en bericht).
+ * Zo verandert de afspraak in zijn app nooit stil. Pure functie.
+ */
+export function uitvoerdatumVoorMonteur(o: {
+  uitvoerdatum: string | null;
+  gewijzigd_te_versturen: boolean;
+  verzonden_startdatum: string | null;
+}): string | null {
+  if (o.gewijzigd_te_versturen && o.verzonden_startdatum) return o.verzonden_startdatum;
+  return o.uitvoerdatum;
+}

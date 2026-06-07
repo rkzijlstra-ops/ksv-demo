@@ -17,39 +17,32 @@ beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laa
 | Overgang | Data | Kantoor-UI | Monteur-UI | Bericht/notificatie |
 |---|---|---|---|---|
 | inschieten → binnen | melding + documenten, status binnen | dashboard "Binnen" | n.v.t. (niet toegewezen) | geen | 
-| plannen (pool→bord) → concept_gepland | toewijzing + datum + status | planbord (oranje-gestreept), dashboard "concept" | **verschijnt al in werkpool (toegewezen, nog niet verstuurd)** ⚠️ | geen (bewust) |
+| plannen (pool→bord) → concept_gepland | toewijzing + datum + status | planbord (oranje-gestreept), dashboard "concept" | verborgen tot verstuurd ✓ (werkpool-filter) | geen (bewust) |
 | versturen → gepland | status gepland, verzonden_* gezet | dashboard/planbord geel | werkpool "Te bevestigen" (geel) | mail naar monteur ✓ |
 | bevestigen → bevestigd | status bevestigd | dashboard/planbord blauw | badge "Bevestigd" | **kantoor krijgt geen actieve melding, alleen status-verandering** ⚠️ |
-| wijzigen/verplaatsen na versturen | nieuwe planning + gewijzigd-marker | "gewijzigd, te versturen" | **werkpool toont stil de nieuwe datum** ❌ | **GEEN** ❌ |
-| opnieuw versturen (gewijzigd→gepland) | status gepland, verzonden_* bij | terug naar "gepland" | terug naar "Te bevestigen", herbevestigen | mail ✓ (maar keten niet e2e-getest) |
+| wijzigen/verplaatsen na versturen (datum) | nieuwe planning + gewijzigd-marker | "gewijzigd, te versturen" | houdt afgesproken (verzonden) datum vast ✓ | geen tot opnieuw verstuurd (bewust) ✓ |
+| opnieuw versturen (gewijzigd→gepland) | status gepland, verzonden_* bij | terug naar "gepland" | terug naar "Te bevestigen", herbevestigen | mail ✓ (keten nog niet e2e-getest) |
 | ontplannen (bord→pool) → binnen | toewijzing + planning + verzonden_* gewist | dialoog (verstuurd), kaart naar pool | verdwijnt uit werkpool ✓ | mail bij verstuurd/bevestigd ✓ |
-| annuleren → geannuleerd | status geannuleerd, **toewijzing blijft** | dashboard "geannuleerd" (inklapbaar) | **blijft in actieve werkpool (toewijzing niet gewist)** ❌ | mail bij verstuurd ✓ |
+| annuleren → geannuleerd | status geannuleerd, toewijzing blijft (dossier) | dashboard "geannuleerd" (inklapbaar) | uit de werkpool ✓ (werkpool-filter) | mail bij verstuurd ✓ |
 | opleveren → opgeleverd | opdracht_status, rapport_url | dashboard groen + rapport | naar history | rapport-mail ✓ |
 | verwijderen (prullenbak) | verwijderd_at gezet | uit lijst, in prullenbak | verdwijnt uit werkpool ✓ | geen |
 
 Legenda: ✓ klopt en/of getest · ⚠️ aandachtspunt/ontwerpvraag · ❌ gat
 
-## Gevonden gaten (geprioriteerd)
+## Gaten (status)
 
-1. **❌ Wijziging na versturen, monteur-kant (hoog).** Verplaatst Ed een al bevestigde klus, dan ziet
-   de monteur stil de nieuwe datum in zijn werkpool en krijgt hij geen bericht. Hij staat nog op de
-   oude afspraak. Dit is de bug die Reinier vond. (Richting: werkpool tonen als "gewijzigd, wacht op
-   nieuwe bevestiging" i.p.v. stil de datum wijzigen, en/of een melding sturen.)
-2. **❌ Geannuleerde klus blijft bij de monteur (hoog/midden).** `annuleerOpdracht` wist de toewijzing
-   niet en `getWerkpoolVoor` filtert niet op status (db.ts), dus een geannuleerde klus blijft in de
-   actieve monteur-werkpool staan. Op basis van code-analyse, nog te bevestigen met een test.
-   (Richting: toewijzing wissen bij annuleren, of de werkpool op status filteren.)
-3. **⚠️ Concept lekt naar de monteur (midden).** Een ingeplande maar nog niet verstuurde klus
-   (concept_gepland) is al toegewezen en verschijnt dus al in de monteur-werkpool, terwijl de
-   verstuur-poort juist bedoeld is om te bepalen wat de monteur ziet. (Richting: werkpool pas tonen
-   vanaf status gepland, of concept apart markeren.)
+1. **✅ OPGELOST. Wijziging na versturen (datum), monteur-kant.** De monteur houdt de afgesproken
+   (verzonden) datum vast tot kantoor opnieuw verstuurt (`uitvoerdatumVoorMonteur`). Geen stille
+   datum-wissel meer. Gedekt: opdracht-status.test + werkpool-zichtbaarheid.spec (gat 1).
+2. **✅ OPGELOST. Geannuleerde klus blijft bij de monteur.** Werkpool-filter verbergt geannuleerd
+   (toewijzing blijft voor het dossier). Gedekt: werkpool.test + werkpool-zichtbaarheid.spec (gat 2).
+3. **✅ OPGELOST. Concept lekt naar de monteur.** Werkpool-filter verbergt concept_gepland tot
+   verstuurd; eigen klussen (binnen) blijven. Gedekt: werkpool.test + werkpool-zichtbaarheid.spec (gat 3).
 4. **⚠️ Kantoor weet niet dat de monteur bevestigd heeft (laag).** Geen actieve melding, alleen een
    status-verandering die kantoor ziet bij het openen van het dashboard. Waarschijnlijk acceptabel.
-5. **Test-gat: de wijziging-na-versturen-keten (S11) is niet e2e-getest.** Volgt vanzelf zodra gat 1
-   is opgelost (dan de e2e die beide kanten checkt meeschrijven).
-
-## Aanpak
-
-Gaten 1, 2 en 3 raken allemaal dezelfde plek: wat de monteur in zijn werkpool ziet bij een
-statusverandering aan de kantoor-kant. Logisch om ze samen op te pakken. Eerst met Reinier de richting
-per gat kiezen (net als de vorige batch), dan bouwen met een e2e per overgang die beide rollen checkt.
+5. **⚠️ NIEUW, nog te beslissen: monteur-WISSEL na versturen (midden).** Sleept Ed een verstuurde klus
+   naar een ANDERE monteur, dan volgt de werkpool de nieuwe toewijzing direct: monteur A ziet hem
+   meteen verdwijnen en B ziet hem verschijnen, vóór opnieuw versturen. De datum-fix (gat 1) houdt de
+   afspraak vast, maar niet de toewijzing. Consistent doortrekken zou betekenen: de werkpool de
+   verzonden monteur laten volgen tot opnieuw verstuurd. Met Reinier te bespreken.
+6. **Test-gat: de opnieuw-versturen-keten (S11) is nog niet als volledige e2e gedekt.**

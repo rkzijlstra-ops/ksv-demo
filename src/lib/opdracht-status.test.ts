@@ -4,6 +4,7 @@ import {
   statusStijl,
   isActief,
   opVerzondenPlek,
+  uitvoerdatumVoorMonteur,
   type DashboardStatusStijl,
 } from "./opdracht-status";
 import type { DashboardStatus } from "./db";
@@ -114,5 +115,25 @@ describe("opVerzondenPlek", () => {
         { toegewezen_aan: null, monteur_naam: null, startdatum: null, starttijd: null },
       ),
     ).toBe(false);
+  });
+});
+
+describe("uitvoerdatumVoorMonteur (gat 1: afspraak vasthouden)", () => {
+  it("toont de actuele datum als er geen hangende wijziging is", () => {
+    expect(
+      uitvoerdatumVoorMonteur({ uitvoerdatum: "2026-06-15", gewijzigd_te_versturen: false, verzonden_startdatum: "2026-06-10" }),
+    ).toBe("2026-06-15");
+  });
+
+  it("toont de afgesproken (verzonden) datum zolang een wijziging nog niet opnieuw verstuurd is", () => {
+    expect(
+      uitvoerdatumVoorMonteur({ uitvoerdatum: "2026-06-20", gewijzigd_te_versturen: true, verzonden_startdatum: "2026-06-10" }),
+    ).toBe("2026-06-10");
+  });
+
+  it("valt terug op de actuele datum als er geen verzonden datum is", () => {
+    expect(
+      uitvoerdatumVoorMonteur({ uitvoerdatum: "2026-06-20", gewijzigd_te_versturen: true, verzonden_startdatum: null }),
+    ).toBe("2026-06-20");
   });
 });

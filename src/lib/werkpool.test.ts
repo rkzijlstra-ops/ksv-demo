@@ -32,6 +32,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     spoed: false,
     spoed_verzonden_at: null,
     verwijderd_at: null,
+    dashboard_status: "binnen",
     ...over,
   };
 }
@@ -64,6 +65,27 @@ describe("groepeerMeldingen", () => {
     const { actief, history } = groepeerMeldingen([]);
     expect(actief).toEqual([]);
     expect(history).toEqual([]);
+  });
+
+  it("verbergt geannuleerde klussen uit de monteur-werkpool (gat 2)", () => {
+    const rows = [
+      maakMelding({ id: "a", dashboard_status: "bevestigd" }),
+      maakMelding({ id: "geann", dashboard_status: "geannuleerd" }),
+    ];
+    const { actief, history } = groepeerMeldingen(rows);
+    expect(actief.map((m) => m.id)).toEqual(["a"]);
+    expect(history.map((m) => m.id)).toEqual([]); // geannuleerd nergens zichtbaar
+  });
+
+  it("verbergt een nog niet verstuurd concept (concept_gepland) uit de werkpool (gat 3)", () => {
+    const rows = [
+      maakMelding({ id: "eigen", dashboard_status: "binnen" }),
+      maakMelding({ id: "concept", dashboard_status: "concept_gepland" }),
+      maakMelding({ id: "verstuurd", dashboard_status: "gepland" }),
+    ];
+    const { actief } = groepeerMeldingen(rows);
+    // Eigen (binnen) en verstuurd (gepland) blijven; het kantoor-concept is verborgen.
+    expect(actief.map((m) => m.id)).toEqual(["eigen", "verstuurd"]);
   });
 
   it("behoudt volgorde binnen elke groep", () => {
