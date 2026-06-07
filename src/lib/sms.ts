@@ -44,6 +44,8 @@ export async function verstuurSms(input: SmsInput): Promise<void> {
     res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      // Harde timeout: een trage of dode gateway mag de route nooit laten hangen (best-effort kanaal).
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         messages: {
           authentication: { productToken: token },

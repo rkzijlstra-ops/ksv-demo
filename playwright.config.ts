@@ -41,6 +41,9 @@ export default defineConfig({
     url: `http://localhost:${process.env.PW_PORT ?? "3001"}`,
     reuseExistingServer: true,
     timeout: 120_000,
+    // De testserver mag NOOIT echte SMS sturen (kost geld, en een trage gateway laat de e2e hangen).
+    // Dit dwingt dry-run af, los van wat in .env.local/.env.test staat.
+    env: { ...process.env, SMS_DRY_RUN: "1" },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });
