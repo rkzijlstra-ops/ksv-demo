@@ -56,7 +56,12 @@ export default async function WerkpoolPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {actief.map((m) => (
-            <OpdrachtCard key={m.id} melding={m} telling={tellingen[m.id]} />
+            <OpdrachtCard
+              key={m.id}
+              melding={m}
+              telling={tellingen[m.id]}
+              magVerwijderen={profiel.rol === "beheerder" || m.user_id === profiel.id}
+            />
           ))}
         </div>
       )}

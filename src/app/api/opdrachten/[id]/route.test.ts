@@ -65,6 +65,31 @@ describe("DELETE /api/opdrachten/[id]", () => {
     const res = await DELETE(req(), params("opdr-1"));
     expect(res.status).toBe(503);
   });
+
+  it("401 als niet ingelogd", async () => {
+    mockAuthId.mockResolvedValue(null);
+    const res = await DELETE(req(), params("opdr-1"));
+    expect(res.status).toBe(401);
+    expect(mockVerwijder).not.toHaveBeenCalled();
+  });
+
+  it("monteur mag zijn EIGEN ingeschoten klus verwijderen", async () => {
+    mockAuthId.mockResolvedValue("m1");
+    mockGetProfiel.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockGetById.mockResolvedValue({ id: "opdr-1", user_id: "m1" });
+    const res = await DELETE(req(), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockVerwijder).toHaveBeenCalledWith("opdr-1");
+  });
+
+  it("403 als een monteur een door KANTOOR ingeschoten klus probeert te verwijderen", async () => {
+    mockAuthId.mockResolvedValue("m1");
+    mockGetProfiel.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockGetById.mockResolvedValue({ id: "opdr-1", user_id: "ed-uid" });
+    const res = await DELETE(req(), params("opdr-1"));
+    expect(res.status).toBe(403);
+    expect(mockVerwijder).not.toHaveBeenCalled();
+  });
 });
 
 describe("PATCH /api/opdrachten/[id]", () => {

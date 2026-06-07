@@ -58,13 +58,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 
+/**
+ * Verwijdert een opdracht (soft-delete naar de prullenbak). Eigendom bepaalt het recht: een monteur
+ * mag alleen zijn EIGEN ingeschoten klus weggooien (user_id = hij zelf). Een door kantoor ingeschoten
+ * klus mag hij niet wissen (anders kan die stil uit zijn pool verdwijnen); daarvoor is "terugmelden".
+ * Kantoor (beheerder/opdrachtgever) mag binnen zijn zaak alles.
+ */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
+  }
   const { id } = await params;
 
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+  }
+  const eigen = await dbi.getProfiel(userId);
+  if (eigen?.rol === "monteur" && opdracht.user_id !== userId) {
+    return NextResponse.json(
+      { error: "Een door kantoor ingeschoten klus kun je niet verwijderen; gebruik 'terugmelden'." },
+      { status: 403 },
+    );
   }
 
   try {
