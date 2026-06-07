@@ -3,7 +3,8 @@
 Doel: de gaten zichtbaar maken die ontstaan in de OVERGANGEN tussen statussen en tussen ROLLEN, niet
 in losse features. Per overgang vier kolommen invullen. Een lege of onvolledige cel is een gat. Tests
 leiden we hieruit af: elke cel die gedrag beschrijft krijgt een test, cross-rol-overgangen een e2e die
-beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laatst bijgewerkt: 2026-06-07.
+beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laatst bijgewerkt: 2026-06-07
+(SMS-notificaties toegevoegd; zie DESIGN-SMS-NOTIFICATIES.md).
 
 ## Statussen van een opdracht (`dashboard_status`)
 
@@ -18,13 +19,15 @@ beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laa
 |---|---|---|---|---|
 | inschieten → binnen | melding + documenten, status binnen | dashboard "Binnen" | n.v.t. (niet toegewezen) | geen | 
 | plannen (pool→bord) → concept_gepland | toewijzing + datum + status | planbord (oranje-gestreept), dashboard "concept" | verborgen tot verstuurd ✓ (werkpool-filter) | geen (bewust) |
-| versturen → gepland | status gepland, verzonden_* gezet | dashboard/planbord geel | werkpool "Te bevestigen" (geel) | mail naar monteur ✓ |
+| versturen → gepland | status gepland, verzonden_* + verzonden_at gezet | dashboard/planbord geel | werkpool "Te bevestigen" (geel) | mail + SMS (werk-kritiek) naar monteur ✓ |
 | bevestigen → bevestigd | status bevestigd | dashboard/planbord blauw | badge "Bevestigd" | **kantoor krijgt geen actieve melding, alleen status-verandering** ⚠️ |
 | wijzigen/verplaatsen na versturen (datum) | nieuwe planning + gewijzigd-marker | "gewijzigd, te versturen" | houdt afgesproken (verzonden) datum vast ✓ | geen tot opnieuw verstuurd (bewust) ✓ |
 | wijzigen naar andere monteur na versturen | toewijzing naar B + gewijzigd-marker | kaart bij B op het bord | oude monteur houdt de klus tot opnieuw verstuurd, B ziet hem pas dan ✓ | geen tot opnieuw verstuurd (bewust) ✓ |
-| opnieuw versturen (gewijzigd→gepland) | status gepland, verzonden_* bij | terug naar "gepland" | terug naar "Te bevestigen", herbevestigen | mail ✓ (keten nog niet e2e-getest) |
-| ontplannen (bord→pool) → binnen | toewijzing + planning + verzonden_* gewist | dialoog (verstuurd), kaart naar pool | verdwijnt uit werkpool ✓ | mail bij verstuurd/bevestigd ✓ |
-| annuleren → geannuleerd | status geannuleerd, toewijzing blijft (dossier) | dashboard "geannuleerd" (inklapbaar) | uit de werkpool ✓ (werkpool-filter) | mail bij verstuurd ✓ |
+| opnieuw versturen (gewijzigd→gepland) | status gepland, verzonden_* + verzonden_at bij, herinnering gereset | terug naar "gepland" | terug naar "Te bevestigen", herbevestigen | mail + SMS (werk-kritiek) ✓ (keten nog niet e2e-getest) |
+| ontplannen (bord→pool) → binnen | toewijzing + planning + verzonden_* gewist | dialoog (verstuurd), kaart naar pool | verdwijnt uit werkpool ✓ | mail + SMS (werk-kritiek) bij verstuurd/bevestigd ✓ |
+| annuleren → geannuleerd | status geannuleerd, toewijzing blijft (dossier) | dashboard "geannuleerd" (inklapbaar) | uit de werkpool ✓ (werkpool-filter) | mail + SMS (werk-kritiek) bij verstuurd ✓ |
+| document toevoegen na versturen | document erbij, geen status/herbevestiging | "nieuw document" zichtbaar | "nieuw"-badge in de app | mail/badge + SMS (overig) bij verstuurd ✓ |
+| bevestiging blijft uit (na HERINNERING_NA_UUR) | herinnering_verzonden_at gezet (idempotent) | "niet bevestigd"-teller in Te-doen | herinnering binnen | mail + SMS (overig) via cron ✓ |
 | opleveren → opgeleverd | opdracht_status, rapport_url | dashboard groen + rapport | naar history | rapport-mail ✓ |
 | verwijderen (prullenbak) | verwijderd_at gezet | uit lijst, in prullenbak | verdwijnt uit werkpool ✓ | geen |
 
