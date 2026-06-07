@@ -1,0 +1,2 @@
+# Git-hooks zijn shell-scripts: altijd LF, anders breekt de interpreter op Windows (bad interpreter ^M).
+.githooks/** text eol=lf
