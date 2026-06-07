@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
 import { db } from "@/lib/db";
+import { notificeerNieuwDocument } from "@/lib/notificaties";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -74,6 +75,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { error: `Document opslaan mislukt: ${(err as Error).message}` },
       { status: 503 },
     );
+  }
+
+  // Was de opdracht al verstuurd, dan de monteur informeren (geen herbevestiging; datum/monteur blijven).
+  const alVerstuurd =
+    opdracht.dashboard_status === "gepland" || opdracht.dashboard_status === "bevestigd";
+  if (alVerstuurd && opdracht.toegewezen_aan && opdracht.monteur_naam) {
+    await notificeerNieuwDocument({
+      toegewezenAan: opdracht.toegewezen_aan,
+      monteurNaam: opdracht.monteur_naam,
+      klantNaam: opdracht.klant_naam ?? "de opdracht",
+      referentienummer: opdracht.referentienummer,
+      zaaknaam: opdracht.keukenzaak,
+      mailFn: async () => {},
+    });
   }
 
   return NextResponse.json({ documenten }, { status: 200 });

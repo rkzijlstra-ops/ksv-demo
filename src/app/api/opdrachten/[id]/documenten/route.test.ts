@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetById, mockAddDocument, mockUpload, mockGetProfiel } = vi.hoisted(() => ({
+const { mockGetById, mockAddDocument, mockUpload, mockGetProfiel, mockNotify } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockAddDocument: vi.fn(),
   mockUpload: vi.fn(),
   mockGetProfiel: vi.fn(),
+  mockNotify: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -13,6 +14,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
 }));
+vi.mock("@/lib/notificaties", () => ({ notificeerNieuwDocument: mockNotify }));
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
 }));
@@ -38,9 +40,11 @@ describe("POST /api/opdrachten/[id]/documenten", () => {
     mockAddDocument.mockReset();
     mockUpload.mockReset();
     mockGetProfiel.mockReset();
+    mockNotify.mockReset();
     mockGetProfiel.mockResolvedValue({ rol: "beheerder" });
     mockAddDocument.mockResolvedValue({ id: "doc-new" });
     mockUpload.mockResolvedValue({ pad: "uuid.png", publieke_url: "https://x/opdracht-documenten/uuid.png" });
+    mockNotify.mockResolvedValue({ gemaild: false, mailFout: null, gesmst: true, smsFout: null });
   });
 
   it("403 voor een monteur", async () => {
@@ -82,5 +86,34 @@ describe("POST /api/opdrachten/[id]/documenten", () => {
     const res = await POST(req([]), params("opdr-1"));
     expect(res.status).toBe(400);
     expect(mockAddDocument).not.toHaveBeenCalled();
+  });
+
+  it("notificeert de monteur als de opdracht al verstuurd is", async () => {
+    mockGetById.mockResolvedValue({
+      id: "opdr-1",
+      referentienummer: "7407",
+      dashboard_status: "bevestigd",
+      toegewezen_aan: "piet-uid",
+      monteur_naam: "Piet",
+      klant_naam: "Fam. Bakker",
+      keukenzaak: "Keukenstudio Voorschoten",
+    });
+    const res = await POST(req([pdfFile()]), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockNotify).toHaveBeenCalledOnce();
+    expect(mockNotify.mock.calls[0][0]).toMatchObject({ toegewezenAan: "piet-uid", monteurNaam: "Piet" });
+  });
+
+  it("notificeert NIET als de opdracht nog binnen is", async () => {
+    mockGetById.mockResolvedValue({
+      id: "opdr-1",
+      referentienummer: "7407",
+      dashboard_status: "binnen",
+      toegewezen_aan: null,
+      monteur_naam: null,
+    });
+    const res = await POST(req([pdfFile()]), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockNotify).not.toHaveBeenCalled();
   });
 });
