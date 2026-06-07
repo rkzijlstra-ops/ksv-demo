@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type OpdrachtGegevensInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 const DOCUMENTTYPES = ["orderbevestiging", "werkbon_service", "tekst", "onbekend"] as const;
 
@@ -92,6 +93,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       { status: 503 },
     );
   }
+  await logActie(dbi, id, "verwijderd", { id: userId, naam: eigen?.naam, rol: eigen?.rol });
 
   return NextResponse.json({ verwijderd: true }, { status: 200 });
 }

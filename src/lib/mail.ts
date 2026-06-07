@@ -5,6 +5,7 @@ import { uitnodigingTekst } from "./uitnodig-mail";
 import { afmeldingTekst } from "./afmeld-mail";
 import { annuleringTekst } from "./annuleer-mail";
 import { ontplanningTekst } from "./ontplan-mail";
+import { terugmeldingTekst } from "./terugmeld-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -61,6 +62,17 @@ export interface OntplanningMailInput {
   monteurNaam: string;
   klantNaam: string;
   referentienummer: string | null;
+  /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
+  organisatie?: string;
+}
+
+export interface TerugmeldingMailInput {
+  naar: string;
+  monteurNaam: string;
+  klantNaam: string;
+  referentienummer: string | null;
+  reden: string;
+  toelichting: string | null;
   /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
   organisatie?: string;
 }
@@ -231,6 +243,35 @@ export async function verstuurOntplanning(input: OntplanningMailInput): Promise<
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Ontplan-mail versturen mislukt: ${msg}`);
+  }
+}
+
+/** Meldt kantoor dat de monteur een klus heeft teruggemeld (niet doorgegaan, met reden). */
+export async function verstuurTerugmelding(input: TerugmeldingMailInput): Promise<void> {
+  const { apiKey, from, replyTo } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = terugmeldingTekst(
+    input.monteurNaam,
+    input.klantNaam,
+    input.referentienummer,
+    input.reden,
+    input.toelichting,
+    input.organisatie,
+  );
+
+  const { error } = await resend.emails.send({
+    from,
+    to: input.naar,
+    ...(replyTo ? { replyTo } : {}),
+    subject,
+    text,
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Terugmeld-mail versturen mislukt: ${msg}`);
   }
 }
 

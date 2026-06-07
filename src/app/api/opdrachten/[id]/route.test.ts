@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetById, mockVerwijder, mockGetProfiel, mockGetOpdrachtById, mockUpdateGegevens, mockAuthId } =
+const { mockGetById, mockVerwijder, mockGetProfiel, mockGetOpdrachtById, mockUpdateGegevens, mockAuthId, mockLog } =
   vi.hoisted(() => ({
     mockGetById: vi.fn(),
     mockVerwijder: vi.fn(),
@@ -8,6 +8,7 @@ const { mockGetById, mockVerwijder, mockGetProfiel, mockGetOpdrachtById, mockUpd
     mockGetOpdrachtById: vi.fn(),
     mockUpdateGegevens: vi.fn(),
     mockAuthId: vi.fn(),
+    mockLog: vi.fn(),
   }));
 
 vi.mock("@/lib/db", () => ({
@@ -17,6 +18,7 @@ vi.mock("@/lib/db", () => ({
     getProfiel: mockGetProfiel,
     getOpdrachtById: mockGetOpdrachtById,
     updateOpdrachtGegevens: mockUpdateGegevens,
+    logGebeurtenis: mockLog,
   }),
 }));
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockAuthId }));
@@ -41,16 +43,20 @@ beforeEach(() => {
   mockGetProfiel.mockResolvedValue({ id: "beheerder-uid", rol: "beheerder" });
   mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", documenttype: "onbekend" });
   mockUpdateGegevens.mockResolvedValue(undefined);
+  mockLog.mockResolvedValue(undefined);
 });
 
 describe("DELETE /api/opdrachten/[id]", () => {
-  it("verwijdert een bestaande opdracht, 200", async () => {
+  it("verwijdert een bestaande opdracht, 200, en logt de gebeurtenis", async () => {
     const res = await DELETE(req(), params("opdr-1"));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(mockVerwijder).toHaveBeenCalledWith("opdr-1");
     expect(body.verwijderd).toBe(true);
+    expect(mockLog).toHaveBeenCalledWith(
+      expect.objectContaining({ opdracht_id: "opdr-1", actie: "verwijderd" }),
+    );
   });
 
   it("404 als de opdracht niet bestaat, verwijdert niets", async () => {

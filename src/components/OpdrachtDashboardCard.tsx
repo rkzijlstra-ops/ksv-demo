@@ -56,6 +56,11 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <DocumenttypeBadge type={melding.documenttype} />
           <OpdrachtStatusBadge status={status} />
+          {melding.teruggemeld_at && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink bg-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Teruggemeld
+            </span>
+          )}
           {geenRef && (
             <span className="inline-flex items-center gap-1.5 border-[1.5px] border-urgent-rood bg-urgent-rood px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
               <AlertTriangle size={14} strokeWidth={2.5} aria-hidden="true" />

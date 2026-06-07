@@ -20,7 +20,7 @@ export function HistorySection({ meldingen }: { meldingen: Melding[] }) {
       >
         <span className="inline-flex items-center gap-2">
           <History size={20} strokeWidth={2.5} aria-hidden="true" />
-          Opgeleverd ({meldingen.length})
+          Geschiedenis ({meldingen.length})
         </span>
         {open ? (
           <ChevronUp size={22} aria-hidden="true" />
@@ -32,7 +32,7 @@ export function HistorySection({ meldingen }: { meldingen: Melding[] }) {
       {open && (
         <div className="mt-3 flex flex-col gap-3">
           {meldingen.map((m) => (
-            <OpdrachtCard key={m.id} melding={m} />
+            <OpdrachtCard key={m.id} melding={m} magVerwijderen={false} />
           ))}
         </div>
       )}

@@ -56,6 +56,12 @@ export interface Melding {
   spoed_verzonden_at: string | null;
   // v2: soft-delete (prullenbak)
   verwijderd_at: string | null;
+  // blok 9: terugmelden aan kantoor (monteur kreeg de klus niet rond)
+  teruggemeld_at: string | null;
+  teruggemeld_reden: string | null;
+  teruggemeld_toelichting: string | null;
+  // wie de rij aanmaakte (aanmaker/inschieter): bepaalt o.a. of een monteur hem mag verwijderen
+  user_id: string | null;
   // toegewezen monteur als uuid (auth-koppeling, blok 6) - kolom bestond al via createOpdracht
   toegewezen_aan: string | null;
   // monteur-naam voor de planning (vrije tekst, los van de uuid-koppeling)
@@ -119,6 +125,27 @@ export interface Document {
   publieke_url: string;
   referentienummer: string | null;
   is_primair: boolean;
+}
+
+/** Eén regel uit het gebeurtenissen-logboek (audit-trail): wie deed wat wanneer met een klus. */
+export interface Gebeurtenis {
+  id: string;
+  created_at: string;
+  opdracht_id: string | null;
+  actie: string;
+  door_id: string | null;
+  door_naam: string | null;
+  door_rol: string | null;
+  details: Record<string, unknown> | null;
+}
+
+export interface GebeurtenisInput {
+  opdracht_id: string;
+  actie: string;
+  door_id: string;
+  door_naam: string | null;
+  door_rol: string | null;
+  details?: Record<string, unknown> | null;
 }
 
 /** Input voor een nieuwe opdracht (top-level rij). Dekt zowel uit-PDF als tekst-only. */
@@ -225,6 +252,8 @@ export interface Db {
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   getDocumentById(id: string): Promise<Document | null>;
+  logGebeurtenis(input: GebeurtenisInput): Promise<void>;
+  getGebeurtenissenVoor(opdrachtId: string): Promise<Gebeurtenis[]>;
   getMeldingen(): Promise<Melding[]>;
   /** De oplever-werkpool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
   getWerkpoolVoor(userId: string): Promise<Melding[]>;
@@ -264,6 +293,7 @@ export interface Db {
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
+  markeerTeruggemeld(id: string, input: { reden: string; toelichting: string | null }): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
   getProfielen(): Promise<Profiel[]>;
@@ -372,6 +402,34 @@ function createDbFromClient(client: SupabaseClient): Db {
       const { data, error } = await client.from("documenten").select("*").eq("id", id).maybeSingle();
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data as Document | null) ?? null;
+    },
+
+    async logGebeurtenis(input) {
+      const { error } = await client.from("gebeurtenissen").insert({
+        opdracht_id: input.opdracht_id,
+        actie: input.actie,
+        door_id: input.door_id,
+        door_naam: input.door_naam,
+        door_rol: input.door_rol,
+        details: input.details ?? null,
+      });
+      if (error) throw new Error(`DB log mislukt: ${error.message}`);
+    },
+
+    async getGebeurtenissenVoor(opdrachtId: string) {
+      const { data, error } = await client
+        .from("gebeurtenissen")
+        .select("*")
+        .eq("opdracht_id", opdrachtId)
+        .order("created_at", { ascending: false });
+      if (error) {
+        // Tabel bestaat nog niet (DB niet gemigreerd met blok 8): geen logboek, maar geen crash.
+        if (error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache|find the table/i.test(error.message)) {
+          return [];
+        }
+        throw new Error(`DB lezen mislukt: ${error.message}`);
+      }
+      return (data ?? []) as Gebeurtenis[];
     },
 
     async getMeldingen() {
@@ -718,6 +776,18 @@ function createDbFromClient(client: SupabaseClient): Db {
         })
         .eq("id", id);
       if (error) throw new Error(`DB ontplannen mislukt: ${error.message}`);
+    },
+
+    async markeerTeruggemeld(id, input) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          teruggemeld_at: new Date().toISOString(),
+          teruggemeld_reden: input.reden,
+          teruggemeld_toelichting: input.toelichting,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB terugmelden mislukt: ${error.message}`);
     },
 
     async getProfiel(userId: string) {

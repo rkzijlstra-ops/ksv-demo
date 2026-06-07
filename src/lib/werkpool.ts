@@ -28,7 +28,9 @@ export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
   const history: Melding[] = [];
   for (const m of meldingen) {
     if (VERBORGEN_VOOR_MONTEUR.has(m.dashboard_status)) continue;
-    if (m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
+    // Teruggemeld of opgeleverd: uit de actieve pool, maar in de history zodat de monteur het
+    // (met de reden) kan terugkijken. Legacy verzonden-status idem.
+    if (m.teruggemeld_at || m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
       history.push(m);
     } else {
       actief.push(m);

@@ -19,6 +19,7 @@ import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
 import { OpdrachtBewerken } from "@/components/OpdrachtBewerken";
 import { DocumentBeheer } from "@/components/DocumentBeheer";
+import { Logboek } from "@/components/Logboek";
 import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
 
@@ -66,6 +67,7 @@ export default async function OpdrachtgeverDetailPage({
   const documenten = await dbi.getDocumentenVoorOpdracht(id);
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const oplevering = await dbi.getOpleveringVoorOpdracht(id);
+  const gebeurtenissen = await dbi.getGebeurtenissenVoor(id);
   const historie = opdracht.referentienummer
     ? (await dbi.zoekOpReferentie(opdracht.referentienummer)).filter((h) => h.id !== opdracht.id)
     : [];
@@ -253,6 +255,7 @@ export default async function OpdrachtgeverDetailPage({
           </ul>
         </section>
       )}
+      <Logboek gebeurtenissen={gebeurtenissen} />
     </main>
   );
 }

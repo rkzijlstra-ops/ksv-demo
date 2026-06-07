@@ -33,6 +33,9 @@ function maakMelding(over: Partial<Melding>): Melding {
     spoed_verzonden_at: null,
     verwijderd_at: null,
     dashboard_status: "binnen",
+    teruggemeld_at: null,
+    teruggemeld_reden: null,
+    teruggemeld_toelichting: null,
     ...over,
   };
 }
@@ -75,6 +78,16 @@ describe("groepeerMeldingen", () => {
     const { actief, history } = groepeerMeldingen(rows);
     expect(actief.map((m) => m.id)).toEqual(["a"]);
     expect(history.map((m) => m.id)).toEqual([]); // geannuleerd nergens zichtbaar
+  });
+
+  it("zet een teruggemelde klus in de history, niet in de actieve pool (kan terugkijken)", () => {
+    const rows = [
+      maakMelding({ id: "actief", dashboard_status: "bevestigd" }),
+      maakMelding({ id: "teruggemeld", dashboard_status: "bevestigd", teruggemeld_at: "2026-06-07T10:00:00Z" }),
+    ];
+    const { actief, history } = groepeerMeldingen(rows);
+    expect(actief.map((m) => m.id)).toEqual(["actief"]);
+    expect(history.map((m) => m.id)).toEqual(["teruggemeld"]);
   });
 
   it("verbergt een nog niet verstuurd concept (concept_gepland) uit de werkpool (gat 3)", () => {

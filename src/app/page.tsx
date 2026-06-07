@@ -61,6 +61,9 @@ export default async function WerkpoolPage() {
               melding={m}
               telling={tellingen[m.id]}
               magVerwijderen={profiel.rol === "beheerder" || m.user_id === profiel.id}
+              magTerugmelden={
+                profiel.rol === "monteur" && m.user_id !== profiel.id && m.toegewezen_aan === profiel.id
+              }
             />
           ))}
         </div>

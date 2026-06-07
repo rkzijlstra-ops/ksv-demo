@@ -4,20 +4,25 @@ import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
 import { opgeleverdBadgeConfig, bevestigBadgeConfig } from "@/lib/urgentie";
+import { redenLabel } from "@/lib/terugmeld-mail";
 import { Badge } from "./Badge";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtVerwijderIcoon } from "./OpdrachtVerwijderIcoon";
 import { BevestigKaartKnop } from "./BevestigKaartKnop";
+import { TerugmeldKnop } from "./TerugmeldKnop";
 
 export function OpdrachtCard({
   melding,
   telling,
   magVerwijderen = true,
+  magTerugmelden = false,
 }: {
   melding: Melding;
   telling?: { aantal: number; heeftSpoed: boolean };
   /** Prullenbakje tonen? Alleen bij een eigen ingeschoten klus (of kantoor); Ed's klus = terugmelden. */
   magVerwijderen?: boolean;
+  /** Terugmeld-knop tonen? Bij een door kantoor ingeschoten klus die aan deze monteur is toegewezen. */
+  magTerugmelden?: boolean;
 }) {
   const titel = melding.klant_naam ?? "Onbekende klant";
   const opgeleverd = melding.opdracht_status === "opgeleverd";
@@ -54,6 +59,11 @@ export function OpdrachtCard({
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
+          {melding.teruggemeld_at && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink bg-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Teruggemeld
+            </span>
+          )}
           {bevestig && <Badge config={bevestig} />}
           <DocumenttypeBadge type={melding.documenttype} />
           {melding.referentienummer && (
@@ -73,6 +83,13 @@ export function OpdrachtCard({
             />
           )}
         </div>
+
+        {melding.teruggemeld_at && melding.teruggemeld_reden && (
+          <p className="mt-1 text-sm text-ink">
+            Reden: <span className="font-semibold">{redenLabel(melding.teruggemeld_reden)}</span>
+            {melding.teruggemeld_toelichting ? ` — ${melding.teruggemeld_toelichting}` : ""}
+          </p>
+        )}
 
         {melding.klant_adres && (
           <p className="mt-1 truncate text-sm text-ink-muted">{melding.klant_adres}</p>
@@ -98,7 +115,10 @@ export function OpdrachtCard({
           </span>
         </div>
 
-        <BevestigKaartKnop opdrachtId={melding.id} status={melding.dashboard_status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <BevestigKaartKnop opdrachtId={melding.id} status={melding.dashboard_status} />
+          {magTerugmelden && <TerugmeldKnop opdrachtId={melding.id} klantNaam={titel} />}
+        </div>
       </div>
 
       <ChevronRight size={24} className="shrink-0 text-ink-muted" aria-hidden="true" />
