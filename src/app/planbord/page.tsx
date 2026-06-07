@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { PlanbordBord } from "@/components/PlanbordBord";
 import { UserMenu } from "@/components/UserMenu";
+import { PaginaNavKnop } from "@/components/PaginaNavKnop";
 import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
@@ -48,8 +48,11 @@ export default async function PlanbordPage({
           </div>
           {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      <div className="mb-4">
+        <PaginaNavKnop href="/dashboard" label="Naar het dashboard" icon="dashboard" />
+      </div>
 
       <PlanbordBord
         opdrachten={opdrachten}
@@ -58,12 +61,9 @@ export default async function PlanbordPage({
         vandaag={vandaag}
       />
 
-      <Link
-        href="/dashboard"
-        className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
-      >
-        ← Naar het dashboard
-      </Link>
+      <div className="mt-6">
+        <PaginaNavKnop href="/dashboard" label="Naar het dashboard" icon="dashboard" />
+      </div>
     </main>
   );
 }

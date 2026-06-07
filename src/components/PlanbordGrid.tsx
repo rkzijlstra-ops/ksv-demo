@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Wrench, AlertTriangle } from "lucide-react";
+import { Package, Wrench, AlertTriangle, MapPin } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
@@ -11,20 +11,10 @@ import { MailMonteurKnop } from "./MailMonteurKnop";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
 
-/** Solide kleurbalk links per status (altijd doorgetrokken). */
-const BALK: Record<DashboardStatus, string> = {
-  binnen: "bg-ink-muted",
-  concept_gepland: "bg-accent",
-  gepland: "bg-urgent-geel",
-  bevestigd: "bg-bevestigd",
-  opgeleverd: "bg-success",
-  geannuleerd: "bg-line",
-};
-
-/** Dunne buitenrand per status; gestreept = nog te versturen (concept). */
+/** Dikke gekleurde omlijsting per status, rondom de hele kaart (ononderbroken, geen kartelrand meer). */
 const RAND: Record<DashboardStatus, string> = {
   binnen: "border-ink-muted",
-  concept_gepland: "border-accent border-dashed",
+  concept_gepland: "border-accent",
   gepland: "border-urgent-geel",
   bevestigd: "border-bevestigd",
   opgeleverd: "border-success",
@@ -45,26 +35,26 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
     id: `kaart-${o.id}`,
     data: { soort: "kaart", opdracht: o },
   });
-  // Concept én "gewijzigd na versturen" krijgen dezelfde oranje-gestreepte behandeling + envelop.
+  // Concept én "gewijzigd na versturen" krijgen oranje (ononderbroken) + envelop; de gele status zelf
+  // markeert "nog niet bevestigd", dus geen kartelrand meer.
   const nogTeVersturen = o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen;
   // Teruggemeld door de monteur: kantoor moet hier iets mee (herplannen/bellen/afsluiten).
   const teruggemeld = !!o.teruggemeld_at;
-  // Een dubbele boeking krijgt voorrang qua rand: dikke rode kaderlijn als waarschuwing.
+  // Dikke gekleurde omlijsting rondom; een dubbele boeking krijgt voorrang met rood.
   const randClass = dubbel
     ? "border-urgent-rood"
     : teruggemeld
       ? "border-ink"
       : nogTeVersturen
-        ? "border-accent border-dashed"
+        ? "border-accent"
         : RAND[o.dashboard_status];
-  const balkClass = teruggemeld ? "bg-ink" : nogTeVersturen ? "bg-accent" : BALK[o.dashboard_status];
   const versturenLabel =
     o.dashboard_status === "concept_gepland" ? "te versturen" : o.gewijzigd_te_versturen ? "gewijzigd" : null;
   return (
     <Link
       ref={setNodeRef}
       href={`/dashboard/opdracht/${o.id}?from=planbord&week=${maandag}`}
-      className={`m-1 grid min-h-[56px] cursor-grab grid-cols-[5px_1fr] overflow-hidden border-[1.5px] bg-white ${randClass}`}
+      className={`m-1 block min-h-[56px] cursor-grab overflow-hidden border-[3px] bg-white px-2 py-1.5 ${randClass}`}
       style={{
         gridRow: p.gridRow,
         gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
@@ -76,8 +66,6 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
       {...listeners}
       {...attributes}
     >
-      <span aria-hidden className={balkClass} />
-      <span className="min-w-0 px-2 py-1.5">
       <span className="flex items-center justify-between gap-1.5">
         <span className="flex min-w-0 items-baseline gap-1.5">
           {p.isService && (
@@ -91,6 +79,12 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
         </span>
         {nogTeVersturen && <MailMonteurKnop opdrachtId={o.id} />}
       </span>
+      {o.klant_adres && (
+        <span className="mt-0.5 flex items-center gap-1 truncate text-[10.5px] text-ink-muted">
+          <MapPin size={10} strokeWidth={2.2} className="shrink-0" aria-hidden="true" />
+          <span className="truncate">{o.klant_adres}</span>
+        </span>
+      )}
       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] text-ink-muted">
         {p.isService ? (
           <Wrench size={11} strokeWidth={2.2} className="shrink-0" aria-hidden="true" />
@@ -112,7 +106,6 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
             <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> dubbel
           </span>
         )}
-      </span>
       </span>
     </Link>
   );
@@ -180,13 +173,16 @@ export function PlanbordGrid({
     const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
     return { account: a, kaarten, laneCount };
   });
+  // Eén spacer-rij na elke monteur (behalve de laatste) geeft wat witruimte tussen de blokken; vandaar
+  // +1 per voorgaande monteur in de prefix-som.
   const rijen = perMonteur.map((mb, i) => {
-    const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount, 0);
+    const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount + 1, 0);
     const geplaatst: GeplaatstOpBord[] = mb.kaarten.map((k) => ({
       ...k.plaatsing,
       gridRow: startRow + k.lane,
     }));
-    return { account: mb.account, startRow, laneCount: mb.laneCount, geplaatst };
+    const spacerRow = i < perMonteur.length - 1 ? startRow + mb.laneCount : null;
+    return { account: mb.account, startRow, laneCount: mb.laneCount, geplaatst, spacerRow };
   });
 
   return (
@@ -207,7 +203,7 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {rijen.map(({ account, startRow, laneCount, geplaatst }) => (
+      {rijen.map(({ account, startRow, laneCount, geplaatst, spacerRow }) => (
         <div key={`blok-${account.id}`} className="contents">
           {/* Monteur-label, overspant alle lanes van deze monteur */}
           <div
@@ -237,6 +233,15 @@ export function PlanbordGrid({
           {geplaatst.map((p) => (
             <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} maandag={weekdagen[0]} />
           ))}
+
+          {/* Witruimte tussen monteur-blokken */}
+          {spacerRow !== null && (
+            <div
+              aria-hidden
+              className="min-h-[14px] bg-surface"
+              style={{ gridRow: spacerRow, gridColumn: "1 / -1" }}
+            />
+          )}
         </div>
       ))}
     </div>

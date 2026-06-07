@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import type { MonteurOptie } from "@/lib/planbord";
+import { tijdOpties } from "@/lib/tijd";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
 export function PlanbordPool({
@@ -113,6 +114,7 @@ function InplanFormulier({
   onKlaar: () => void;
 }) {
   const router = useRouter();
+  const tijdenId = useId();
   const [monteurId, setMonteurId] = useState(monteurs[0]?.id ?? "");
   const [datum, setDatum] = useState(standaardDatum);
   const [dagen, setDagen] = useState(1);
@@ -186,11 +188,26 @@ function InplanFormulier({
         </label>
         <label className="flex flex-col gap-1 text-[11.5px] font-bold uppercase tracking-[0.04em] text-ink-muted">
           Tijd (optioneel)
-          <input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} className={veld} />
+          <input
+            type="text"
+            inputMode="numeric"
+            list={tijdenId}
+            value={tijd}
+            onChange={(e) => setTijd(e.target.value)}
+            placeholder="bijv. 09:30"
+            pattern="\d{1,2}:\d{2}"
+            className={`${veld} w-28`}
+          />
+          <datalist id={tijdenId}>
+            {tijdOpties().map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
         </label>
       </div>
       <p className="mt-2 text-[12px] text-ink-muted">
-        Tijd leeg = hele dag (montage). Een tijd invullen = kaartje op dat uur (service).
+        Kies een tijd uit de lijst (per 5 min) of typ er zelf een. Tijd leeg = hele dag (montage), een
+        tijd invullen = kaartje op dat uur (service).
       </p>
       {fout && (
         <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-urgent-rood">

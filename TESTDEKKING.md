@@ -29,6 +29,9 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Geannuleerde opdrachten inklapbaar op het dashboard | E | dashboard-geannuleerd.spec | groen |
 | Terugknop volgt herkomst (planbord vs dashboard) | E | terug-navigatie.spec | groen |
 | Status-kleurtaal (geel = niet bevestigd) op dashboard/planbord | visueel | build (styling, geen zinvolle assertie) | groen |
+| Inplan-tijd: kies-of-typ selector (datalist, per 5 min) | U, E | tijd.test (tijdOpties), planbord.spec (inplan-formulier) | groen |
+| Planbord-styling: dikke gekleurde omlijsting, adres in blok, ruimte tussen monteurs, geen kartelrand | visueel | build + screenshots.spec | groen |
+| Navigatie dashboard<->planbord (gelijke knop, boven en onder) | E | terug-navigatie.spec | groen |
 
 ## Kern-flows (monteur / PWA)
 
