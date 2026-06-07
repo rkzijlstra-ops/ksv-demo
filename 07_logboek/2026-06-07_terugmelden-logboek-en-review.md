@@ -43,11 +43,19 @@ in via een nieuw "Mijn gegevens"-scherm (de naam blijft door kantoor ingesteld).
 een SECURITY DEFINER functie op auth.uid(), zodat niemand zijn rol kan wijzigen. Terugval: naam, dan
 neutrale kop. Migratie 10. Tests: helper + route + cross-feature e2e.
 
+## Toegevoegd: naam beheren (blok 11)
+
+Vervolg op de afzender-keuze. Ed nodigt uit met een naam, maar de monteur mag die zelf aanvullen/
+corrigeren in "Mijn gegevens" (bijv. "Piet" -> "Piet de Vries"). Ed kan in zijn gebruikerslijst ook
+hernoemen (inline potlood-knop). Geen open aanmelding. Naam loopt mee in de SECURITY DEFINER functie
+(migratie 11, naam wordt nooit leeggemaakt). Tests: route + e2e.
+
 ## KRITIEK: productie-migraties
 
 De code staat live, maar de PRODUCTIE-DB heeft de nieuwe migraties nodig. De app crasht niet (defensief),
 maar de features werken pas na het draaien van: `schema-compleet-8` (logboek), `schema-compleet-9`
-(terugmelden) en `schema-compleet-10` (afzender-gegevens). Reinier meldde 8 + 9 gedraaid; 10 is nieuw.
+(terugmelden), `schema-compleet-10` (afzender-gegevens) en `schema-compleet-11` (eigen naam). Reinier
+meldde 8 + 9 + 10 gedraaid; 11 is nieuw.
 
 ## Open beslissingen voor Reinier (niet zelf gemaakt)
 
