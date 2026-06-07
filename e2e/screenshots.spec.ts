@@ -127,6 +127,10 @@ test.beforeAll(async () => {
     fotoUrls.push((await store.uploadFoto(maakPng(240, 170, r, g, b), "image/png")).url);
   }
   const handtekeningUrl = (await store.uploadFoto(maakPng(220, 90, 245, 247, 250), "image/png")).url;
+  // Afzender op het monteur-profiel zetten zodat het rapport-screenshot de echte afzender toont.
+  await admin.from("profielen").update({
+    bedrijfsnaam: "BKM Keukenmontage", telefoon: "06-31665814", contact_email: "bkmkeukenmontage@gmail.com",
+  }).eq("id", MONTEUR.uid);
   rapportId = await maak("Fam. de Boer", { monteurIdx: 0, dag: 0, status: "bevestigd" });
   await db.upsertOpleveringConcept({
     opdracht_id: rapportId,
@@ -147,6 +151,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   if (!process.env.SHOTS) return;
+  await admin.from("profielen").update({ bedrijfsnaam: null, telefoon: null, contact_email: null }).eq("id", MONTEUR.uid);
   await admin.from("gebeurtenissen").delete().like("door_naam", "Rein RK");
   // Opdrachten met de DEMO-prefix opruimen.
   const { data } = await admin.from("meldingen").select("id").like("klant_naam", `${PREFIX}%`);
