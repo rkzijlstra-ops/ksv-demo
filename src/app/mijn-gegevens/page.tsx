@@ -36,6 +36,9 @@ export default async function MijnGegevensPage() {
           bedrijfsnaam={profiel.bedrijfsnaam}
           telefoon={profiel.telefoon}
           contactEmail={profiel.contact_email}
+          isMonteur={isMonteur}
+          smsWerkKritiek={profiel.sms_werk_kritiek}
+          smsOverig={profiel.sms_overig}
         />
       </section>
     </main>

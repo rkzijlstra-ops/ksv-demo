@@ -19,7 +19,14 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
     // Profiel terugzetten (incl. naam) en de geseede klus opruimen, zodat andere tests schoon starten.
     await admin
       .from("profielen")
-      .update({ naam: "E2E Monteur", bedrijfsnaam: null, telefoon: null, contact_email: null })
+      .update({
+        naam: "E2E Monteur",
+        bedrijfsnaam: null,
+        telefoon: null,
+        contact_email: null,
+        sms_werk_kritiek: true,
+        sms_overig: true,
+      })
       .eq("id", MONTEUR.uid);
     if (opdrachtId) {
       await admin.from("opleveringen").delete().eq("opdracht_id", opdrachtId);
@@ -75,5 +82,39 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
     await page.goto(`/opdracht/${opdrachtId}/rapport`);
     await expect(page.getByText("Testmontage VOF")).toBeVisible();
     await expect(page.getByText("BKM", { exact: true })).toHaveCount(0);
+  });
+
+  test("SMS-schakelaars: uit zonder nummer, instelbaar met nummer, keuze blijft bewaard", async ({ page }) => {
+    const werkKritiek = page.locator("label", { hasText: "Werk-kritiek" }).getByRole("checkbox");
+    const overig = page.locator("label", { hasText: "Herinneringen en overig" }).getByRole("checkbox");
+
+    await page.goto("/mijn-gegevens");
+    // Zonder geldig mobiel nummer staan beide schakelaars uit (disabled).
+    await expect(werkKritiek).toBeDisabled();
+    await expect(overig).toBeDisabled();
+
+    // Geldig nummer invullen maakt ze beschikbaar.
+    await page.getByLabel("Telefoon").fill("06-12345678");
+    await expect(werkKritiek).toBeEnabled();
+    await expect(overig).toBeEnabled();
+
+    // Overig uitzetten, opslaan.
+    await overig.uncheck();
+    await page.getByRole("button", { name: "Opslaan" }).click();
+    await expect(page.getByText("Opgeslagen")).toBeVisible();
+
+    // In de DB staat overig nu uit, werk-kritiek aan.
+    const { data: prof } = await admin
+      .from("profielen")
+      .select("sms_werk_kritiek, sms_overig")
+      .eq("id", MONTEUR.uid)
+      .single();
+    expect(prof?.sms_werk_kritiek).toBe(true);
+    expect(prof?.sms_overig).toBe(false);
+
+    // Na herladen is de keuze nog zichtbaar.
+    await page.reload();
+    await expect(werkKritiek).toBeChecked();
+    await expect(overig).not.toBeChecked();
   });
 });

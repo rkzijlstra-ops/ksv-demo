@@ -3,21 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Check, AlertCircle } from "lucide-react";
+import { normaliseerNlMobiel } from "@/lib/telefoon";
 
 /**
  * Formulier waarmee een gebruiker zijn eigen afzender-gegevens voor het opleverrapport bijwerkt
  * (bedrijfsnaam, telefoon, contact-mail). Naam staat vast (door kantoor ingevoerd), hier alleen lezen.
+ * Voor een monteur staan hier ook de SMS-voorkeuren.
  */
 export function MijnGegevensForm({
   naam,
   bedrijfsnaam,
   telefoon,
   contactEmail,
+  isMonteur = false,
+  smsWerkKritiek = true,
+  smsOverig = true,
 }: {
   naam: string;
   bedrijfsnaam: string | null;
   telefoon: string | null;
   contactEmail: string | null;
+  isMonteur?: boolean;
+  smsWerkKritiek?: boolean;
+  smsOverig?: boolean;
 }) {
   const router = useRouter();
   const [velden, setVelden] = useState({
@@ -25,12 +33,21 @@ export function MijnGegevensForm({
     bedrijfsnaam: bedrijfsnaam ?? "",
     telefoon: telefoon ?? "",
     contact_email: contactEmail ?? "",
+    sms_werk_kritiek: smsWerkKritiek,
+    sms_overig: smsOverig,
   });
   const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
 
-  function zet(veld: keyof typeof velden, waarde: string) {
+  const nummerGeldig = normaliseerNlMobiel(velden.telefoon) !== null;
+
+  function zet(veld: "naam" | "bedrijfsnaam" | "telefoon" | "contact_email", waarde: string) {
+    setVelden((v) => ({ ...v, [veld]: waarde }));
+    setKlaar(false);
+  }
+
+  function zetBool(veld: "sms_werk_kritiek" | "sms_overig", waarde: boolean) {
     setVelden((v) => ({ ...v, [veld]: waarde }));
     setKlaar(false);
   }
@@ -97,7 +114,49 @@ export function MijnGegevensForm({
           inputMode="tel"
           placeholder="Bijv. 06-12345678"
         />
+        <span className="text-xs font-normal text-ink-muted">
+          Dit nummer gebruiken we voor SMS-meldingen.
+        </span>
       </label>
+
+      {isMonteur && (
+        <fieldset className="flex flex-col gap-3 border-2 border-line p-4">
+          <legend className="px-1 text-sm font-semibold text-ink">SMS-meldingen</legend>
+          {!nummerGeldig && (
+            <p className="text-xs text-ink-muted">Vul je mobiele nummer in om SMS aan te zetten.</p>
+          )}
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span>
+              Werk-kritiek
+              <span className="block text-xs font-normal text-ink-muted">
+                Nieuwe of gewijzigde klus, annulering, klus weggehaald.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-6 w-6"
+              checked={velden.sms_werk_kritiek}
+              disabled={!nummerGeldig}
+              onChange={(e) => zetBool("sms_werk_kritiek", e.target.checked)}
+            />
+          </label>
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span>
+              Herinneringen en overig
+              <span className="block text-xs font-normal text-ink-muted">
+                Bevestig-herinnering, nieuw document bij je klus.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-6 w-6"
+              checked={velden.sms_overig}
+              disabled={!nummerGeldig}
+              onChange={(e) => zetBool("sms_overig", e.target.checked)}
+            />
+          </label>
+        </fieldset>
+      )}
 
       <label className={labelClass}>
         Contact-e-mail
