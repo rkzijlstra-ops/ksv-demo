@@ -35,11 +35,19 @@ verbeteringen toevoegen, en beslissingen + niet-gedane-maar-waardevolle dingen r
 
 Unit/route 442, e2e 44 (+7 mail), allemaal groen via de poort. Screenshots in `screenshots/` (gitignored).
 
+## Toegevoegd: afzender per monteur op het rapport (blok 10)
+
+Het rapport toonde overal hardcoded "BKM Keukenmontage". Nu komt de afzender (briefhoofd + voetregel)
+uit het profiel van de monteur die opleverde. Elke gebruiker vult zijn eigen bedrijfsnaam/telefoon/mail
+in via een nieuw "Mijn gegevens"-scherm (de naam blijft door kantoor ingesteld). Veilig bijwerken via
+een SECURITY DEFINER functie op auth.uid(), zodat niemand zijn rol kan wijzigen. Terugval: naam, dan
+neutrale kop. Migratie 10. Tests: helper + route + cross-feature e2e.
+
 ## KRITIEK: productie-migraties
 
-De code staat live, maar de PRODUCTIE-DB heeft migratie 8 + 9 nog NIET. De app crasht niet (defensief),
-maar het logboek toont niets en terugmelden geeft een fout tot Reinier `schema-compleet-8` en
-`schema-compleet-9` op productie draait. Daarna is alles actief.
+De code staat live, maar de PRODUCTIE-DB heeft de nieuwe migraties nodig. De app crasht niet (defensief),
+maar de features werken pas na het draaien van: `schema-compleet-8` (logboek), `schema-compleet-9`
+(terugmelden) en `schema-compleet-10` (afzender-gegevens). Reinier meldde 8 + 9 gedraaid; 10 is nieuw.
 
 ## Open beslissingen voor Reinier (niet zelf gemaakt)
 
