@@ -140,7 +140,7 @@ function DropCel({
       ref={setNodeRef}
       data-testid={`cel-${toegewezenAan}-${dag}`}
       className={`min-h-[64px] border-r border-line last:border-r-0 ${
-        laatsteLane ? "border-b-2 border-b-ink" : "border-b border-b-line"
+        laatsteLane ? "border-b-4 border-b-ink" : "border-b border-b-line"
       } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}`}
       style={{ gridRow, gridColumn: col + 2 }}
     />
@@ -206,7 +206,7 @@ export function PlanbordGrid({
         <div key={`blok-${account.id}`} className="contents">
           {/* Monteur-label, overspant alle lanes van deze monteur */}
           <div
-            className="flex items-center gap-2 border-b-2 border-b-ink border-r border-r-line px-2.5 py-2 font-extrabold"
+            className="flex items-center gap-2 border-b-4 border-b-ink border-r border-r-line bg-surface px-2.5 py-2 font-extrabold"
             style={{ gridRow: `${startRow} / span ${laneCount}`, gridColumn: 1 }}
           >
             {account.naam}

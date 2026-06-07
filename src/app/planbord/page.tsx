@@ -39,7 +39,7 @@ export default async function PlanbordPage({
   const monteurs = (await dbi.getMonteurs()).map((m) => ({ id: m.id, naam: m.naam }));
 
   return (
-    <main className="mx-auto w-full max-w-[1040px] p-4 pb-24">
+    <main className="mx-auto w-full max-w-[1500px] p-4 pb-24">
       <header className="relative mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <div className="flex items-start justify-between gap-3">
           <div>
