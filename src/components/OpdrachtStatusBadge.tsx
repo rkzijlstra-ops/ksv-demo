@@ -13,7 +13,7 @@ const CONFIG: Record<DashboardStatus, { label: string; classes: string; Icon: Lu
     classes: "bg-white text-accent border-accent border-dashed",
     Icon: Pencil,
   },
-  gepland: { label: "Gepland", classes: "bg-white text-accent border-accent", Icon: Send },
+  gepland: { label: "Gepland", classes: "bg-urgent-geel text-ink border-urgent-geel", Icon: Send },
   bevestigd: {
     label: "Bevestigd",
     classes: "bg-bevestigd text-white border-bevestigd",

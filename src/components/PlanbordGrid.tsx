@@ -15,7 +15,7 @@ const DOW = ["ma", "di", "wo", "do", "vr"];
 const BALK: Record<DashboardStatus, string> = {
   binnen: "bg-ink-muted",
   concept_gepland: "bg-accent",
-  gepland: "bg-accent",
+  gepland: "bg-urgent-geel",
   bevestigd: "bg-bevestigd",
   opgeleverd: "bg-success",
   geannuleerd: "bg-line",
@@ -25,7 +25,7 @@ const BALK: Record<DashboardStatus, string> = {
 const RAND: Record<DashboardStatus, string> = {
   binnen: "border-ink-muted",
   concept_gepland: "border-accent border-dashed",
-  gepland: "border-accent",
+  gepland: "border-urgent-geel",
   bevestigd: "border-bevestigd",
   opgeleverd: "border-success",
   geannuleerd: "border-line",

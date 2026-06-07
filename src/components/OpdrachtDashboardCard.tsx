@@ -12,7 +12,7 @@ import { MailMonteurKnop } from "./MailMonteurKnop";
 const STRIP: Record<DashboardStatus, string> = {
   binnen: "bg-ink-muted",
   concept_gepland: "bg-accent",
-  gepland: "bg-accent",
+  gepland: "bg-urgent-geel",
   bevestigd: "bg-bevestigd",
   opgeleverd: "bg-success",
   geannuleerd: "bg-line",

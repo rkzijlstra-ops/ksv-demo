@@ -26,7 +26,7 @@ const CHIP: Record<StatusFilter, { label: string; basis: string; actief: string 
   alle: { label: "Alle", basis: "border-ink", actief: "bg-ink text-white border-ink" },
   binnen: { label: "Binnen", basis: "border-ink-muted", actief: "bg-ink-muted text-white border-ink-muted" },
   concept_gepland: { label: "Concept", basis: "border-accent border-dashed", actief: "bg-accent text-white border-accent" },
-  gepland: { label: "Gepland", basis: "border-accent", actief: "bg-accent text-white border-accent" },
+  gepland: { label: "Gepland", basis: "border-urgent-geel", actief: "bg-urgent-geel text-ink border-urgent-geel" },
   bevestigd: { label: "Bevestigd", basis: "border-bevestigd", actief: "bg-bevestigd text-white border-bevestigd" },
   opgeleverd: { label: "Opgeleverd", basis: "border-success", actief: "bg-success text-white border-success" },
   geannuleerd: { label: "Geannuleerd", basis: "border-line", actief: "bg-ink-muted text-white border-ink-muted" },
