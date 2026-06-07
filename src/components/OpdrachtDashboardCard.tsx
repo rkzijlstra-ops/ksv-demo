@@ -27,7 +27,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
   const geenRef = isActief(status) && !melding.referentienummer;
   const nogTeVersturen = status === "concept_gepland" || melding.gewijzigd_te_versturen;
 
-  const cardRand = nogTeVersturen ? "border-accent border-dashed" : "border-ink";
+  const cardRand = nogTeVersturen ? "border-accent" : "border-ink";
   const stripClass = nogTeVersturen ? "bg-accent" : STRIP[status];
 
   return (
@@ -68,7 +68,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
             </span>
           )}
           {melding.gewijzigd_te_versturen && status !== "concept_gepland" && (
-            <span className="inline-flex items-center border-[1.5px] border-dashed border-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-accent">
+            <span className="inline-flex items-center border-[1.5px] border-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-accent">
               Gewijzigd
             </span>
           )}

@@ -16,7 +16,6 @@ export function VerstuurKnop({ ids }: { ids: string[] }) {
   const [mailWaarschuwing, setMailWaarschuwing] = useState("");
 
   const aantal = ids.length;
-  if (aantal === 0) return null;
 
   async function versturen() {
     setBezig(true);
@@ -45,13 +44,23 @@ export function VerstuurKnop({ ids }: { ids: string[] }) {
     }
   }
 
+  // Niets meer te versturen: blauwe status-indicator (kleuren conform de schermen: primary = blauw).
+  if (aantal === 0 && !klaar) {
+    return (
+      <span className="inline-flex items-center gap-2 border-2 border-primary bg-white px-3.5 py-2 text-xs font-extrabold uppercase tracking-[0.04em] text-primary">
+        <Check size={15} strokeWidth={2.5} aria-hidden="true" />
+        Alles verzonden
+      </span>
+    );
+  }
+
   return (
     <div className="flex flex-col items-end gap-1.5">
       <button
         type="button"
         onClick={versturen}
-        disabled={bezig}
-        className="inline-flex cursor-pointer items-center gap-2 border-2 border-accent bg-accent px-3.5 py-2 text-xs font-extrabold uppercase tracking-[0.04em] text-white disabled:opacity-60"
+        disabled={bezig || aantal === 0}
+        className="inline-flex cursor-pointer items-center gap-2 border-2 border-accent bg-white px-3.5 py-2 text-xs font-extrabold uppercase tracking-[0.04em] text-accent hover:bg-accent/10 disabled:opacity-60"
       >
         {bezig ? (
           <Loader2 size={15} className="animate-spin" aria-hidden="true" />

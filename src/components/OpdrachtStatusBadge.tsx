@@ -10,7 +10,7 @@ const CONFIG: Record<DashboardStatus, { label: string; classes: string; Icon: Lu
   binnen: { label: "Binnen", classes: "bg-white text-ink-muted border-line", Icon: Inbox },
   concept_gepland: {
     label: "Nog te versturen",
-    classes: "bg-white text-accent border-accent border-dashed",
+    classes: "bg-white text-accent border-accent",
     Icon: Pencil,
   },
   gepland: { label: "Gepland", classes: "bg-urgent-geel text-ink border-urgent-geel", Icon: Send },
