@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetById, mockAddDocument, mockUpload } = vi.hoisted(() => ({
+const { mockGetById, mockAddDocument, mockUpload, mockGetProfiel } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockAddDocument: vi.fn(),
   mockUpload: vi.fn(),
+  mockGetProfiel: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
-  db: () => ({ getMeldingById: mockGetById, addDocument: mockAddDocument }),
+  db: () => ({ getMeldingById: mockGetById, addDocument: mockAddDocument, getProfiel: mockGetProfiel }),
 }));
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
@@ -36,8 +37,17 @@ describe("POST /api/opdrachten/[id]/documenten", () => {
     mockGetById.mockReset();
     mockAddDocument.mockReset();
     mockUpload.mockReset();
+    mockGetProfiel.mockReset();
+    mockGetProfiel.mockResolvedValue({ rol: "beheerder" });
     mockAddDocument.mockResolvedValue({ id: "doc-new" });
     mockUpload.mockResolvedValue({ pad: "uuid.png", publieke_url: "https://x/opdracht-documenten/uuid.png" });
+  });
+
+  it("403 voor een monteur", async () => {
+    mockGetProfiel.mockResolvedValue({ rol: "monteur" });
+    const res = await POST(req([pdfFile()]), params("opdr-1"));
+    expect(res.status).toBe(403);
+    expect(mockAddDocument).not.toHaveBeenCalled();
   });
 
   it("voegt een document toe aan een bestaande opdracht, 200", async () => {

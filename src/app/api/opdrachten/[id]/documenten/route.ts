@@ -14,6 +14,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
 
   const dbi = await db();
+  const eigen = await dbi.getProfiel(userId);
+  if (!eigen || eigen.rol === "monteur") {
+    return NextResponse.json({ error: "Alleen kantoor mag documenten beheren" }, { status: 403 });
+  }
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });

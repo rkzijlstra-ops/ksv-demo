@@ -224,6 +224,7 @@ export interface Db {
   updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput): Promise<void>;
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
+  getDocumentById(id: string): Promise<Document | null>;
   getMeldingen(): Promise<Melding[]>;
   /** De oplever-werkpool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
   getWerkpoolVoor(userId: string): Promise<Melding[]>;
@@ -365,6 +366,12 @@ function createDbFromClient(client: SupabaseClient): Db {
         .order("created_at", { ascending: true });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Document[];
+    },
+
+    async getDocumentById(id: string) {
+      const { data, error } = await client.from("documenten").select("*").eq("id", id).maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Document | null) ?? null;
     },
 
     async getMeldingen() {

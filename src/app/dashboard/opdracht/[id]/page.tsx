@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
   FileText,
-  Image as ImageIcon,
-  ExternalLink,
   User,
   MapPin,
   Phone,
@@ -20,6 +18,7 @@ import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
 import { OpdrachtBewerken } from "@/components/OpdrachtBewerken";
+import { DocumentBeheer } from "@/components/DocumentBeheer";
 import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
 
@@ -199,43 +198,8 @@ export default async function OpdrachtgeverDetailPage({
         </section>
       )}
 
-      {/* Documenten */}
-      <section className="mt-6">
-        <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
-          Documenten ({documenten.length})
-        </h2>
-        {documenten.length === 0 ? (
-          <p className="text-sm text-ink-muted">Geen documenten bij deze opdracht.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {documenten.map((doc) => (
-              <li key={doc.id}>
-                <a
-                  href={doc.publieke_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-h-[52px] items-center gap-3 border border-line bg-white p-3 hover:opacity-80"
-                >
-                  {doc.type === "pdf" ? (
-                    <FileText size={20} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                  ) : (
-                    <ImageIcon size={20} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                  )}
-                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">
-                    {doc.bestandsnaam}
-                  </span>
-                  {doc.is_primair && (
-                    <span className="shrink-0 bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                      bron
-                    </span>
-                  )}
-                  <ExternalLink size={16} className="shrink-0 text-primary" aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Documenten: openen, verwijderen, bijvoegen (kantoor) */}
+      <DocumentBeheer opdrachtId={opdracht.id} documenten={documenten} />
 
       {/* Meldingen van de monteur, met foto's */}
       {meldingen.length > 0 && (

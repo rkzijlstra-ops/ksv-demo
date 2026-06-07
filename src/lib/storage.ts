@@ -17,6 +17,8 @@ export interface Storage {
     bestandsnaam: string,
     contentType: string,
   ): Promise<{ pad: string; publieke_url: string }>;
+  /** Verwijder een opdracht-document uit storage (best-effort opruiming na het wissen van de rij). */
+  verwijderOpdrachtDocument(pad: string): Promise<void>;
 }
 
 /** Extensie afleiden uit bestandsnaam, met content-type als fallback. */
@@ -58,6 +60,11 @@ export function createStorage(config: StorageConfig): Storage {
       if (error) throw new Error(`Document-upload mislukt: ${error.message}`);
       const { data: pub } = client.storage.from(DOCUMENTEN_BUCKET).getPublicUrl(pad);
       return { pad, publieke_url: pub.publicUrl };
+    },
+
+    async verwijderOpdrachtDocument(pad: string) {
+      const { error } = await client.storage.from(DOCUMENTEN_BUCKET).remove([pad]);
+      if (error) throw new Error(`Document-verwijderen uit storage mislukt: ${error.message}`);
     },
   };
 }
