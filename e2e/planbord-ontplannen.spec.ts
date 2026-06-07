@@ -82,7 +82,7 @@ test.afterEach(async () => {
  * dialoog-knop soms opgegeten (focus wel, onClick niet). Geeft de dialoog-locator terug.
  */
 async function sleepKaartNaarPool(page: import("@playwright/test").Page) {
-  const kaart = page.locator(`a[href="/dashboard/opdracht/${seededId}"]`);
+  const kaart = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
   await expect(kaart).toBeVisible();
   const poolZone = page.locator('[data-testid="pool-zone"]');
   await expect(poolZone).toBeVisible();
@@ -123,7 +123,7 @@ test('"Nee" laat de klus op het bord staan', async ({ page }) => {
   const data = await statusVan(seededId);
   expect(data?.dashboard_status).toBe("bevestigd");
   expect(data?.toegewezen_aan).toBe(monteurId);
-  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toBeVisible();
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible();
 });
 
 test('"Ja, van planning halen" ontplant de klus naar de pool', async ({ page }) => {
@@ -139,6 +139,6 @@ test('"Ja, van planning halen" ontplant de klus naar de pool', async ({ page }) 
   expect((await statusVan(seededId))?.toegewezen_aan).toBeNull();
 
   // Visueel: kaart weg van het bord, klant staat nu in de pool.
-  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toHaveCount(0);
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toHaveCount(0);
   await expect(page.locator('[data-testid="pool-zone"]').getByText(uniek)).toBeVisible();
 });

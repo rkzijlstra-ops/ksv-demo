@@ -78,7 +78,7 @@ test("inplannen via het pool-formulier zet de status op concept_gepland", async 
   expect(data?.startdatum).toBeTruthy();
 
   // Visueel: kaart staat op het planbord (als Link naar de opdracht-detailpagina).
-  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
   // Visueel: kaart is weg uit de pool.
   await expect(kaart).not.toBeVisible();
 });
@@ -117,7 +117,7 @@ test("inplannen door slepen van de pool naar een cel werkt", async ({ page }) =>
   expect(data?.startdatum).toBe(maandag);
 
   // Visueel: kaart staat op het planbord op de juiste dag.
-  await expect(page.locator(`a[href="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
   // Visueel: kaart is weg uit de pool.
   const kaartInPool = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
   await expect(kaartInPool).not.toBeVisible();

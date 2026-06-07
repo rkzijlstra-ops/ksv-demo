@@ -130,7 +130,7 @@ test("slepen van het bord terug naar pool ontpland de kaart", async ({ page }) =
   });
 
   await page.goto(`/planbord?week=${maandag}`);
-  const kaartOpBord = page.locator(`a[href="/dashboard/opdracht/${id}"]`);
+  const kaartOpBord = page.locator(`a[href*="/dashboard/opdracht/${id}"]`);
   await expect(kaartOpBord).toBeVisible({ timeout: 8_000 });
 
   const pool = page.locator('[data-testid="pool-zone"]');
@@ -170,7 +170,7 @@ test("multi-dag montage (3 dagen) staat als aaneengesloten blok op het bord", as
   });
 
   await page.goto(`/planbord?week=${maandag}`);
-  const kaartOpBord = page.locator(`a[href="/dashboard/opdracht/${id}"]`);
+  const kaartOpBord = page.locator(`a[href*="/dashboard/opdracht/${id}"]`);
   await expect(kaartOpBord).toBeVisible({ timeout: 8_000 });
 
   // DB: duur_dagen correct opgeslagen
@@ -193,7 +193,7 @@ test("montage van vrijdag met duur 3 wordt geknipt op vrijdag en staat op het bo
   });
 
   await page.goto(`/planbord?week=${maandag}`);
-  const kaartOpBord = page.locator(`a[href="/dashboard/opdracht/${id}"]`);
+  const kaartOpBord = page.locator(`a[href*="/dashboard/opdracht/${id}"]`);
   // Kaart staat op het bord, ook al past maar 1 dag in de week (vrijdag)
   await expect(kaartOpBord).toBeVisible({ timeout: 8_000 });
 
@@ -233,8 +233,8 @@ test("service + montage op dezelfde dag zijn beide zichtbaar zonder conflictmark
   await page.goto(`/planbord?week=${maandag}`);
 
   // Beide kaarten staan op het bord
-  const montageKaart = page.locator(`a[href="/dashboard/opdracht/${idMontage}"]`);
-  const serviceKaart = page.locator(`a[href="/dashboard/opdracht/${idService}"]`);
+  const montageKaart = page.locator(`a[href*="/dashboard/opdracht/${idMontage}"]`);
+  const serviceKaart = page.locator(`a[href*="/dashboard/opdracht/${idService}"]`);
   await expect(montageKaart).toBeVisible({ timeout: 8_000 });
   await expect(serviceKaart).toBeVisible({ timeout: 5_000 });
 
@@ -268,8 +268,8 @@ test("twee montages op dezelfde dag tonen een conflictwaarschuwing", async ({ pa
 
   await page.goto(`/planbord?week=${maandag}`);
 
-  const kaart1 = page.locator(`a[href="/dashboard/opdracht/${id1}"]`);
-  const kaart2 = page.locator(`a[href="/dashboard/opdracht/${id2}"]`);
+  const kaart1 = page.locator(`a[href*="/dashboard/opdracht/${id1}"]`);
+  const kaart2 = page.locator(`a[href*="/dashboard/opdracht/${id2}"]`);
   await expect(kaart1).toBeVisible({ timeout: 8_000 });
   await expect(kaart2).toBeVisible({ timeout: 5_000 });
 
