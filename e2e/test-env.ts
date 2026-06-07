@@ -46,3 +46,6 @@ export const MONTEUR = {
 };
 /** Tijdelijke test-opdrachtgever; in setup aangemaakt, in teardown opgeruimd. */
 export const OPDRACHTGEVER_EMAIL = env.E2E_OPDRACHTGEVER_EMAIL || "e2e-opdrachtgever@kluslus.test";
+
+/** Test-wachtwoord dat global-setup op de test-accounts zet; ook gebruikt om rol-clients te maken. */
+export const TEST_PW = "e2e-Kluslus-test-2026!";

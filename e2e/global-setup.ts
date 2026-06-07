@@ -10,6 +10,7 @@ import {
   BEHEERDER,
   MONTEUR,
   OPDRACHTGEVER_EMAIL,
+  TEST_PW,
 } from "./test-env";
 
 /**
@@ -19,7 +20,6 @@ import {
  * weg, zodat elke test ingelogd start. Accounts/omgeving komen uit test-env (zijspoor-bewust).
  */
 
-const TEST_PW = "e2e-Kluslus-test-2026!";
 const AUTH_DIR = path.join(process.cwd(), "e2e", ".auth");
 
 /**

@@ -75,3 +75,8 @@ test("monteur wordt weggestuurd van het planbord naar zijn werkpool", async ({ p
   expect(new URL(page.url()).pathname).toBe("/");
   await expect(page.getByText("Werkpool")).toBeVisible();
 });
+
+test("monteur mag niet bij het gebruikersbeheer (beheerder-only)", async ({ page }) => {
+  await page.goto("/gebruikers");
+  expect(new URL(page.url()).pathname).not.toBe("/gebruikers");
+});
