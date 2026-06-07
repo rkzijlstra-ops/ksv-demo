@@ -24,6 +24,7 @@ export async function PATCH(req: Request) {
   const dbi = await db();
   try {
     await dbi.updateEigenGegevens({
+      naam: tekst(body.naam),
       bedrijfsnaam: tekst(body.bedrijfsnaam),
       telefoon: tekst(body.telefoon),
       contact_email: tekst(body.contact_email),

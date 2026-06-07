@@ -28,10 +28,13 @@ describe("PATCH /api/mijn-gegevens", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it("slaat de getrimde velden op, leeg wordt null", async () => {
-    const res = await PATCH(req({ bedrijfsnaam: "  BKM Keukenmontage  ", telefoon: "", contact_email: "a@b.nl" }));
+  it("slaat de getrimde velden op (incl. naam), leeg wordt null", async () => {
+    const res = await PATCH(
+      req({ naam: "  Piet de Vries  ", bedrijfsnaam: "  BKM Keukenmontage  ", telefoon: "", contact_email: "a@b.nl" }),
+    );
     expect(res.status).toBe(200);
     expect(mockUpdate).toHaveBeenCalledWith({
+      naam: "Piet de Vries",
       bedrijfsnaam: "BKM Keukenmontage",
       telefoon: null,
       contact_email: "a@b.nl",

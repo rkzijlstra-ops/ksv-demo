@@ -6,6 +6,7 @@ const {
   mockTelKlussen,
   mockGetZaak,
   mockUpdateRol,
+  mockUpdateNaam,
   mockGetEmail,
   mockDeleteUser,
   mockAfmelding,
@@ -16,6 +17,7 @@ const {
   mockTelKlussen: vi.fn(),
   mockGetZaak: vi.fn(),
   mockUpdateRol: vi.fn(),
+  mockUpdateNaam: vi.fn(),
   mockGetEmail: vi.fn(),
   mockDeleteUser: vi.fn(),
   mockAfmelding: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock("@/lib/db", () => ({
     telToegewezenOpdrachten: mockTelKlussen,
     getStandaardOpdrachtgever: mockGetZaak,
     updateProfielRol: mockUpdateRol,
+    updateProfielNaam: mockUpdateNaam,
   }),
 }));
 vi.mock("@/lib/supabase-admin", () => ({
@@ -77,7 +80,16 @@ beforeEach(() => {
   mockDeleteUser.mockResolvedValue({ error: null });
   mockAfmelding.mockResolvedValue(undefined);
   mockUpdateRol.mockResolvedValue(undefined);
+  mockUpdateNaam.mockResolvedValue(undefined);
 });
+
+function patchNaamReq(naam: unknown) {
+  return new Request("http://localhost/api/gebruikers/x", {
+    method: "PATCH",
+    body: JSON.stringify({ naam }),
+    headers: { "content-type": "application/json" },
+  });
+}
 
 describe("DELETE /api/gebruikers/[id]", () => {
   it("403 als de aanvrager geen beheerder is", async () => {
@@ -147,5 +159,26 @@ describe("PATCH /api/gebruikers/[id]", () => {
     const res = await PATCH(patchReq("opdrachtgever"), ctx("m1"));
     expect(res.status).toBe(200);
     expect(mockUpdateRol).toHaveBeenCalledWith("m1", "opdrachtgever");
+  });
+
+  it("hernoemt een gebruiker als alleen een naam wordt meegestuurd", async () => {
+    zetDoel({ id: "m1", rol: "monteur", naam: "Piet" });
+    const res = await PATCH(patchNaamReq("  Piet de Vries  "), ctx("m1"));
+    expect(res.status).toBe(200);
+    expect(mockUpdateNaam).toHaveBeenCalledWith("m1", "Piet de Vries");
+    expect(mockUpdateRol).not.toHaveBeenCalled();
+  });
+
+  it("400 bij een lege naam", async () => {
+    zetDoel({ id: "m1", rol: "monteur", naam: "Piet" });
+    const res = await PATCH(patchNaamReq("   "), ctx("m1"));
+    expect(res.status).toBe(400);
+    expect(mockUpdateNaam).not.toHaveBeenCalled();
+  });
+
+  it("404 als de te hernoemen gebruiker niet bestaat", async () => {
+    const res = await PATCH(patchNaamReq("Nieuwe Naam"), ctx("onbekend"));
+    expect(res.status).toBe(404);
+    expect(mockUpdateNaam).not.toHaveBeenCalled();
   });
 });

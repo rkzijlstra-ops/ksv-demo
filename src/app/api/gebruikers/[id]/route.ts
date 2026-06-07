@@ -91,6 +91,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch {
     return NextResponse.json({ error: "Ongeldige body" }, { status: 400 });
   }
+
+  // Hernoemen: alleen een naam meegestuurd (geen rol). Beheerder mag elke gebruiker hernoemen.
+  if (body.rol === undefined && typeof body.naam === "string") {
+    const naam = body.naam.trim();
+    if (!naam) {
+      return NextResponse.json({ error: "Naam mag niet leeg zijn" }, { status: 400 });
+    }
+    if (!(await dbi.getProfiel(id))) {
+      return NextResponse.json({ error: "Gebruiker niet gevonden" }, { status: 404 });
+    }
+    try {
+      await dbi.updateProfielNaam(id, naam);
+    } catch (err) {
+      return NextResponse.json({ error: `Hernoemen mislukt: ${(err as Error).message}` }, { status: 503 });
+    }
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
+
   const rol = body.rol as Rol;
   if (!WIJZIGBARE_ROLLEN.includes(rol)) {
     return NextResponse.json({ error: "Kies rol monteur of opdrachtgever" }, { status: 400 });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Wrench, Building2, Loader2, Mail, Trash2, Check, AlertCircle } from "lucide-react";
+import { Shield, Wrench, Building2, Loader2, Mail, Trash2, Check, AlertCircle, Pencil, X } from "lucide-react";
 
 type Rol = "beheerder" | "opdrachtgever" | "monteur";
 
@@ -30,9 +30,41 @@ export function GebruikerRij({
   isZelf: boolean;
 }) {
   const router = useRouter();
-  const [bezig, setBezig] = useState<"" | "rol" | "mail" | "verwijder">("");
+  const [bezig, setBezig] = useState<"" | "rol" | "mail" | "verwijder" | "naam">("");
   const [fout, setFout] = useState("");
   const [bericht, setBericht] = useState("");
+  const [bewerken, setBewerken] = useState(false);
+  const [nieuweNaam, setNieuweNaam] = useState(naam);
+
+  async function hernoem() {
+    const n = nieuweNaam.trim();
+    if (!n || n === naam) {
+      setBewerken(false);
+      setNieuweNaam(naam);
+      return;
+    }
+    setBezig("naam");
+    setFout("");
+    setBericht("");
+    try {
+      const res = await fetch(`/api/gebruikers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ naam: n }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFout(body.error ?? `Hernoemen mislukt (${res.status})`);
+        return;
+      }
+      setBewerken(false);
+      router.refresh();
+    } catch {
+      setFout("Netwerkfout, probeer opnieuw");
+    } finally {
+      setBezig("");
+    }
+  }
 
   async function wijzigRol(nieuw: string) {
     if (nieuw === rol) return;
@@ -105,10 +137,51 @@ export function GebruikerRij({
   return (
     <li className="flex flex-col gap-2 border border-line bg-white p-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-semibold text-ink">
-          {naam || "(naam onbekend)"}
-          {isZelf && <span className="ml-2 text-xs font-normal text-ink-muted">(jij)</span>}
-        </span>
+        {bewerken ? (
+          <span className="flex flex-1 items-center gap-1.5">
+            <input
+              value={nieuweNaam}
+              onChange={(e) => setNieuweNaam(e.target.value)}
+              autoFocus
+              aria-label={`Nieuwe naam voor ${naam}`}
+              className="min-h-[40px] min-w-0 flex-1 border-2 border-ink bg-white px-2 text-base font-semibold text-ink focus-visible:outline-3 focus-visible:outline-accent"
+            />
+            <button
+              type="button"
+              onClick={hernoem}
+              disabled={bezig !== ""}
+              aria-label="Naam opslaan"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border-2 border-primary text-primary disabled:opacity-50"
+            >
+              {bezig === "naam" ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={2.5} />}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBewerken(false);
+                setNieuweNaam(naam);
+              }}
+              disabled={bezig !== ""}
+              aria-label="Hernoemen annuleren"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border-2 border-line text-ink-muted disabled:opacity-50"
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
+          </span>
+        ) : (
+          <span className="flex min-w-0 items-center gap-2 font-semibold text-ink">
+            <span className="truncate">{naam || "(naam onbekend)"}</span>
+            {isZelf && <span className="text-xs font-normal text-ink-muted">(jij)</span>}
+            <button
+              type="button"
+              onClick={() => setBewerken(true)}
+              aria-label={`${naam} hernoemen`}
+              className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center text-ink-muted hover:text-ink"
+            >
+              <Pencil size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          </span>
+        )}
         {rol === "beheerder" ? (
           <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-ink">
             <RolIcoon rol={rol} />

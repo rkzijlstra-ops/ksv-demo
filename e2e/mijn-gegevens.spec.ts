@@ -16,8 +16,11 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
 
   let opdrachtId = "";
   test.afterEach(async () => {
-    // Profiel-afzender terugzetten en de geseede klus opruimen, zodat andere tests schoon starten.
-    await admin.from("profielen").update({ bedrijfsnaam: null, telefoon: null, contact_email: null }).eq("id", MONTEUR.uid);
+    // Profiel terugzetten (incl. naam) en de geseede klus opruimen, zodat andere tests schoon starten.
+    await admin
+      .from("profielen")
+      .update({ naam: "E2E Monteur", bedrijfsnaam: null, telefoon: null, contact_email: null })
+      .eq("id", MONTEUR.uid);
     if (opdrachtId) {
       await admin.from("opleveringen").delete().eq("opdracht_id", opdrachtId);
       await admin.from("meldingen").delete().eq("id", opdrachtId);
@@ -26,6 +29,7 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
 
   test("ingevulde gegevens worden opgeslagen en verschijnen op het rapport", async ({ page }) => {
     await page.goto("/mijn-gegevens");
+    await page.getByPlaceholder("Bijv. Piet de Vries").fill("Rein de Vries");
     await page.getByLabel("Bedrijfsnaam").fill("Testmontage VOF");
     await page.getByLabel("Telefoon").fill("06-99887766");
     await page.getByLabel("Contact-e-mail").fill("test@montage.nl");
@@ -34,9 +38,10 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
 
     const { data: prof } = await admin
       .from("profielen")
-      .select("bedrijfsnaam, telefoon, contact_email")
+      .select("naam, bedrijfsnaam, telefoon, contact_email")
       .eq("id", MONTEUR.uid)
       .single();
+    expect(prof?.naam).toBe("Rein de Vries");
     expect(prof?.bedrijfsnaam).toBe("Testmontage VOF");
     expect(prof?.telefoon).toBe("06-99887766");
 

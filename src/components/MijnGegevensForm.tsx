@@ -21,6 +21,7 @@ export function MijnGegevensForm({
 }) {
   const router = useRouter();
   const [velden, setVelden] = useState({
+    naam: naam ?? "",
     bedrijfsnaam: bedrijfsnaam ?? "",
     telefoon: telefoon ?? "",
     contact_email: contactEmail ?? "",
@@ -64,15 +65,18 @@ export function MijnGegevensForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={labelClass}>
+      <label className={labelClass}>
         Naam
-        <p className="min-h-[44px] border-2 border-line bg-surface px-3 py-2.5 text-base text-ink-muted">
-          {naam}
-        </p>
+        <input
+          className={inputClass}
+          value={velden.naam}
+          onChange={(e) => zet("naam", e.target.value)}
+          placeholder="Bijv. Piet de Vries"
+        />
         <span className="text-xs font-normal text-ink-muted">
-          Je naam is door kantoor ingesteld. Klopt die niet? Vraag het kantoor om hem aan te passen.
+          Zoals je op het rapport wilt staan. Kantoor heeft een naam ingevuld; vul hem hier gerust aan.
         </span>
-      </div>
+      </label>
 
       <label className={labelClass}>
         Bedrijfsnaam

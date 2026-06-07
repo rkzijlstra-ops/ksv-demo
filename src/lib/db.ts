@@ -241,8 +241,9 @@ export interface Profiel {
   contact_email: string | null;
 }
 
-/** De drie afzender-velden die een gebruiker zelf mag bijwerken (niet zijn rol). */
+/** De velden die een gebruiker zelf mag bijwerken (naam + afzender, nooit zijn rol). */
 export interface EigenGegevensInput {
+  naam: string | null;
   bedrijfsnaam: string | null;
   telefoon: string | null;
   contact_email: string | null;
@@ -316,6 +317,7 @@ export interface Db {
   telBeheerders(): Promise<number>;
   telToegewezenOpdrachten(monteurId: string): Promise<number>;
   updateProfielRol(id: string, rol: Rol): Promise<void>;
+  updateProfielNaam(id: string, naam: string): Promise<void>;
 }
 
 /**
@@ -858,6 +860,7 @@ function createDbFromClient(client: SupabaseClient): Db {
 
     async updateEigenGegevens(input) {
       const { error } = await client.rpc("update_eigen_gegevens", {
+        p_naam: input.naam,
         p_bedrijfsnaam: input.bedrijfsnaam,
         p_telefoon: input.telefoon,
         p_contact_email: input.contact_email,
@@ -888,6 +891,11 @@ function createDbFromClient(client: SupabaseClient): Db {
 
     async updateProfielRol(id: string, rol: Rol) {
       const { error } = await client.from("profielen").update({ rol }).eq("id", id);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async updateProfielNaam(id: string, naam: string) {
+      const { error } = await client.from("profielen").update({ naam }).eq("id", id);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
     },
   };

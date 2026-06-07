@@ -42,6 +42,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Oplevering: foto-upload + handtekening-canvas + opmerking als concept (saves geserialiseerd) | U, E | rapport.test, opleveren.spec | groen |
 | Rapport genereren + mailen, status opgeleverd | U, M | mail.spec | groen |
 | Afzender-gegevens monteur (eigen profiel bijwerken, op rapport i.p.v. hardcoded BKM) | U, E | rapport.test (rapportAfzenderWeergave), mijn-gegevens/route.test, mijn-gegevens.spec | groen |
+| Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
 ## Bekende gaten (eerlijk, nog te dekken)
