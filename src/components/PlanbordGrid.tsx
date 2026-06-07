@@ -47,13 +47,17 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
   });
   // Concept én "gewijzigd na versturen" krijgen dezelfde oranje-gestreepte behandeling + envelop.
   const nogTeVersturen = o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen;
+  // Teruggemeld door de monteur: kantoor moet hier iets mee (herplannen/bellen/afsluiten).
+  const teruggemeld = !!o.teruggemeld_at;
   // Een dubbele boeking krijgt voorrang qua rand: dikke rode kaderlijn als waarschuwing.
   const randClass = dubbel
     ? "border-urgent-rood"
-    : nogTeVersturen
-      ? "border-accent border-dashed"
-      : RAND[o.dashboard_status];
-  const balkClass = nogTeVersturen ? "bg-accent" : BALK[o.dashboard_status];
+    : teruggemeld
+      ? "border-ink"
+      : nogTeVersturen
+        ? "border-accent border-dashed"
+        : RAND[o.dashboard_status];
+  const balkClass = teruggemeld ? "bg-ink" : nogTeVersturen ? "bg-accent" : BALK[o.dashboard_status];
   const versturenLabel =
     o.dashboard_status === "concept_gepland" ? "te versturen" : o.gewijzigd_te_versturen ? "gewijzigd" : null;
   return (
@@ -102,6 +106,7 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
           <span className="shrink-0 font-bold text-urgent-rood">geen ref</span>
         )}
         {versturenLabel && <span className="shrink-0 font-bold text-accent">{versturenLabel}</span>}
+        {teruggemeld && <span className="shrink-0 font-bold text-ink">teruggemeld</span>}
         {dubbel && (
           <span className="inline-flex shrink-0 items-center gap-0.5 font-bold text-urgent-rood">
             <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> dubbel

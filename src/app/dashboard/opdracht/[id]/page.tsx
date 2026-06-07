@@ -88,6 +88,11 @@ export default async function OpdrachtgeverDetailPage({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <DocumenttypeBadge type={opdracht.documenttype} />
           <OpdrachtStatusBadge status={opdracht.dashboard_status} />
+          {opdracht.teruggemeld_at && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink bg-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Teruggemeld
+            </span>
+          )}
           {opdracht.referentienummer && (
             <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
               {opdracht.referentienummer}
