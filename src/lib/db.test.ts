@@ -12,6 +12,7 @@ const h = vi.hoisted(() => {
     delete: vi.fn(),
     eq: vi.fn(),
     is: vi.fn(),
+    or: vi.fn(),
     not: vi.fn(),
     in: vi.fn(),
     order: vi.fn(),
@@ -29,6 +30,7 @@ const h = vi.hoisted(() => {
   builder.delete = (...a: unknown[]) => (fns.delete(...a), builder);
   builder.eq = (...a: unknown[]) => (fns.eq(...a), builder);
   builder.is = (...a: unknown[]) => (fns.is(...a), builder);
+  builder.or = (...a: unknown[]) => (fns.or(...a), builder);
   builder.not = (...a: unknown[]) => (fns.not(...a), builder);
   builder.in = (...a: unknown[]) => (fns.in(...a), builder);
   builder.order = (...a: unknown[]) => (fns.order(...a), builder);
@@ -913,13 +915,16 @@ describe("gebruikersbeheer", () => {
     expect(h.fns.eq).toHaveBeenCalledWith("id", "u1");
   });
 
-  it("getWerkpoolVoor haalt alleen de top-level opdrachten van die monteur op", async () => {
+  it("getWerkpoolVoor haalt de klussen van de effectieve monteur op (huidige of verzonden bij wijziging)", async () => {
     h.setResult({ data: [{ id: "o1" }], error: null });
     await createDb(cfg).getWerkpoolVoor("m1");
     expect(h.fns.from).toHaveBeenCalledWith("meldingen");
     expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
     expect(h.fns.is).toHaveBeenCalledWith("verwijderd_at", null);
-    expect(h.fns.eq).toHaveBeenCalledWith("toegewezen_aan", "m1");
+    expect(h.fns.or).toHaveBeenCalledWith(
+      "and(gewijzigd_te_versturen.is.false,toegewezen_aan.eq.m1)," +
+        "and(gewijzigd_te_versturen.is.true,verzonden_toegewezen_aan.eq.m1)",
+    );
   });
 
   it("updateOpdrachtGegevens corrigeert de kop-velden op het juiste id", async () => {

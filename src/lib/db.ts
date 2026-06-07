@@ -396,12 +396,19 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async getWerkpoolVoor(userId: string) {
+      // De monteur ziet zijn klussen op de "effectieve" monteur: normaal de huidige toewijzing, maar
+      // bij een nog-niet-opnieuw-verstuurde wijziging de VERZONDEN monteur. Zo houdt hij een aan hem
+      // verstuurde klus vast als kantoor hem op het planbord naar een ander schuift, tot het opnieuw
+      // verstuurd is (gat 5). Vereist de uitgebreide RLS uit schema-compleet-7.
       const { data, error } = await client
         .from("meldingen")
         .select("*")
         .is("opdracht_id", null)
         .is("verwijderd_at", null)
-        .eq("toegewezen_aan", userId)
+        .or(
+          `and(gewijzigd_te_versturen.is.false,toegewezen_aan.eq.${userId}),` +
+            `and(gewijzigd_te_versturen.is.true,verzonden_toegewezen_aan.eq.${userId})`,
+        )
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Melding[];

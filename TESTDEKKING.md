@@ -30,7 +30,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Feature / flow | Lagen | Testbestand(en) | Status |
 |---|---|---|---|
 | Werkpool: alleen eigen klussen (RLS), toegang afgeschermd | E | monteur.spec | groen |
-| Werkpool-zichtbaarheid bij kantoor-statuswijziging (geannuleerd/concept verborgen, afspraak vasthouden) | U, E | werkpool.test, opdracht-status.test, werkpool-zichtbaarheid.spec | groen |
+| Werkpool-zichtbaarheid bij kantoor-statuswijziging (geannuleerd/concept verborgen, afspraak + monteur vasthouden) | U, E | werkpool.test, opdracht-status.test, werkpool-zichtbaarheid.spec | groen |
 | Bevestigen op de detailpagina | E | bevestigen.spec | groen |
 | Bevestigen vanaf de werkpool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
 | Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |

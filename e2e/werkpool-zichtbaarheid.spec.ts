@@ -92,3 +92,24 @@ test("gat 1: bij een wijziging na versturen houdt de monteur de afgesproken datu
   await expect(page.getByText(`Uitvoer: ${formatDatumKort(afgesproken)}`)).toBeVisible();
   await expect(page.getByText(formatDatumKort(nieuw))).toHaveCount(0);
 });
+
+test("gat 5: bij een monteur-wissel na versturen houdt de oorspronkelijke monteur de klus", async ({ page }) => {
+  const klant = `WISSEL-WP ${Date.now()}`;
+  const andereMonteur = "00000000-0000-4000-8000-000000000099";
+  const id = await seed(klant);
+  await db.planOpdracht(id, { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: "2026-06-12", starttijd: null, duur_dagen: 1 });
+  await db.markeerVerzonden(id, { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: "2026-06-12", starttijd: null });
+  await db.bevestigOntvangst(id);
+  // Kantoor schuift de klus naar een andere monteur, nog NIET opnieuw verstuurd.
+  await db.wijzigOpdracht(
+    id,
+    { toegewezen_aan: andereMonteur, monteur_naam: "Andere Monteur", startdatum: "2026-06-12", starttijd: null, duur_dagen: 1 },
+    "bevestigd",
+    { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: "2026-06-12", starttijd: null },
+  );
+
+  await page.goto("/");
+  await expect(page.getByText("Werkpool")).toBeVisible();
+  // RK (de verzonden monteur) blijft de klus zien tot kantoor opnieuw verstuurt.
+  await expect(page.getByText(klant)).toBeVisible();
+});
