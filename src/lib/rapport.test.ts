@@ -1,6 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop } from "./rapport";
+import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave } from "./rapport";
 import type { Melding, Oplevering } from "./db";
+
+describe("rapportAfzenderWeergave", () => {
+  it("gebruikt de bedrijfsnaam als kop en bundelt de voetregel", () => {
+    const r = rapportAfzenderWeergave({
+      naam: "Rein Zijlstra",
+      bedrijfsnaam: "BKM Keukenmontage",
+      telefoon: "06-31665814",
+      email: "bkm@example.nl",
+    });
+    expect(r.kop).toBe("BKM Keukenmontage");
+    expect(r.voet).toBe("BKM Keukenmontage  ·  06-31665814  ·  bkm@example.nl");
+  });
+
+  it("valt terug op de naam als er geen bedrijfsnaam is", () => {
+    const r = rapportAfzenderWeergave({ naam: "Jan Bakker", bedrijfsnaam: null, telefoon: "0612", email: null });
+    expect(r.kop).toBe("Jan Bakker");
+    expect(r.voet).toBe("Jan Bakker  ·  0612");
+  });
+
+  it("valt terug op een neutrale kop en lege voet zonder enige gegevens", () => {
+    const r = rapportAfzenderWeergave(null);
+    expect(r.kop).toBe("Keukenmontage");
+    expect(r.voet).toBe("");
+  });
+});
 
 function maakOplevering(over: Partial<Oplevering>): Oplevering {
   return {

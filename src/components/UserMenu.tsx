@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, Info, Trash2, Users } from "lucide-react";
+import { LogOut, User, Info, Trash2, Users, IdCard } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { APP_VERSIE } from "@/lib/versie";
 
@@ -60,6 +60,15 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
           >
             <Info size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
             Over de app
+          </Link>
+          <Link
+            href="/mijn-gegevens"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <IdCard size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+            Mijn gegevens
           </Link>
           {isBeheerder && (
             <Link

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, CheckCircle2, Video, Play } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
+import { rapportAfzenderWeergave } from "@/lib/rapport";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 
@@ -28,6 +29,12 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const oplevering = await dbi.getOpleveringVoorOpdracht(id);
 
+  const opleveraarId = oplevering?.user_id ?? opdracht.toegewezen_aan;
+  const p = opleveraarId ? await dbi.getProfiel(opleveraarId) : null;
+  const afzender = rapportAfzenderWeergave(
+    p ? { naam: p.naam, bedrijfsnaam: p.bedrijfsnaam, telefoon: p.telefoon, email: p.contact_email } : null,
+  );
+
   const opleverdatum = opdracht.opgeleverd_at ?? new Date().toISOString();
   const fotos = oplevering?.eindstaat_foto_urls ?? [];
   const ondertekend = Boolean(oplevering?.handtekening_url);
@@ -44,11 +51,8 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
       <div className="border-2 border-line bg-white">
         <div className="relative px-5 pt-5 pb-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-black tracking-tight text-ink">BKM</span>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-muted">
-                Keukenmontage
-              </span>
+            <div className="min-w-0 flex-1">
+              <span className="font-mono text-xl font-black tracking-tight text-ink">{afzender.kop}</span>
             </div>
             <div className="text-right">
               <p className="font-mono text-xs font-extrabold uppercase tracking-[0.12em] text-ink">

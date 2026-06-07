@@ -10,7 +10,6 @@ import {
   clip,
   endPath,
   type PDFFont,
-  type PDFPage,
   type PDFImage,
   type RGB,
 } from "pdf-lib";
@@ -60,6 +59,27 @@ export function meldingenKop(aantalMeldingen: number, aantalFotos: number): stri
   return `${basis} · ${aantalFotos} foto${aantalFotos === 1 ? "" : "'s"}`;
 }
 
+/** Afzender-gegevens voor het rapport: van de monteur die opleverde (uit zijn profiel). */
+export interface RapportAfzender {
+  naam: string | null;
+  bedrijfsnaam: string | null;
+  telefoon: string | null;
+  email: string | null;
+}
+
+/**
+ * Bepaalt hoe de afzender bovenaan en onderaan het rapport getoond wordt. De kop is de bedrijfsnaam,
+ * anders de naam, anders een neutrale terugval (nooit meer hardcoded BKM bij een andere monteur). De
+ * voetregel bundelt de aanwezige contactvelden. Pure functie, los te testen.
+ */
+export function rapportAfzenderWeergave(a: RapportAfzender | null): { kop: string; voet: string } {
+  const bedrijf = a?.bedrijfsnaam?.trim() || null;
+  const naam = a?.naam?.trim() || null;
+  const kop = bedrijf || naam || "Keukenmontage";
+  const voetDelen = [bedrijf || naam, a?.telefoon?.trim() || null, a?.email?.trim() || null].filter(Boolean);
+  return { kop, voet: voetDelen.join("  ·  ") };
+}
+
 const A4 = { breedte: 595, hoogte: 842 } as const;
 const MARGE = 48;
 const CONTENT = A4.breedte - MARGE * 2;
@@ -86,8 +106,10 @@ export async function genereerRapportPdf(
   opdracht: Melding,
   meldingen: Melding[],
   oplevering: Oplevering | null = null,
+  afzender: RapportAfzender | null = null,
 ): Promise<Uint8Array> {
   const samenvatting = rapportSamenvatting(opdracht, oplevering);
+  const afz = rapportAfzenderWeergave(afzender);
   const doc = await PDFDocument.create();
   const helv = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -118,16 +140,8 @@ export async function genereerRapportPdf(
     y -= size + (opts.gap ?? 5);
   };
 
-  // ---- briefhoofd ----
-  page.drawText("BKM", { x: MARGE, y: y - 4, size: 22, font: bold, color: INK });
-  const bkmW = bold.widthOfTextAtSize("BKM", 22);
-  page.drawText("KEUKENMONTAGE", {
-    x: MARGE + bkmW + 6,
-    y: y - 1,
-    size: 8,
-    font: bold,
-    color: MUTED,
-  });
+  // ---- briefhoofd ---- (afzender = de monteur die opleverde, niet hardcoded)
+  page.drawText(afz.kop, { x: MARGE, y: y - 4, size: 17, font: bold, color: INK });
   rechts("OPLEVERRAPPORT", { size: 11, font: bold, kleur: INK, dy: -2 });
   rechts(formatDatumKort(opdracht.opgeleverd_at ?? new Date().toISOString()), {
     size: 9.5,
@@ -223,10 +237,11 @@ export async function genereerRapportPdf(
     y -= 12;
   }
 
-  // ---- voettekst onderaan de laatste pagina ----
-  const foot = "BKM Keukenmontage  ·  06-31665814  ·  bkmkeukenmontage@gmail.com";
-  const footW = helv.widthOfTextAtSize(foot, 8.5);
-  page.drawText(foot, { x: (A4.breedte - footW) / 2, y: 30, size: 8.5, font: helv, color: MUTED });
+  // ---- voettekst onderaan de laatste pagina (afzender-contactgegevens, indien ingevuld) ----
+  if (afz.voet) {
+    const footW = helv.widthOfTextAtSize(afz.voet, 8.5);
+    page.drawText(afz.voet, { x: (A4.breedte - footW) / 2, y: 30, size: 8.5, font: helv, color: MUTED });
+  }
 
   return doc.save();
 

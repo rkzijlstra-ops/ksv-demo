@@ -33,9 +33,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const bestandsnaam = `opleverrapport-${opdracht.referentienummer ?? id}.pdf`;
 
+  // Afzender = de monteur die opleverde (uit zijn profiel), met terugval op de toegewezen monteur.
+  const opleveraarId = oplevering.user_id ?? opdracht.toegewezen_aan;
+  const p = opleveraarId ? await dbi.getProfiel(opleveraarId) : null;
+  const afzender = p
+    ? { naam: p.naam, bedrijfsnaam: p.bedrijfsnaam, telefoon: p.telefoon, email: p.contact_email }
+    : null;
+
   let rapportUrl: string;
   try {
-    const pdf = await genereerRapportPdf(opdracht, meldingen, oplevering);
+    const pdf = await genereerRapportPdf(opdracht, meldingen, oplevering, afzender);
     const { publieke_url } = await storage().uploadOpdrachtDocument(
       Buffer.from(pdf),
       bestandsnaam,

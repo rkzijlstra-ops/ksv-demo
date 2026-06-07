@@ -235,6 +235,17 @@ export interface Profiel {
   naam: string;
   opdrachtgever_id: string | null;
   created_at: string;
+  // blok 10: afzender-gegevens voor het opleverrapport (door de gebruiker zelf ingevuld)
+  bedrijfsnaam: string | null;
+  telefoon: string | null;
+  contact_email: string | null;
+}
+
+/** De drie afzender-velden die een gebruiker zelf mag bijwerken (niet zijn rol). */
+export interface EigenGegevensInput {
+  bedrijfsnaam: string | null;
+  telefoon: string | null;
+  contact_email: string | null;
 }
 
 export interface ProfielInput {
@@ -300,6 +311,8 @@ export interface Db {
   getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
   upsertProfiel(input: ProfielInput): Promise<void>;
+  /** Werkt de eigen afzender-velden bij (via SECURITY DEFINER, kan de rol niet raken). */
+  updateEigenGegevens(input: EigenGegevensInput): Promise<void>;
   telBeheerders(): Promise<number>;
   telToegewezenOpdrachten(monteurId: string): Promise<number>;
   updateProfielRol(id: string, rol: Rol): Promise<void>;
@@ -841,6 +854,15 @@ function createDbFromClient(client: SupabaseClient): Db {
         { onConflict: "id" },
       );
       if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
+    },
+
+    async updateEigenGegevens(input) {
+      const { error } = await client.rpc("update_eigen_gegevens", {
+        p_bedrijfsnaam: input.bedrijfsnaam,
+        p_telefoon: input.telefoon,
+        p_contact_email: input.contact_email,
+      });
+      if (error) throw new Error(`DB gegevens opslaan mislukt: ${error.message}`);
     },
 
     async telBeheerders() {
