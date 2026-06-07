@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 import type { Melding, DashboardStatus } from "@/lib/db";
 import type { TeDoenTelling } from "@/lib/te-doen";
 import { ALLE_STATUSSEN } from "@/lib/opdracht-status";
@@ -43,6 +43,9 @@ export function DashboardLijst({
 }) {
   const [zoek, setZoek] = useState("");
   const [status, setStatus] = useState<StatusFilter>("alle");
+  // Geannuleerde opdrachten staan standaard ingeklapt onder hun kopje, zodat ze de lijst niet
+  // vullen. Bij het expliciete geannuleerd-filter wil je ze juist zien, dan staat de sectie open.
+  const [geannuleerdOpen, setGeannuleerdOpen] = useState(false);
 
   const tellingPerStatus = useMemo(() => {
     const t: Record<string, number> = { alle: opdrachten.length };
@@ -97,22 +100,50 @@ export function DashboardLijst({
           Geen opdrachten gevonden voor deze filter of zoekopdracht.
         </p>
       ) : (
-        groepen.map((g) => (
-          <section key={g.status} className="mt-7">
-            <div className="mb-2.5 flex items-center gap-2.5">
-              <span className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
-                {SECTIE_LABEL[g.status]}
-              </span>
-              <span className="text-xs text-ink-muted">{g.opdrachten.length}</span>
-              <span className="h-0.5 flex-1 bg-line" />
-            </div>
-            <div className="flex flex-col gap-3">
-              {g.opdrachten.map((m) => (
-                <OpdrachtDashboardCard key={m.id} melding={m} />
-              ))}
-            </div>
-          </section>
-        ))
+        groepen.map((g) => {
+          // De geannuleerd-sectie is inklapbaar (dicht bij filter "alle", open bij het eigen filter).
+          const inklapbaar = g.status === "geannuleerd" && status !== "geannuleerd";
+          const open = !inklapbaar || geannuleerdOpen;
+          return (
+            <section key={g.status} className="mt-7">
+              {inklapbaar ? (
+                <button
+                  type="button"
+                  onClick={() => setGeannuleerdOpen((v) => !v)}
+                  aria-expanded={open}
+                  className="mb-2.5 flex w-full cursor-pointer items-center gap-2.5 text-left"
+                >
+                  <ChevronRight
+                    size={15}
+                    strokeWidth={2.5}
+                    className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-90" : ""}`}
+                    aria-hidden="true"
+                  />
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
+                    {SECTIE_LABEL[g.status]}
+                  </span>
+                  <span className="text-xs text-ink-muted">{g.opdrachten.length}</span>
+                  <span className="h-0.5 flex-1 bg-line" />
+                </button>
+              ) : (
+                <div className="mb-2.5 flex items-center gap-2.5">
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
+                    {SECTIE_LABEL[g.status]}
+                  </span>
+                  <span className="text-xs text-ink-muted">{g.opdrachten.length}</span>
+                  <span className="h-0.5 flex-1 bg-line" />
+                </div>
+              )}
+              {open && (
+                <div className="flex flex-col gap-3">
+                  {g.opdrachten.map((m) => (
+                    <OpdrachtDashboardCard key={m.id} melding={m} />
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })
       )}
 
       <p className="mt-4 border-t border-dashed border-line pt-3 text-[12.5px] text-ink-muted">
