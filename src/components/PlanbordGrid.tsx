@@ -138,7 +138,7 @@ function DropCel({
       ref={setNodeRef}
       data-testid={`cel-${toegewezenAan}-${dag}`}
       className={`min-h-[64px] border-r border-line last:border-r-0 ${
-        laatsteLane ? "border-b-4 border-b-ink" : "border-b border-b-line"
+        laatsteLane ? "border-b-8 border-b-line" : "border-b border-b-line"
       } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}`}
       style={{ gridRow, gridColumn: col + 2 }}
     />
@@ -173,16 +173,13 @@ export function PlanbordGrid({
     const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
     return { account: a, kaarten, laneCount };
   });
-  // Eén spacer-rij na elke monteur (behalve de laatste) geeft wat witruimte tussen de blokken; vandaar
-  // +1 per voorgaande monteur in de prefix-som.
   const rijen = perMonteur.map((mb, i) => {
-    const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount + 1, 0);
+    const startRow = 2 + perMonteur.slice(0, i).reduce((s, x) => s + x.laneCount, 0);
     const geplaatst: GeplaatstOpBord[] = mb.kaarten.map((k) => ({
       ...k.plaatsing,
       gridRow: startRow + k.lane,
     }));
-    const spacerRow = i < perMonteur.length - 1 ? startRow + mb.laneCount : null;
-    return { account: mb.account, startRow, laneCount: mb.laneCount, geplaatst, spacerRow };
+    return { account: mb.account, startRow, laneCount: mb.laneCount, geplaatst };
   });
 
   return (
@@ -203,11 +200,11 @@ export function PlanbordGrid({
         </div>
       ))}
 
-      {rijen.map(({ account, startRow, laneCount, geplaatst, spacerRow }) => (
+      {rijen.map(({ account, startRow, laneCount, geplaatst }) => (
         <div key={`blok-${account.id}`} className="contents">
           {/* Monteur-label, overspant alle lanes van deze monteur */}
           <div
-            className="flex items-center gap-2 border-b-4 border-b-ink border-r border-r-line bg-surface px-2.5 py-2 font-extrabold"
+            className="flex items-center gap-2 border-b-8 border-b-line border-r border-r-line bg-surface px-2.5 py-2 font-extrabold"
             style={{ gridRow: `${startRow} / span ${laneCount}`, gridColumn: 1 }}
           >
             {account.naam}
@@ -233,15 +230,6 @@ export function PlanbordGrid({
           {geplaatst.map((p) => (
             <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} maandag={weekdagen[0]} />
           ))}
-
-          {/* Witruimte tussen monteur-blokken */}
-          {spacerRow !== null && (
-            <div
-              aria-hidden
-              className="min-h-[14px] bg-surface"
-              style={{ gridRow: spacerRow, gridColumn: "1 / -1" }}
-            />
-          )}
         </div>
       ))}
     </div>
