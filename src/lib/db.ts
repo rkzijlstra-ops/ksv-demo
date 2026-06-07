@@ -239,6 +239,9 @@ export interface Profiel {
   bedrijfsnaam: string | null;
   telefoon: string | null;
   contact_email: string | null;
+  // blok 12: SMS-notificatie-voorkeuren (monteur regelt ze zelf in mijn-gegevens)
+  sms_werk_kritiek: boolean;
+  sms_overig: boolean;
 }
 
 /** De velden die een gebruiker zelf mag bijwerken (naam + afzender, nooit zijn rol). */
@@ -247,6 +250,8 @@ export interface EigenGegevensInput {
   bedrijfsnaam: string | null;
   telefoon: string | null;
   contact_email: string | null;
+  sms_werk_kritiek: boolean;
+  sms_overig: boolean;
 }
 
 export interface ProfielInput {
@@ -296,6 +301,8 @@ export interface Db {
   planOpdracht(id: string, planning: PlanningInput): Promise<void>;
   /** Markeer als verstuurd: status gepland, gewijzigd-marker uit, en onthoud de verzonden plek. */
   markeerVerzonden(id: string, verzonden: VerzondenPlek): Promise<void>;
+  getKlussenVoorHerinnering(verzondenVoorIso: string): Promise<Melding[]>;
+  markeerHerinneringVerzonden(ids: string[]): Promise<void>;
   bevestigOntvangst(id: string): Promise<void>;
   wijzigOpdracht(
     id: string,
@@ -732,9 +739,34 @@ function createDbFromClient(client: SupabaseClient): Db {
           verzonden_toegewezen_aan: verzonden.toegewezen_aan,
           verzonden_startdatum: verzonden.startdatum,
           verzonden_starttijd: verzonden.starttijd,
+          verzonden_at: new Date().toISOString(),
+          herinnering_verzonden_at: null,
         })
         .eq("id", id);
       if (error) throw new Error(`DB versturen mislukt: ${error.message}`);
+    },
+
+    async getKlussenVoorHerinnering(verzondenVoorIso: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .eq("dashboard_status", "gepland")
+        .is("opdracht_id", null)
+        .is("herinnering_verzonden_at", null)
+        .not("toegewezen_aan", "is", null)
+        .lt("verzonden_at", verzondenVoorIso)
+        .order("verzonden_at", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
+    },
+
+    async markeerHerinneringVerzonden(ids: string[]) {
+      if (ids.length === 0) return;
+      const { error } = await client
+        .from("meldingen")
+        .update({ herinnering_verzonden_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw new Error(`DB herinnering markeren mislukt: ${error.message}`);
     },
 
     async bevestigOntvangst(id) {
@@ -864,6 +896,8 @@ function createDbFromClient(client: SupabaseClient): Db {
         p_bedrijfsnaam: input.bedrijfsnaam,
         p_telefoon: input.telefoon,
         p_contact_email: input.contact_email,
+        p_sms_werk_kritiek: input.sms_werk_kritiek,
+        p_sms_overig: input.sms_overig,
       });
       if (error) throw new Error(`DB gegevens opslaan mislukt: ${error.message}`);
     },

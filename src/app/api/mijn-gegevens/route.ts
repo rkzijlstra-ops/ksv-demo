@@ -20,6 +20,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Ongeldige body" }, { status: 400 });
   }
   const tekst = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const boolOf = (v: unknown, val = true) => (typeof v === "boolean" ? v : val);
 
   const dbi = await db();
   try {
@@ -28,6 +29,8 @@ export async function PATCH(req: Request) {
       bedrijfsnaam: tekst(body.bedrijfsnaam),
       telefoon: tekst(body.telefoon),
       contact_email: tekst(body.contact_email),
+      sms_werk_kritiek: boolOf(body.sms_werk_kritiek),
+      sms_overig: boolOf(body.sms_overig),
     });
   } catch (err) {
     return NextResponse.json({ error: `Opslaan mislukt: ${(err as Error).message}` }, { status: 503 });

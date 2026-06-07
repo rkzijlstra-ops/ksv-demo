@@ -38,7 +38,17 @@ describe("PATCH /api/mijn-gegevens", () => {
       bedrijfsnaam: "BKM Keukenmontage",
       telefoon: null,
       contact_email: "a@b.nl",
+      sms_werk_kritiek: true,
+      sms_overig: true,
     });
+  });
+
+  it("geeft de SMS-voorkeuren door als de body ze bevat", async () => {
+    const res = await PATCH(req({ bedrijfsnaam: "X", sms_werk_kritiek: true, sms_overig: false }));
+    expect(res.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ sms_werk_kritiek: true, sms_overig: false }),
+    );
   });
 
   it("503 als de db-update faalt", async () => {
