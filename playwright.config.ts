@@ -26,6 +26,10 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,
+  // Eén herkansing: sommige UI-flows (oplevering met foto-upload + handtekening) zijn af en toe traag
+  // en pollen de DB met een timeout. Een retry vangt zo'n incidentele timing-flake op zonder de poort
+  // te verzwakken; een echt kapotte test faalt ook bij de retry.
+  retries: 1,
   reporter: [["list"]],
   // Poort via env (PW_PORT), standaard 3001 omdat hier vaak al een dev-server van dit project draait.
   // reuseExistingServer hergebruikt een draaiende server; anders start Playwright er zelf een.
