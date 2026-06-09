@@ -43,7 +43,32 @@ en in de browser laten verifiëren door Rein zelf, of via de push. De zware e2e-
 push-hook. Pushen kan, als de hook te traag/onbetrouwbaar is op de machine, met `git push --no-verify`
 (de hook biedt die uitweg bewust), mits de suite los al groen is bevonden.
 
+## Aanvulling (late avond): dashboard-zoeker gelijkgetrokken
+
+De dashboard-zoeker filterde al live, maar Rein vond de planbord-zoeker (compacte trefferlijst die je
+aanklikt) prettiger. Gelijkgetrokken: onder het dashboard-zoekveld komt nu dezelfde dropdown-trefferlijst
+(klant, referentie, status, monteur, datum); een klik opent direct de opdracht. De bestaande lijst en de
+statusfilters blijven werken (optie "dropdown erbij, lijst blijft"). `zoekTreffers` puur + unit-tests.
+490 unit-tests groen. Gepusht (`5280e1e`).
+
+## Rapport-foto's (#1): strategie vastgelegd, bouw volgt
+
+Voor de bouw eerst de strategie helder gemaakt (Rein wilde dat). Kerninzicht: de online-versie en de PDF
+zijn geen concurrenten maar bedienen twee publieken, en allebei werken ze voor de klant (de keukenzaak):
+- **Online rapport** = premium-gereedschap van de zaak zelf (login, grote klikbare foto's, video). Zit
+  achter inloggen + RLS, dus alleen bruikbaar voor wie een account heeft (de zaak), niet de eind-klant.
+- **PDF** = wat de zaak doorstuurt naar de eind-klant; draagt het briefhoofd van de zaak, dus het
+  visitekaartje van de zaak richting háár klant. Daarom is de PDF goed maken óók waardevol.
+
+Account-dilemma (zzp'er zonder account): conclusie = accounts voor wie het werk doet (monteur/zzp'er) en
+voor de zaak; alleen de eind-klant blijft account-loos met de PDF.
+
+Besloten: doorlopende nummering (1,2,3...) op foto's in PDF én web, plus een genummerde klikbare linklijst
+onderaan de PDF (robuust; de "foto zelf klikbaar in PDF" is fijngevoelig in pdf-lib en blind lastig te
+verifiëren). Nog te beslissen met Rein (morgen): (a) PDF-foto's groter maken? (b) een link naar het online
+rapport in de mail zetten (verkooppunt, werkt alleen voor ingelogde zaken)?
+
 ## Open
 
-- #1 (rapport-foto's: doorlopend nummeren + klikbaar in de PDF) staat nog open, voor een aparte sessie.
+- #1 rapport-foto's: bouwen zodra (a) en (b) hierboven beslist zijn.
 - SMS live-test wacht nog op de CM.com productie-token (zie eerder logboek + geheugen).
