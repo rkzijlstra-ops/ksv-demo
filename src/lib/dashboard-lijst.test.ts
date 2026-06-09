@@ -3,6 +3,7 @@ import {
   zoekMatch,
   filterOpdrachten,
   groepeerPerStatus,
+  zoekTreffers,
   type ZoekbareOpdracht,
 } from "./dashboard-lijst";
 import type { DashboardStatus } from "./db";
@@ -59,6 +60,28 @@ describe("filterOpdrachten", () => {
   it("combineert status en zoekterm", () => {
     expect(filterOpdrachten(lijst, { zoek: "bakker", status: "gepland" })).toHaveLength(0);
     expect(filterOpdrachten(lijst, { zoek: "bakker", status: "binnen" })).toHaveLength(1);
+  });
+});
+
+describe("zoekTreffers", () => {
+  const lijst = [
+    o({ klant_naam: "Bakker", dashboard_status: "binnen" }),
+    o({ klant_naam: "Bakkerij de Wit", dashboard_status: "opgeleverd" }),
+    o({ klant_naam: "Smit", dashboard_status: "gepland" }),
+  ];
+
+  it("lege zoekterm geeft niets (dropdown blijft dicht)", () => {
+    expect(zoekTreffers(lijst, "   ")).toEqual([]);
+  });
+
+  it("vindt over alle statussen heen, ook opgeleverd", () => {
+    const r = zoekTreffers(lijst, "bakker");
+    expect(r.map((x) => x.klant_naam)).toEqual(["Bakker", "Bakkerij de Wit"]);
+  });
+
+  it("respecteert de limiet", () => {
+    const veel = Array.from({ length: 20 }, (_, i) => o({ klant_naam: `Bakker ${i}` }));
+    expect(zoekTreffers(veel, "bakker", 8)).toHaveLength(8);
   });
 });
 

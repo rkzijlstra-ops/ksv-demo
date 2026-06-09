@@ -36,6 +36,19 @@ export function filterOpdrachten<T extends ZoekbareOpdracht>(
   );
 }
 
+/**
+ * Platte lijst treffers voor de zoek-dropdown: matcht over ALLE statussen (los van het statusfilter),
+ * hoogstens `limiet` stuks. Een lege zoekterm geeft niets (dan toon je de dropdown niet). Pure functie.
+ */
+export function zoekTreffers<T extends ZoekbareOpdracht>(
+  opdrachten: T[],
+  zoekterm: string,
+  limiet = 8,
+): T[] {
+  if (zoekterm.trim() === "") return [];
+  return opdrachten.filter((o) => zoekMatch(o, zoekterm)).slice(0, limiet);
+}
+
 export interface StatusGroep<T> {
   status: DashboardStatus;
   opdrachten: T[];
