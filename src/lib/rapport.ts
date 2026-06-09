@@ -9,6 +9,9 @@ import {
   closePath,
   clip,
   endPath,
+  PDFName,
+  PDFString,
+  PDFArray,
   type PDFFont,
   type PDFImage,
   type RGB,
@@ -117,6 +120,11 @@ export async function genereerRapportPdf(
   let page = doc.addPage([A4.breedte, A4.hoogte]);
   let y = A4.hoogte - MARGE;
 
+  // Doorlopende foto-nummering over het hele rapport (oplevering eerst, dan de meldingen), plus een
+  // verzameling klikbare links die onderaan als genummerde bijlagenlijst komt.
+  let fotoTeller = 0;
+  const bijlagen: { label: string; url: string }[] = [];
+
   const ruimte = (nodig: number) => {
     if (y - nodig < MARGE) {
       page = doc.addPage([A4.breedte, A4.hoogte]);
@@ -183,13 +191,7 @@ export async function genereerRapportPdf(
     opmerkingBlok(samenvatting.opmerking);
   }
 
-  if (samenvatting.videoUrl) {
-    tekst("Video van de oplevering:", { size: 10, font: bold, gap: 3 });
-    for (const regel of wikkel(samenvatting.videoUrl, 95))
-      tekst(regel, { size: 9, kleur: MUTED, x: MARGE + 4, gap: 3 });
-    y -= 6;
-  }
-
+  // De video komt als klikbare link in de bijlagenlijst onderaan (na de genummerde foto's).
   if (fotos.length > 0) {
     await fotoGrid(fotos, 2);
   } else {
@@ -230,11 +232,28 @@ export async function genereerRapportPdf(
     }
     if (m.foto_urls.length > 0) {
       y -= 2;
-      await fotoGrid(m.foto_urls, 3);
+      await fotoGrid(m.foto_urls, 2);
     }
     y -= 6;
     page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.7, color: LINE });
     y -= 12;
+  }
+
+  // ---- sectie: Bijlagen / links (genummerd, klikbaar) ----
+  const linklijst = [...bijlagen];
+  if (samenvatting.videoUrl) linklijst.push({ label: "Video van de oplevering", url: samenvatting.videoUrl });
+  if (linklijst.length > 0) {
+    y -= 6;
+    sectieKop("Bijlagen / links", INK);
+    tekst("Klik op een regel om de foto of video op groot formaat te openen.", {
+      size: 9,
+      kleur: MUTED,
+      gap: 8,
+    });
+    for (const b of linklijst) {
+      tekstLink(b.label, b.url, { size: 10.5, gap: 7 });
+    }
+    y -= 4;
   }
 
   // ---- voettekst onderaan de laatste pagina (afzender-contactgegevens, indien ingevuld) ----
@@ -329,7 +348,7 @@ export async function genereerRapportPdf(
   }
 
   async function fotoGrid(urls: string[], cols: number) {
-    const gap = 8;
+    const gap = 10;
     const cellW = (CONTENT - gap * (cols - 1)) / cols;
     const cellH = cellW * 0.72;
     for (let i = 0; i < urls.length; i++) {
@@ -337,13 +356,26 @@ export async function genereerRapportPdf(
       if (col === 0) ruimte(cellH + gap);
       const top = y;
       const cx = MARGE + col * (cellW + gap);
-      await tekenTegel(cx, top - cellH, cellW, cellH, urls[i]);
+      const nr = ++fotoTeller;
+      bijlagen.push({ label: `Foto ${nr}`, url: urls[i] });
+      await tekenTegel(cx, top - cellH, cellW, cellH, urls[i], nr);
       if (col === cols - 1 || i === urls.length - 1) y = top - cellH - gap;
     }
   }
 
+  /** Tekent het genummerde badge linksboven in een tegel (donker vierkant, witte cijfers). */
+  function nummerBadge(x: number, yb: number, h: number, nr: number) {
+    const bs = 17;
+    const bx = x;
+    const by = yb + h - bs;
+    page.drawRectangle({ x: bx, y: by, width: bs, height: bs, color: INK });
+    const s = String(nr);
+    const sw = bold.widthOfTextAtSize(s, 9.5);
+    page.drawText(s, { x: bx + (bs - sw) / 2, y: by + (bs - 9.5) / 2 + 0.5, size: 9.5, font: bold, color: rgb(1, 1, 1) });
+  }
+
   /** Tekent één foto bijgesneden (cover) in een vaste tegel, met clipping zodat alle foto's gelijk ogen. */
-  async function tekenTegel(x: number, yb: number, w: number, h: number, url: string) {
+  async function tekenTegel(x: number, yb: number, w: number, h: number, url: string, nr: number) {
     let img: PDFImage | null = null;
     try {
       const res = await fetch(url);
@@ -361,6 +393,7 @@ export async function genereerRapportPdf(
       const txt = "foto niet beschikbaar";
       const tw = helv.widthOfTextAtSize(txt, 8);
       page.drawText(txt, { x: x + (w - tw) / 2, y: yb + h / 2 - 4, size: 8, font: helv, color: MUTED });
+      nummerBadge(x, yb, h, nr);
       return;
     }
     const schaal = Math.max(w / img.width, h / img.height); // cover
@@ -381,6 +414,38 @@ export async function genereerRapportPdf(
     page.drawImage(img, { x: ix, y: iy, width: iw, height: ih });
     page.pushOperators(popGraphicsState());
     page.drawRectangle({ x, y: yb, width: w, height: h, borderColor: LINE, borderWidth: 0.7 });
+    nummerBadge(x, yb, h, nr);
+  }
+
+  /** Voegt een klikbare URI-link toe over een rechthoek op de huidige pagina (betrouwbaar, tekstregel). */
+  function linkAnnotatie(x: number, yb: number, w: number, h: number, url: string) {
+    const annot = doc.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [x, yb, x + w, yb + h],
+      Border: [0, 0, 0],
+      A: { Type: "Action", S: "URI", URI: PDFString.of(url) },
+    });
+    const ref = doc.context.register(annot);
+    let annots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    if (!annots) {
+      annots = doc.context.obj([]) as PDFArray;
+      page.node.set(PDFName.of("Annots"), annots);
+    }
+    annots.push(ref);
+  }
+
+  /** Tekst een klikbare linkregel (label opent de URL). Betrouwbaar: een rechthoek over de tekst. */
+  function tekstLink(label: string, url: string, opts: { size?: number; x?: number; gap?: number } = {}) {
+    const size = opts.size ?? 10;
+    const x = opts.x ?? MARGE;
+    ruimte(size + (opts.gap ?? 5));
+    page.drawText(label, { x, y, size, font: bold, color: ACCENT_INK });
+    const w = bold.widthOfTextAtSize(label, size);
+    // onderstreping voor herkenbaarheid als link
+    page.drawRectangle({ x, y: y - 2, width: w, height: 0.6, color: ACCENT_INK });
+    linkAnnotatie(x, y - 3, w, size + 5, url);
+    y -= size + (opts.gap ?? 5);
   }
 
   async function tekenHandtekening(url: string) {

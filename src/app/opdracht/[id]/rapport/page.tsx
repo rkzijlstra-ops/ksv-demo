@@ -40,6 +40,16 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
   const ondertekend = Boolean(oplevering?.handtekening_url);
   const opmerking = oplevering?.opmerking?.trim() || null;
 
+  // Doorlopende foto-nummering (zelfde reeks als de PDF): oplevering eerst (1..n), dan de meldingen.
+  const meldingFotoStart: number[] = [];
+  {
+    let acc = fotos.length + 1;
+    for (const m of meldingen) {
+      meldingFotoStart.push(acc);
+      acc += m.foto_urls.length;
+    }
+  }
+
   const chips: string[] = [];
   if (opdracht.referentienummer) chips.push(`Ref ${opdracht.referentienummer}`);
   if (opdracht.leverweek) chips.push(`Leverweek ${opdracht.leverweek}`);
@@ -132,7 +142,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
 
       <div className="mt-4">
         {fotos.length > 0 ? (
-          <FotoGalerij urls={fotos} />
+          <FotoGalerij urls={fotos} startNummer={1} />
         ) : (
           <p className="border border-line bg-surface p-4 text-sm text-ink-muted">
             Geen eindstaat-foto&apos;s bij deze oplevering.
@@ -161,7 +171,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
         </p>
       ) : (
         <ul className="flex flex-col gap-4">
-          {meldingen.map((m) => (
+          {meldingen.map((m, mi) => (
             <li key={m.id} className="border border-line bg-white p-4">
               <div className="flex items-center justify-between gap-2">
                 <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
@@ -179,7 +189,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
               )}
               {m.foto_urls.length > 0 && (
                 <div className="mt-3">
-                  <FotoGalerij urls={m.foto_urls} />
+                  <FotoGalerij urls={m.foto_urls} startNummer={meldingFotoStart[mi]} />
                 </div>
               )}
             </li>

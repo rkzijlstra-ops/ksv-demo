@@ -200,6 +200,28 @@ describe("genereerRapportPdf", () => {
     expect(startsWithPdf(bytes)).toBe(true);
   });
 
+  it("nummert foto's door en bouwt de bijlagenlijst (oplevering + meldingen + video) zonder crash", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
+      }),
+    );
+    const opdracht = maakMelding({});
+    const opl = maakOplevering({
+      eindstaat_foto_urls: ["https://x/e1.jpg", "https://x/e2.jpg"],
+      video_url: "https://youtu.be/demo",
+    });
+    const meldingen = [
+      maakMelding({ id: "m1", opdracht_id: "x", ruwe_tekst: "een", foto_urls: ["https://x/m1.jpg"] }),
+      maakMelding({ id: "m2", opdracht_id: "x", ruwe_tekst: "twee", foto_urls: ["https://x/m2a.jpg", "https://x/m2b.jpg"] }),
+    ];
+    const bytes = await genereerRapportPdf(opdracht, meldingen, opl);
+    expect(startsWithPdf(bytes)).toBe(true);
+    expect(bytes.length).toBeGreaterThan(100);
+  });
+
   it("laat het rapport niet crashen als een foto-fetch faalt", async () => {
     vi.stubGlobal(
       "fetch",
