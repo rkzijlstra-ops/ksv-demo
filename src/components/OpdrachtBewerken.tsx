@@ -20,6 +20,10 @@ export function OpdrachtBewerken(props: {
   referentienummer: string | null;
   keukenzaak: string | null;
   documenttype: Documenttype;
+  // Planning (alleen aanwezig als de opdracht al is ingepland): hiermee kun je verplaatsen.
+  startdatum?: string | null;
+  starttijd?: string | null;
+  duur_dagen?: number;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -35,6 +39,15 @@ export function OpdrachtBewerken(props: {
   const [type, setType] = useState<Documenttype>(
     props.documenttype === "tekst" ? "onbekend" : props.documenttype,
   );
+
+  // Planning: alleen tonen/bewerken als de opdracht al een datum heeft (op het planbord staat).
+  const ingepland = props.startdatum != null && props.startdatum !== "";
+  const origDatum = props.startdatum ?? "";
+  const origTijd = props.starttijd ? props.starttijd.slice(0, 5) : "";
+  const origDagen = String(props.duur_dagen ?? 1);
+  const [datum, setDatum] = useState(origDatum);
+  const [tijd, setTijd] = useState(origTijd);
+  const [dagen, setDagen] = useState(origDagen);
 
   async function opslaan(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +72,32 @@ export function OpdrachtBewerken(props: {
         setFout(body.error ?? `Opslaan mislukt (${res.status})`);
         return;
       }
+
+      // Is de planning gewijzigd, dan verplaatsen via dezelfde route als slepen op het bord
+      // (behoudt de monteur en regelt 'gewijzigd, opnieuw versturen').
+      const planningGewijzigd =
+        ingepland && (datum !== origDatum || tijd !== origTijd || dagen !== origDagen);
+      if (planningGewijzigd) {
+        if (!datum) {
+          setFout("Vul een startdatum in om te verplaatsen.");
+          return;
+        }
+        const res2 = await fetch(`/api/opdrachten/${props.id}/verplaatsen`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            startdatum: datum,
+            starttijd: tijd.trim() ? tijd.trim() : null,
+            duur_dagen: Math.max(1, Number(dagen) || 1),
+          }),
+        });
+        const body2 = await res2.json().catch(() => ({}));
+        if (!res2.ok) {
+          setFout(body2.error ?? `Verplaatsen mislukt (${res2.status})`);
+          return;
+        }
+      }
+
       setKlaar(true);
       setOpen(false);
       router.refresh();
@@ -137,6 +176,46 @@ export function OpdrachtBewerken(props: {
           ))}
         </select>
       </label>
+
+      {ingepland && (
+        <fieldset className="flex flex-col gap-3 border-2 border-line p-3">
+          <legend className="px-1 text-sm font-semibold text-ink">Planning verplaatsen</legend>
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-ink">
+              Startdatum
+              <input
+                type="date"
+                value={datum}
+                onChange={(e) => setDatum(e.target.value)}
+                className={veld}
+              />
+            </label>
+            <label className="flex w-24 flex-col gap-1 text-sm font-semibold text-ink">
+              Dagen
+              <input
+                type="number"
+                min={1}
+                value={dagen}
+                onChange={(e) => setDagen(e.target.value)}
+                className={veld}
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+            Tijd (leeg = dagblok / montage)
+            <input
+              type="time"
+              value={tijd}
+              onChange={(e) => setTijd(e.target.value)}
+              className={veld}
+            />
+          </label>
+          <p className="text-xs font-normal text-ink-muted">
+            Verplaatsen houdt de toegewezen monteur aan. Een al verstuurde klus komt op &quot;gewijzigd,
+            opnieuw versturen&quot; te staan.
+          </p>
+        </fieldset>
+      )}
 
       <button
         type="submit"

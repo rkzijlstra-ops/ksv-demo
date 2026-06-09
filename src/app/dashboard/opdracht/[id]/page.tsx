@@ -133,6 +133,9 @@ export default async function OpdrachtgeverDetailPage({
           referentienummer={opdracht.referentienummer}
           keukenzaak={opdracht.keukenzaak}
           documenttype={opdracht.documenttype ?? "onbekend"}
+          startdatum={opdracht.startdatum}
+          starttijd={opdracht.starttijd}
+          duur_dagen={opdracht.duur_dagen}
         />
         <AnnuleerKnop
           opdrachtId={opdracht.id}
