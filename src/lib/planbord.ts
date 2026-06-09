@@ -30,6 +30,30 @@ export function verschuifDagen(iso: string, dagen: number): string {
   return format(d);
 }
 
+/** True als de datum op een werkdag (ma t/m vr) valt. */
+function isWerkdag(iso: string): boolean {
+  const dow = parse(iso).getUTCDay(); // 0=zo, 6=za
+  return dow !== 0 && dow !== 6;
+}
+
+/**
+ * De werkdagen (ma t/m vr) die een opdracht beslaat: telt `aantal` werkdagen vanaf de startdatum en
+ * slaat weekenddagen over. Valt de startdatum zelf in het weekend, dan begint de telling op de
+ * eerstvolgende werkdag. Zo loopt een meerdaagse montage netjes door op maandag i.p.v. in het weekend.
+ */
+export function werkdagenVanaf(startIso: string, aantal: number): string[] {
+  const n = Math.max(1, aantal || 1);
+  const dagen: string[] = [];
+  let kandidaat = startIso.split("T")[0];
+  let veiligheid = 0;
+  while (dagen.length < n && veiligheid < n * 2 + 14) {
+    if (isWerkdag(kandidaat)) dagen.push(kandidaat);
+    kandidaat = verschuifDagen(kandidaat, 1);
+    veiligheid++;
+  }
+  return dagen;
+}
+
 /** Maandag van de week waar deze datum in valt (zondag valt nog bij de week ervoor). */
 export function maandagVan(iso: string): string {
   const d = parse(iso);
@@ -126,12 +150,12 @@ export interface BoekbaarOpdracht {
   dashboard_status: DashboardStatus;
 }
 
-/** De dagen die een opdracht bezet: montage = de hele span, service = alleen de startdag. */
+/** De dagen die een opdracht bezet: montage = de werkdagen over de hele duur, service = alleen de startdag. */
 function bezetteDagen(o: BoekbaarOpdracht): string[] {
   if (!o.startdatum) return [];
   const dag = o.startdatum.split("T")[0];
-  const aantal = o.starttijd ? 1 : Math.max(1, o.duur_dagen || 1);
-  return Array.from({ length: aantal }, (_, i) => verschuifDagen(dag, i));
+  if (o.starttijd) return [dag];
+  return werkdagenVanaf(dag, Math.max(1, o.duur_dagen || 1));
 }
 
 /**
@@ -183,9 +207,10 @@ export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
 
 /**
  * Plaatst geplande opdrachten op het weekraster: bepaalt per opdracht de dagkolom en span.
- * Montage (geen starttijd) = dagblok dat duur_dagen kolommen beslaat, geknipt op vrijdag.
- * Service (met starttijd) = kaartje van één kolom. Opdrachten buiten de week of met een
- * niet-geplande status vallen weg. Pure functie, los te testen.
+ * Montage (geen starttijd) = dagblok over de werkdagen van zijn duur; het weekend wordt overgeslagen
+ * en een blok dat over de weekgrens loopt verschijnt met de resterende dagen óók in de week(en) erna
+ * (ma/di). Service (met starttijd) = kaartje van één kolom op de startdag. Opdrachten die deze week
+ * niet raken of een niet-geplande status hebben, vallen weg. Pure functie, los te testen.
  */
 export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
   opdrachten: T[],
@@ -194,12 +219,20 @@ export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
   const plaatsingen: PlanbordPlaatsing<T>[] = [];
   for (const o of opdrachten) {
     if (!OP_BORD.has(o.dashboard_status) || !o.monteur_naam || !o.startdatum) continue;
-    const dagIndex = weekDagenArr.indexOf(o.startdatum.split("T")[0]);
-    if (dagIndex === -1) continue;
     const isService = o.starttijd != null && o.starttijd !== "";
-    const ruimte = WERKDAGEN - dagIndex;
-    const span = isService ? 1 : Math.min(Math.max(o.duur_dagen, 1), ruimte);
-    plaatsingen.push({ opdracht: o, dagIndex, span, isService });
+
+    if (isService) {
+      const dagIndex = weekDagenArr.indexOf(o.startdatum.split("T")[0]);
+      if (dagIndex === -1) continue;
+      plaatsingen.push({ opdracht: o, dagIndex, span: 1, isService: true });
+      continue;
+    }
+
+    // Montage: de werkdagen die in déze week vallen vormen een aaneengesloten blok (ma..vr).
+    const dagen = werkdagenVanaf(o.startdatum, o.duur_dagen).filter((d) => weekDagenArr.includes(d));
+    if (dagen.length === 0) continue;
+    const dagIndex = weekDagenArr.indexOf(dagen[0]);
+    plaatsingen.push({ opdracht: o, dagIndex, span: dagen.length, isService: false });
   }
   return plaatsingen;
 }

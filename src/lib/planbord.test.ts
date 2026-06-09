@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   verschuifDagen,
+  werkdagenVanaf,
   maandagVan,
   weekDagen,
   weeknummer,
@@ -63,7 +64,27 @@ function opdr(
   };
 }
 
-const WEEK = weekDagen("2026-06-08");
+const WEEK = weekDagen("2026-06-08"); // ma 8 t/m vr 12 juni
+const WEEK_ERNA = weekDagen("2026-06-15"); // ma 15 t/m vr 19 juni
+
+describe("werkdagenVanaf", () => {
+  it("telt werkdagen en slaat het weekend over", () => {
+    // do 11 jun + 4 werkdagen = do, vr, (weekend over), ma, di
+    expect(werkdagenVanaf("2026-06-11", 4)).toEqual([
+      "2026-06-11",
+      "2026-06-12",
+      "2026-06-15",
+      "2026-06-16",
+    ]);
+  });
+  it("vanaf vrijdag loopt het door naar maandag/dinsdag", () => {
+    expect(werkdagenVanaf("2026-06-12", 3)).toEqual(["2026-06-12", "2026-06-15", "2026-06-16"]);
+  });
+  it("een startdatum in het weekend begint op de eerstvolgende werkdag", () => {
+    // za 13 jun -> eerste werkdag is ma 15 jun
+    expect(werkdagenVanaf("2026-06-13", 1)).toEqual(["2026-06-15"]);
+  });
+});
 
 describe("monteurRijen", () => {
   it("geeft unieke monteurs gesorteerd", () => {
@@ -98,10 +119,23 @@ describe("plaatsOpdrachten", () => {
     expect(p[0].isService).toBe(true);
   });
 
-  it("knipt een meerdaags blok af op het einde van de week", () => {
+  it("toont in de startweek alleen de dagen tot en met vrijdag", () => {
     const p = plaatsOpdrachten([opdr({ id: "m", startdatum: "2026-06-12", duur_dagen: 3 })], WEEK);
     expect(p[0].dagIndex).toBe(4); // vr
-    expect(p[0].span).toBe(1); // niet voorbij vrijdag
+    expect(p[0].span).toBe(1); // alleen vrijdag in deze week
+  });
+
+  it("laat een meerdaagse montage doorlopen naar de week erna (werkdagen)", () => {
+    // do 11 jun, 4 werkdagen: do+vr deze week, ma+di de week erna.
+    const o = opdr({ id: "m", startdatum: "2026-06-11", duur_dagen: 4 });
+    const deze = plaatsOpdrachten([o], WEEK);
+    expect(deze[0].dagIndex).toBe(3); // do
+    expect(deze[0].span).toBe(2); // do + vr
+
+    const erna = plaatsOpdrachten([o], WEEK_ERNA);
+    expect(erna).toHaveLength(1);
+    expect(erna[0].dagIndex).toBe(0); // ma
+    expect(erna[0].span).toBe(2); // ma + di
   });
 
   it("laat opdrachten buiten de week weg", () => {
