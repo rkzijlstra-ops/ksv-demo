@@ -9,8 +9,10 @@ import {
   plaatsOpdrachten,
   verdeelLanes,
   vindDubbeleBoekingen,
+  zoekPlanbord,
   type PlanbaarOpdracht,
   type BoekbaarOpdracht,
+  type ZoekbaarOpdracht,
 } from "./planbord";
 import type { DashboardStatus } from "./db";
 
@@ -196,6 +198,67 @@ describe("verdeelLanes", () => {
 
   it("lege invoer geeft lege uitvoer", () => {
     expect(verdeelLanes([])).toEqual([]);
+  });
+});
+
+describe("zoekPlanbord", () => {
+  function z(over: Partial<ZoekbaarOpdracht> & { id: string }): ZoekbaarOpdracht {
+    return {
+      id: over.id,
+      klant_naam: over.klant_naam ?? null,
+      klant_adres: over.klant_adres ?? null,
+      referentienummer: over.referentienummer ?? null,
+      monteur_naam: "monteur_naam" in over ? (over.monteur_naam ?? null) : "Rein",
+      startdatum: "startdatum" in over ? (over.startdatum ?? null) : "2026-06-10",
+      dashboard_status: over.dashboard_status ?? ("gepland" as DashboardStatus),
+    };
+  }
+
+  it("lege zoekterm geeft niets", () => {
+    expect(zoekPlanbord([z({ id: "a", klant_naam: "Bakker" })], "  ")).toEqual([]);
+  });
+
+  it("vindt op klantnaam, hoofdletterongevoelig en op deel", () => {
+    const r = zoekPlanbord([z({ id: "a", klant_naam: "Fam. Bakker" }), z({ id: "b", klant_naam: "De Wit" })], "bak");
+    expect(r.map((o) => o.id)).toEqual(["a"]);
+  });
+
+  it("vindt op referentienummer en op adres", () => {
+    const lijst = [
+      z({ id: "ref", referentienummer: "7588" }),
+      z({ id: "adr", klant_adres: "Hoofdstraat 12, Voorschoten" }),
+    ];
+    expect(zoekPlanbord(lijst, "7588").map((o) => o.id)).toEqual(["ref"]);
+    expect(zoekPlanbord(lijst, "voorschoten").map((o) => o.id)).toEqual(["adr"]);
+  });
+
+  it("negeert opgeleverde en geannuleerde klussen", () => {
+    const lijst = [
+      z({ id: "g", klant_naam: "Bakker", dashboard_status: "gepland" }),
+      z({ id: "op", klant_naam: "Bakker", dashboard_status: "opgeleverd" }),
+      z({ id: "an", klant_naam: "Bakker", dashboard_status: "geannuleerd" }),
+    ];
+    expect(zoekPlanbord(lijst, "bakker").map((o) => o.id)).toEqual(["g"]);
+  });
+
+  it("neemt klussen uit de pool (binnen) mee", () => {
+    const r = zoekPlanbord(
+      [z({ id: "p", klant_naam: "Bakker", dashboard_status: "binnen", startdatum: null })],
+      "bakker",
+    );
+    expect(r.map((o) => o.id)).toEqual(["p"]);
+  });
+
+  it("sorteert op datum, klussen zonder datum (pool) achteraan", () => {
+    const r = zoekPlanbord(
+      [
+        z({ id: "laat", klant_naam: "Bakker", startdatum: "2026-07-20" }),
+        z({ id: "pool", klant_naam: "Bakker", dashboard_status: "binnen", startdatum: null }),
+        z({ id: "vroeg", klant_naam: "Bakker", startdatum: "2026-06-10" }),
+      ],
+      "bakker",
+    );
+    expect(r.map((o) => o.id)).toEqual(["vroeg", "laat", "pool"]);
   });
 });
 

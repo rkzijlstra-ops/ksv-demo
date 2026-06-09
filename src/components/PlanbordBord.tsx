@@ -24,6 +24,7 @@ import {
   verschuifDagen,
   plaatsOpdrachten,
   vindDubbeleBoekingen,
+  zoekPlanbord,
   type MonteurOptie,
 } from "@/lib/planbord";
 import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
@@ -94,6 +95,7 @@ export function PlanbordBord({
 }) {
   const router = useRouter();
   const [weekAnker, setWeekAnker] = useState(ankerInit);
+  const [zoek, setZoek] = useState("");
   const [items, setItems] = useState<Melding[]>(opdrachten);
   const [vorigeProp, setVorigeProp] = useState(opdrachten);
   const [actief, setActief] = useState<Melding | null>(null);
@@ -114,6 +116,13 @@ export function PlanbordBord({
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const conflicten = vindDubbeleBoekingen(items);
   const pool = items.filter((o) => o.dashboard_status === "binnen");
+  const treffers = zoek.trim() ? zoekPlanbord(items, zoek).slice(0, 8) : [];
+
+  /** Springt het bord naar de week van een treffer (of laat de pool zien als hij nog niet gepland is). */
+  function springNaar(o: Melding) {
+    if (o.startdatum) setWeekAnker(maandagVan(o.startdatum));
+    setZoek("");
+  }
   const teVersturen = items
     .filter((o) => o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen)
     .map((o) => o.id);
@@ -255,6 +264,45 @@ export function PlanbordBord({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
+      <div className="relative mb-3">
+        <input
+          type="search"
+          value={zoek}
+          onChange={(e) => setZoek(e.target.value)}
+          placeholder="Zoek een klus: klant, referentie of adres…"
+          aria-label="Zoek een klus op het planbord"
+          className="min-h-[44px] w-full border-2 border-line bg-white px-3 text-base focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent"
+        />
+        {treffers.length > 0 && (
+          <ul className="absolute z-30 mt-1 max-h-80 w-full overflow-auto border-2 border-ink bg-white shadow-lg">
+            {treffers.map((o) => (
+              <li key={o.id} className="border-b border-line last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => springNaar(o)}
+                  className="block w-full cursor-pointer px-3 py-2 text-left hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
+                >
+                  <span className="text-sm font-bold text-ink">{o.klant_naam ?? "Onbekende klant"}</span>
+                  {o.referentienummer && (
+                    <span className="text-sm text-ink-muted"> · ref {o.referentienummer}</span>
+                  )}
+                  <span className="block text-xs text-ink-muted">
+                    {o.startdatum
+                      ? `${o.monteur_naam ?? "?"} · week ${weeknummer(maandagVan(o.startdatum))} · ${formatDatumKort(o.startdatum)}`
+                      : "In de pool (nog te plannen)"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {zoek.trim() && treffers.length === 0 && (
+          <p className="absolute z-30 mt-1 w-full border-2 border-line bg-white px-3 py-2 text-sm text-ink-muted">
+            Niets gevonden voor &quot;{zoek.trim()}&quot;.
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"

@@ -196,6 +196,48 @@ export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string
   return conflict;
 }
 
+/** Minimale velden om een opdracht op het planbord te kunnen zoeken (een Melding voldoet hieraan). */
+export interface ZoekbaarOpdracht {
+  id: string;
+  klant_naam: string | null;
+  klant_adres: string | null;
+  referentienummer: string | null;
+  monteur_naam: string | null;
+  startdatum: string | null;
+  dashboard_status: DashboardStatus;
+}
+
+/** Statussen die vindbaar zijn met de zoekfunctie: alles wat nog actief is (pool + op het bord). */
+const VINDBAAR: ReadonlySet<DashboardStatus> = new Set<DashboardStatus>([
+  "binnen",
+  "concept_gepland",
+  "gepland",
+  "bevestigd",
+]);
+
+/**
+ * Zoekt een opdracht over alle weken heen op klantnaam, referentienummer of adres (deel, hoofdletter-
+ * ongevoelig). Zo vind je een klus terug die ver weg gepland staat, of nog in de pool zit. Opgeleverde
+ * en geannuleerde klussen vallen weg. Gesorteerd op datum; klussen zonder datum (pool) komen achteraan.
+ * Pure functie, los te testen. De UI berekent de week (maandagVan) en springt erheen.
+ */
+export function zoekPlanbord<T extends ZoekbaarOpdracht>(opdrachten: T[], zoekterm: string): T[] {
+  const q = zoekterm.trim().toLowerCase();
+  if (!q) return [];
+  const treffers = opdrachten.filter((o) => {
+    if (!VINDBAAR.has(o.dashboard_status)) return false;
+    return [o.klant_naam, o.referentienummer, o.klant_adres].some(
+      (v) => v != null && v.toLowerCase().includes(q),
+    );
+  });
+  return treffers.sort((a, b) => {
+    if (a.startdatum && b.startdatum) return a.startdatum.localeCompare(b.startdatum);
+    if (a.startdatum) return -1; // a heeft een datum, b niet -> a eerst
+    if (b.startdatum) return 1;
+    return 0;
+  });
+}
+
 /** Unieke, alfabetisch gesorteerde monteurs uit de geplande opdrachten (de rijen van het bord). */
 export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
   const set = new Set<string>();
