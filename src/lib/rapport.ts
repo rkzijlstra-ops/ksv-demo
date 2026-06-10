@@ -18,6 +18,7 @@ import {
 } from "pdf-lib";
 import type { Melding, Oplevering } from "./db";
 import { formatDatumKort } from "./datum";
+import { rapportAfzenderWeergave, type RapportAfzender } from "./afzender";
 
 export interface RapportSamenvatting {
   zaaknaam: string;
@@ -62,26 +63,10 @@ export function meldingenKop(aantalMeldingen: number, aantalFotos: number): stri
   return `${basis} · ${aantalFotos} foto${aantalFotos === 1 ? "" : "'s"}`;
 }
 
-/** Afzender-gegevens voor het rapport: van de monteur die opleverde (uit zijn profiel). */
-export interface RapportAfzender {
-  naam: string | null;
-  bedrijfsnaam: string | null;
-  telefoon: string | null;
-  email: string | null;
-}
-
-/**
- * Bepaalt hoe de afzender bovenaan en onderaan het rapport getoond wordt. De kop is de bedrijfsnaam,
- * anders de naam, anders een neutrale terugval (nooit meer hardcoded BKM bij een andere monteur). De
- * voetregel bundelt de aanwezige contactvelden. Pure functie, los te testen.
- */
-export function rapportAfzenderWeergave(a: RapportAfzender | null): { kop: string; voet: string } {
-  const bedrijf = a?.bedrijfsnaam?.trim() || null;
-  const naam = a?.naam?.trim() || null;
-  const kop = bedrijf || naam || "Keukenmontage";
-  const voetDelen = [bedrijf || naam, a?.telefoon?.trim() || null, a?.email?.trim() || null].filter(Boolean);
-  return { kop, voet: voetDelen.join("  ·  ") };
-}
+// Afzender-weergave woont in een eigen module (./afzender) zodat de begeleidende e-mail hem kan
+// hergebruiken zonder pdf-lib mee te trekken. Hier ge-her-exporteerd zodat bestaande imports
+// vanuit "@/lib/rapport" blijven werken.
+export { rapportAfzenderWeergave, type RapportAfzender };
 
 const A4 = { breedte: 595, hoogte: 842 } as const;
 const MARGE = 48;

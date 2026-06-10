@@ -57,7 +57,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       pdf,
       bestandsnaam,
       videoUrl: oplevering.video_url,
-      opmerking: oplevering.opmerking,
+      afzender,
     });
   } catch (err) {
     return NextResponse.json(

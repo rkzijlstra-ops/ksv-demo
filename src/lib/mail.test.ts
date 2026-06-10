@@ -51,35 +51,32 @@ describe("verstuurOpleverRapport", () => {
     expect(arg.attachments[0].filename).toBe("opleverrapport-7407.pdf");
   });
 
-  it("zet de keukenzaak en de videolink in de body", async () => {
+  it("ondertekent met het monteur-profiel en lekt geen rauwe link of interne opmerking", async () => {
     await verstuurOpleverRapport({
       ...basis,
       opdracht: opdracht({ keukenzaak: "Keukensale.com Katwijk" }),
       videoUrl: "https://x/oplever-videos/v1.mp4",
+      afzender: { naam: "Jan Bakker", bedrijfsnaam: "BKM Keukenmontage", telefoon: "0612", email: "jan@bkm.nl" },
     });
     const arg = mockSend.mock.calls[0][0];
-    expect(arg.text).toMatch(/Keukensale\.com Katwijk/);
-    expect(arg.text).toMatch(/oplever-videos\/v1\.mp4/);
+    expect(arg.text).toContain("BKM Keukenmontage");
+    expect(arg.text).not.toMatch(/oplever-videos\/v1\.mp4/); // link staat in de PDF, niet in de mail
+    expect(arg.text).not.toMatch(/Keukensale\.com Katwijk/); // ondertekening volgt het profiel, niet de keukenzaak
   });
 
-  it("zet de opmerking in de body als die er is", async () => {
+  it("zet de From-naam gelijk aan de ondertekening (afzender-kop), met het adres uit RESEND_FROM", async () => {
+    process.env.RESEND_FROM = "Oude Naam <rapport@mijndomein.nl>";
     await verstuurOpleverRapport({
       ...basis,
       opdracht: opdracht(),
-      opmerking: "Muren waren niet haaks",
+      afzender: { naam: "Jan Bakker", bedrijfsnaam: "BKM Keukenmontage", telefoon: null, email: null },
     });
-    expect(mockSend.mock.calls[0][0].text).toMatch(/Muren waren niet haaks/);
+    expect(mockSend.mock.calls[0][0].from).toBe("BKM Keukenmontage <rapport@mijndomein.nl>");
   });
 
-  it("gebruikt onboarding@resend.dev als afzender wanneer RESEND_FROM leeg is", async () => {
+  it("valt voor de From-naam terug op een neutrale naam zonder profiel", async () => {
     await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
-    expect(mockSend.mock.calls[0][0].from).toBe("onboarding@resend.dev");
-  });
-
-  it("gebruikt RESEND_FROM wanneer ingevuld", async () => {
-    process.env.RESEND_FROM = "rapport@mijndomein.nl";
-    await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
-    expect(mockSend.mock.calls[0][0].from).toBe("rapport@mijndomein.nl");
+    expect(mockSend.mock.calls[0][0].from).toBe("Keukenmontage <onboarding@resend.dev>");
   });
 
   it("zet reply-to wanneer RESEND_REPLY_TO ingevuld is", async () => {

@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import type { Melding, Rol } from "./db";
+import type { RapportAfzender } from "./afzender";
+import { opleverMailTekst, afzenderHeader } from "./oplever-mail";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 import { uitnodigingTekst } from "./uitnodig-mail";
 import { afmeldingTekst } from "./afmeld-mail";
@@ -12,10 +14,10 @@ export interface OpleverMailInput {
   opdracht: Melding;
   pdf: Uint8Array;
   bestandsnaam: string;
-  /** Optionele link naar de oplever-video (past niet in de PDF, gaat als link mee). */
+  /** Of er een oplever-video is. Bepaalt of de mailtekst de video noemt; de link zelf staat in de PDF. */
   videoUrl?: string | null;
-  /** Optionele notitie/bijzonderheden van de monteur bij de oplevering. */
-  opmerking?: string | null;
+  /** Afzender uit het monteur-profiel; bepaalt zowel de From-naam als de ondertekening. */
+  afzender?: RapportAfzender | null;
 }
 
 export interface SpoedMailInput {
@@ -98,20 +100,19 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
   const { apiKey, from, replyTo } = mailConfig();
   const resend = new Resend(apiKey);
 
-  const klant = input.opdracht.klant_naam ?? "opdracht";
-  const ref = input.opdracht.referentienummer ? ` (ref ${input.opdracht.referentienummer})` : "";
-  const zaaknaam = input.opdracht.keukenzaak?.trim() || "uw keukenzaak";
-  const videoRegel = input.videoUrl ? `\n\nVideo van de oplevering:\n${input.videoUrl}` : "";
-  const opmerkingRegel = input.opmerking?.trim()
-    ? `\n\nOpmerking:\n${input.opmerking.trim()}`
-    : "";
+  const { subject, text, afzenderNaam } = opleverMailTekst({
+    klantNaam: input.opdracht.klant_naam,
+    referentienummer: input.opdracht.referentienummer,
+    afzender: input.afzender ?? null,
+    heeftVideo: !!input.videoUrl?.trim(),
+  });
 
   const { error } = await resend.emails.send({
-    from,
+    from: afzenderHeader(from, afzenderNaam),
     to: input.naar,
     ...(replyTo ? { replyTo } : {}),
-    subject: `Opleverrapport ${klant}${ref}`,
-    text: `In de bijlage het opleverrapport voor ${klant}${ref}.${opmerkingRegel}${videoRegel}\n\n${zaaknaam}`,
+    subject,
+    text,
     attachments: [{ filename: input.bestandsnaam, content: Buffer.from(input.pdf) }],
   });
 
