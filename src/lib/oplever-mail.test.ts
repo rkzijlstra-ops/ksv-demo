@@ -31,16 +31,31 @@ describe("opleverMailTekst", () => {
     expect(text).toContain("Met vriendelijke groet,");
   });
 
-  it("ondertekent met de bedrijfsnaam + contactgegevens uit het profiel, niet met de keukenzaak", () => {
+  it("tekent met de persoonsnaam, witregel, dan de bedrijfs- en contactregel (geen dubbele naam)", () => {
     const { text, afzenderNaam } = opleverMailTekst({
       klantNaam: "van Dijk",
       referentienummer: "7407",
       afzender,
       heeftVideo: false,
     });
+    // Afzendernaam bovenaan de mail blijft het bedrijf; de ondertekening tekent met de persoon.
     expect(afzenderNaam).toBe("BKM Keukenmontage");
-    expect(text.trimEnd().endsWith("0612345678  ·  jan@bkm.nl")).toBe(true);
-    expect(text).toContain("BKM Keukenmontage");
+    expect(text).toContain(
+      "Met vriendelijke groet,\nJan Bakker\n\nBKM Keukenmontage  ·  0612345678  ·  jan@bkm.nl",
+    );
+    // Geen dubbele bedrijfsnaam direct onder elkaar.
+    expect(text).not.toContain("BKM Keukenmontage\nBKM Keukenmontage");
+  });
+
+  it("tekent met de bedrijfsnaam als er geen persoonsnaam is, zonder die te herhalen", () => {
+    const { text } = opleverMailTekst({
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      afzender: { naam: null, bedrijfsnaam: "BKM Keukenmontage", telefoon: "0612345678", email: "jan@bkm.nl" },
+      heeftVideo: false,
+    });
+    expect(text).toContain("Met vriendelijke groet,\nBKM Keukenmontage\n\n0612345678  ·  jan@bkm.nl");
+    expect(text).not.toContain("BKM Keukenmontage\nBKM Keukenmontage");
   });
 
   it("valt terug op een neutrale ondertekening zonder profiel", () => {
