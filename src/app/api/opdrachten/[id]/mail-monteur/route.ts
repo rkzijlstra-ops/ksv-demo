@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verstuurMonteurMail } from "@/lib/mail";
+import { notificeerNieuweOpdrachten } from "@/lib/notificaties";
 import { historieVoorMonteur } from "@/lib/monteur-mail";
-import { getGebruikerEmail } from "@/lib/supabase-admin";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
- * Mailt één opdracht naar de toegewezen monteur en zet hem op 'gepland' (verstuurd).
- * Ontvanger is in de demo RAPPORT_EMAIL; later het adres van de monteur (blok 6).
+ * Verstuurt één opdracht naar de toegewezen monteur en zet hem op 'gepland'. Gebruikt dezelfde
+ * notificatie-dispatcher als de bulk-poort "Verstuur naar monteurs" (mail + SMS), zodat het envelopje
+ * op de kaart precies hetzelfde doet. Eerder mailde deze route alleen, waardoor de SMS-notificatie via
+ * dit pad nooit verstuurd werd (alleen via de bulk-knop). Status eerst, notificatie best-effort.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getAuthenticatedUserId();
@@ -28,35 +29,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  // Naar het adres van de monteur; valt terug op RAPPORT_EMAIL (demo) als dat er niet is.
-  const monteurEmail = opdracht.toegewezen_aan ? await getGebruikerEmail(opdracht.toegewezen_aan) : null;
-  const naar = monteurEmail ?? process.env.RAPPORT_EMAIL?.trim();
-  if (!naar) {
-    return NextResponse.json(
-      { error: "Geen e-mailadres voor de monteur en geen RAPPORT_EMAIL ingesteld" },
-      { status: 500 },
-    );
-  }
-
+  // Status eerst (primaire actie); de notificatie is best-effort, net als bij de bulk-poort.
   try {
-    const historie = opdracht.referentienummer
-      ? historieVoorMonteur(await dbi.zoekOpReferentie(opdracht.referentienummer), opdracht.id)
-      : undefined;
-    await verstuurMonteurMail({
-      naar,
-      monteurNaam: opdracht.monteur_naam,
-      opdrachten: [{ ...opdracht, historie }],
-      zaaknaam: opdracht.keukenzaak ?? undefined,
-    });
-  } catch (err) {
-    return NextResponse.json(
-      { error: `Mailen mislukt: ${(err as Error).message}` },
-      { status: 502 },
-    );
-  }
-
-  try {
-    // status -> gepland, gewijzigd-marker uit, en de huidige plek onthouden als verzonden plek
     await dbi.markeerVerzonden(id, {
       toegewezen_aan: opdracht.toegewezen_aan,
       monteur_naam: opdracht.monteur_naam,
@@ -70,5 +44,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  return NextResponse.json({ ok: true }, { status: 200 });
+  // Eerdere bezoeken op dezelfde referentie meesturen (rapport-links in de mail), net als de bulk-poort.
+  const historie = opdracht.referentienummer
+    ? historieVoorMonteur(await dbi.zoekOpReferentie(opdracht.referentienummer), opdracht.id)
+    : undefined;
+  const r = await notificeerNieuweOpdrachten({
+    toegewezenAan: opdracht.toegewezen_aan,
+    monteurNaam: opdracht.monteur_naam,
+    opdrachten: [{ ...opdracht, historie }],
+    zaaknaam: opdracht.keukenzaak,
+  });
+
+  return NextResponse.json(
+    { ok: true, gemaild: r.gemaild, gesmst: r.gesmst, mailFout: r.mailFout, smsFout: r.smsFout },
+    { status: 200 },
+  );
 }
