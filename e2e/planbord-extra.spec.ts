@@ -25,17 +25,12 @@ function vandaagISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function ankerVoorDatum(iso: string): string {
-  const d = new Date(iso + "T00:00:00Z");
-  const dow = d.getUTCDay();
-  if (dow === 6) d.setUTCDate(d.getUTCDate() + 2);
-  else if (dow === 0) d.setUTCDate(d.getUTCDate() + 1);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-}
-
 /** Maandag van de eerstvolgende werkweek (niet de huidige, om verleden-week-problemen te voorkomen). */
 function volgendeMaandag(): string {
-  return verschuifDagen(ankerVoorDatum(vandaagISO()), 7);
+  // maandagVan normaliseert vandaag naar de maandag van déze week; +7 dagen = maandag volgende week.
+  // (Eerder telde dit 7 dagen op vanaf vandaag zelf, wat op di t/m vr geen maandag opleverde en het
+  // afgeleide "vrijdag = maandag+4" het weekend in duwde, waardoor de klus buiten de getoonde week viel.)
+  return verschuifDagen(maandagVan(vandaagISO()), 7);
 }
 
 const ids: string[] = [];
