@@ -17,7 +17,8 @@
     "migrate:test": "node --env-file=.env.local scripts/migrate.mjs",
     "setup:test": "node --experimental-strip-types scripts/setup-test-users.ts",
     "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts",
-    "generate:fake-pdf": "node --experimental-strip-types scripts/generate-fake-pdf.ts"
+    "generate:fake-pdf": "node --experimental-strip-types scripts/generate-fake-pdf.ts",
+    "test:sms": "node --env-file=.env.local --experimental-strip-types scripts/test-sms.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
