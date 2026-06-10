@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { notificeerNieuweOpdrachten } from "@/lib/notificaties";
-import { historieVoorMonteur } from "@/lib/monteur-mail";
+import { meldVerstuurd } from "@/lib/verstuur-notificatie";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
  * Verstuurt één opdracht naar de toegewezen monteur en zet hem op 'gepland'. Gebruikt dezelfde
- * notificatie-dispatcher als de bulk-poort "Verstuur naar monteurs" (mail + SMS), zodat het envelopje
- * op de kaart precies hetzelfde doet. Eerder mailde deze route alleen, waardoor de SMS-notificatie via
- * dit pad nooit verstuurd werd (alleen via de bulk-knop). Status eerst, notificatie best-effort.
+ * gedeelde melder als de bulk-poort "Verstuur naar monteurs" (mail + SMS, verzet-toon bij een
+ * verzetting, en bericht aan de vorige monteur bij een wissel). Status eerst, melding best-effort.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getAuthenticatedUserId();
@@ -18,6 +16,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const dbi = await db();
+  // Ophalen VÓÓR markeerVerzonden: verzonden_* moet nog de vorige plek bevatten (zie meldVerstuurd).
   const opdracht = await dbi.getOpdrachtById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
@@ -29,7 +28,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  // Status eerst (primaire actie); de notificatie is best-effort, net als bij de bulk-poort.
+  // Status eerst (primaire actie); de melding is best-effort, net als bij de bulk-poort.
   try {
     await dbi.markeerVerzonden(id, {
       toegewezen_aan: opdracht.toegewezen_aan,
@@ -44,19 +43,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  // Eerdere bezoeken op dezelfde referentie meesturen (rapport-links in de mail), net als de bulk-poort.
-  const historie = opdracht.referentienummer
-    ? historieVoorMonteur(await dbi.zoekOpReferentie(opdracht.referentienummer), opdracht.id)
-    : undefined;
-  const r = await notificeerNieuweOpdrachten({
-    toegewezenAan: opdracht.toegewezen_aan,
-    monteurNaam: opdracht.monteur_naam,
-    opdrachten: [{ ...opdracht, historie }],
-    zaaknaam: opdracht.keukenzaak,
-  });
+  const { mailFout, smsFout } = await meldVerstuurd(dbi, [opdracht]);
 
-  return NextResponse.json(
-    { ok: true, gemaild: r.gemaild, gesmst: r.gesmst, mailFout: r.mailFout, smsFout: r.smsFout },
-    { status: 200 },
-  );
+  return NextResponse.json({ ok: true, mailFout, smsFout }, { status: 200 });
 }

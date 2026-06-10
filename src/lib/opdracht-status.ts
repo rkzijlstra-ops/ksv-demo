@@ -105,6 +105,40 @@ export function opVerzondenPlek(
   );
 }
 
+/** Wat een (her)verstuurde opdracht voor de notificaties betekent. */
+export interface VerzendingSoort {
+  /** Eerder verstuurd én aan dezelfde monteur: een verzetting (andere datum/tijd), geen nieuwe klus. */
+  verzet: boolean;
+  /**
+   * Gevuld bij een monteur-WISSEL: de monteur aan wie de klus eerder verstuurd was en die nu bericht
+   * krijgt dat de klus niet meer van hem is. Null als de monteur niet wisselde.
+   */
+  vorigeMonteur: { toegewezen_aan: string; monteur_naam: string | null } | null;
+}
+
+/**
+ * Bepaalt wat een (her)verstuurronde voor de monteur(s) betekent, op basis van de verzonden plek van
+ * vóór deze ronde (de opdracht moet vóór markeerVerzonden gelezen zijn). Drie gevallen:
+ *  - nooit eerder verstuurd  -> nieuwe klus (verzet=false, vorigeMonteur=null)
+ *  - eerder verstuurd, zelfde monteur -> verzetting (verzet=true)
+ *  - eerder verstuurd, andere monteur -> nieuw voor de nieuwe monteur, en de vorige monteur krijgt
+ *    bericht dat de klus weg is (vorigeMonteur gevuld). Pure functie, los te testen.
+ */
+export function klassificeerVerzending(o: {
+  toegewezen_aan: string | null;
+  verzonden_toegewezen_aan: string | null;
+  verzonden_monteur: string | null;
+}): VerzendingSoort {
+  const eerderVerstuurd = o.verzonden_toegewezen_aan != null;
+  const monteurGewisseld = eerderVerstuurd && o.verzonden_toegewezen_aan !== o.toegewezen_aan;
+  return {
+    verzet: eerderVerstuurd && !monteurGewisseld,
+    vorigeMonteur: monteurGewisseld
+      ? { toegewezen_aan: o.verzonden_toegewezen_aan as string, monteur_naam: o.verzonden_monteur }
+      : null,
+  };
+}
+
 /**
  * De uitvoerdatum die de MONTEUR moet zien. Is er een wijziging na versturen die nog niet opnieuw
  * verstuurd is (gewijzigd_te_versturen), dan ziet hij de afgesproken (verzonden) datum, niet de

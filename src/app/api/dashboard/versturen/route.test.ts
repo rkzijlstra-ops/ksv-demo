@@ -13,7 +13,10 @@ vi.mock("@/lib/db", () => ({
     zoekOpReferentie: mockZoekRef,
   }),
 }));
-vi.mock("@/lib/notificaties", () => ({ notificeerNieuweOpdrachten: mockNotify }));
+vi.mock("@/lib/notificaties", () => ({
+  notificeerNieuweOpdrachten: mockNotify,
+  notificeerOvergenomen: vi.fn(async () => ({ gemaild: true, mailFout: null, gesmst: true, smsFout: null })),
+}));
 vi.mock("@/lib/auth", () => ({
   getAuthenticatedUserId: vi.fn().mockResolvedValue("test-user-uuid"),
 }));

@@ -5,6 +5,7 @@ import {
   ontplanningSmsTekst,
   nieuwDocumentSmsTekst,
   herinneringSmsTekst,
+  overgenomenSmsTekst,
 } from "./sms-teksten";
 import type { MailbareOpdracht } from "./monteur-mail";
 
@@ -19,6 +20,7 @@ function o(over: Partial<MailbareOpdracht> = {}): MailbareOpdracht {
     duur_dagen: over.duur_dagen ?? 1,
     meldingen: over.meldingen ?? [],
     historie: over.historie,
+    verzet: over.verzet,
   };
 }
 
@@ -39,6 +41,14 @@ describe("nieuweOpdrachtenSmsTekst", () => {
     const t = nieuweOpdrachtenSmsTekst("Piet", [o(), o()], APP);
     expect(t).toContain("2");
     expect(t).toContain(APP);
+    expect(t.length).toBeLessThanOrEqual(160);
+  });
+
+  it("een verzetting krijgt een verzet-toon i.p.v. 'nieuwe klus'", () => {
+    const t = nieuweOpdrachtenSmsTekst("Piet", [o({ klant_naam: "Fam. Bakker", verzet: true })], APP);
+    expect(t).toMatch(/verzet naar/i);
+    expect(t).not.toMatch(/nieuwe klus/i);
+    expect(t).toContain("Fam. Bakker");
     expect(t.length).toBeLessThanOrEqual(160);
   });
 });
@@ -69,6 +79,14 @@ describe("losse meldingen", () => {
     const t = herinneringSmsTekst("Piet", ["Fam. Bakker"], APP);
     expect(t).toContain("bevestig");
     expect(t).toContain(APP);
+    expect(t.length).toBeLessThanOrEqual(160);
+  });
+
+  it("overgenomen meldt neutraal dat de klus niet meer voor de monteur is", () => {
+    const t = overgenomenSmsTekst("Piet", "Fam. Bakker", "7588");
+    expect(t).toContain("Fam. Bakker");
+    expect(t).toMatch(/niet meer voor jou/i);
+    expect(t).not.toMatch(/geannuleerd/i);
     expect(t.length).toBeLessThanOrEqual(160);
   });
 });

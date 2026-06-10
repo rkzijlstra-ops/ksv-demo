@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { db, type Melding } from "@/lib/db";
-import { notificeerNieuweOpdrachten } from "@/lib/notificaties";
-import { historieVoorMonteur } from "@/lib/monteur-mail";
+import { meldVerstuurd } from "@/lib/verstuur-notificatie";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
- * Verstuur-poort: zet de opgegeven opdrachten op 'gepland' en mailt de monteurs.
- * Statusupdate gaat altijd door; een mailfout is een waarschuwing, geen blokkade.
+ * Verstuur-poort: zet de opgegeven opdrachten op 'gepland' en meldt de monteurs (mail + SMS).
+ * Statusupdate gaat altijd door; een notificatiefout is een waarschuwing, geen blokkade.
  */
 export async function POST(req: Request) {
   const userId = await getAuthenticatedUserId();
@@ -28,20 +27,15 @@ export async function POST(req: Request) {
 
   const dbi = await db();
 
-  // Opdrachten ophalen en per monteur (account) bundelen.
+  // Opdrachten ophalen VÓÓR markeerVerzonden: hun verzonden_* moet nog de vorige plek bevatten, zodat
+  // meldVerstuurd verzettingen (zelfde monteur, andere datum) en monteur-wissels kan herkennen.
   const opdrachten: Melding[] = [];
   for (const id of ids) {
     const o = await dbi.getOpdrachtById(id);
     if (o) opdrachten.push(o);
   }
-  const perMonteur = new Map<string, Melding[]>();
-  for (const o of opdrachten) {
-    const sleutel = o.toegewezen_aan ?? o.monteur_naam;
-    if (!sleutel) continue;
-    (perMonteur.get(sleutel) ?? perMonteur.set(sleutel, []).get(sleutel)!).push(o);
-  }
 
-  // Statusupdate EERST: dit is de primaire actie. Mail is secundair.
+  // Statusupdate EERST: dit is de primaire actie. De melding is secundair.
   try {
     for (const o of opdrachten) {
       // status -> gepland, gewijzigd uit, huidige plek onthouden als verzonden plek
@@ -56,33 +50,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
   }
 
-  // Melden naar de monteur (mail + SMS) via de dispatcher, gebundeld per monteur. Best-effort: een
-  // fout wordt een waarschuwing, de status is al bijgewerkt.
-  let mailWaarschuwing: string | null = null;
-  for (const eigen of perMonteur.values()) {
-    const eerste = eigen[0];
-    // Per opdracht de eerdere bezoeken op dezelfde referentie meesturen (rapport-links in de mail).
-    const metHistorie = await Promise.all(
-      eigen.map(async (o) => ({
-        ...o,
-        historie: o.referentienummer
-          ? historieVoorMonteur(await dbi.zoekOpReferentie(o.referentienummer), o.id)
-          : undefined,
-      })),
-    );
-    const r = await notificeerNieuweOpdrachten({
-      toegewezenAan: eerste.toegewezen_aan,
-      monteurNaam: eerste.monteur_naam ?? "monteur",
-      opdrachten: metHistorie,
-      zaaknaam: eerste.keukenzaak,
-    });
-    if (!mailWaarschuwing && (r.mailFout || r.smsFout)) {
-      mailWaarschuwing = r.mailFout ?? r.smsFout;
-    }
-  }
+  // Melden (mail + SMS) via de gedeelde helper: huidige monteur(s) krijgen nieuw/verzet, en de vorige
+  // monteur krijgt bij een wissel bericht dat de klus niet meer van hem is. Best-effort.
+  const { mailFout, smsFout, monteurs } = await meldVerstuurd(dbi, opdrachten);
 
   return NextResponse.json(
-    { ok: true, aantal: opdrachten.length, monteurs: perMonteur.size, mailWaarschuwing },
+    { ok: true, aantal: opdrachten.length, monteurs, mailWaarschuwing: mailFout ?? smsFout },
     { status: 200 },
   );
 }

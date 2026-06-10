@@ -4,6 +4,8 @@ vi.mock("./mail", () => ({
   verstuurAnnulering: vi.fn(async () => {}),
   verstuurOntplanning: vi.fn(async () => {}),
   verstuurMonteurMail: vi.fn(async () => {}),
+  verstuurNieuwDocument: vi.fn(async () => {}),
+  verstuurHerinnering: vi.fn(async () => {}),
 }));
 vi.mock("./sms", () => ({ verstuurSms: vi.fn(async () => {}) }));
 vi.mock("./supabase-admin", () => ({ getGebruikerEmail: vi.fn(async () => "monteur@x.nl") }));
@@ -17,9 +19,14 @@ vi.mock("./db", () => ({
   }),
 }));
 
-import { smsBestemming, notificeerAnnulering } from "./notificaties";
+import {
+  smsBestemming,
+  notificeerAnnulering,
+  notificeerNieuwDocument,
+  notificeerHerinnering,
+} from "./notificaties";
 import { verstuurSms } from "./sms";
-import { verstuurAnnulering } from "./mail";
+import { verstuurAnnulering, verstuurNieuwDocument, verstuurHerinnering } from "./mail";
 
 describe("smsBestemming", () => {
   it("geeft +31-nummer als de categorie aanstaat en het nummer geldig is", () => {
@@ -57,6 +64,39 @@ describe("notificeerAnnulering", () => {
       zaaknaam: "KSV",
     });
     expect(verstuurAnnulering).toHaveBeenCalledOnce();
+    expect(verstuurSms).toHaveBeenCalledOnce();
+    expect(r.gemaild).toBe(true);
+    expect(r.gesmst).toBe(true);
+  });
+});
+
+describe("notificeerNieuwDocument", () => {
+  beforeEach(() => vi.clearAllMocks());
+  it("mailt EN sms't (categorie overig) bij een nieuw document; geen lege mailFn meer", async () => {
+    const r = await notificeerNieuwDocument({
+      toegewezenAan: "user-1",
+      monteurNaam: "Piet",
+      klantNaam: "Fam. Bakker",
+      referentienummer: "7588",
+      zaaknaam: "KSV",
+    });
+    expect(verstuurNieuwDocument).toHaveBeenCalledOnce();
+    expect(verstuurSms).toHaveBeenCalledOnce();
+    expect(r.gemaild).toBe(true);
+    expect(r.gesmst).toBe(true);
+  });
+});
+
+describe("notificeerHerinnering", () => {
+  beforeEach(() => vi.clearAllMocks());
+  it("mailt EN sms't (categorie overig) een bevestig-herinnering; geen lege mailFn meer", async () => {
+    const r = await notificeerHerinnering({
+      toegewezenAan: "user-1",
+      monteurNaam: "Piet",
+      klantNamen: ["Bakker", "Jansen"],
+      zaaknaam: "KSV",
+    });
+    expect(verstuurHerinnering).toHaveBeenCalledOnce();
     expect(verstuurSms).toHaveBeenCalledOnce();
     expect(r.gemaild).toBe(true);
     expect(r.gesmst).toBe(true);

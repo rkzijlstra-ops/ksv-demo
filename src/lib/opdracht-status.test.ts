@@ -5,9 +5,42 @@ import {
   isActief,
   opVerzondenPlek,
   uitvoerdatumVoorMonteur,
+  klassificeerVerzending,
   type DashboardStatusStijl,
 } from "./opdracht-status";
 import type { DashboardStatus } from "./db";
+
+describe("klassificeerVerzending", () => {
+  it("nooit eerder verstuurd = nieuwe klus (geen verzet, geen vorige monteur)", () => {
+    const r = klassificeerVerzending({
+      toegewezen_aan: "A",
+      verzonden_toegewezen_aan: null,
+      verzonden_monteur: null,
+    });
+    expect(r.verzet).toBe(false);
+    expect(r.vorigeMonteur).toBeNull();
+  });
+
+  it("eerder verstuurd aan dezelfde monteur = verzetting", () => {
+    const r = klassificeerVerzending({
+      toegewezen_aan: "A",
+      verzonden_toegewezen_aan: "A",
+      verzonden_monteur: "Anna",
+    });
+    expect(r.verzet).toBe(true);
+    expect(r.vorigeMonteur).toBeNull();
+  });
+
+  it("eerder verstuurd aan een andere monteur = nieuw voor de nieuwe, vorige monteur krijgt bericht", () => {
+    const r = klassificeerVerzending({
+      toegewezen_aan: "B",
+      verzonden_toegewezen_aan: "A",
+      verzonden_monteur: "Anna",
+    });
+    expect(r.verzet).toBe(false);
+    expect(r.vorigeMonteur).toEqual({ toegewezen_aan: "A", monteur_naam: "Anna" });
+  });
+});
 
 describe("statusStijl", () => {
   it("geeft voor elke status een label, kleurToken en de juiste vlaggen", () => {

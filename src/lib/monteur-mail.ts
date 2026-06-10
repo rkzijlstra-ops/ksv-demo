@@ -16,6 +16,8 @@ export type MailbareOpdracht = Pick<
 > & {
   /** Eerdere bezoeken aan dezelfde keuken (zelfde referentie), met rapport-link voor de monteur. */
   historie?: KeukenHistorieItem[];
+  /** True als dit een verzetting is (al verstuurd aan dezelfde monteur, nu andere datum/tijd). */
+  verzet?: boolean;
 };
 
 /** Eén eerder bezoek aan dezelfde keuken, zoals meegestuurd in de monteur-mail. */
@@ -94,12 +96,18 @@ export function monteurMailTekst(
   zaaknaam = "",
 ): { subject: string; text: string } {
   const n = opdrachten.length;
-  const subject =
-    n === 1
-      ? `Opdracht voor ${monteurNaam}: ${opdrachten[0].klant_naam ?? "opdracht"}`
+  // Eén opdracht die een verzetting is, krijgt een wijzig-toon i.p.v. "nieuwe opdracht". Bij een bundel
+  // dekt de neutrale meervoudstekst zowel nieuwe als gewijzigde klussen.
+  const verzet = n === 1 && !!opdrachten[0].verzet;
+  const klant1 = opdrachten[0]?.klant_naam ?? "opdracht";
+  const subject = verzet
+    ? `Gewijzigde afspraak voor ${monteurNaam}: ${klant1}`
+    : n === 1
+      ? `Opdracht voor ${monteurNaam}: ${klant1}`
       : `${n} opdrachten voor ${monteurNaam}`;
-  const intro =
-    n === 1
+  const intro = verzet
+    ? `Hoi ${monteurNaam},\n\nEen afspraak is gewijzigd. Let op de nieuwe datum:`
+    : n === 1
       ? `Hoi ${monteurNaam},\n\nEr staat een opdracht voor je klaar:`
       : `Hoi ${monteurNaam},\n\nEr staan ${n} opdrachten voor je klaar:`;
   const blokken = opdrachten.map(opdrachtBlok).join("\n\n----------------\n\n");

@@ -28,9 +28,26 @@ export function nieuweOpdrachtenSmsTekst(
         ? `${formatDatumKort(o.startdatum)} ${o.starttijd.slice(0, 5)}`
         : formatDatumKort(o.startdatum)
       : "datum volgt";
+    // Verzetting (al verstuurd aan dezelfde monteur, nu andere datum) krijgt een wijzig-toon.
+    if (o.verzet) {
+      return `Hoi ${monteurNaam}, klus ${klant}${refDeel(o.referentienummer)} is verzet naar ${wanneer}. ${linkRegel(appUrl)}`;
+    }
     return `Hoi ${monteurNaam}, nieuwe klus: ${klant}${refDeel(o.referentienummer)}, ${wanneer}. ${linkRegel(appUrl)}`;
   }
   return `Hoi ${monteurNaam}, je hebt ${opdrachten.length} nieuwe of gewijzigde klussen. ${linkRegel(appUrl)}`;
+}
+
+/**
+ * SMS aan de monteur van wie een al verstuurde klus is weggehaald doordat hij naar een andere monteur
+ * is geschoven. Bewust neutraal: de monteur hoeft niet te weten wie hem overneemt, alleen dat de klus
+ * niet meer van hem is.
+ */
+export function overgenomenSmsTekst(
+  monteurNaam: string,
+  klantNaam: string,
+  referentienummer: string | null,
+): string {
+  return `Hoi ${monteurNaam}, klus ${klantNaam}${refDeel(referentienummer)} is niet meer voor jou. Je hoeft er niet heen.`;
 }
 
 export function annuleringSmsTekst(

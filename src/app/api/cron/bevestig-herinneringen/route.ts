@@ -41,7 +41,6 @@ export async function GET(req: Request) {
       monteurNaam: eerste.monteur_naam ?? "monteur",
       klantNamen: eigen.map((k) => k.klant_naam ?? "een klus"),
       zaaknaam: eerste.keukenzaak,
-      mailFn: async () => {},
     });
     verstuurdeIds.push(...eigen.map((k) => k.id));
   }

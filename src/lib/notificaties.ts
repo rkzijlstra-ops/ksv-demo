@@ -1,13 +1,21 @@
 import { dbAdmin, type Profiel } from "./db";
 import { getGebruikerEmail } from "./supabase-admin";
 import { normaliseerNlMobiel } from "./telefoon";
-import { verstuurAnnulering, verstuurOntplanning, verstuurMonteurMail } from "./mail";
+import {
+  verstuurAnnulering,
+  verstuurOntplanning,
+  verstuurMonteurMail,
+  verstuurNieuwDocument,
+  verstuurHerinnering,
+  verstuurOvergenomen,
+} from "./mail";
 import {
   annuleringSmsTekst,
   ontplanningSmsTekst,
   nieuweOpdrachtenSmsTekst,
   nieuwDocumentSmsTekst,
   herinneringSmsTekst,
+  overgenomenSmsTekst,
 } from "./sms-teksten";
 import { verstuurSms } from "./sms";
 import type { MailbareOpdracht } from "./monteur-mail";
@@ -151,19 +159,52 @@ export function notificeerOntplanning(input: {
   );
 }
 
+/**
+ * De monteur van wie een al verstuurde klus is weggehaald doordat hij naar een andere monteur is
+ * geschoven. Werk-kritiek: hij moet weten dat hij er niet meer heen hoeft.
+ */
+export function notificeerOvergenomen(input: {
+  toegewezenAan: string | null;
+  monteurNaam: string;
+  klantNaam: string;
+  referentienummer: string | null;
+  zaaknaam: string | null;
+}): Promise<NotificatieResultaat> {
+  return vuurAf(
+    input.toegewezenAan,
+    "werk_kritiek",
+    input.zaaknaam,
+    (naar) =>
+      verstuurOvergenomen({
+        naar,
+        monteurNaam: input.monteurNaam,
+        klantNaam: input.klantNaam,
+        referentienummer: input.referentienummer,
+        organisatie: input.zaaknaam ?? undefined,
+      }),
+    overgenomenSmsTekst(input.monteurNaam, input.klantNaam, input.referentienummer),
+  );
+}
+
 export function notificeerNieuwDocument(input: {
   toegewezenAan: string | null;
   monteurNaam: string;
   klantNaam: string;
   referentienummer: string | null;
   zaaknaam: string | null;
-  mailFn: (naar: string) => Promise<void>;
 }): Promise<NotificatieResultaat> {
   return vuurAf(
     input.toegewezenAan,
     "overig",
     input.zaaknaam,
-    input.mailFn,
+    (naar) =>
+      verstuurNieuwDocument({
+        naar,
+        monteurNaam: input.monteurNaam,
+        klantNaam: input.klantNaam,
+        referentienummer: input.referentienummer,
+        organisatie: input.zaaknaam ?? undefined,
+      }),
     nieuwDocumentSmsTekst(input.monteurNaam, input.klantNaam, input.referentienummer, appUrl()),
   );
 }
@@ -173,13 +214,18 @@ export function notificeerHerinnering(input: {
   monteurNaam: string;
   klantNamen: string[];
   zaaknaam: string | null;
-  mailFn: (naar: string) => Promise<void>;
 }): Promise<NotificatieResultaat> {
   return vuurAf(
     input.toegewezenAan,
     "overig",
     input.zaaknaam,
-    input.mailFn,
+    (naar) =>
+      verstuurHerinnering({
+        naar,
+        monteurNaam: input.monteurNaam,
+        klantNamen: input.klantNamen,
+        organisatie: input.zaaknaam ?? undefined,
+      }),
     herinneringSmsTekst(input.monteurNaam, input.klantNamen, appUrl()),
   );
 }

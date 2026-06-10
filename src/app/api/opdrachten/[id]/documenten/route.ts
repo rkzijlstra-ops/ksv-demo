@@ -87,7 +87,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       klantNaam: opdracht.klant_naam ?? "de opdracht",
       referentienummer: opdracht.referentienummer,
       zaaknaam: opdracht.keukenzaak,
-      mailFn: async () => {},
     });
   }
 
