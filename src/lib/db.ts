@@ -335,6 +335,7 @@ export interface Db {
   /** Persoonlijk adresboek (blok 13): RLS scopt automatisch op de ingelogde gebruiker. */
   getAdresboek(): Promise<Adres[]>;
   voegAdresToe(naam: string, email: string): Promise<{ id: string }>;
+  werkAdresBij(id: string, naam: string, email: string): Promise<void>;
   verwijderAdres(id: string): Promise<void>;
 }
 
@@ -963,6 +964,11 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (error) throw new Error(`DB opslaan mislukt: ${error.message}`);
       if (!data || typeof data.id !== "string") throw new Error("Adres opslaan lukte maar geen id terug");
       return { id: data.id };
+    },
+
+    async werkAdresBij(id: string, naam: string, email: string) {
+      const { error } = await client.from("adresboek").update({ naam, email }).eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 
     async verwijderAdres(id: string) {

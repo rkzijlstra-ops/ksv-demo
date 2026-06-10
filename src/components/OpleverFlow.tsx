@@ -29,6 +29,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [bewaarAdres, setBewaarAdres] = useState(false);
   const [nieuwAdresNaam, setNieuwAdresNaam] = useState("");
   const [adresBezig, setAdresBezig] = useState(false);
+  // Een opgeslagen adres aanpassen (inline): id van het adres in bewerking, plus de bewerkvelden.
+  const [bewerkId, setBewerkId] = useState<string | null>(null);
+  const [bewerkNaam, setBewerkNaam] = useState("");
+  const [bewerkEmail, setBewerkEmail] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   // De handtekening wordt meteen bij "Klaar" geüpload en als URL bewaard (net als foto's en video),
   // zodat hij in elke tussentijdse opslag meegaat en een herlaad/terugkeer overleeft.
@@ -88,6 +92,16 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     };
   }, []);
 
+  // Reconcile: is het huidige adres een bekende keuze (zaak of opgeslagen adres), dan niet in de
+  // handmatig-modus blijven hangen (bv. na het laden van het adresboek bij een heropend concept).
+  useEffect(() => {
+    if (!handmatig) return;
+    const bekend =
+      KEUKENZAKEN.some((z) => z.email === rapportEmail) ||
+      adresboek.some((a) => a.email === rapportEmail);
+    if (bekend) setHandmatig(false);
+  }, [adresboek, rapportEmail, handmatig]);
+
   /** Slaat het zojuist getypte adres op in het adresboek en kiest het meteen. */
   async function bewaarNieuwAdres() {
     const email = rapportEmail.trim();
@@ -109,6 +123,52 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         setBewaarAdres(false);
         setNieuwAdresNaam("");
         bewaarConcept(email);
+      }
+    } finally {
+      setAdresBezig(false);
+    }
+  }
+
+  /** Verwijdert een opgeslagen adres en wist de keuze als dat adres gekozen was. */
+  async function verwijderAdresUit(a: Adres) {
+    if (!window.confirm(`"${a.naam}" uit je adresboek verwijderen?`)) return;
+    setAdresBezig(true);
+    try {
+      const res = await fetch(`/api/adresboek/${a.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setAdresboek((prev) => prev.filter((x) => x.id !== a.id));
+        if (rapportEmail === a.email) {
+          setRapportEmail("");
+          bewaarConcept("");
+        }
+      }
+    } finally {
+      setAdresBezig(false);
+    }
+  }
+
+  /** Slaat een aanpassing van een opgeslagen adres op (naam en/of e-mail). */
+  async function bewaarBewerking() {
+    if (!bewerkId) return;
+    const naam = bewerkNaam.trim();
+    const email = bewerkEmail.trim();
+    if (!naam || !email.includes("@")) return;
+    setAdresBezig(true);
+    try {
+      const res = await fetch(`/api/adresboek/${bewerkId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ naam, email }),
+      });
+      if (res.ok) {
+        setAdresboek((prev) =>
+          prev
+            .map((x) => (x.id === bewerkId ? { ...x, naam, email } : x))
+            .sort((a, b) => a.naam.localeCompare(b.naam, "nl")),
+        );
+        setRapportEmail(email);
+        bewaarConcept(email);
+        setBewerkId(null);
       }
     } finally {
       setAdresBezig(false);
@@ -150,6 +210,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   });
 
   async function versturen() {
+    if (!rapportEmail.trim()) {
+      setFout("Kies een ontvanger of typ een e-mailadres voor het rapport.");
+      return;
+    }
     if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
 
     setBezig(true);
@@ -316,8 +380,13 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             value={keuzeWaarde}
             onChange={(e) => {
               const v = e.target.value;
+              setBewerkId(null);
               if (v === "__anders__") {
                 setHandmatig(true);
+                setRapportEmail("");
+                bewaarConcept("");
+                setBewaarAdres(false);
+                setNieuwAdresNaam("");
               } else if (v === "") {
                 setHandmatig(false);
                 setRapportEmail("");
@@ -357,6 +426,70 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             <option value="__anders__">Anders (typ zelf)</option>
           </select>
 
+          {/* Beheer van het gekozen opgeslagen adres: aanpassen of wissen. */}
+          {huidigAdres && (
+            <div className="mt-1">
+              {bewerkId === huidigAdres.id ? (
+                <div className="flex flex-col gap-2 border border-line bg-surface p-2">
+                  <input
+                    value={bewerkNaam}
+                    onChange={(e) => setBewerkNaam(e.target.value)}
+                    placeholder="Naam"
+                    className="min-h-[44px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                  />
+                  <input
+                    type="email"
+                    inputMode="email"
+                    value={bewerkEmail}
+                    onChange={(e) => setBewerkEmail(e.target.value)}
+                    placeholder="voorbeeld@gmail.com"
+                    className="min-h-[44px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={bewaarBewerking}
+                      disabled={adresBezig || !bewerkNaam.trim() || !bewerkEmail.includes("@")}
+                      className="inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 disabled:opacity-50"
+                    >
+                      Opslaan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBewerkId(null)}
+                      className="inline-flex min-h-[44px] cursor-pointer items-center justify-center border-2 border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface"
+                    >
+                      Annuleer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-ink-muted">{huidigAdres.email}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBewerkId(huidigAdres.id);
+                      setBewerkNaam(huidigAdres.naam);
+                      setBewerkEmail(huidigAdres.email);
+                    }}
+                    className="ml-auto cursor-pointer font-bold text-primary hover:underline"
+                  >
+                    Aanpassen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => verwijderAdresUit(huidigAdres)}
+                    disabled={adresBezig}
+                    className="cursor-pointer font-bold text-urgent-rood hover:underline disabled:opacity-50"
+                  >
+                    Wissen
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {handmatig && (
             <div className="mt-1 flex flex-col gap-2">
               <input
@@ -365,8 +498,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
                 value={rapportEmail}
                 onChange={(e) => setRapportEmail(e.target.value)}
                 onBlur={() => bewaarConcept()}
-                placeholder="naam@keukenzaak.nl"
-                className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                placeholder="voorbeeld@gmail.com"
+                className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink placeholder:text-ink-muted focus-visible:outline-3 focus-visible:outline-primary"
               />
               {rapportEmail.trim().includes("@") && (
                 <label className="flex items-center gap-2 text-sm text-ink">
@@ -399,7 +532,6 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
               )}
             </div>
           )}
-          <span className="text-xs text-ink-muted">Leeg laten = naar het standaardadres (test).</span>
         </div>
         {fout && (
           <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">

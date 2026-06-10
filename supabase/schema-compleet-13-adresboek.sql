@@ -22,8 +22,12 @@ drop policy if exists "adresboek eigen insert" on public.adresboek;
 create policy "adresboek eigen insert" on public.adresboek
   for insert with check (user_id = auth.uid());
 
+drop policy if exists "adresboek eigen update" on public.adresboek;
+create policy "adresboek eigen update" on public.adresboek
+  for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 drop policy if exists "adresboek eigen delete" on public.adresboek;
 create policy "adresboek eigen delete" on public.adresboek
   for delete using (user_id = auth.uid());
 
-grant select, insert, delete on public.adresboek to authenticated;
+grant select, insert, update, delete on public.adresboek to authenticated;
