@@ -86,7 +86,7 @@ test.beforeAll(async () => {
       referentienummer: `${7400 + n}`,
       adviseur: null,
       klant_telefoon: "0612345678",
-      leverweek: 20 + (n % 6),
+      leverweek: `${20 + (n % 6)}`,
       keukenzaak: "Keukenstudio Voorschoten",
       user_id: opts.userId ?? BEHEERDER.uid,
       toegewezen_aan: opts.monteurIdx != null ? alleMonteurs[opts.monteurIdx].id : null,

@@ -754,6 +754,7 @@ describe("markeerVerzonden", () => {
   it("zet gepland, reset gewijzigd en onthoudt de verzonden plek", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).markeerVerzonden("opdr-1", {
+      toegewezen_aan: null,
       monteur_naam: "Rein",
       startdatum: "2026-06-10",
       starttijd: "10:00",
@@ -771,7 +772,7 @@ describe("markeerVerzonden", () => {
   it("gooit Error bij DB-fout", async () => {
     h.setResult({ data: null, error: { message: "verstuur kapot" } });
     await expect(
-      createDb(cfg).markeerVerzonden("a", { monteur_naam: "x", startdatum: "2026-06-10", starttijd: null }),
+      createDb(cfg).markeerVerzonden("a", { toegewezen_aan: null, monteur_naam: "x", startdatum: "2026-06-10", starttijd: null }),
     ).rejects.toThrow(/verstuur kapot/);
   });
 });

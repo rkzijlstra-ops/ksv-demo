@@ -16,7 +16,9 @@ describe("verstuurSms", () => {
   });
 
   it("post naar de gateway met token, afzender, nummer en tekst", async () => {
-    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    const fetchMock = vi.fn<(url: string | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response("{}", { status: 200 }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     await verstuurSms({ naar: "+31612345678", tekst: "hoi", afzender: "KSV" });
     expect(fetchMock).toHaveBeenCalledOnce();

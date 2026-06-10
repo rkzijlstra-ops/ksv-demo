@@ -103,7 +103,7 @@ test("afmeldmail wordt verstuurd als een gebruiker wordt verwijderd", async ({ p
   const email = `bkmkeukenmontage+afmtest${stamp}@gmail.com`;
   const zaak = await db.getStandaardOpdrachtgever();
   const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-  accUid = maak!.user.id;
+  accUid = maak!.user!.id;
   accNieuwAangemaakt = true; // veiligheidsvangnet: API ruimt op, afterEach ook als fallback
   await admin
     .from("profielen")
@@ -121,7 +121,7 @@ test("ontplan-mail wordt naar de monteur verstuurd als een verstuurde klus terug
   const klant = `ONTPLANMAIL ${stamp}`;
   const zaak = await db.getStandaardOpdrachtgever();
   const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-  accUid = maak!.user.id;
+  accUid = maak!.user!.id;
   accNieuwAangemaakt = true;
   await admin
     .from("profielen")
@@ -154,7 +154,7 @@ test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus word
   const klant = `ANNMAIL ${stamp}`;
   const zaak = await db.getStandaardOpdrachtgever();
   const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
-  accUid = maak!.user.id;
+  accUid = maak!.user!.id;
   accNieuwAangemaakt = true;
   await admin
     .from("profielen")

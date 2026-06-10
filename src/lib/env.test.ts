@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { loadEnv } from "./env";
 
 const validEnv = {
+  NODE_ENV: "test",
   ANTHROPIC_API_KEY: "sk-ant-api03-" + "x".repeat(80),
   ANTHROPIC_MODEL: "claude-sonnet-4-6",
   OPENAI_API_KEY: "sk-proj-" + "x".repeat(80),
