@@ -261,6 +261,13 @@ export interface ProfielInput {
   opdrachtgever_id: string | null;
 }
 
+/** Een opgeslagen ontvanger in het persoonlijke adresboek van een gebruiker (blok 13). */
+export interface Adres {
+  id: string;
+  naam: string;
+  email: string;
+}
+
 export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
@@ -325,6 +332,10 @@ export interface Db {
   telToegewezenOpdrachten(monteurId: string): Promise<number>;
   updateProfielRol(id: string, rol: Rol): Promise<void>;
   updateProfielNaam(id: string, naam: string): Promise<void>;
+  /** Persoonlijk adresboek (blok 13): RLS scopt automatisch op de ingelogde gebruiker. */
+  getAdresboek(): Promise<Adres[]>;
+  voegAdresToe(naam: string, email: string): Promise<{ id: string }>;
+  verwijderAdres(id: string): Promise<void>;
 }
 
 /**
@@ -931,6 +942,32 @@ function createDbFromClient(client: SupabaseClient): Db {
     async updateProfielNaam(id: string, naam: string) {
       const { error } = await client.from("profielen").update({ naam }).eq("id", id);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async getAdresboek() {
+      const { data, error } = await client
+        .from("adresboek")
+        .select("id, naam, email")
+        .order("naam", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Adres[];
+    },
+
+    async voegAdresToe(naam: string, email: string) {
+      // user_id krijgt zijn default auth.uid() (RLS-insert eist user_id = auth.uid()).
+      const { data, error } = await client
+        .from("adresboek")
+        .insert({ naam, email })
+        .select("id")
+        .single();
+      if (error) throw new Error(`DB opslaan mislukt: ${error.message}`);
+      if (!data || typeof data.id !== "string") throw new Error("Adres opslaan lukte maar geen id terug");
+      return { id: data.id };
+    },
+
+    async verwijderAdres(id: string) {
+      const { error } = await client.from("adresboek").delete().eq("id", id);
+      if (error) throw new Error(`DB verwijderen mislukt: ${error.message}`);
     },
   };
 }

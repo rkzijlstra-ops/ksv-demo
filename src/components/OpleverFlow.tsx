@@ -14,6 +14,7 @@ import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 import { KEUKENZAKEN } from "@/lib/keukenzaken";
+import type { Adres } from "@/lib/db";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const router = useRouter();
@@ -23,6 +24,11 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [opmerking, setOpmerking] = useState("");
   const [rapportEmail, setRapportEmail] = useState("");
   const [handmatig, setHandmatig] = useState(false);
+  // Persoonlijk adresboek van de monteur: vaste ontvangers met een naam, te kiezen of toe te voegen.
+  const [adresboek, setAdresboek] = useState<Adres[]>([]);
+  const [bewaarAdres, setBewaarAdres] = useState(false);
+  const [nieuwAdresNaam, setNieuwAdresNaam] = useState("");
+  const [adresBezig, setAdresBezig] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   // De handtekening wordt meteen bij "Klaar" geüpload en als URL bewaard (net als foto's en video),
   // zodat hij in elke tussentijdse opslag meegaat en een herlaad/terugkeer overleeft.
@@ -67,6 +73,47 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
       actief = false;
     };
   }, [opdrachtId]);
+
+  // Adresboek van de monteur laden (vaste ontvangers).
+  useEffect(() => {
+    let actief = true;
+    fetch("/api/adresboek")
+      .then((r) => (r.ok ? r.json() : { adressen: [] }))
+      .then((d) => {
+        if (actief) setAdresboek(d.adressen ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      actief = false;
+    };
+  }, []);
+
+  /** Slaat het zojuist getypte adres op in het adresboek en kiest het meteen. */
+  async function bewaarNieuwAdres() {
+    const email = rapportEmail.trim();
+    const naam = nieuwAdresNaam.trim();
+    if (!naam || !email.includes("@")) return;
+    setAdresBezig(true);
+    try {
+      const res = await fetch("/api/adresboek", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ naam, email }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        setAdresboek((prev) =>
+          [...prev, { id, naam, email }].sort((a, b) => a.naam.localeCompare(b.naam, "nl")),
+        );
+        setHandmatig(false);
+        setBewaarAdres(false);
+        setNieuwAdresNaam("");
+        bewaarConcept(email);
+      }
+    } finally {
+      setAdresBezig(false);
+    }
+  }
 
   function bewaarConcept(emailOverride?: string) {
     if (!geladenRef.current) return;
@@ -163,6 +210,14 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     );
   }
 
+  // Welke optie in de dropdown actief is: handmatig, een eigen adres, of een keukenzaak.
+  const huidigAdres = adresboek.find((a) => a.email === rapportEmail);
+  const keuzeWaarde = handmatig
+    ? "__anders__"
+    : huidigAdres
+      ? `adr:${huidigAdres.id}`
+      : KEUKENZAKEN.find((z) => z.email === rapportEmail)?.naam ?? "";
+
   return (
     <div className="flex flex-col gap-6">
       {/* Stap 1: eindresultaat */}
@@ -258,11 +313,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         <div className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-ink">Rapport naar</span>
           <select
-            value={
-              handmatig
-                ? "__anders__"
-                : KEUKENZAKEN.find((z) => z.email === rapportEmail)?.naam ?? ""
-            }
+            value={keuzeWaarde}
             onChange={(e) => {
               const v = e.target.value;
               if (v === "__anders__") {
@@ -271,6 +322,12 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
                 setHandmatig(false);
                 setRapportEmail("");
                 bewaarConcept("");
+              } else if (v.startsWith("adr:")) {
+                const a = adresboek.find((x) => `adr:${x.id}` === v);
+                const email = a?.email ?? "";
+                setHandmatig(false);
+                setRapportEmail(email);
+                bewaarConcept(email);
               } else {
                 const email = KEUKENZAKEN.find((z) => z.naam === v)?.email ?? "";
                 setHandmatig(false);
@@ -280,24 +337,67 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             }}
             className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
           >
-            <option value="">Kies de keukenzaak…</option>
-            {KEUKENZAKEN.map((z) => (
-              <option key={z.naam} value={z.naam}>
-                {z.naam}
-              </option>
-            ))}
+            <option value="">Kies een ontvanger…</option>
+            {adresboek.length > 0 && (
+              <optgroup label="Mijn adressen">
+                {adresboek.map((a) => (
+                  <option key={a.id} value={`adr:${a.id}`}>
+                    {a.naam}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Keukenzaken">
+              {KEUKENZAKEN.map((z) => (
+                <option key={z.naam} value={z.naam}>
+                  {z.naam}
+                </option>
+              ))}
+            </optgroup>
             <option value="__anders__">Anders (typ zelf)</option>
           </select>
+
           {handmatig && (
-            <input
-              type="email"
-              inputMode="email"
-              value={rapportEmail}
-              onChange={(e) => setRapportEmail(e.target.value)}
-              onBlur={() => bewaarConcept()}
-              placeholder="naam@keukenzaak.nl"
-              className="mt-1 min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-            />
+            <div className="mt-1 flex flex-col gap-2">
+              <input
+                type="email"
+                inputMode="email"
+                value={rapportEmail}
+                onChange={(e) => setRapportEmail(e.target.value)}
+                onBlur={() => bewaarConcept()}
+                placeholder="naam@keukenzaak.nl"
+                className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+              />
+              {rapportEmail.trim().includes("@") && (
+                <label className="flex items-center gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5"
+                    checked={bewaarAdres}
+                    onChange={(e) => setBewaarAdres(e.target.checked)}
+                  />
+                  Dit adres bewaren voor later
+                </label>
+              )}
+              {bewaarAdres && rapportEmail.trim().includes("@") && (
+                <div className="flex gap-2">
+                  <input
+                    value={nieuwAdresNaam}
+                    onChange={(e) => setNieuwAdresNaam(e.target.value)}
+                    placeholder="Naam, bijv. Keukenstudio Voorschoten"
+                    className="min-h-[44px] flex-1 rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={bewaarNieuwAdres}
+                    disabled={adresBezig || !nieuwAdresNaam.trim()}
+                    className="inline-flex min-h-[44px] cursor-pointer items-center justify-center border-2 border-ink bg-white px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface disabled:opacity-50"
+                  >
+                    Bewaar
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           <span className="text-xs text-ink-muted">Leeg laten = naar het standaardadres (test).</span>
         </div>
