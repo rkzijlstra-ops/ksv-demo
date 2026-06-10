@@ -102,6 +102,11 @@ export function PlanbordBord({
   // Een al verstuurde/bevestigde klus die naar de pool gesleept is, wacht op bevestiging (de monteur
   // krijgt dan bericht). Concept-klussen gaan stil terug en zetten dit niet.
   const [bevestigOntplan, setBevestigOntplan] = useState<Melding | null>(null);
+  // Opdrachten waarvan de planning-opslag nog naar de server onderweg is. Zolang dat loopt mogen ze niet
+  // verstuurd worden: de monteur-koppeling (toegewezen_aan) staat dan nog niet in de database, waardoor
+  // de SMS-notificatie zou wegvallen (de mail valt terug op het standaardadres, de SMS heeft de koppeling
+  // nodig). Voorkomt die race tussen inslepen en versturen.
+  const [opslaanBezig, setOpslaanBezig] = useState<ReadonlySet<string>>(new Set<string>());
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   // Na een server-refresh de lokale kopie weer gelijktrekken (render-patroon, geen useEffect).
@@ -124,11 +129,26 @@ export function PlanbordBord({
     setZoek("");
   }
   const teVersturen = items
-    .filter((o) => o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen)
+    .filter(
+      (o) =>
+        (o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen) && !opslaanBezig.has(o.id),
+    )
     .map((o) => o.id);
 
   function pasLokaalToe(id: string, wijziging: Partial<Melding>) {
     setItems((prev) => prev.map((o) => (o.id === id ? { ...o, ...wijziging } : o)));
+  }
+
+  // Markeert een opdracht als "opslag loopt" / "opslag klaar", zodat versturen erop wacht (zie opslaanBezig).
+  function startOpslag(id: string) {
+    setOpslaanBezig((prev) => new Set(prev).add(id));
+  }
+  function eindOpslag(id: string) {
+    setOpslaanBezig((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
   }
 
   // Of een verplaatste opdracht "gewijzigd, nog te versturen" wordt: alleen als hij al verstuurd
@@ -200,6 +220,7 @@ export function PlanbordBord({
         duur_dagen: 1,
         dashboard_status: "concept_gepland",
       });
+      startOpslag(o.id);
       void fetch(`/api/opdrachten/${o.id}/plannen`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +231,9 @@ export function PlanbordBord({
           duur_dagen: 1,
           starttijd: null,
         }),
-      }).then(() => router.refresh());
+      })
+        .then(() => router.refresh())
+        .finally(() => eindOpslag(o.id));
       return;
     }
 
@@ -241,6 +264,7 @@ export function PlanbordBord({
   }
 
   function verplaats(o: Melding, toegewezenAan: string | null, monteurNaam: string | null, dag: string) {
+    startOpslag(o.id);
     return fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -251,7 +275,9 @@ export function PlanbordBord({
         starttijd: o.starttijd,
         duur_dagen: o.duur_dagen,
       }),
-    }).then(() => router.refresh());
+    })
+      .then(() => router.refresh())
+      .finally(() => eindOpslag(o.id));
   }
 
   const navBtn =
