@@ -17,7 +17,7 @@ import {
   type RGB,
 } from "pdf-lib";
 import type { Melding, Oplevering } from "./db";
-import { formatDatumKort } from "./datum";
+import { formatDatumKort, formatDatumLang } from "./datum";
 import { rapportAfzenderWeergave, type RapportAfzender } from "./afzender";
 
 export interface RapportSamenvatting {
@@ -45,8 +45,8 @@ export function rapportSamenvatting(
 }
 
 /**
- * Label voor de eindstaat-foto-badge in het rapport. Telt bewust alléén de eindstaat-foto's
- * uit de oplever-flow, niet de meldingfoto's (die hebben een eigen telling in de meldingen-kop).
+ * Label voor het aantal eindstaat-foto's. Telt bewust alléén de eindstaat-foto's uit de
+ * oplever-flow, niet de meldingfoto's (die hebben een eigen telling in de meldingen-kop).
  * Pure functie, los te testen.
  */
 export function eindstaatFotoLabel(aantal: number): string {
@@ -69,26 +69,29 @@ export function meldingenKop(aantalMeldingen: number, aantalFotos: number): stri
 export { rapportAfzenderWeergave, type RapportAfzender };
 
 const A4 = { breedte: 595, hoogte: 842 } as const;
-const MARGE = 48;
+const MARGE = 50;
 const CONTENT = A4.breedte - MARGE * 2;
 
-// Kleurenpalet, afgeleid van de app (ontwerp "Document").
-const INK = rgb(0.06, 0.09, 0.16);
-const MUTED = rgb(0.28, 0.33, 0.41);
-const LINE = rgb(0.79, 0.84, 0.88);
-const SURFACE = rgb(0.945, 0.96, 0.976);
-const ACCENT = rgb(0.976, 0.451, 0.086);
-const ACCENT_INK = rgb(0.76, 0.25, 0.05);
-const ACCENT_SOFT = rgb(1, 0.957, 0.922);
-const SUCCESS = rgb(0.086, 0.64, 0.29);
-const SUCCESS_SOFT = rgb(0.925, 0.992, 0.96);
-const ROOD = rgb(0.86, 0.15, 0.15);
+// Kleurenpalet, ontwerp "Inspectierapport": ingetogen, tabellarisch. Eén rustig accent (staalblauw),
+// status met groen/rood, verder ink + grijs + haarlijnen. Bewust geen fel oranje/roodbruin.
+const INK = rgb(0.11, 0.13, 0.17);
+const MUTED = rgb(0.4, 0.44, 0.5);
+const LINE = rgb(0.84, 0.86, 0.88);
+const SURFACE = rgb(0.96, 0.97, 0.98);
+const ACCENT = rgb(0.2, 0.34, 0.46);
+const SUCCESS = rgb(0.16, 0.5, 0.3);
+const SUCCESS_SOFT = rgb(0.93, 0.97, 0.94);
+const ROOD = rgb(0.7, 0.2, 0.2);
+const ROOD_SOFT = rgb(0.99, 0.95, 0.95);
+const WIT = rgb(1, 1, 1);
 
 /**
- * Genereert het opleverrapport als PDF (bytes) in de "Document"-opmaak: briefhoofd met
- * accentlijn, duidelijk gescheiden secties (oplevering vs meldingen) en een uniforme foto-grid
- * (alle foto's bijgesneden op één formaat, ongeacht of ze in de app of via de galerij gemaakt zijn).
- * Foto's worden best-effort ingesloten; een mislukte fetch toont een nette placeholder.
+ * Genereert het opleverrapport als PDF (bytes) in de "Inspectierapport"-opmaak: briefhoofd met
+ * accentbalk, een gegevenstabel met de klantvelden, genummerde secties, status als nette
+ * leader-regels, een controle-checklist met vinkjes en de klant-handtekening onderaan. Alle foto's
+ * worden op één formaat bijgesneden (uniform raster) en zijn klikbaar (openen groot in de browser);
+ * de nummering loopt door over het hele rapport. Foto's worden best-effort ingesloten; een mislukte
+ * fetch toont een nette placeholder zodat het raster uitgelijnd blijft.
  */
 export async function genereerRapportPdf(
   opdracht: Melding,
@@ -105,10 +108,8 @@ export async function genereerRapportPdf(
   let page = doc.addPage([A4.breedte, A4.hoogte]);
   let y = A4.hoogte - MARGE;
 
-  // Doorlopende foto-nummering over het hele rapport (oplevering eerst, dan de meldingen), plus een
-  // verzameling klikbare links die onderaan als genummerde bijlagenlijst komt.
+  // Doorlopende foto-nummering over het hele rapport (oplevering eerst, dan de meldingen).
   let fotoTeller = 0;
-  const bijlagen: { label: string; url: string }[] = [];
 
   const ruimte = (nodig: number) => {
     if (y - nodig < MARGE) {
@@ -117,10 +118,150 @@ export async function genereerRapportPdf(
     }
   };
 
-  const tekst = (
+  // ---- briefhoofd: accentbalk + bedrijfsnaam links, documentlabel + opgeleverd-datum rechts ----
+  page.drawRectangle({ x: MARGE, y: y - 30, width: 4, height: 34, color: ACCENT });
+  page.drawText(afz.kop, { x: MARGE + 14, y: y - 8, size: 18, font: bold, color: INK });
+  page.drawText("OPLEVERRAPPORT", { x: MARGE + 14, y: y - 24, size: 9, font: bold, color: ACCENT });
+  const datum = formatDatumLang(opdracht.opgeleverd_at ?? new Date().toISOString());
+  rechts(datum, { size: 10, font: bold, kleur: INK, dy: -8 });
+  rechts("Opgeleverd op", { size: 8, font: helv, kleur: MUTED, dy: -22 });
+  y -= 48;
+
+  // ---- klant-gegevenstabel (alleen ingevulde velden) ----
+  page.drawRectangle({ x: MARGE, y: y + 4, width: CONTENT, height: 0.5, color: LINE });
+  y -= 8;
+  tabelRij("Klant", opdracht.klant_naam?.trim() || "Onbekende klant", true);
+  if (opdracht.klant_adres?.trim()) tabelRij("Adres", opdracht.klant_adres.trim());
+  if (opdracht.referentienummer?.trim()) tabelRij("Referentienummer", opdracht.referentienummer.trim());
+  if (opdracht.leverweek?.trim()) tabelRij("Leverweek", opdracht.leverweek.trim());
+  tabelRij("Keukenzaak", samenvatting.zaaknaam);
+  y -= 16;
+
+  // ---- sectie 1: Oplevering ----
+  const fotos = oplevering?.eindstaat_foto_urls ?? [];
+  const controle = oplevering?.controle ?? [];
+  const controleNietAkkoord = controle.filter((c) => !c.akkoord).length;
+  sectieKop(1, "Oplevering");
+  leaderRegel(
+    "Ondertekend door klant",
+    samenvatting.ondertekend ? "Ja" : "Nee",
+    samenvatting.ondertekend ? SUCCESS : MUTED,
+  );
+  leaderRegel(
+    "Video van de oplevering",
+    samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
+    samenvatting.videoUrl ? ACCENT : MUTED,
+  );
+  leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
+  // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
+  if (controle.length > 0) {
+    leaderRegel(
+      "Controle bij oplevering",
+      controleNietAkkoord === 0 ? "Akkoord" : `${controleNietAkkoord} niet akkoord`,
+      controleNietAkkoord === 0 ? SUCCESS : ROOD,
+    );
+  }
+  y -= 6;
+
+  if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
+
+  if (fotos.length > 0) {
+    subKop("EINDSTAAT-FOTO'S");
+    await fotoGrid(fotos);
+  } else {
+    tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
+  }
+  y -= 10;
+
+  // ---- sectie 2: Meldingen ----
+  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+  sectieKop(2, meldingenKop(meldingen.length, meldingFotoAantal));
+
+  if (meldingen.length === 0) {
+    tekst("Geen meldingen op deze opdracht.", { size: 10, kleur: MUTED });
+  }
+
+  for (const m of meldingen) {
+    ruimte(40);
+    const kop = m.spoed ? "Spoed" : "Melding";
+    page.drawText(kop, { x: MARGE, y, size: 11, font: bold, color: m.spoed ? ROOD : INK });
+    rechts(formatDatumKort(m.created_at), { size: 9, font: helv, kleur: MUTED, dy: 1 });
+    y -= 16;
+    if (m.spoed && m.spoed_verzonden_at) {
+      tekst(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at)}`, {
+        size: 9,
+        kleur: ROOD,
+        gap: 5,
+      });
+    }
+    if (m.ruwe_tekst) {
+      for (const regel of wikkel(helv, 10, m.ruwe_tekst, CONTENT)) {
+        tekst(regel, { size: 10, kleur: rgb(0.2, 0.23, 0.27), gap: 4 });
+      }
+    }
+    if (m.foto_urls.length > 0) {
+      y -= 4;
+      await fotoGrid(m.foto_urls);
+    }
+    y -= 8;
+    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.6, color: LINE });
+    y -= 12;
+  }
+
+  // ---- sectie 3: Controle bij oplevering ----
+  if (controle.length > 0) {
+    y -= 4;
+    sectieKop(3, "Controle bij oplevering");
+    for (const c of controle) controleRegel(c.punt, c.akkoord);
+  }
+
+  // ---- sectie 4: Bijlagen (foto's zijn zelf klikbaar; hier de hint + de videolink) ----
+  if (fotoTeller > 0 || samenvatting.videoUrl) {
+    y -= 4;
+    sectieKop(controle.length > 0 ? 4 : 3, "Bijlagen");
+    for (const regel of wikkel(
+      helv,
+      9.5,
+      "Klik op een foto in het rapport om hem op groot formaat te openen, op te slaan en zelf door te sturen (bijvoorbeeld naar een leverancier)." +
+        (samenvatting.videoUrl
+          ? " De video opent via onderstaande link en is op dezelfde manier te bewaren."
+          : ""),
+      CONTENT,
+    )) {
+      tekst(regel, { size: 9.5, kleur: MUTED, gap: 3 });
+    }
+    if (samenvatting.videoUrl) {
+      y -= 6;
+      videoLink("Video van de oplevering", samenvatting.videoUrl);
+    }
+    y -= 8;
+  }
+
+  // ---- afsluiting onderaan: klant-handtekening in kader ----
+  if (oplevering?.handtekening_url) {
+    ruimte(96);
+    subKop("HANDTEKENING KLANT");
+    y -= 2;
+    await tekenHandtekening(oplevering.handtekening_url);
+    const ondertekenaar = [opdracht.klant_naam?.trim() || null, datum].filter(Boolean).join("  ·  ");
+    tekst(ondertekenaar, { size: 8.5, kleur: MUTED, gap: 4 });
+  }
+
+  // ---- voettekst onderaan de laatste pagina (afzender-contactgegevens, indien ingevuld) ----
+  if (afz.voet) {
+    page.drawRectangle({ x: MARGE, y: 40, width: CONTENT, height: 0.6, color: LINE });
+    const footW = helv.widthOfTextAtSize(afz.voet, 8.5);
+    page.drawText(afz.voet, { x: (A4.breedte - footW) / 2, y: 28, size: 8.5, font: helv, color: MUTED });
+  }
+
+  return doc.save();
+
+  // ===== helpers (closures over page/y/fonts) =====
+
+  function tekst(
     s: string,
     opts: { size?: number; font?: PDFFont; kleur?: RGB; x?: number; gap?: number } = {},
-  ) => {
+  ) {
     const size = opts.size ?? 11;
     ruimte(size + (opts.gap ?? 5));
     page.drawText(s, {
@@ -131,280 +272,133 @@ export async function genereerRapportPdf(
       color: opts.kleur ?? INK,
     });
     y -= size + (opts.gap ?? 5);
-  };
-
-  // ---- briefhoofd ---- (afzender = de monteur die opleverde, niet hardcoded)
-  // Bedrijfsnaam groot links; rechts de documenttitel en datum, op één baseline uitgelijnd met de naam.
-  page.drawText(afz.kop, { x: MARGE, y: y - 4, size: 17, font: bold, color: INK });
-  rechts("OPLEVERRAPPORT", { size: 10.5, font: bold, kleur: MUTED, dy: -3 });
-  rechts(formatDatumKort(opdracht.opgeleverd_at ?? new Date().toISOString()), {
-    size: 9.5,
-    font: helv,
-    kleur: MUTED,
-    dy: -17,
-  });
-  y -= 32;
-  // accentlijn (iets dunner = eleganter)
-  page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 2.5, color: ACCENT });
-  y -= 20;
-
-  // ---- klantblok ----
-  tekst(opdracht.klant_naam ?? "Onbekende klant", { size: 18, font: bold, gap: 3 });
-  if (opdracht.klant_adres) tekst(opdracht.klant_adres, { size: 11, kleur: MUTED, gap: 8 });
-
-  const chips: string[] = [];
-  if (opdracht.referentienummer) chips.push(`Ref ${opdracht.referentienummer}`);
-  if (opdracht.leverweek) chips.push(`Leverweek ${opdracht.leverweek}`);
-  chips.push(samenvatting.zaaknaam);
-  tekenChips(chips);
-  y -= 6;
-
-  // ---- sectie: Oplevering / rapportage ----
-  sectieKop("Oplevering / rapportage", ACCENT);
-
-  const fotos = oplevering?.eindstaat_foto_urls ?? [];
-  tekenBadges([
-    samenvatting.ondertekend
-      ? { label: "Ondertekend door klant", bg: SUCCESS_SOFT, rand: SUCCESS, ink: SUCCESS }
-      : { label: "Niet ondertekend", bg: SURFACE, rand: LINE, ink: MUTED },
-    samenvatting.videoUrl
-      ? { label: "Video bijgevoegd", bg: ACCENT_SOFT, rand: ACCENT, ink: ACCENT_INK }
-      : { label: "Geen video", bg: SURFACE, rand: LINE, ink: MUTED },
-    { label: eindstaatFotoLabel(fotos.length), bg: ACCENT_SOFT, rand: ACCENT, ink: ACCENT_INK },
-  ]);
-
-  if (samenvatting.opmerking) {
-    opmerkingBlok(samenvatting.opmerking);
   }
-
-  // De video komt als klikbare link in de bijlagenlijst onderaan (na de genummerde foto's).
-  if (fotos.length > 0) {
-    fotoHint();
-    await fotoGrid(fotos, 2);
-  } else {
-    tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
-  }
-
-  // Controle-akkoord en handtekening staan bewust onderaan het rapport (na de bijlagen).
-  y -= 8;
-
-  // ---- sectie: Meldingen ----
-  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
-  sectieKop(meldingenKop(meldingen.length, meldingFotoAantal), INK);
-
-  if (meldingen.length === 0) {
-    tekst("Geen meldingen op deze opdracht.", { size: 10, kleur: MUTED });
-  }
-
-  for (const m of meldingen) {
-    ruimte(46);
-    const kop = m.spoed ? "Spoed" : "Melding";
-    page.drawText(kop, { x: MARGE, y, size: 11, font: bold, color: m.spoed ? ROOD : INK });
-    rechts(formatDatumKort(m.created_at), { size: 9, font: helv, kleur: MUTED, dy: 1 });
-    y -= 16;
-    if (m.spoed && m.spoed_verzonden_at) {
-      tekst(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at)}`, {
-        size: 9,
-        kleur: ROOD,
-        x: MARGE + 4,
-        gap: 4,
-      });
-    }
-    if (m.ruwe_tekst) {
-      for (const regel of wikkel(m.ruwe_tekst, 92)) tekst(regel, { size: 10.5, x: MARGE + 4, gap: 4 });
-    }
-    if (m.foto_urls.length > 0) {
-      y -= 2;
-      await fotoGrid(m.foto_urls, 2);
-    }
-    y -= 6;
-    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.7, color: LINE });
-    y -= 12;
-  }
-
-  // ---- sectie: Bijlagen / links (genummerd, klikbaar) ----
-  if (bijlagen.length > 0 || samenvatting.videoUrl) {
-    y -= 6;
-    sectieKop("Bijlagen", INK);
-    tekst("Klik op een foto in het rapport, of op een regel hieronder, om hem op groot formaat te openen.", {
-      size: 9.5,
-      kleur: MUTED,
-      gap: 10,
-    });
-    if (bijlagen.length > 0) bijlagenGrid(bijlagen, 4);
-    if (samenvatting.videoUrl) {
-      y -= 4;
-      tekstLink("Video van de oplevering", samenvatting.videoUrl, { size: 10.5, gap: 7 });
-    }
-    y -= 4;
-  }
-
-  // ---- afsluiting onderaan: controle-akkoord van de klant + handtekening ----
-  const controle = oplevering?.controle ?? [];
-  if (controle.length > 0 || oplevering?.handtekening_url) {
-    y -= 6;
-    sectieKop("Controle bij oplevering", INK);
-    for (const c of controle) controleRegel(c.punt, c.akkoord);
-    if (oplevering?.handtekening_url) {
-      y -= 6;
-      tekst("Handtekening klant:", { size: 10, font: bold, gap: 4 });
-      await tekenHandtekening(oplevering.handtekening_url);
-    }
-  }
-
-  // ---- voettekst onderaan de laatste pagina (afzender-contactgegevens, indien ingevuld) ----
-  if (afz.voet) {
-    const footW = helv.widthOfTextAtSize(afz.voet, 8.5);
-    page.drawText(afz.voet, { x: (A4.breedte - footW) / 2, y: 30, size: 8.5, font: helv, color: MUTED });
-  }
-
-  return doc.save();
-
-  // ===== helpers (closures over page/y/fonts) =====
 
   function rechts(s: string, o: { size: number; font: PDFFont; kleur: RGB; dy: number }) {
     const w = o.font.widthOfTextAtSize(s, o.size);
     page.drawText(s, { x: A4.breedte - MARGE - w, y: y + o.dy, size: o.size, font: o.font, color: o.kleur });
   }
 
-  function sectieKop(label: string, kleur: RGB) {
-    ruimte(30);
-    page.drawRectangle({ x: MARGE, y: y - 1, width: 10, height: 10, color: kleur });
-    page.drawText(label.toUpperCase(), { x: MARGE + 18, y, size: 11, font: bold, color: INK });
-    y -= 14;
-    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 1, color: LINE });
-    y -= 14;
+  /** Eén rij in de klant-gegevenstabel: label links (grijs), waarde rechts, dunne lijn eronder. */
+  function tabelRij(label: string, waarde: string, sterk = false) {
+    const size = sterk ? 11 : 10;
+    const font = sterk ? bold : helv;
+    const regels = wikkel(font, size, waarde, CONTENT - 130);
+    ruimte(regels.length * 14 + 10);
+    page.drawText(label, { x: MARGE, y, size: 9.5, font: helv, color: MUTED });
+    let ty = y;
+    for (const regel of regels) {
+      page.drawText(regel, { x: MARGE + 130, y: ty, size, font, color: INK });
+      ty -= 14;
+    }
+    y = ty - (sterk ? 5 : 2);
+    page.drawRectangle({ x: MARGE, y: y + 4, width: CONTENT, height: 0.5, color: LINE });
+    y -= 6;
   }
 
-  /** Opvallende hint bij de foto's: accent-blokje + donkere tekst (niet lichtgrijs/wegvallend). */
-  function fotoHint() {
+  /** Genummerde sectiekop: accent-blokje met wit cijfer + titel, met een dikke lijn eronder. */
+  function sectieKop(nr: number, titel: string) {
+    ruimte(34);
+    page.drawRectangle({ x: MARGE, y: y - 2, width: 16, height: 16, color: ACCENT });
+    const cw = bold.widthOfTextAtSize(String(nr), 9.5);
+    page.drawText(String(nr), { x: MARGE + (16 - cw) / 2, y: y + 2, size: 9.5, font: bold, color: WIT });
+    page.drawText(titel.toUpperCase(), { x: MARGE + 26, y: y + 2, size: 10.5, font: bold, color: INK });
+    y -= 14;
+    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 1, color: INK });
+    y -= 18;
+  }
+
+  /** Klein grijs subkopje (bijv. boven het fotoraster of de handtekening). */
+  function subKop(label: string) {
+    ruimte(18);
+    page.drawText(label, { x: MARGE, y, size: 8.5, font: bold, color: MUTED });
+    y -= 16;
+  }
+
+  /** Status-regel: label links, puntjes-leader, waarde rechts in de meegegeven kleur. */
+  function leaderRegel(label: string, waarde: string, kleur: RGB) {
     ruimte(20);
-    page.drawRectangle({ x: MARGE, y: y - 1, width: 9, height: 9, color: ACCENT });
-    page.drawText("Klik op een foto om hem op groot formaat te openen.", {
-      x: MARGE + 15,
-      y,
-      size: 9.5,
-      font: bold,
-      color: INK,
-    });
-    y -= 20;
+    page.drawText(label, { x: MARGE, y, size: 10, font: helv, color: INK });
+    const lw = helv.widthOfTextAtSize(label, 10);
+    const ww = bold.widthOfTextAtSize(waarde, 10);
+    const startx = MARGE + lw + 6;
+    const endx = A4.breedte - MARGE - ww - 6;
+    for (let dx = startx; dx < endx; dx += 4) page.drawCircle({ x: dx, y: y + 3, size: 0.5, color: LINE });
+    page.drawText(waarde, { x: A4.breedte - MARGE - ww, y, size: 10, font: bold, color: kleur });
+    y -= 18;
   }
 
-  /** Eén afgetekend controlepunt: gekleurd statuslabel (Akkoord groen / Niet akkoord rood) + de tekst. */
+  /** Opmerking in een zacht vlak met accent-streep links en een klein kopje. */
+  function opmerkingBlok(s: string) {
+    const regels = wikkel(helv, 10, s, CONTENT - 24);
+    const hoogte = regels.length * 14 + 18;
+    ruimte(hoogte + 6);
+    const top = y;
+    page.drawRectangle({
+      x: MARGE,
+      y: top - hoogte + 8,
+      width: CONTENT,
+      height: hoogte,
+      color: SURFACE,
+      borderColor: LINE,
+      borderWidth: 0.6,
+    });
+    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: ACCENT });
+    let ty = top - 6;
+    page.drawText("Opmerking", { x: MARGE + 12, y: ty, size: 8, font: bold, color: MUTED });
+    ty -= 13;
+    for (const regel of regels) {
+      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.2, 0.23, 0.27) });
+      ty -= 14;
+    }
+    y = top - hoogte - 6;
+  }
+
+  /** Eén controlepunt: checkbox met (getekend) vinkje bij akkoord, label + de tekst eronder. */
   function controleRegel(punt: string, akkoord: boolean) {
     const kleur = akkoord ? SUCCESS : ROOD;
-    ruimte(20);
-    page.drawRectangle({ x: MARGE, y: y - 1, width: 10, height: 10, color: kleur });
+    ruimte(24);
+    const bs = 13;
+    page.drawRectangle({
+      x: MARGE,
+      y: y - 2,
+      width: bs,
+      height: bs,
+      borderColor: kleur,
+      borderWidth: 1.2,
+      color: akkoord ? SUCCESS_SOFT : ROOD_SOFT,
+    });
+    if (akkoord) {
+      // vinkje met twee lijnstukken (de standaardfonts coderen geen check-glyph)
+      page.drawLine({ start: { x: MARGE + 2.5, y: y + 4.5 }, end: { x: MARGE + 5, y: y + 1.5 }, thickness: 1.4, color: kleur });
+      page.drawLine({ start: { x: MARGE + 5, y: y + 1.5 }, end: { x: MARGE + 10.5, y: y + 8.5 }, thickness: 1.4, color: kleur });
+    }
     page.drawText(akkoord ? "Akkoord" : "Niet akkoord", {
-      x: MARGE + 16,
+      x: MARGE + bs + 8,
       y,
       size: 10,
       font: bold,
       color: kleur,
     });
     y -= 15;
-    for (const regel of wikkel(punt, 92)) {
-      tekst(regel, { size: 10, x: MARGE + 16, kleur: MUTED, gap: 3 });
+    for (const regel of wikkel(helv, 10, punt, CONTENT - (bs + 8))) {
+      tekst(regel, { size: 10, x: MARGE + bs + 8, kleur: MUTED, gap: 3 });
     }
-    y -= 7;
+    y -= 8;
   }
 
-  /** Genummerde foto-links als compacte grid (meerdere kolommen), donker en ingetogen, elk klikbaar. */
-  function bijlagenGrid(items: { label: string; url: string }[], cols: number) {
-    const gap = 12;
-    const colW = (CONTENT - gap * (cols - 1)) / cols;
-    const rowH = 19;
-    for (let i = 0; i < items.length; i++) {
-      const col = i % cols;
-      if (col === 0) ruimte(rowH);
-      const x = MARGE + col * (colW + gap);
-      const b = items[i];
-      page.drawText(b.label, { x, y, size: 10, font: bold, color: INK });
-      const w = bold.widthOfTextAtSize(b.label, 10);
-      page.drawRectangle({ x, y: y - 2.5, width: w, height: 0.5, color: LINE });
-      linkAnnotatie(x, y - 4, Math.max(w, 40), 16, b.url);
-      if (col === cols - 1 || i === items.length - 1) y -= rowH;
-    }
-  }
-
-  function tekenChips(labels: string[]) {
-    ruimte(22);
-    let x = MARGE;
-    const size = 8.5;
-    const padX = 6;
-    const h = 16;
-    for (const label of labels) {
-      const w = helv.widthOfTextAtSize(label, size) + padX * 2;
-      if (x + w > MARGE + CONTENT) {
-        y -= h + 5;
-        ruimte(22);
-        x = MARGE;
-      }
-      page.drawRectangle({ x, y: y - 3, width: w, height: h, color: SURFACE, borderColor: LINE, borderWidth: 0.7 });
-      page.drawText(label, { x: x + padX, y: y + 1, size, font: bold, color: INK });
-      x += w + 5;
-    }
-    y -= h + 2;
-  }
-
-  function tekenBadges(badges: { label: string; bg: RGB; rand: RGB; ink: RGB }[]) {
-    ruimte(24);
-    let x = MARGE;
-    const size = 8.5;
-    const padX = 7;
-    const h = 17;
-    for (const b of badges) {
-      const w = bold.widthOfTextAtSize(b.label, size) + padX * 2;
-      if (x + w > MARGE + CONTENT) {
-        y -= h + 5;
-        ruimte(24);
-        x = MARGE;
-      }
-      page.drawRectangle({ x, y: y - 4, width: w, height: h, color: b.bg, borderColor: b.rand, borderWidth: 0.8 });
-      page.drawText(b.label, { x: x + padX, y: y, size, font: bold, color: b.ink });
-      x += w + 5;
-    }
-    y -= h + 4;
-  }
-
-  function opmerkingBlok(s: string) {
-    const regels = wikkel(s, 88);
-    const lineH = 14;
-    const padX = 12;
-    const padY = 10;
-    const hoogte = regels.length * lineH + padY * 2 - (lineH - 11);
-    ruimte(hoogte + 6);
-    const top = y;
-    page.drawRectangle({
-      x: MARGE,
-      y: top - hoogte,
-      width: CONTENT,
-      height: hoogte,
-      color: SURFACE,
-      borderColor: LINE,
-      borderWidth: 0.7,
-    });
-    // accent-streep links
-    page.drawRectangle({ x: MARGE, y: top - hoogte, width: 3, height: hoogte, color: ACCENT });
-    let ty = top - padY - 9;
-    for (const regel of regels) {
-      page.drawText(regel, { x: MARGE + padX, y: ty, size: 11, font: helv, color: rgb(0.2, 0.25, 0.33) });
-      ty -= lineH;
-    }
-    y = top - hoogte - 12;
-  }
-
-  async function fotoGrid(urls: string[], cols: number) {
+  /** Fotoraster, 2 per rij, uniform bijgesneden, genummerd vlaggetje, hele tegel klikbaar. */
+  async function fotoGrid(urls: string[]) {
+    const cols = 2;
     const gap = 10;
     const cellW = (CONTENT - gap * (cols - 1)) / cols;
-    const cellH = cellW * 0.72;
+    const cellH = cellW * 0.7;
     for (let i = 0; i < urls.length; i++) {
       const col = i % cols;
       if (col === 0) ruimte(cellH + gap);
       const top = y;
       const cx = MARGE + col * (cellW + gap);
       const nr = ++fotoTeller;
-      bijlagen.push({ label: `Foto ${nr}`, url: urls[i] });
       await tekenTegel(cx, top - cellH, cellW, cellH, urls[i], nr);
       // De hele tegel is klikbaar: opent de foto op groot formaat in de browser.
       linkAnnotatie(cx, top - cellH, cellW, cellH, urls[i]);
@@ -412,15 +406,15 @@ export async function genereerRapportPdf(
     }
   }
 
-  /** Tekent het genummerde badge linksboven in een tegel (donker vierkant, witte cijfers). */
-  function nummerBadge(x: number, yb: number, h: number, nr: number) {
-    const bs = 17;
-    const bx = x;
-    const by = yb + h - bs;
-    page.drawRectangle({ x: bx, y: by, width: bs, height: bs, color: INK });
+  /** Tekent het genummerde vlaggetje linksboven in een tegel (donker blokje, witte cijfers). */
+  function nummerVlag(x: number, yb: number, h: number, nr: number) {
+    const bw = 22;
+    const bh = 17;
+    const by = yb + h - bh;
+    page.drawRectangle({ x, y: by, width: bw, height: bh, color: INK });
     const s = String(nr);
     const sw = bold.widthOfTextAtSize(s, 9.5);
-    page.drawText(s, { x: bx + (bs - sw) / 2, y: by + (bs - 9.5) / 2 + 0.5, size: 9.5, font: bold, color: rgb(1, 1, 1) });
+    page.drawText(s, { x: x + (bw - sw) / 2, y: by + (bh - 9.5) / 2 + 0.5, size: 9.5, font: bold, color: WIT });
   }
 
   /** Tekent één foto bijgesneden (cover) in een vaste tegel, met clipping zodat alle foto's gelijk ogen. */
@@ -438,11 +432,11 @@ export async function genereerRapportPdf(
     }
     if (!img) {
       // nette placeholder zodat het raster uitgelijnd blijft
-      page.drawRectangle({ x, y: yb, width: w, height: h, color: SURFACE, borderColor: LINE, borderWidth: 0.7 });
+      page.drawRectangle({ x, y: yb, width: w, height: h, color: SURFACE, borderColor: LINE, borderWidth: 0.6 });
       const txt = "foto niet beschikbaar";
       const tw = helv.widthOfTextAtSize(txt, 8);
       page.drawText(txt, { x: x + (w - tw) / 2, y: yb + h / 2 - 4, size: 8, font: helv, color: MUTED });
-      nummerBadge(x, yb, h, nr);
+      nummerVlag(x, yb, h, nr);
       return;
     }
     const schaal = Math.max(w / img.width, h / img.height); // cover
@@ -462,11 +456,11 @@ export async function genereerRapportPdf(
     );
     page.drawImage(img, { x: ix, y: iy, width: iw, height: ih });
     page.pushOperators(popGraphicsState());
-    page.drawRectangle({ x, y: yb, width: w, height: h, borderColor: LINE, borderWidth: 0.7 });
-    nummerBadge(x, yb, h, nr);
+    page.drawRectangle({ x, y: yb, width: w, height: h, borderColor: LINE, borderWidth: 0.6 });
+    nummerVlag(x, yb, h, nr);
   }
 
-  /** Voegt een klikbare URI-link toe over een rechthoek op de huidige pagina (betrouwbaar, tekstregel). */
+  /** Voegt een klikbare URI-link toe over een rechthoek op de huidige pagina. */
   function linkAnnotatie(x: number, yb: number, w: number, h: number, url: string) {
     const annot = doc.context.obj({
       Type: "Annot",
@@ -484,54 +478,57 @@ export async function genereerRapportPdf(
     annots.push(ref);
   }
 
-  /** Tekst een klikbare linkregel (label opent de URL). Betrouwbaar: een rechthoek over de tekst. */
-  function tekstLink(label: string, url: string, opts: { size?: number; x?: number; gap?: number } = {}) {
-    const size = opts.size ?? 10;
-    const x = opts.x ?? MARGE;
-    ruimte(size + (opts.gap ?? 5));
-    page.drawText(label, { x, y, size, font: bold, color: INK });
+  /** Klikbare videolink: accentkleurig label met onderstreping, betrouwbaar via een link-annotatie. */
+  function videoLink(label: string, url: string) {
+    const size = 10.5;
+    ruimte(size + 7);
+    page.drawText(label, { x: MARGE, y, size, font: bold, color: ACCENT });
     const w = bold.widthOfTextAtSize(label, size);
-    // onderstreping voor herkenbaarheid als link (ingetogen, niet het felle accent)
-    page.drawRectangle({ x, y: y - 2, width: w, height: 0.6, color: MUTED });
-    linkAnnotatie(x, y - 3, w, size + 5, url);
-    y -= size + (opts.gap ?? 5);
+    page.drawRectangle({ x: MARGE, y: y - 2, width: w, height: 0.6, color: ACCENT });
+    linkAnnotatie(MARGE, y - 3, w, size + 5, url);
+    y -= size + 7;
   }
 
   async function tekenHandtekening(url: string) {
-    const w = 150;
-    const h = 60;
-    ruimte(h + 8);
+    const boxW = 240;
+    const boxH = 64;
+    ruimte(boxH + 8);
     const top = y;
+    page.drawRectangle({ x: MARGE, y: top - boxH, width: boxW, height: boxH, borderColor: LINE, borderWidth: 0.8 });
     try {
       const res = await fetch(url);
       if (res.ok) {
         const bytes = new Uint8Array(await res.arrayBuffer());
         const isPng = bytes[0] === 0x89 && bytes[1] === 0x50;
         const img = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
-        const schaal = Math.min(w / img.width, h / img.height, 1);
-        page.drawImage(img, { x: MARGE + 6, y: top - img.height * schaal, width: img.width * schaal, height: img.height * schaal });
-        page.drawRectangle({ x: MARGE, y: top - h, width: w + 12, height: h, borderColor: LINE, borderWidth: 0.7 });
-        y = top - h - 4;
+        const h = 44;
+        const schaal = Math.min((boxW - 20) / img.width, h / img.height, 1);
+        const iw = img.width * schaal;
+        const ih = img.height * schaal;
+        page.drawImage(img, { x: MARGE + 10, y: top - boxH + (boxH - ih) / 2, width: iw, height: ih });
+        y = top - boxH - 16;
         return;
       }
     } catch {
       // val terug op tekstregel
     }
-    tekst("(handtekening niet beschikbaar)", { size: 9, kleur: MUTED });
+    page.drawText("(handtekening niet beschikbaar)", { x: MARGE + 10, y: top - boxH / 2 - 4, size: 9, font: helv, color: MUTED });
+    y = top - boxH - 16;
   }
 }
 
-/** Breekt lange tekst in regels van ~max tekens (pdf-lib doet geen word-wrap). */
-function wikkel(s: string, max: number): string[] {
-  const woorden = s.split(/\s+/);
+/** Breekt lange tekst in regels die binnen maxBreedte passen (pdf-lib doet geen word-wrap). */
+function wikkel(font: PDFFont, size: number, s: string, maxBreedte: number): string[] {
+  const woorden = s.split(/\s+/).filter(Boolean);
   const regels: string[] = [];
   let huidig = "";
   for (const w of woorden) {
-    if ((huidig + " " + w).trim().length > max) {
-      if (huidig) regels.push(huidig);
+    const probe = huidig ? huidig + " " + w : w;
+    if (font.widthOfTextAtSize(probe, size) > maxBreedte && huidig) {
+      regels.push(huidig);
       huidig = w;
     } else {
-      huidig = (huidig + " " + w).trim();
+      huidig = probe;
     }
   }
   if (huidig) regels.push(huidig);

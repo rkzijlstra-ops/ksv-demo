@@ -20,8 +20,8 @@
 /e2e/.auth
 /playwright/.cache
 
-# echte klant-data (PII): nooit committen
-/test-pdfs/week23/
+# preview/mock-up-PDF's en echte klant-data (PII): nooit committen
+/test-pdfs/
 
 # next.js
 /.next/
