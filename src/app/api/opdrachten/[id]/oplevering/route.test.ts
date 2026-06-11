@@ -99,6 +99,27 @@ describe("POST /api/opdrachten/[id]/oplevering", () => {
     expect("handtekening_url" in arg).toBe(true);
     expect(arg.handtekening_url).toBeNull();
   });
+
+  it("geeft de controle-checklist door en filtert ongeldige punten eruit", async () => {
+    await POST(
+      postReq({
+        controle: [
+          { punt: "Geen beschadigingen", akkoord: true },
+          { punt: "x", akkoord: "ja" }, // akkoord geen boolean -> weg
+          { rommel: 1 }, // geen punt/akkoord -> weg
+        ],
+      }),
+      params("opdr-1"),
+    );
+    expect(mockUpsert.mock.calls[0][0].controle).toEqual([
+      { punt: "Geen beschadigingen", akkoord: true },
+    ]);
+  });
+
+  it("laat controle ongemoeid als die niet in de body zit (tussentijdse opslag)", async () => {
+    await POST(postReq({ eindstaat_foto_urls: [] }), params("opdr-1"));
+    expect("controle" in mockUpsert.mock.calls[0][0]).toBe(false);
+  });
 });
 
 describe("GET /api/opdrachten/[id]/oplevering", () => {

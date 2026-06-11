@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "./supabase-server";
 import { scopeVoorDashboard } from "./dashboard-scope";
 import { moetOpnieuwVersturen, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
 import type { ParsedPdf, MeldingItem } from "./parser-schema";
+import type { ControlePunt } from "./oplever-controle";
 
 export interface DbConfig {
   url: string;
@@ -96,6 +97,8 @@ export interface Oplevering {
   rapport_email: string | null;
   rapport_url: string | null;
   user_id: string | null;
+  /** Controle-checklist die de klant aftekende (akkoord/niet akkoord per punt). */
+  controle: ControlePunt[];
 }
 
 /** Input voor het opslaan/bijwerken van een oplevering-concept. */
@@ -104,6 +107,8 @@ export interface OpleveringConceptInput {
   uitkomst?: "afgerond" | "openstaande_punten";
   eindstaat_foto_urls: string[];
   video_url: string | null;
+  /** Weggelaten (undefined) = niet wijzigen; een array = de afgetekende controlepunten zetten. */
+  controle?: ControlePunt[];
   /**
    * Weggelaten (undefined) = niet wijzigen, zodat een tussentijdse opslag de eerder gezette
    * handtekening niet per ongeluk wist. Expliciet null = wissen, een string = zetten.
@@ -593,6 +598,10 @@ function createDbFromClient(client: SupabaseClient): Db {
       // Weggelaten = kolom ongemoeid laten, zodat een tussentijdse opslag de handtekening niet wist.
       if (input.handtekening_url !== undefined) {
         payload.handtekening_url = input.handtekening_url;
+      }
+      // Controle idem: alleen schrijven als meegegeven, zodat een tussenopslag hem niet leegmaakt.
+      if (input.controle !== undefined) {
+        payload.controle = input.controle;
       }
       const { data: row, error } = await client
         .from("opleveringen")

@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { db, type OpleveringConceptInput } from "@/lib/db";
+import type { ControlePunt } from "@/lib/oplever-controle";
 import { getAuthenticatedUserId } from "@/lib/auth";
+
+/** Houdt alleen geldige controlepunten over ({ punt: string, akkoord: boolean }). */
+function leesControle(v: unknown): ControlePunt[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v
+    .filter(
+      (c): c is ControlePunt =>
+        typeof c === "object" &&
+        c !== null &&
+        typeof (c as ControlePunt).punt === "string" &&
+        typeof (c as ControlePunt).akkoord === "boolean",
+    )
+    .map((c) => ({ punt: c.punt, akkoord: c.akkoord }));
+}
 
 const UITKOMSTEN = ["afgerond", "openstaande_punten"] as const;
 type Uitkomst = (typeof UITKOMSTEN)[number];
@@ -57,6 +72,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // weg en mag de eerder gezette handtekening dus niet wissen.
   if ("handtekening_url" in body) {
     concept.handtekening_url = typeof body.handtekening_url === "string" ? body.handtekening_url : null;
+  }
+  // Controle-checklist idem: alleen meeschrijven als de body hem bevat.
+  if ("controle" in body) {
+    concept.controle = leesControle(body.controle) ?? [];
   }
 
   try {

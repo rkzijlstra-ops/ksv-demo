@@ -134,18 +134,19 @@ export async function genereerRapportPdf(
   };
 
   // ---- briefhoofd ---- (afzender = de monteur die opleverde, niet hardcoded)
+  // Bedrijfsnaam groot links; rechts de documenttitel en datum, op één baseline uitgelijnd met de naam.
   page.drawText(afz.kop, { x: MARGE, y: y - 4, size: 17, font: bold, color: INK });
-  rechts("OPLEVERRAPPORT", { size: 11, font: bold, kleur: INK, dy: -2 });
+  rechts("OPLEVERRAPPORT", { size: 10.5, font: bold, kleur: MUTED, dy: -3 });
   rechts(formatDatumKort(opdracht.opgeleverd_at ?? new Date().toISOString()), {
     size: 9.5,
     font: helv,
     kleur: MUTED,
-    dy: -14,
+    dy: -17,
   });
-  y -= 26;
-  // accentlijn
-  page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 3, color: ACCENT });
-  y -= 18;
+  y -= 32;
+  // accentlijn (iets dunner = eleganter)
+  page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 2.5, color: ACCENT });
+  y -= 20;
 
   // ---- klantblok ----
   tekst(opdracht.klant_naam ?? "Onbekende klant", { size: 18, font: bold, gap: 3 });
@@ -178,16 +179,13 @@ export async function genereerRapportPdf(
 
   // De video komt als klikbare link in de bijlagenlijst onderaan (na de genummerde foto's).
   if (fotos.length > 0) {
+    fotoHint();
     await fotoGrid(fotos, 2);
   } else {
     tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
   }
 
-  if (oplevering?.handtekening_url) {
-    y -= 4;
-    tekst("Handtekening klant:", { size: 10, font: bold, gap: 4 });
-    await tekenHandtekening(oplevering.handtekening_url);
-  }
+  // Controle-akkoord en handtekening staan bewust onderaan het rapport (na de bijlagen).
   y -= 8;
 
   // ---- sectie: Meldingen ----
@@ -225,20 +223,33 @@ export async function genereerRapportPdf(
   }
 
   // ---- sectie: Bijlagen / links (genummerd, klikbaar) ----
-  const linklijst = [...bijlagen];
-  if (samenvatting.videoUrl) linklijst.push({ label: "Video van de oplevering", url: samenvatting.videoUrl });
-  if (linklijst.length > 0) {
+  if (bijlagen.length > 0 || samenvatting.videoUrl) {
     y -= 6;
-    sectieKop("Bijlagen / links", INK);
-    tekst("Klik op een regel om de foto of video op groot formaat te openen.", {
-      size: 9,
+    sectieKop("Bijlagen", INK);
+    tekst("Klik op een foto in het rapport, of op een regel hieronder, om hem op groot formaat te openen.", {
+      size: 9.5,
       kleur: MUTED,
-      gap: 8,
+      gap: 10,
     });
-    for (const b of linklijst) {
-      tekstLink(b.label, b.url, { size: 10.5, gap: 7 });
+    if (bijlagen.length > 0) bijlagenGrid(bijlagen, 4);
+    if (samenvatting.videoUrl) {
+      y -= 4;
+      tekstLink("Video van de oplevering", samenvatting.videoUrl, { size: 10.5, gap: 7 });
     }
     y -= 4;
+  }
+
+  // ---- afsluiting onderaan: controle-akkoord van de klant + handtekening ----
+  const controle = oplevering?.controle ?? [];
+  if (controle.length > 0 || oplevering?.handtekening_url) {
+    y -= 6;
+    sectieKop("Controle bij oplevering", INK);
+    for (const c of controle) controleRegel(c.punt, c.akkoord);
+    if (oplevering?.handtekening_url) {
+      y -= 6;
+      tekst("Handtekening klant:", { size: 10, font: bold, gap: 4 });
+      await tekenHandtekening(oplevering.handtekening_url);
+    }
   }
 
   // ---- voettekst onderaan de laatste pagina (afzender-contactgegevens, indien ingevuld) ----
@@ -263,6 +274,57 @@ export async function genereerRapportPdf(
     y -= 14;
     page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 1, color: LINE });
     y -= 14;
+  }
+
+  /** Opvallende hint bij de foto's: accent-blokje + donkere tekst (niet lichtgrijs/wegvallend). */
+  function fotoHint() {
+    ruimte(20);
+    page.drawRectangle({ x: MARGE, y: y - 1, width: 9, height: 9, color: ACCENT });
+    page.drawText("Klik op een foto om hem op groot formaat te openen.", {
+      x: MARGE + 15,
+      y,
+      size: 9.5,
+      font: bold,
+      color: INK,
+    });
+    y -= 20;
+  }
+
+  /** Eén afgetekend controlepunt: gekleurd statuslabel (Akkoord groen / Niet akkoord rood) + de tekst. */
+  function controleRegel(punt: string, akkoord: boolean) {
+    const kleur = akkoord ? SUCCESS : ROOD;
+    ruimte(20);
+    page.drawRectangle({ x: MARGE, y: y - 1, width: 10, height: 10, color: kleur });
+    page.drawText(akkoord ? "Akkoord" : "Niet akkoord", {
+      x: MARGE + 16,
+      y,
+      size: 10,
+      font: bold,
+      color: kleur,
+    });
+    y -= 15;
+    for (const regel of wikkel(punt, 92)) {
+      tekst(regel, { size: 10, x: MARGE + 16, kleur: MUTED, gap: 3 });
+    }
+    y -= 7;
+  }
+
+  /** Genummerde foto-links als compacte grid (meerdere kolommen), donker en ingetogen, elk klikbaar. */
+  function bijlagenGrid(items: { label: string; url: string }[], cols: number) {
+    const gap = 12;
+    const colW = (CONTENT - gap * (cols - 1)) / cols;
+    const rowH = 19;
+    for (let i = 0; i < items.length; i++) {
+      const col = i % cols;
+      if (col === 0) ruimte(rowH);
+      const x = MARGE + col * (colW + gap);
+      const b = items[i];
+      page.drawText(b.label, { x, y, size: 10, font: bold, color: INK });
+      const w = bold.widthOfTextAtSize(b.label, 10);
+      page.drawRectangle({ x, y: y - 2.5, width: w, height: 0.5, color: LINE });
+      linkAnnotatie(x, y - 4, Math.max(w, 40), 16, b.url);
+      if (col === cols - 1 || i === items.length - 1) y -= rowH;
+    }
   }
 
   function tekenChips(labels: string[]) {
@@ -344,6 +406,8 @@ export async function genereerRapportPdf(
       const nr = ++fotoTeller;
       bijlagen.push({ label: `Foto ${nr}`, url: urls[i] });
       await tekenTegel(cx, top - cellH, cellW, cellH, urls[i], nr);
+      // De hele tegel is klikbaar: opent de foto op groot formaat in de browser.
+      linkAnnotatie(cx, top - cellH, cellW, cellH, urls[i]);
       if (col === cols - 1 || i === urls.length - 1) y = top - cellH - gap;
     }
   }
@@ -425,10 +489,10 @@ export async function genereerRapportPdf(
     const size = opts.size ?? 10;
     const x = opts.x ?? MARGE;
     ruimte(size + (opts.gap ?? 5));
-    page.drawText(label, { x, y, size, font: bold, color: ACCENT_INK });
+    page.drawText(label, { x, y, size, font: bold, color: INK });
     const w = bold.widthOfTextAtSize(label, size);
-    // onderstreping voor herkenbaarheid als link
-    page.drawRectangle({ x, y: y - 2, width: w, height: 0.6, color: ACCENT_INK });
+    // onderstreping voor herkenbaarheid als link (ingetogen, niet het felle accent)
+    page.drawRectangle({ x, y: y - 2, width: w, height: 0.6, color: MUTED });
     linkAnnotatie(x, y - 3, w, size + 5, url);
     y -= size + (opts.gap ?? 5);
   }

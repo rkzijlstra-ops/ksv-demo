@@ -40,6 +40,7 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     rapport_email: null,
     rapport_url: null,
     user_id: null,
+    controle: [],
     ...over,
   };
 }
@@ -181,6 +182,25 @@ describe("genereerRapportPdf met oplevering", () => {
 
   it("werkt ook zonder oplevering (terugval)", async () => {
     const bytes = await genereerRapportPdf(maakMelding({}), [], null);
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+
+  it("rendert de controle-checklist (akkoord + niet akkoord) zonder te crashen", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
+      }),
+    );
+    const opl = maakOplevering({
+      handtekening_url: "https://x/h.png",
+      controle: [
+        { punt: "Buiten de evt. meldingen geen beschadigingen aan keuken, vloer, muren.", akkoord: true },
+        { punt: "Tweede punt", akkoord: false },
+      ],
+    });
+    const bytes = await genereerRapportPdf(maakMelding({}), [], opl);
     expect(startsWithPdf(bytes)).toBe(true);
   });
 });

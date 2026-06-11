@@ -14,6 +14,7 @@ import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 import { KEUKENZAKEN } from "@/lib/keukenzaken";
+import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
 import type { Adres } from "@/lib/db";
 
 export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
@@ -22,6 +23,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
+  // Controlepunt dat de klant aftekent: true = akkoord, false = niet akkoord, null = nog niet gekozen.
+  const [controleAkkoord, setControleAkkoord] = useState<boolean | null>(null);
   const [rapportEmail, setRapportEmail] = useState("");
   const [handmatig, setHandmatig] = useState(false);
   // Persoonlijk adresboek van de monteur: vaste ontvangers met een naam, te kiezen of toe te voegen.
@@ -64,6 +67,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             setVideoUrl(oplevering.video_url ?? null);
             setHandtekeningUrl(oplevering.handtekening_url ?? null);
             setOpmerking(oplevering.opmerking ?? "");
+            const c = Array.isArray(oplevering.controle) ? oplevering.controle : [];
+            setControleAkkoord(c.length > 0 ? Boolean(c[0].akkoord) : null);
             const em: string = oplevering.rapport_email ?? "";
             setRapportEmail(em);
             if (em && !KEUKENZAKEN.some((z) => z.email === em)) setHandmatig(true);
@@ -185,6 +190,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
       handtekening_url: handtekeningUrl,
       opmerking: opmerking.trim() || null,
       rapport_email,
+      controle:
+        controleAkkoord === null ? [] : [{ punt: CONTROLE_PUNTEN[0], akkoord: controleAkkoord }],
     });
     // Achter de vorige save aanhaken, zodat saves in volgorde de server bereiken (geen overschrijving).
     opslaanChainRef.current = opslaanChainRef.current
@@ -202,7 +209,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   useEffect(() => {
     bewaarConcept();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fotoUrls, videoUrl, handtekeningUrl]);
+  }, [fotoUrls, videoUrl, handtekeningUrl, controleAkkoord]);
 
   const check = controleerOplevering({
     fotoCount: fotoUrls.length,
@@ -233,6 +240,8 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           handtekening_url: handtekeningUrl,
           opmerking: opmerking.trim() || null,
           rapport_email: rapportEmail.trim() || null,
+          controle:
+            controleAkkoord === null ? [] : [{ punt: CONTROLE_PUNTEN[0], akkoord: controleAkkoord }],
         }),
       });
       if (!conceptRes.ok) {
@@ -298,36 +307,69 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         </div>
       </section>
 
-      {/* Notitie */}
+      {/* Stap 2: controle samen met de klant + opmerking, net boven de handtekening */}
       <section className="border-t border-line pt-6">
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
-          Opmerking (optioneel)
+          2. Controle bij oplevering
         </h2>
-        <p className="mb-2 text-sm text-ink-muted">
-          Bijzonderheden die geen melding zijn. Bijvoorbeeld: klant belt nog voor smetplinten,
-          muren niet haaks.
-        </p>
-        <textarea
-          value={opmerking}
-          onChange={(e) => setOpmerking(e.target.value)}
-          onBlur={() => bewaarConcept()}
-          rows={3}
-          placeholder="Typ hier of spreek in…"
-          className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-        />
-        <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
-          <Mic size={16} aria-hidden="true" />
-          Of spreek het in:
+        <p className="mb-3 text-sm text-ink-muted">Loop dit samen met de klant na vóór de handtekening.</p>
+
+        <div className="border border-line bg-surface p-3">
+          <p className="mb-2 text-sm font-semibold text-ink">{CONTROLE_PUNTEN[0]}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setControleAkkoord(true)}
+              aria-pressed={controleAkkoord === true}
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+                controleAkkoord === true
+                  ? "border-success bg-success text-white"
+                  : "border-success bg-white text-success hover:bg-success/10"
+              }`}
+            >
+              <CheckCircle2 size={18} strokeWidth={2.5} aria-hidden="true" />
+              Akkoord
+            </button>
+            <button
+              type="button"
+              onClick={() => setControleAkkoord(false)}
+              aria-pressed={controleAkkoord === false}
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+                controleAkkoord === false
+                  ? "border-urgent-rood bg-urgent-rood text-white"
+                  : "border-urgent-rood bg-white text-urgent-rood hover:bg-urgent-rood/10"
+              }`}
+            >
+              <AlertCircle size={18} strokeWidth={2.5} aria-hidden="true" />
+              Niet akkoord
+            </button>
+          </div>
         </div>
-        <div className="mt-1">
-          <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm text-ink-muted">Toch iets te melden? Typ of spreek het hier in.</p>
+          <textarea
+            value={opmerking}
+            onChange={(e) => setOpmerking(e.target.value)}
+            onBlur={() => bewaarConcept()}
+            rows={3}
+            placeholder="Bijv. klant belt nog voor smetplinten, of een opmerking van de klant…"
+            className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+          />
+          <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+            <Mic size={16} aria-hidden="true" />
+            Of spreek het in:
+          </div>
+          <div className="mt-1">
+            <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+          </div>
         </div>
       </section>
 
       {/* Stap 2: handtekening (overslaanbaar) */}
       <section className="border-t border-line pt-6">
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
-          2. Handtekening (optioneel)
+          3. Handtekening (optioneel)
         </h2>
         {handtekeningBezig ? (
           <div className="rounded-none border border-line bg-surface px-3 py-3">
