@@ -114,7 +114,7 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
 
   // Rapport naar een leesbaar test-adres.
   await page.getByRole("combobox").selectOption({ label: "Anders (typ zelf)" });
-  await page.getByPlaceholder("naam@keukenzaak.nl").fill(RAPPORT_NAAR);
+  await page.getByLabel("E-mailadres voor het rapport").fill(RAPPORT_NAAR);
 
   // Versturen: genereert de PDF en mailt.
   await page.getByRole("button", { name: "Versturen" }).click();

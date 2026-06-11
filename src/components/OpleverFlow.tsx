@@ -541,6 +541,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
                 value={rapportEmail}
                 onChange={(e) => setRapportEmail(e.target.value)}
                 onBlur={() => bewaarConcept()}
+                aria-label="E-mailadres voor het rapport"
                 placeholder="voorbeeld@gmail.com"
                 className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink placeholder:text-ink-muted focus-visible:outline-3 focus-visible:outline-primary"
               />
