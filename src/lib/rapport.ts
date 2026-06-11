@@ -84,6 +84,10 @@ const SUCCESS_SOFT = rgb(0.93, 0.97, 0.94);
 const ROOD = rgb(0.7, 0.2, 0.2);
 const ROOD_SOFT = rgb(0.99, 0.95, 0.95);
 const WIT = rgb(1, 1, 1);
+// Interne notitie (alleen zaak-versie): amber, opvallend genoeg om niet met de openbare opmerking
+// verward te worden.
+const INTERN = rgb(0.6, 0.33, 0.04);
+const INTERN_SOFT = rgb(1, 0.97, 0.9);
 
 /**
  * Genereert het opleverrapport als PDF (bytes) in de "Inspectierapport"-opmaak: briefhoofd met
@@ -93,11 +97,31 @@ const WIT = rgb(1, 1, 1);
  * de nummering loopt door over het hele rapport. Foto's worden best-effort ingesloten; een mislukte
  * fetch toont een nette placeholder zodat het raster uitgelijnd blijft.
  */
+/**
+ * Voor wie het rapport bedoeld is. De klant-versie krijgt de interne notitie NOOIT in handen:
+ * dat is geen vinkje maar een code-pad-eigenschap (zie de zaak-only tak hieronder).
+ */
+export type RapportDoelgroep = "klant" | "zaak";
+
+/**
+ * De interne notitie die in het rapport mag voor deze doelgroep. Pure functie, los te testen.
+ * Borgt de kernregel: de klant-versie krijgt de interne notitie NOOIT, ongeacht wat er in de
+ * oplevering staat. Geeft de getrimde tekst terug voor de zaak, anders null.
+ */
+export function interneNotitieVoorRapport(
+  oplevering: Oplevering | null,
+  bedoeldVoor: RapportDoelgroep,
+): string | null {
+  if (bedoeldVoor !== "zaak") return null;
+  return oplevering?.interne_opmerking?.trim() || null;
+}
+
 export async function genereerRapportPdf(
   opdracht: Melding,
   meldingen: Melding[],
   oplevering: Oplevering | null = null,
   afzender: RapportAfzender | null = null,
+  bedoeldVoor: RapportDoelgroep = "zaak",
 ): Promise<Uint8Array> {
   const samenvatting = rapportSamenvatting(opdracht, oplevering);
   const afz = rapportAfzenderWeergave(afzender);
@@ -164,6 +188,11 @@ export async function genereerRapportPdf(
   y -= 6;
 
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
+
+  // Interne notitie: alleen in de ZAAK-versie. De klant-tak levert hier null, dus de interne tekst
+  // kan structureel niet in de klant-PDF terechtkomen (zie test "interne notitie lekt niet").
+  const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
+  if (intern) interneNotitieBlok(intern);
 
   if (fotos.length > 0) {
     subKop("EINDSTAAT-FOTO'S");
@@ -349,6 +378,41 @@ export async function genereerRapportPdf(
     ty -= 13;
     for (const regel of regels) {
       page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.2, 0.23, 0.27) });
+      ty -= 14;
+    }
+    y = top - hoogte - 6;
+  }
+
+  /**
+   * Interne notitie: amber blok met een expliciet "INTERN"-label. Staat alleen in de zaak-versie.
+   * Bewust visueel anders dan de openbare opmerking, zodat het kantoor de twee niet verwart.
+   */
+  function interneNotitieBlok(s: string) {
+    const regels = wikkel(helv, 10, s, CONTENT - 24);
+    const hoogte = regels.length * 14 + 18;
+    ruimte(hoogte + 6);
+    const top = y;
+    page.drawRectangle({
+      x: MARGE,
+      y: top - hoogte + 8,
+      width: CONTENT,
+      height: hoogte,
+      color: INTERN_SOFT,
+      borderColor: INTERN,
+      borderWidth: 0.6,
+    });
+    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: INTERN });
+    let ty = top - 6;
+    page.drawText("INTERN — alleen voor de zaak", {
+      x: MARGE + 12,
+      y: ty,
+      size: 8,
+      font: bold,
+      color: INTERN,
+    });
+    ty -= 13;
+    for (const regel of regels) {
+      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.3, 0.22, 0.05) });
       ty -= 14;
     }
     y = top - hoogte - 6;

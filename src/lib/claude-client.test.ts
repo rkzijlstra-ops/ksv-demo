@@ -25,6 +25,7 @@ const validToolUseResponse = {
         referentienummer: "7444",
         adviseur: "M. de Vries",
         klant_telefoon: "071-1234567",
+        klant_email: "j.jansen@voorbeeld.nl",
         documenttype: "werkbon_service",
         leverweek: null,
         keukenzaak: "Keukenstudio Voorschoten",
@@ -51,6 +52,7 @@ const orderbevestigingResponse = {
         referentienummer: "7407",
         adviseur: "Marco van Leeuwen",
         klant_telefoon: "06-40200603",
+        klant_email: "vandijk@voorbeeld.nl",
         documenttype: "orderbevestiging",
         leverweek: "22/2026",
         keukenzaak: "Keukensale.com Katwijk",
@@ -94,6 +96,9 @@ describe("createParser", () => {
 
     expect(result.klant_naam).toBe("J. Jansen");
     expect(result.referentienummer).toBe("7444");
+    // klant_email komt uit de PDF-kop ("Email-adres") en moet door de keten heen blijven,
+    // want het is de voorinvulwaarde voor de klant-versie van het opleverrapport.
+    expect(result.klant_email).toBe("j.jansen@voorbeeld.nl");
     expect(result.meldingen).toHaveLength(1);
     expect(result.meldingen[0].keller_code).toBe("F-BK-LD-60");
   });

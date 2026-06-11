@@ -35,6 +35,8 @@ export interface Melding {
   referentienummer: string | null;
   adviseur: string | null;
   klant_telefoon: string | null;
+  // klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie van het rapport, aanpasbaar
+  klant_email: string | null;
   meldingen: MeldingItem[];
   foto_urls: string[];
   spraak_tekst: string | null;
@@ -94,8 +96,17 @@ export interface Oplevering {
   video_url: string | null;
   handtekening_url: string | null;
   opmerking: string | null;
+  /** Interne notitie: alleen voor de zaak, komt nooit in de klant-versie van het rapport. */
+  interne_opmerking: string | null;
+  /** Ontvanger voor de ZAAK-versie (bestaand gedrag). */
   rapport_email: string | null;
+  /** Zaak-PDF + wanneer hij verstuurd is (null = nog niet). */
   rapport_url: string | null;
+  zaak_rapport_verzonden_at: string | null;
+  /** Klant-versie: adres, PDF en wanneer verstuurd (null = nog niet). */
+  klant_rapport_email: string | null;
+  klant_rapport_url: string | null;
+  klant_rapport_verzonden_at: string | null;
   user_id: string | null;
   /** Controle-checklist die de klant aftekende (akkoord/niet akkoord per punt). */
   controle: ControlePunt[];
@@ -115,7 +126,11 @@ export interface OpleveringConceptInput {
    */
   handtekening_url?: string | null;
   opmerking?: string | null;
+  /** Interne notitie (alleen voor de zaak). Undefined = niet wijzigen, null = wissen. */
+  interne_opmerking?: string | null;
   rapport_email?: string | null;
+  /** Voorgesteld/aangepast klant-mailadres voor de klant-versie. */
+  klant_rapport_email?: string | null;
   user_id?: string | null;
 }
 
@@ -298,6 +313,13 @@ export interface Db {
   upsertOpleveringConcept(input: OpleveringConceptInput): Promise<{ id: string }>;
   getOpleveringVoorOpdracht(opdrachtId: string): Promise<Oplevering | null>;
   finaliseerOplevering(opdrachtId: string, rapportUrl: string): Promise<void>;
+  /** Klant-versie verstuurd: onthoud adres, PDF en tijdstip. Raakt de opdracht-status niet. */
+  registreerKlantRapport(opdrachtId: string, rapportUrl: string, naar: string): Promise<void>;
+  /**
+   * Zaak-versie verstuurd: onthoud PDF + tijdstip op de oplevering, en zet de opdracht PAS nu op
+   * opgeleverd. Hierdoor ziet het kantoor het oplevermoment niet eerder dan de monteur het deelt.
+   */
+  registreerZaakRapport(opdrachtId: string, rapportUrl: string): Promise<void>;
   verwijderOpdracht(id: string): Promise<void>;
   herstelOpdracht(id: string): Promise<void>;
   definitiefVerwijderen(id: string): Promise<void>;
@@ -603,6 +625,14 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (input.controle !== undefined) {
         payload.controle = input.controle;
       }
+      // Interne notitie en klant-adres: zelfde discipline (undefined = ongemoeid laten), zodat een
+      // losse tussenopslag ze niet per ongeluk wist.
+      if (input.interne_opmerking !== undefined) {
+        payload.interne_opmerking = input.interne_opmerking;
+      }
+      if (input.klant_rapport_email !== undefined) {
+        payload.klant_rapport_email = input.klant_rapport_email;
+      }
       const { data: row, error } = await client
         .from("opleveringen")
         .upsert(payload, { onConflict: "opdracht_id" })
@@ -631,6 +661,34 @@ function createDbFromClient(client: SupabaseClient): Db {
         .update({ rapport_url: rapportUrl })
         .eq("opdracht_id", opdrachtId);
       if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async registreerKlantRapport(opdrachtId, rapportUrl, naar) {
+      const { error } = await client
+        .from("opleveringen")
+        .update({
+          klant_rapport_url: rapportUrl,
+          klant_rapport_email: naar,
+          klant_rapport_verzonden_at: new Date().toISOString(),
+        })
+        .eq("opdracht_id", opdrachtId);
+      if (error) throw new Error(`DB update mislukt: ${error.message}`);
+    },
+
+    async registreerZaakRapport(opdrachtId, rapportUrl) {
+      const nu = new Date().toISOString();
+      // Zaak-PDF + tijdstip op de oplevering.
+      const { error: opErr } = await client
+        .from("opleveringen")
+        .update({ rapport_url: rapportUrl, zaak_rapport_verzonden_at: nu })
+        .eq("opdracht_id", opdrachtId);
+      if (opErr) throw new Error(`DB update mislukt: ${opErr.message}`);
+      // Pas nu de opdracht op opgeleverd zetten (het kantoor ziet het oplevermoment nu pas).
+      const { error: mErr } = await client
+        .from("meldingen")
+        .update({ opdracht_status: "opgeleverd", opgeleverd_at: nu, rapport_url: rapportUrl })
+        .eq("id", opdrachtId);
+      if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
     },
 
     async verwijderOpdracht(id) {

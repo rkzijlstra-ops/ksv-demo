@@ -875,3 +875,17 @@ create policy opleveringen_update on public.opleveringen
   for update using (public.mag_opdracht(opdracht_id)) with check (public.mag_opdracht(opdracht_id));
 create policy opleveringen_delete on public.opleveringen
   for delete using (public.mag_opdracht(opdracht_id));
+
+-- ============================================================================
+-- schema-compleet-15-interne-notitie-verzending.sql
+-- ============================================================================
+-- Interne notitie + ontkoppelde verzending (klant-versie los van zaak-versie). Idempotent.
+alter table public.opleveringen
+  add column if not exists interne_opmerking          text,
+  add column if not exists klant_rapport_email        text,
+  add column if not exists klant_rapport_url          text,
+  add column if not exists klant_rapport_verzonden_at timestamptz,
+  add column if not exists zaak_rapport_verzonden_at  timestamptz;
+
+alter table public.meldingen
+  add column if not exists klant_email text;

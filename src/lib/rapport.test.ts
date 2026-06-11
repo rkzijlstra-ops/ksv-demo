@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave } from "./rapport";
+import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport } from "./rapport";
 import type { Melding, Oplevering } from "./db";
 
 describe("rapportAfzenderWeergave", () => {
@@ -37,8 +37,13 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     video_url: null,
     handtekening_url: null,
     opmerking: null,
+    interne_opmerking: null,
     rapport_email: null,
     rapport_url: null,
+    zaak_rapport_verzonden_at: null,
+    klant_rapport_email: null,
+    klant_rapport_url: null,
+    klant_rapport_verzonden_at: null,
     user_id: null,
     controle: [],
     ...over,
@@ -56,6 +61,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     referentienummer: "7407",
     adviseur: "Marco van Leeuwen",
     klant_telefoon: "06-40200603",
+    klant_email: null,
     meldingen: [],
     foto_urls: [],
     spraak_tekst: null,
@@ -280,3 +286,36 @@ describe("genereerRapportPdf", () => {
     expect(startsWithPdf(bytes)).toBe(true);
   });
 });
+
+describe("interneNotitieVoorRapport (de interne notitie lekt niet naar de klant)", () => {
+  it("geeft de interne notitie terug voor de ZAAK-versie", () => {
+    const opl = maakOplevering({ interne_opmerking: "Klant was lastig over meerwerk" });
+    expect(interneNotitieVoorRapport(opl, "zaak")).toBe("Klant was lastig over meerwerk");
+  });
+
+  it("geeft NOOIT de interne notitie terug voor de KLANT-versie, ook al staat hij gevuld", () => {
+    const opl = maakOplevering({ interne_opmerking: "Klant was lastig over meerwerk" });
+    expect(interneNotitieVoorRapport(opl, "klant")).toBeNull();
+  });
+
+  it("geeft null als er geen interne notitie is (zaak)", () => {
+    expect(interneNotitieVoorRapport(maakOplevering({ interne_opmerking: null }), "zaak")).toBeNull();
+    expect(interneNotitieVoorRapport(maakOplevering({ interne_opmerking: "   " }), "zaak")).toBeNull();
+    expect(interneNotitieVoorRapport(null, "zaak")).toBeNull();
+  });
+});
+
+describe("genereerRapportPdf met interne notitie (beide doelgroepen renderen geldig)", () => {
+  const opl = (over = {}) =>
+    maakOplevering({ interne_opmerking: "INTERNE-GEHEIME-NOTITIE-XYZ", handtekening_url: "https://x/h.png", ...over });
+
+  it("rendert een geldige ZAAK-PDF met de interne notitie", async () => {
+    const bytes = await genereerRapportPdf(maakMelding({}), [], opl(), null, "zaak");
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+
+  it("rendert een geldige KLANT-PDF zonder de interne notitie te raken", async () => {
+    const bytes = await genereerRapportPdf(maakMelding({}), [], opl(), null, "klant");
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+})

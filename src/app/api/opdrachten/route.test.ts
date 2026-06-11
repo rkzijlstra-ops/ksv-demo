@@ -27,6 +27,7 @@ const orderParsed: ParsedPdf = {
   referentienummer: "7407",
   adviseur: "Marco van Leeuwen",
   klant_telefoon: "06-40200603",
+  klant_email: "vandijk@voorbeeld.nl",
   documenttype: "orderbevestiging",
   leverweek: "22/2026",
   keukenzaak: "Keukensale.com Katwijk",

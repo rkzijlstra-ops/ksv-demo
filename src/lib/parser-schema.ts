@@ -18,6 +18,7 @@ export const ParsedPdfSchema = z.object({
   referentienummer: z.string().nullable(),
   adviseur: z.string().nullable(),
   klant_telefoon: z.string().nullable(),
+  klant_email: z.string().nullable(),
   documenttype: DocumenttypeSchema,
   leverweek: z.string().nullable(),
   keukenzaak: z.string().nullable(),
@@ -58,6 +59,11 @@ export const ParsedPdfJsonSchema = {
       type: ["string", "null"],
       description:
         "Telefoonnummer van de klant zoals op de PDF, bijv. '071-1234567' of '06-12345678'. null als niet vindbaar.",
+    },
+    klant_email: {
+      type: ["string", "null"],
+      description:
+        "E-mailadres van de klant zoals op de PDF, vaak in de kop bij 'Email-adres'. Eén adres als string, bijv. 'j.jansen@voorbeeld.nl'. null als niet vindbaar (bij service-werkbonnen vaak afwezig).",
     },
     documenttype: {
       type: "string",
@@ -108,6 +114,7 @@ export const ParsedPdfJsonSchema = {
     "referentienummer",
     "adviseur",
     "klant_telefoon",
+    "klant_email",
     "documenttype",
     "leverweek",
     "keukenzaak",

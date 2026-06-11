@@ -13,6 +13,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     referentienummer: null,
     adviseur: null,
     klant_telefoon: null,
+    klant_email: null,
     meldingen: [],
     foto_urls: [],
     spraak_tekst: null,

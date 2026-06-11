@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Opleveren & versturen (KSV)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f1f5f9; --ink:#0f172a; --ink-muted:#475569;
+    --line:#cbd5e1; --primary:#27272a; --accent:#f97316; --rood:#dc2626;
+    --geel:#fbbf24; --success:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#e2e8f0; color:var(--ink);
+    font-family:'Lexend',system-ui,sans-serif; padding:28px 16px 60px;
+  }
+  .page-title{max-width:1180px;margin:0 auto 6px;font-size:22px;font-weight:800}
+  .page-sub{max-width:1180px;margin:0 auto 24px;color:#334155;font-size:14px}
+  .row{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:1180px;margin:0 auto}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .col-label{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#475569}
+  .col-label.huidig{color:#64748b}
+  .col-label.nieuw{color:var(--accent)}
+
+  /* telefoon */
+  .phone{
+    width:372px; background:var(--bg); border:3px solid var(--ink);
+    box-shadow:0 10px 0 rgba(15,23,42,.12);
+  }
+  .phone-top{
+    background:var(--primary); color:#fff; padding:14px 16px;
+  }
+  .phone-top h1{margin:0;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .phone-top p{margin:3px 0 0;font-size:13px;color:#cbd5e1}
+  .body{padding:18px 16px 20px;display:flex;flex-direction:column;gap:20px}
+
+  h2.step{
+    margin:0 0 8px; font-family:'JetBrains Mono',monospace; font-size:13px;
+    font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink);
+  }
+  .hint{margin:0 0 10px;font-size:13px;color:var(--ink-muted)}
+  .sec{border-top:1px solid var(--line);padding-top:18px}
+  .sec.first{border-top:none;padding-top:0}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    min-height:52px;padding:0 14px;border:2px solid var(--ink);background:#fff;
+    font-family:'Lexend';font-weight:800;font-size:13px;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--ink);cursor:pointer;width:100%;
+  }
+  .btn.media{flex:1}
+  .btn-row{display:flex;gap:10px}
+  .btn.success-on{border-color:var(--success);background:var(--success);color:#fff}
+  .btn.success-off{border-color:var(--success);color:var(--success)}
+  .btn.rood-off{border-color:var(--rood);color:var(--rood)}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);position:relative}
+  .btn.primary::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+
+  .field-label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  textarea,select,input{
+    width:100%;border:1px solid var(--line);background:#fff;padding:11px;
+    font-family:'Lexend';font-size:15px;color:var(--ink);border-radius:0;
+  }
+  textarea{resize:none;min-height:62px}
+  .mic{display:flex;align-items:center;gap:7px;color:var(--ink-muted);font-size:13px;margin-top:8px}
+
+  /* interne notitie amber */
+  .intern{
+    border:2px solid var(--geel);background:#fffbeb;
+  }
+  .intern-head{
+    display:flex;align-items:center;gap:9px;padding:12px 12px;cursor:pointer;
+  }
+  .intern-head .lock{color:#92400e}
+  .intern-head .txt{font-size:13px;font-weight:600;color:#0f172a;line-height:1.3}
+  .intern-head .txt small{display:block;color:#92400e;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .intern-head .chev{margin-left:auto;font-weight:800;color:#92400e;font-size:18px}
+  .intern-body{padding:0 12px 12px;display:none}
+  .intern.open .intern-body{display:block}
+  .intern.open .chev{transform:rotate(45deg)}
+  .intern textarea{border-color:var(--geel);background:#fff}
+
+  /* verstuur-kaarten */
+  .send-card{border:2px solid var(--line);margin-top:12px}
+  .send-card .cap{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);
+    padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface);
+  }
+  .send-card .inner{padding:12px;display:flex;flex-direction:column;gap:10px}
+  .addr{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}
+  .addr .edit{margin-left:auto;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+  .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink-muted);flex:none}
+  .status.done{color:var(--success)}
+  .status.done .dot{background:var(--success);border-color:var(--success)}
+  .status.todo{color:var(--ink-muted)}
+  .klant-kreeg{
+    display:none;align-items:flex-start;gap:8px;background:#f0fdf4;border:1px solid var(--success);
+    padding:8px 10px;font-size:13px;color:#166534;font-weight:600;line-height:1.35;
+  }
+  .klant-kreeg.show{display:flex}
+
+  .done-screen{padding:30px 16px;text-align:center}
+  .done-screen .big{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:26px;margin:8px 0 4px}
+  .done-screen .sub{color:var(--ink-muted);font-size:14px;margin:0}
+
+  /* werkpool kaart */
+  .pool{max-width:1180px;margin:40px auto 0}
+  .pool h3{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#475569;margin:0 0 12px;text-align:center}
+  .pool-card{
+    width:372px;margin:0 auto;border:3px solid var(--ink);background:#fff;padding:14px 16px;
+    box-shadow:0 8px 0 rgba(15,23,42,.12)
+  }
+  .pool-card .naam{font-weight:800;font-size:16px}
+  .pool-card .opg{display:flex;align-items:center;gap:7px;color:var(--success);font-weight:700;font-size:14px;margin-top:6px}
+  .pool-card .warn{
+    display:flex;align-items:center;gap:8px;margin-top:10px;background:#fffbeb;
+    border:2px solid var(--geel);padding:9px 11px;font-size:13px;font-weight:700;color:#92400e
+  }
+  .pool-card .warn .go{margin-left:auto;background:var(--primary);color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .legend{max-width:760px;margin:36px auto 0;background:#fff;border:2px solid var(--ink);padding:16px 18px}
+  .legend h4{margin:0 0 8px;font-size:14px;font-weight:800}
+  .legend ul{margin:0;padding-left:18px;color:#334155;font-size:14px;line-height:1.6}
+  svg{flex:none}
+</style>
+</head>
+<body>
+  <div class="page-title">Opleveren &amp; versturen — mockup</div>
+  <div class="page-sub">Links het scherm zoals het nu is. Rechts na de aanpassing. Klik rechts op de gele balk (interne notitie) en op “Stuur naar klant” om het gedrag te voelen.</div>
+
+  <div class="row">
+    <!-- ============ HUIDIG ============ -->
+    <div class="col">
+      <div class="col-label huidig">Huidig</div>
+      <div class="phone">
+        <div class="phone-top">
+          <h1>Opleveren</h1>
+          <p>Fam. de Vries · Voorschoten</p>
+        </div>
+        <div class="body">
+          <div class="sec first">
+            <h2 class="step">1. Eindresultaat vastleggen</h2>
+            <p class="hint">Maak foto’s van de keuken, het blad en de apparatuur. Een korte video mag erbij.</p>
+            <div class="btn-row">
+              <button class="btn media">📷&nbsp; Foto’s</button>
+              <button class="btn media">🎥&nbsp; Video</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2 class="step">2. Controle bij oplevering</h2>
+            <p class="hint">Loop dit samen met de klant na vóór de handtekening.</p>
+            <div class="field-label">Geen beschadigingen aan keuken, blad, vloer, muren</div>
+            <div class="btn-row" style="margin-bottom:14px">
+              <button class="btn success-off">✓ Akkoord</button>
+              <button class="btn rood-off">✗ Niet akkoord</button>
+            </div>
+            <div class="field-label">Opmerking</div>
+            <textarea placeholder="Bijv. klant belt nog voor smetplinten…"></textarea>
+            <div class="mic">🎤 Of spreek het in</div>
+          </div>
+
+          <div class="sec">
+            <h2 class="step">3. Handtekening (optioneel)</h2>
+            <button class="btn">✎&nbsp; Klant laten tekenen</button>
+          </div>
+
+          <div class="sec">
+            <div class="field-label">Rapport naar</div>
+            <select><option>Kies een ontvanger…</option></select>
+            <div style="margin-top:12px">
+              <button class="btn primary">Rapport maken &amp; versturen</button>
+            </div>
+            <p class="hint" style="margin-top:10px;font-style:italic">na versturen → “Opgeleverd! Rapport naar de zaak verstuurd.”<br>(verschijnt meteen op Ed’s dashboard)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ NIEUW ============ -->
+    <div class="col">
+      <div class="col-label nieuw">Na aanpassing</div>
+      <div class="phone">
+        <div class="phone-top">
+          <h1>Opleveren</h1>
+          <p>Fam. de Vries · Voorschoten</p>
+        </div>
+        <div class="body">
+          <div class="sec first">
+            <h2 class="step">1. Eindresultaat vastleggen</h2>
+            <p class="hint">Maak foto’s van de keuken, het blad en de apparatuur. Een korte video mag erbij.</p>
+            <div class="btn-row">
+              <button class="btn media">📷&nbsp; Foto’s</button>
+              <button class="btn media">🎥&nbsp; Video</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2 class="step">2. Controle bij oplevering</h2>
+            <p class="hint">Loop dit samen met de klant na vóór de handtekening.</p>
+            <div class="field-label">Geen beschadigingen aan keuken, blad, vloer, muren</div>
+            <div class="btn-row" style="margin-bottom:14px">
+              <button class="btn success-on">✓ Akkoord</button>
+              <button class="btn rood-off">✗ Niet akkoord</button>
+            </div>
+            <div class="field-label">Opmerking <span style="color:#475569;font-weight:400">· zichtbaar voor iedereen</span></div>
+            <textarea placeholder="Bijv. klant belt nog voor smetplinten…"></textarea>
+            <div class="mic">🎤 Of spreek het in</div>
+
+            <!-- interne notitie -->
+            <div class="intern" id="intern" style="margin-top:14px" onclick="toggleIntern(event)">
+              <div class="intern-head">
+                <svg class="lock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <div class="txt">Interne notitie<small>Alleen voor de zaak</small></div>
+                <div class="chev">+</div>
+              </div>
+              <div class="intern-body" onclick="event.stopPropagation()">
+                <textarea placeholder="Bijv. klant lastig over meerwerk, of: nameten kastenwand volgende keer."></textarea>
+                <div class="mic">🎤 Of spreek het in</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2 class="step">3. Handtekening (optioneel)</h2>
+            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--success);background:#f0fdf4;padding:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>
+              <span style="font-size:14px;font-weight:700;color:#166534">Gezet</span>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2 class="step">4. Versturen</h2>
+
+            <div class="send-card">
+              <div class="cap">Naar de klant</div>
+              <div class="inner">
+                <div class="addr">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                  jan@devries.nl <span class="edit">bewerk</span>
+                </div>
+                <button class="btn primary" id="klantBtn" onclick="stuurKlant(event)">Stuur naar klant</button>
+                <div class="status todo" id="klantStatus"><span class="dot"></span>nog niet verzonden</div>
+              </div>
+            </div>
+
+            <div class="send-card">
+              <div class="cap">Naar de zaak</div>
+              <div class="inner">
+                <div class="klant-kreeg" id="klantKreeg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" style="margin-top:1px"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span>Klant heeft dit rapport ook ontvangen (11 jun, jan@devries.nl)</span>
+                </div>
+                <select><option>Keukenstudio Voorschoten</option></select>
+                <button class="btn primary">Stuur naar zaak</button>
+                <div class="status todo"><span class="dot"></span>nog niet verzonden</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- werkpool geheugensteun -->
+  <div class="pool">
+    <h3>Geheugensteun in je werkpool — alleen jij ziet dit, Ed niet</h3>
+    <div class="pool-card">
+      <div class="naam">Fam. de Vries — Voorschoten</div>
+      <div class="opg">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>
+        Opgeleverd (klant heeft rapport)
+      </div>
+      <div class="warn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.3"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        Rapport naar zaak nog versturen
+        <span class="go">→</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Wat er verandert</h4>
+    <ul>
+      <li><b>Opleveren is privé</b> tot jij naar de zaak stuurt. Ed ziet niets, geen tijdstip.</li>
+      <li><b>Interne notitie</b> (gele balk, slotje): klapt open, klant ziet het nooit, zit alleen in de zaak-versie.</li>
+      <li><b>Twee losse verzendknoppen</b>: klant nu, zaak wanneer jij wilt. Elk met een statusbolletje.</li>
+      <li><b>Klant eerst?</b> Dan meldt de zaak-mail automatisch dat de klant het rapport ook heeft (groene regel).</li>
+      <li><b>Klant-mailadres vooraf ingevuld</b> uit de PDF, aanpasbaar.</li>
+    </ul>
+  </div>
+
+<script>
+  function toggleIntern(e){
+    document.getElementById('intern').classList.toggle('open');
+  }
+  function stuurKlant(e){
+    e.stopPropagation();
+    var b=document.getElementById('klantBtn');
+    var s=document.getElementById('klantStatus');
+    b.textContent='Verzonden ✓'; b.style.background='#16a34a'; b.style.borderColor='#16a34a';
+    b.querySelectorAll && b.removeAttribute('onclick');
+    s.className='status done'; s.innerHTML='<span class="dot"></span>Verzonden — 11 jun 14:32';
+    document.getElementById('klantKreeg').classList.add('show');
+  }
+</script>
+</body>
+</html>

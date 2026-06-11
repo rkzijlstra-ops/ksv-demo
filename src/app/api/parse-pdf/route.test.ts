@@ -22,6 +22,7 @@ const dummyParsed: ParsedPdf = {
   referentienummer: "7444",
   adviseur: "M. de Vries",
   klant_telefoon: "071-1234567",
+  klant_email: "j.jansen@voorbeeld.nl",
   documenttype: "werkbon_service",
   leverweek: null,
   keukenzaak: "Keukenstudio Voorschoten",

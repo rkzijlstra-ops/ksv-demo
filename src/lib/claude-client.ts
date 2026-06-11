@@ -19,6 +19,7 @@ Bepaal EERST het documenttype:
 Kop-velden (gelden voor beide types):
 - Geef het referentienummer altijd als string terug (ook al staat het als cijfer).
 - "klant_telefoon": telefoonnummer van de klant als string (bijv. '071-1234567' of '06-12345678'), of null. Staan er meerdere nummers, neem ze samen in één string.
+- "klant_email": het e-mailadres van de klant, vaak in de kop bij "Email-adres" (één adres als string), of null. Bij service-werkbonnen vaak afwezig.
 - "klant_naam" en "klant_adres" uit de klant-/afleveradres-gegevens.
 - "adviseur": de adviseur/orderverwerker.
 - "leverweek": de "Gepl. leverweek" (bijv. '22/2026') bij een orderbevestiging; null bij een werkbon of als niet vindbaar.

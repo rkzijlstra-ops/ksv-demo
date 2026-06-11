@@ -34,6 +34,7 @@ function parsed(ref: string | null, naam = "Klant"): ParsedPdf {
     referentienummer: ref,
     adviseur: null,
     klant_telefoon: null,
+    klant_email: null,
     documenttype: "werkbon_service",
     leverweek: null,
     keukenzaak: "Keukenstudio Voorschoten",
