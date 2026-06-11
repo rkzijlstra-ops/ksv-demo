@@ -30,7 +30,10 @@ bericht aan de oude monteur bij een wissel; zie 07_logboek/2026-06-10_mail-sms-k
 | annuleren → geannuleerd | status geannuleerd, toewijzing blijft (dossier) | dashboard "geannuleerd" (inklapbaar) | uit de werkpool ✓ (werkpool-filter) | mail + SMS (werk-kritiek) bij verstuurd ✓ |
 | document toevoegen na versturen | document erbij, geen status/herbevestiging | "nieuw document" zichtbaar | "nieuw"-badge in de app | **mail + SMS (overig)** bij verstuurd ✓ (mail was een lege stub, nu echt) |
 | bevestiging blijft uit (na HERINNERING_NA_UUR) | herinnering_verzonden_at gezet (idempotent) | "niet bevestigd"-teller in Te-doen | herinnering binnen | **mail + SMS (overig)** via cron ✓ (mail was een lege stub, nu echt) |
-| opleveren → opgeleverd | opdracht_status, rapport_url | dashboard groen + rapport | naar history | rapport-mail ✓ |
+| oplevering vastleggen (tussenopslag) | oplevering-record (foto/handtekening/opmerking/interne notitie) | **niets zichtbaar** (privacy-fix) ⚠️E | flow met ingevulde velden | geen |
+| versturen naar klant (schone versie) | klant-PDF, klant_rapport_verzonden_at/_email/_url | niets | "klant: verzonden ✓" | mail naar klant, zonder interne notitie (U) |
+| versturen naar zaak → opgeleverd | zaak-PDF, zaak_rapport_verzonden_at, rapport_url, opdracht → opgeleverd | nu pas oplever-blok + groen | "zaak: verzonden ✓", naar history | mail naar zaak, mét interne notitie; meldt of klant het ook kreeg (U) |
+| afgerond, zaak nog niet verstuurd | oplevering vastgelegd, zaak_rapport_verzonden_at null | **niets** (geen tijdstip) | werkpool-geheugensteun ❌ (nog te bouwen) | geen |
 | verwijderen (prullenbak) | verwijderd_at gezet | uit lijst, in prullenbak | verdwijnt uit werkpool ✓ | geen |
 
 Legenda: ✓ klopt en/of getest · ⚠️ aandachtspunt/ontwerpvraag · ❌ gat

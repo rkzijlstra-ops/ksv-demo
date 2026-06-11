@@ -47,15 +47,24 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |
 | Oplevering: foto-upload + handtekening-canvas + opmerking als concept (saves geserialiseerd) | U, E | rapport.test, opleveren.spec | groen |
 | Controle-checklist bij oplevering (akkoord/niet akkoord, opgeslagen met tekst, in rapport boven de handtekening) | U, E | oplevering/route.test (controle door + ongemoeid), rapport.test (controle render), opleveren.spec (Akkoord aanvinken → in concept) | groen (E draait Rein mee) |
-| Rapport genereren + mailen, status opgeleverd | U, M | oplever-mail.test (begeleidende tekst, geen rauwe link/opmerking), mail.test, opleveren/route.test, mail.spec | groen |
+| Rapport genereren + mailen, status opgeleverd | U, M | oplever-mail.test (begeleidende tekst, geen rauwe link/opmerking), mail.test, rapport/route.test, mail.spec | groen (E door Rein) |
+| Interne notitie: alleen in de zaak-versie, nooit in de klant-versie | U | rapport.test (interneNotitieVoorRapport: zaak wel, klant nooit, leeg→null) | groen |
+| Ontkoppelde verzending klant/zaak (los in tijd; zaak zet pas opgeleverd; "klant heeft 't ook"-regel) | U | rapport/route.test (9: doelgroep, ontvanger, status, klantOok, foutpaden), oplever-mail.test (klant-ook-regel + niet in klant-mail) | groen (E door Rein) |
+| Klant-mailadres uit de PDF (voorinvulwaarde, aanpasbaar) | U | claude-client.test (komt door de keten), parser-schema.test | groen |
+| Privacy: kantoor ziet de oplevering pas na de zaak-versie | E | (nog te dekken, zie gaten) | open |
 | Afzender-gegevens monteur (eigen profiel; op rapport, mail-ondertekening én From-naam i.p.v. keukenzaak/hardcoded BKM) | U, E | afzender→rapport.test (rapportAfzenderWeergave), oplever-mail.test (ondertekening + afzenderHeader), mijn-gegevens/route.test, mijn-gegevens.spec | groen |
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
 ## Bekende gaten (eerlijk, nog te dekken)
 
-- Geen openstaande functionele gaten meer. (De eerdere race in de concept-opslag van de oplevering is
-  gedicht: de saves zijn geserialiseerd in OpleverFlow; opleveren.spec bewaakt dit met snelle stappen.)
+- **E2e voor de nieuwe verzend-flow (klant/zaak) staat nog open.** De backend is unit-gedekt
+  (rapport/route.test, oplever-mail.test, rapport.test) en de mail-e2e is bijgewerkt naar de
+  "Stuur naar zaak"-knop. Nog te doen (door Rein, e2e): (1) klant-verzending zet de status NIET op
+  opgeleverd; (2) zaak-verzending zet 'm wél; (3) het kantoor-dashboard toont de oplevering pas na de
+  zaak-versie (privacy); (4) interne notitie verschijnt wel in de zaak-PDF, niet in de klant-PDF.
+- **Werkpool-geheugensteun "rapport naar zaak nog versturen"** (privé voor de monteur) is nog niet
+  gebouwd; de twee verzendkaarten tonen de status al per kant op het oplever-scherm zelf.
 - Component-test-laag (jsdom/RTL) bestaat niet; UI-gedrag hoort daarom in de Playwright-e2e.
 
 ## Hoe draaien
