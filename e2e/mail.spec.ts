@@ -116,8 +116,8 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
   await page.getByRole("combobox").selectOption({ label: "Anders (typ zelf)" });
   await page.getByLabel("E-mailadres voor het rapport").fill(RAPPORT_NAAR);
 
-  // Versturen: genereert de PDF en mailt.
-  await page.getByRole("button", { name: "Versturen" }).click();
+  // Versturen naar de zaak: genereert de PDF en mailt. Dit is het afrond-moment (opgeleverd).
+  await page.getByRole("button", { name: "Stuur naar zaak" }).click();
   await expect(page.getByText("Opgeleverd!")).toBeVisible({ timeout: 40_000 });
 
   // Appkant: opdracht is opgeleverd met een rapport.

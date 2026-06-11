@@ -144,8 +144,9 @@ export default async function OpdrachtgeverDetailPage({
         />
       </section>
 
-      {/* Opleverrapport als leesweergave */}
-      {oplevering && (
+      {/* Opleverrapport als leesweergave. Pas tonen zodra de monteur de ZAAK-versie heeft verstuurd:
+          het kantoor mag het oplevermoment niet eerder zien dan de monteur het deelt (privacy). */}
+      {oplevering && oplevering.zaak_rapport_verzonden_at && (
         <section className="mt-6 border-2 border-success bg-white">
           <div className="flex items-center justify-between gap-2 border-b-2 border-success bg-success/10 px-4 py-2.5">
             <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-success">
@@ -188,6 +189,15 @@ export default async function OpdrachtgeverDetailPage({
                   Opmerking monteur
                 </p>
                 <p className="text-sm text-ink">{oplevering.opmerking}</p>
+              </div>
+            )}
+
+            {oplevering.interne_opmerking && (
+              <div className="border-2 border-urgent-geel bg-urgent-geel/10 p-3">
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.05em] text-ink">
+                  Interne notitie · alleen voor de zaak
+                </p>
+                <p className="text-sm text-ink">{oplevering.interne_opmerking}</p>
               </div>
             )}
 

@@ -13,6 +13,13 @@ export function opleverMailTekst(opts: {
   referentienummer: string | null;
   afzender: RapportAfzender | null;
   heeftVideo: boolean;
+  /** Voor wie de mail is. "zaak" (default) = kantoor; "klant" = de eindklant. */
+  doelgroep?: "klant" | "zaak";
+  /**
+   * Alleen voor de ZAAK-mail: als de klant zijn (schone) versie ook al kreeg, een korte melding
+   * met wanneer (al geformatteerd) en naar welk adres. Null/weggelaten = niets vermelden.
+   */
+  klantOok?: { wanneer: string; adres: string } | null;
 }): { subject: string; text: string; afzenderNaam: string } {
   const klant = opts.klantNaam?.trim() || "de klant";
   const ref = opts.referentienummer ? ` (ref ${opts.referentienummer})` : "";
@@ -20,6 +27,11 @@ export function opleverMailTekst(opts: {
   const mediaZin = opts.heeftVideo
     ? "De foto's en de video van de oplevering vindt u in het rapport in de bijlage."
     : "De foto's van de oplevering vindt u in het rapport in de bijlage.";
+  // Alleen in de zaak-mail, en alleen als de klant zijn versie ook kreeg.
+  const klantOokZin =
+    opts.doelgroep !== "klant" && opts.klantOok
+      ? `\n\nDe klant heeft dit rapport ook ontvangen op ${opts.klantOok.wanneer} (${opts.klantOok.adres}).`
+      : "";
 
   // Ondertekening: de persoonsnaam als afsluiting (wie tekent), met een witregel daaronder de
   // bedrijfs- en contactgegevens. Bewust niet de gedeelde `voet`: die begint met de bedrijfsnaam,
@@ -40,7 +52,7 @@ export function opleverMailTekst(opts: {
   const subject = `Opleverrapport ${klant}${ref}`;
   const text = `Beste,
 
-Hierbij het opleverrapport van de montage bij ${klant}${ref}. ${mediaZin}
+Hierbij het opleverrapport van de montage bij ${klant}${ref}. ${mediaZin}${klantOokZin}
 
 Met vriendelijke groet,
 ${ondertekening}`;

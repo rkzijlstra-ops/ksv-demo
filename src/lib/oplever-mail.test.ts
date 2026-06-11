@@ -105,3 +105,41 @@ describe("afzenderHeader", () => {
     expect(afzenderHeader("  rapport@mijndomein.nl  ", "BKM")).toBe("BKM <rapport@mijndomein.nl>");
   });
 });
+
+describe("opleverMailTekst — klant heeft het rapport ook (zaak-mail)", () => {
+  it("vermeldt in de zaak-mail dat de klant het rapport ook kreeg", () => {
+    const { text } = opleverMailTekst({
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      afzender: null,
+      heeftVideo: false,
+      doelgroep: "zaak",
+      klantOok: { wanneer: "11 juni 2026", adres: "jan@devries.nl" },
+    });
+    expect(text).toContain("De klant heeft dit rapport ook ontvangen op 11 juni 2026 (jan@devries.nl).");
+  });
+
+  it("vermeldt niets als de klant zijn versie nog niet kreeg", () => {
+    const { text } = opleverMailTekst({
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      afzender: null,
+      heeftVideo: false,
+      doelgroep: "zaak",
+      klantOok: null,
+    });
+    expect(text).not.toContain("De klant heeft dit rapport ook ontvangen");
+  });
+
+  it("zet de klant-ook-regel nooit in de klant-mail zelf", () => {
+    const { text } = opleverMailTekst({
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      afzender: null,
+      heeftVideo: false,
+      doelgroep: "klant",
+      klantOok: { wanneer: "11 juni 2026", adres: "jan@devries.nl" },
+    });
+    expect(text).not.toContain("De klant heeft dit rapport ook ontvangen");
+  });
+});

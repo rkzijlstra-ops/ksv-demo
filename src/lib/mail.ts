@@ -20,6 +20,10 @@ export interface OpleverMailInput {
   videoUrl?: string | null;
   /** Afzender uit het monteur-profiel; bepaalt zowel de From-naam als de ondertekening. */
   afzender?: RapportAfzender | null;
+  /** Voor wie de mail is. "zaak" (default) = kantoor; "klant" = de eindklant. */
+  doelgroep?: "klant" | "zaak";
+  /** Alleen zaak-mail: vermeld dat de klant zijn versie ook kreeg (al geformatteerde datum + adres). */
+  klantOok?: { wanneer: string; adres: string } | null;
 }
 
 export interface SpoedMailInput {
@@ -124,6 +128,8 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
     referentienummer: input.opdracht.referentienummer,
     afzender: input.afzender ?? null,
     heeftVideo: !!input.videoUrl?.trim(),
+    doelgroep: input.doelgroep ?? "zaak",
+    klantOok: input.klantOok ?? null,
   });
 
   const { error } = await resend.emails.send({

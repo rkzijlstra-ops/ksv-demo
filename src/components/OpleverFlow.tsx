@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { FotoMaken } from "@/components/FotoMaken";
 import { VideoMaken } from "@/components/VideoMaken";
@@ -17,15 +17,31 @@ import { KEUKENZAKEN } from "@/lib/keukenzaken";
 import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
 import type { Adres } from "@/lib/db";
 
-export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
+export function OpleverFlow({
+  opdrachtId,
+  klantEmailVoorstel = null,
+}: {
+  opdrachtId: string;
+  /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
+  klantEmailVoorstel?: string | null;
+}) {
   const router = useRouter();
   const { online } = useOfflineState();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [opmerking, setOpmerking] = useState("");
+  // Interne notitie: alleen voor de zaak, komt nooit in de klant-versie van het rapport.
+  const [internOpmerking, setInternOpmerking] = useState("");
+  const [internOpen, setInternOpen] = useState(false);
   // Controlepunt dat de klant aftekent: true = akkoord, false = niet akkoord, null = nog niet gekozen.
   const [controleAkkoord, setControleAkkoord] = useState<boolean | null>(null);
   const [rapportEmail, setRapportEmail] = useState("");
+  // Klant-versie: adres (voorinvuld uit de PDF) en of elke kant al verstuurd is.
+  const [klantEmail, setKlantEmail] = useState("");
+  const [klantVerzondenAt, setKlantVerzondenAt] = useState<string | null>(null);
+  const [zaakVerzondenAt, setZaakVerzondenAt] = useState<string | null>(null);
+  const [klantBezig, setKlantBezig] = useState(false);
+  const [zaakBezig, setZaakBezig] = useState(false);
   const [handmatig, setHandmatig] = useState(false);
   // Persoonlijk adresboek van de monteur: vaste ontvangers met een naam, te kiezen of toe te voegen.
   const [adresboek, setAdresboek] = useState<Adres[]>([]);
@@ -41,11 +57,10 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
   // zodat hij in elke tussentijdse opslag meegaat en een herlaad/terugkeer overleeft.
   const [handtekeningUrl, setHandtekeningUrl] = useState<string | null>(null);
   const [handtekeningBezig, setHandtekeningBezig] = useState(false);
-  const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
 
-  useVerlaatWaarschuwing(bezig);
+  useVerlaatWaarschuwing(klantBezig || zaakBezig);
 
   const geladenRef = useRef(false);
   // Concept-saves serialiseren: elke opslag wacht op de vorige. Zonder dit zijn de saves
@@ -67,11 +82,20 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             setVideoUrl(oplevering.video_url ?? null);
             setHandtekeningUrl(oplevering.handtekening_url ?? null);
             setOpmerking(oplevering.opmerking ?? "");
+            setInternOpmerking(oplevering.interne_opmerking ?? "");
+            if (oplevering.interne_opmerking?.trim()) setInternOpen(true);
             const c = Array.isArray(oplevering.controle) ? oplevering.controle : [];
             setControleAkkoord(c.length > 0 ? Boolean(c[0].akkoord) : null);
             const em: string = oplevering.rapport_email ?? "";
             setRapportEmail(em);
             if (em && !KEUKENZAKEN.some((z) => z.email === em)) setHandmatig(true);
+            // Klant-adres: het bewaarde adres, anders het voorstel uit de PDF.
+            setKlantEmail(oplevering.klant_rapport_email ?? klantEmailVoorstel ?? "");
+            setKlantVerzondenAt(oplevering.klant_rapport_verzonden_at ?? null);
+            setZaakVerzondenAt(oplevering.zaak_rapport_verzonden_at ?? null);
+          } else {
+            // Nog geen concept: vul het klant-adres alvast met het voorstel uit de PDF.
+            setKlantEmail(klantEmailVoorstel ?? "");
           }
         }
       } finally {
@@ -81,7 +105,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     return () => {
       actief = false;
     };
-  }, [opdrachtId]);
+  }, [opdrachtId, klantEmailVoorstel]);
 
   // Adresboek van de monteur laden (vaste ontvangers).
   useEffect(() => {
@@ -189,7 +213,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
       video_url: videoUrl,
       handtekening_url: handtekeningUrl,
       opmerking: opmerking.trim() || null,
+      interne_opmerking: internOpmerking.trim() || null,
       rapport_email,
+      klant_rapport_email: klantEmail.trim() || null,
       controle:
         controleAkkoord === null ? [] : [{ punt: CONTROLE_PUNTEN[0], akkoord: controleAkkoord }],
     });
@@ -216,21 +242,29 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
     heeftVideo: videoUrl !== null,
   });
 
-  async function versturen() {
-    if (!rapportEmail.trim()) {
-      setFout("Kies een ontvanger of typ een e-mailadres voor het rapport.");
+  /**
+   * Verstuurt het rapport naar één doelgroep, los in tijd.
+   * - "klant": schone versie; de monteur blijft op het scherm (kan daarna nog naar de zaak).
+   * - "zaak": volledige versie; dit is het afrond-moment (opdracht wordt opgeleverd).
+   */
+  async function verstuurNaar(doelgroep: "klant" | "zaak") {
+    if (doelgroep === "klant" && !klantEmail.trim()) {
+      setFout("Vul een e-mailadres van de klant in.");
+      return;
+    }
+    if (doelgroep === "zaak" && !rapportEmail.trim()) {
+      setFout("Kies een ontvanger voor de zaak.");
       return;
     }
     if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
 
-    setBezig(true);
+    const zetBezig = doelgroep === "klant" ? setKlantBezig : setZaakBezig;
+    zetBezig(true);
     setFout("");
     try {
-      // Eerst de lopende concept-saves afronden, zodat de definitieve opslag hieronder niet door een
-      // nog onderweg zijnde tussenopslag overschreven wordt.
+      // Eerst de lopende concept-saves afronden, en daarna nog één expliciete opslag, zodat de
+      // verzending werkt met de laatste stand (adres, interne notitie, controle).
       await opslaanChainRef.current.catch(() => {});
-      // De handtekening is bij "Klaar" al geüpload en in elke tussenopslag bewaard; hier alleen
-      // nog expliciet meesturen voor de zekerheid.
       const conceptRes = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -239,7 +273,9 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           video_url: videoUrl,
           handtekening_url: handtekeningUrl,
           opmerking: opmerking.trim() || null,
+          interne_opmerking: internOpmerking.trim() || null,
           rapport_email: rapportEmail.trim() || null,
+          klant_rapport_email: klantEmail.trim() || null,
           controle:
             controleAkkoord === null ? [] : [{ punt: CONTROLE_PUNTEN[0], akkoord: controleAkkoord }],
         }),
@@ -249,21 +285,33 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         throw new Error(b.error ?? `Opslaan mislukt (${conceptRes.status})`);
       }
 
-      const verstuurRes = await fetch(`/api/opdrachten/${opdrachtId}/opleveren`, { method: "POST" });
+      const verstuurRes = await fetch(`/api/opdrachten/${opdrachtId}/rapport`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doelgroep }),
+      });
       if (!verstuurRes.ok) {
         const b = await verstuurRes.json().catch(() => ({}));
         throw new Error(b.error ?? `Versturen mislukt (${verstuurRes.status})`);
       }
 
-      // Belonend "klaar"-moment, dan terug naar de opdracht.
-      setKlaar(true);
-      setTimeout(() => {
-        router.push(`/opdracht/${opdrachtId}`);
-        router.refresh();
-      }, 1400);
+      const nu = new Date().toISOString();
+      if (doelgroep === "klant") {
+        // Klant gehad: status flipt, monteur blijft (kan nu of later naar de zaak).
+        setKlantVerzondenAt(nu);
+        setKlantBezig(false);
+      } else {
+        // Zaak gehad: de klus is opgeleverd. Belonend "klaar"-moment, dan terug naar de opdracht.
+        setZaakVerzondenAt(nu);
+        setKlaar(true);
+        setTimeout(() => {
+          router.push(`/opdracht/${opdrachtId}`);
+          router.refresh();
+        }, 1400);
+      }
     } catch (err) {
       setFout((err as Error).message);
-      setBezig(false);
+      zetBezig(false);
     }
   }
 
@@ -321,33 +369,35 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
               type="button"
               onClick={() => setControleAkkoord(true)}
               aria-pressed={controleAkkoord === true}
-              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
                 controleAkkoord === true
                   ? "border-success bg-success text-white"
                   : "border-success bg-white text-success hover:bg-success/10"
               }`}
             >
-              <CheckCircle2 size={18} strokeWidth={2.5} aria-hidden="true" />
+              <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
               Akkoord
             </button>
             <button
               type="button"
               onClick={() => setControleAkkoord(false)}
               aria-pressed={controleAkkoord === false}
-              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
                 controleAkkoord === false
                   ? "border-urgent-rood bg-urgent-rood text-white"
                   : "border-urgent-rood bg-white text-urgent-rood hover:bg-urgent-rood/10"
               }`}
             >
-              <AlertCircle size={18} strokeWidth={2.5} aria-hidden="true" />
+              <AlertCircle size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
               Niet akkoord
             </button>
           </div>
         </div>
 
         <div className="mt-4">
-          <p className="mb-2 text-sm text-ink-muted">Toch iets te melden? Typ of spreek het hier in.</p>
+          <p className="mb-1 text-sm font-semibold text-ink">
+            Opmerking <span className="font-normal text-ink-muted">· zichtbaar voor iedereen</span>
+          </p>
           <textarea
             value={opmerking}
             onChange={(e) => setOpmerking(e.target.value)}
@@ -364,6 +414,46 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
           <div className="mt-1">
             <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
           </div>
+        </div>
+
+        {/* Interne notitie: alleen voor de zaak, dichtgeklapt achter een knop. Komt nooit in de
+            klant-versie van het rapport. Amber + slotje, bewust anders dan de openbare opmerking. */}
+        <div className="mt-4 border-2 border-urgent-geel bg-urgent-geel/10">
+          <button
+            type="button"
+            onClick={() => setInternOpen((o) => !o)}
+            aria-expanded={internOpen}
+            className="flex w-full items-center gap-2 px-3 py-3 text-left"
+          >
+            <Lock size={18} strokeWidth={2.4} className="shrink-0 text-ink" aria-hidden="true" />
+            <span className="text-sm font-semibold leading-tight text-ink">
+              Interne notitie
+              <span className="block text-xs font-bold uppercase tracking-[0.04em] text-ink-muted">
+                Alleen voor de zaak
+              </span>
+            </span>
+            <span className="ml-auto text-lg font-extrabold text-ink-muted">{internOpen ? "−" : "+"}</span>
+          </button>
+          {internOpen && (
+            <div className="px-3 pb-3">
+              <textarea
+                value={internOpmerking}
+                onChange={(e) => setInternOpmerking(e.target.value)}
+                onBlur={() => bewaarConcept()}
+                rows={3}
+                aria-label="Interne notitie voor de zaak"
+                placeholder="Bijv. klant lastig over meerwerk, of: nameten kastenwand volgende keer."
+                className="w-full rounded-none border border-urgent-geel bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+              />
+              <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+                <Mic size={16} aria-hidden="true" />
+                Of spreek het in:
+              </div>
+              <div className="mt-1">
+                <SpraakOpname onTekst={(t) => setInternOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -415,10 +505,60 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         )}
       </section>
 
-      {/* Rapport naar */}
+      {/* 4. Versturen: twee losse kaarten (klant / zaak), los in tijd. */}
       <section className="border-t border-line pt-6">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-ink">Rapport naar</span>
+        <h2 className="mb-3 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
+          4. Versturen
+        </h2>
+
+        {/* Naar de klant: schone versie (zonder interne notitie). Optioneel, meestal meteen. */}
+        <div className="border-2 border-line">
+          <div className="border-b border-line bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
+            Naar de klant
+          </div>
+          <div className="flex flex-col gap-2 p-3">
+            <input
+              type="email"
+              inputMode="email"
+              value={klantEmail}
+              onChange={(e) => setKlantEmail(e.target.value)}
+              onBlur={() => bewaarConcept()}
+              aria-label="E-mailadres van de klant"
+              placeholder="E-mailadres van de klant"
+              className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink placeholder:text-ink-muted focus-visible:outline-3 focus-visible:outline-primary"
+            />
+            <button
+              type="button"
+              onClick={() => verstuurNaar("klant")}
+              disabled={!online || klantBezig || !klantEmail.trim()}
+              className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {klantBezig ? "Versturen…" : !online ? "Netwerk nodig" : "Stuur naar klant"}
+            </button>
+            <div
+              className={`flex items-center gap-2 text-sm font-semibold ${klantVerzondenAt ? "text-success" : "text-ink-muted"}`}
+            >
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 ${klantVerzondenAt ? "border-success bg-success" : "border-ink-muted"}`}
+              />
+              {klantVerzondenAt ? "Verzonden" : "nog niet verzonden"}
+            </div>
+          </div>
+        </div>
+
+        {/* Naar de zaak: volledige versie (mét interne notitie). Dit is het afrond-moment. */}
+        <div className="mt-3 border-2 border-line">
+          <div className="border-b border-line bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
+            Naar de zaak
+          </div>
+          <div className="flex flex-col gap-2 p-3">
+            {klantVerzondenAt && (
+              <p className="flex items-start gap-1.5 border border-success bg-success/10 p-2 text-sm font-semibold text-success">
+                <CheckCircle2 size={16} strokeWidth={2.4} className="mt-0.5 shrink-0" aria-hidden="true" />
+                Klant heeft het rapport ook ontvangen.
+              </p>
+            )}
+            <span className="text-sm font-semibold text-ink">Rapport naar</span>
           <select
             value={keuzeWaarde}
             onChange={(e) => {
@@ -576,6 +716,35 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
               )}
             </div>
           )}
+            <button
+              type="button"
+              onClick={() => verstuurNaar("zaak")}
+              disabled={!online || zaakBezig || !rapportEmail.trim()}
+              className="relative inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
+            >
+              {zaakBezig ? (
+                "Versturen…"
+              ) : !online ? (
+                <>
+                  <CloudOff size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Netwerk nodig
+                </>
+              ) : (
+                <>
+                  <PackageCheck size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Stuur naar zaak
+                </>
+              )}
+            </button>
+            <div
+              className={`flex items-center gap-2 text-sm font-semibold ${zaakVerzondenAt ? "text-success" : "text-ink-muted"}`}
+            >
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 ${zaakVerzondenAt ? "border-success bg-success" : "border-ink-muted"}`}
+              />
+              {zaakVerzondenAt ? "Verzonden" : "nog niet verzonden"}
+            </div>
+          </div>
         </div>
         {fout && (
           <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
@@ -585,49 +754,23 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
         )}
       </section>
 
-      {/* Vaste onderbalk: voorvertonen + navigatie + versturen */}
+      {/* Vaste onderbalk: voorvertonen + terug naar de meldingen. Versturen gebeurt per kaart hierboven. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
-          {bezig ? (
-            <Voortgang label="Rapport maken en versturen…" />
-          ) : (
-            <>
-              <Link
-                href={`/opdracht/${opdrachtId}/rapport`}
-                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-              >
-                <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
-                Rapport voorvertonen
-              </Link>
-              <div className="flex gap-3">
-                <Link
-                  href={`/opdracht/${opdrachtId}`}
-                  className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-                >
-                  <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
-                  Meldingen
-                </Link>
-                <button
-                  type="button"
-                  onClick={versturen}
-                  disabled={!online}
-                  className="relative inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
-                >
-                  {!online ? (
-                    <>
-                      <CloudOff size={18} strokeWidth={2.5} aria-hidden="true" />
-                      Netwerk nodig
-                    </>
-                  ) : (
-                    <>
-                      <PackageCheck size={18} strokeWidth={2.5} aria-hidden="true" />
-                      Versturen
-                    </>
-                  )}
-                </button>
-              </div>
-            </>
-          )}
+          <Link
+            href={`/opdracht/${opdrachtId}/rapport`}
+            className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
+            Rapport voorvertonen
+          </Link>
+          <Link
+            href={`/opdracht/${opdrachtId}`}
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
+            Meldingen
+          </Link>
         </div>
       </div>
 

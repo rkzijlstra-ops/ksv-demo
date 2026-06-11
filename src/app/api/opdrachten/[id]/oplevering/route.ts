@@ -77,6 +77,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("controle" in body) {
     concept.controle = leesControle(body.controle) ?? [];
   }
+  // Interne notitie en klant-adres: zelfde discipline (alleen meeschrijven als de body ze bevat),
+  // zodat een losse tussenopslag ze niet per ongeluk wist.
+  if ("interne_opmerking" in body) {
+    concept.interne_opmerking = typeof body.interne_opmerking === "string" ? body.interne_opmerking : null;
+  }
+  if ("klant_rapport_email" in body) {
+    concept.klant_rapport_email = typeof body.klant_rapport_email === "string" ? body.klant_rapport_email : null;
+  }
 
   try {
     const { id: oplId } = await (await db()).upsertOpleveringConcept(concept);

@@ -44,7 +44,7 @@ export default async function OpleverenPage({
       )}
 
       <div className="mt-6">
-        <OpleverFlow opdrachtId={id} />
+        <OpleverFlow opdrachtId={id} klantEmailVoorstel={opdracht.klant_email} />
       </div>
     </main>
   );
