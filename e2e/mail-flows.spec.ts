@@ -26,6 +26,7 @@ const db: Db = createDb({ url: URL_, secretKey: KEY });
 let oId = "";
 let mId = "";
 let accUid = "";
+let accUid2 = "";
 let accNieuwAangemaakt = false;
 
 test.beforeEach(() => {
@@ -33,6 +34,7 @@ test.beforeEach(() => {
   oId = "";
   mId = "";
   accUid = "";
+  accUid2 = "";
   accNieuwAangemaakt = false;
 });
 
@@ -40,6 +42,7 @@ test.afterEach(async () => {
   if (mId) await admin.from("meldingen").delete().eq("id", mId);
   if (oId) await admin.from("meldingen").delete().eq("id", oId);
   if (accUid && accNieuwAangemaakt) await admin.auth.admin.deleteUser(accUid).catch(() => {});
+  if (accUid2) await admin.auth.admin.deleteUser(accUid2).catch(() => {});
 });
 
 async function zoekUidOpEmail(email: string): Promise<string | null> {
@@ -179,4 +182,90 @@ test("annuleer-mail wordt naar de monteur verstuurd als een verstuurde klus word
   expect(res.ok()).toBeTruthy();
   expect((await res.json()).gemaild).toBe(true);
   console.log(`ANNULEERMAIL klant="${klant}" naar=${email} (planning@kluslus.nl)`);
+});
+
+test("verzet-mail: opnieuw versturen na een datum-wijziging (zelfde monteur) meldt 'verzet', niet 'nieuw'", async ({ page }) => {
+  const stamp = Date.now();
+  const email = `bkmkeukenmontage+verzettest${stamp}@gmail.com`;
+  const klant = `VERZETMAIL ${stamp}`;
+  const zaak = await db.getStandaardOpdrachtgever();
+  const { data: maak } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  accUid = maak!.user!.id;
+  accNieuwAangemaakt = true;
+  await admin
+    .from("profielen")
+    .insert({ id: accUid, rol: "monteur", naam: "Verzet Monteur", opdrachtgever_id: zaak?.id ?? null });
+  const o = await db.createOpdracht({
+    documenttype: "werkbon_service",
+    klant_naam: klant,
+    klant_adres: "Teststraat 1",
+    referentienummer: `VZ${stamp}`,
+    adviseur: null,
+    klant_telefoon: null,
+    leverweek: null,
+    keukenzaak: "Keukenstudio Voorschoten",
+    user_id: BEHEERDER,
+    opdrachtgever_id: zaak?.id ?? null,
+  });
+  oId = o.id;
+  // Plan + verstuur op de eerste datum, daarna verplaatsen naar een andere datum (zelfde monteur).
+  await db.planOpdracht(oId, { toegewezen_aan: accUid, monteur_naam: "Verzet Monteur", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 });
+  await db.markeerVerzonden(oId, { toegewezen_aan: accUid, monteur_naam: "Verzet Monteur", startdatum: "2026-06-15", starttijd: null });
+  await db.wijzigOpdracht(
+    oId,
+    { toegewezen_aan: accUid, monteur_naam: "Verzet Monteur", startdatum: "2026-06-22", starttijd: null, duur_dagen: 1 },
+    "gepland",
+    { toegewezen_aan: accUid, monteur_naam: "Verzet Monteur", startdatum: "2026-06-15", starttijd: null },
+  );
+
+  const res = await page.request.post(`/api/dashboard/versturen`, { data: { ids: [oId] } });
+  expect(res.ok()).toBeTruthy();
+  expect((await res.json()).mailWaarschuwing).toBeFalsy(); // geen mail/SMS-fout = beide gelukt
+  console.log(`VERZETMAIL klant="${klant}" naar=${email}: mail + SMS moeten "verzet naar 22 jun" melden, niet "nieuwe klus"`);
+});
+
+test("wissel-mail: oude monteur krijgt de annulering, nieuwe monteur de klus", async ({ page }) => {
+  const stamp = Date.now();
+  const emailA = `bkmkeukenmontage+wisselA${stamp}@gmail.com`;
+  const emailB = `bkmkeukenmontage+wisselB${stamp}@gmail.com`;
+  const klant = `WISSELMAIL ${stamp}`;
+  const zaak = await db.getStandaardOpdrachtgever();
+  const { data: maakA } = await admin.auth.admin.createUser({ email: emailA, email_confirm: true });
+  accUid = maakA!.user!.id;
+  accNieuwAangemaakt = true;
+  await admin
+    .from("profielen")
+    .insert({ id: accUid, rol: "monteur", naam: "Wissel Monteur A", opdrachtgever_id: zaak?.id ?? null });
+  const { data: maakB } = await admin.auth.admin.createUser({ email: emailB, email_confirm: true });
+  accUid2 = maakB!.user!.id;
+  await admin
+    .from("profielen")
+    .insert({ id: accUid2, rol: "monteur", naam: "Wissel Monteur B", opdrachtgever_id: zaak?.id ?? null });
+  const o = await db.createOpdracht({
+    documenttype: "werkbon_service",
+    klant_naam: klant,
+    klant_adres: "Teststraat 1",
+    referentienummer: `WS${stamp}`,
+    adviseur: null,
+    klant_telefoon: null,
+    leverweek: null,
+    keukenzaak: "Keukenstudio Voorschoten",
+    user_id: BEHEERDER,
+    opdrachtgever_id: zaak?.id ?? null,
+  });
+  oId = o.id;
+  // Plan + verstuur aan monteur A, daarna schuiven naar monteur B (wissel), nog niet opnieuw verstuurd.
+  await db.planOpdracht(oId, { toegewezen_aan: accUid, monteur_naam: "Wissel Monteur A", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 });
+  await db.markeerVerzonden(oId, { toegewezen_aan: accUid, monteur_naam: "Wissel Monteur A", startdatum: "2026-06-15", starttijd: null });
+  await db.wijzigOpdracht(
+    oId,
+    { toegewezen_aan: accUid2, monteur_naam: "Wissel Monteur B", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 },
+    "gepland",
+    { toegewezen_aan: accUid, monteur_naam: "Wissel Monteur A", startdatum: "2026-06-15", starttijd: null },
+  );
+
+  const res = await page.request.post(`/api/dashboard/versturen`, { data: { ids: [oId] } });
+  expect(res.ok()).toBeTruthy();
+  expect((await res.json()).mailWaarschuwing).toBeFalsy();
+  console.log(`WISSELMAIL klant="${klant}": A (${emailA}) moet de annulering-mail+SMS krijgen, B (${emailB}) de nieuwe klus`);
 });
