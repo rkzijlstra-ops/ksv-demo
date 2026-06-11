@@ -25,7 +25,7 @@ bericht aan de oude monteur bij een wissel; zie 07_logboek/2026-06-10_mail-sms-k
 | wijzigen/verplaatsen na versturen (datum) | nieuwe planning + gewijzigd-marker | "gewijzigd, te versturen" | houdt afgesproken (verzonden) datum vast ✓ | geen tot opnieuw verstuurd (bewust) ✓ |
 | wijzigen naar andere monteur na versturen | toewijzing naar B + gewijzigd-marker | kaart bij B op het bord | oude monteur houdt de klus tot opnieuw verstuurd, B ziet hem pas dan ✓ | geen tot opnieuw verstuurd (bewust) ✓ |
 | opnieuw versturen, zelfde monteur (datum/tijd verzet) | status gepland, verzonden_* + verzonden_at bij, herinnering gereset | terug naar "gepland" | terug naar "Te bevestigen", herbevestigen | mail + SMS met **verzet-toon** ("is verzet naar …"), niet "nieuwe klus" ✓ (unit) |
-| opnieuw versturen, andere monteur (wissel) | status gepland, verzonden_* bij | kaart definitief bij B | B ziet de klus nu; A niet meer | nieuwe monteur B: nieuwe klus ✓; **oude monteur A: "niet meer voor jou"** (mail + SMS, werk-kritiek) ✓ (unit) |
+| opnieuw versturen, andere monteur (wissel) | status gepland, verzonden_* bij | kaart definitief bij B | B ziet de klus nu; A niet meer | nieuwe monteur B: nieuwe klus ✓; **oude monteur A: annulering-melding** ("is geannuleerd", geen reden/overname) (mail + SMS, werk-kritiek) ✓ (unit) |
 | ontplannen (bord→pool) → binnen | toewijzing + planning + verzonden_* gewist | dialoog (verstuurd), kaart naar pool | verdwijnt uit werkpool ✓ | mail + SMS (werk-kritiek) bij verstuurd/bevestigd ✓ |
 | annuleren → geannuleerd | status geannuleerd, toewijzing blijft (dossier) | dashboard "geannuleerd" (inklapbaar) | uit de werkpool ✓ (werkpool-filter) | mail + SMS (werk-kritiek) bij verstuurd ✓ |
 | document toevoegen na versturen | document erbij, geen status/herbevestiging | "nieuw document" zichtbaar | "nieuw"-badge in de app | **mail + SMS (overig)** bij verstuurd ✓ (mail was een lege stub, nu echt) |
@@ -54,6 +54,7 @@ Legenda: ✓ klopt en/of getest · ⚠️ aandachtspunt/ontwerpvraag · ❌ gat
 7. **✅ OPGELOST (2026-06-10). Mail/SMS-keten had gaten.** (a) Nieuw-document en bevestig-herinnering
    stuurden wel SMS maar de mail was een lege stub; nu echte mail via de dispatcher. (b) Opnieuw versturen
    na een datum-wijziging meldde "nieuwe klus" i.p.v. een verzetting; nu een verzet-toon in mail + SMS.
-   (c) Bij een monteur-wissel kreeg de oude monteur niets; nu een "niet meer voor jou"-bericht (mail + SMS).
+   (c) Bij een monteur-wissel kreeg de oude monteur niets; nu de annulering-melding "is geannuleerd"
+   (mail + SMS, zonder reden/overname, want dat gaat hem niet aan en kan interne wrijving geven).
    Beide verstuur-paden (bulk-knop én envelopje) lopen via één gedeelde melder (`meldVerstuurd`), zodat ze
    niet meer kunnen uiteenlopen. Gedekt met unit-tests; e2e van de volledige keten volgt met Rein.

@@ -1,5 +1,5 @@
 import type { Db, Melding } from "./db";
-import { notificeerNieuweOpdrachten, notificeerOvergenomen } from "./notificaties";
+import { notificeerNieuweOpdrachten, notificeerAnnulering } from "./notificaties";
 import { historieVoorMonteur } from "./monteur-mail";
 import { klassificeerVerzending } from "./opdracht-status";
 
@@ -9,7 +9,9 @@ import { klassificeerVerzending } from "./opdracht-status";
  * hetzelfde doen:
  *  - de huidige monteur(s) krijgen de nieuwe of gewijzigde klus(sen), gebundeld, met een verzet-toon
  *    als het een verzetting is (al verstuurd aan dezelfde monteur, nu andere datum/tijd);
- *  - bij een monteur-WISSEL krijgt de vorige monteur bericht dat de klus niet meer van hem is.
+ *  - bij een monteur-WISSEL krijgt de vorige monteur de annulering-melding ("is geannuleerd"): voor
+ *    hem is de klus van de baan. Bewust zonder reden/overname, want dat gaat hem niet aan en kan
+ *    interne wrijving geven.
  *
  * De opdrachten moeten VÓÓR markeerVerzonden gelezen zijn: hun verzonden_* moet nog de vorige plek
  * bevatten, anders is er niets te vergelijken. Best-effort: mail/SMS-fouten worden verzameld en
@@ -54,12 +56,13 @@ export async function meldVerstuurd(
     );
   }
 
-  // 2. Bij een monteur-wissel: de vorige monteur dat de klus niet meer van hem is (per klus).
+  // 2. Bij een monteur-wissel: de vorige monteur krijgt de annulering-melding (voor hem is de klus van
+  //    de baan), per klus. Geen reden of overname-detail.
   for (const o of opdrachten) {
     const { vorigeMonteur } = klassificeerVerzending(o);
     if (!vorigeMonteur) continue;
     onthoud(
-      await notificeerOvergenomen({
+      await notificeerAnnulering({
         toegewezenAan: vorigeMonteur.toegewezen_aan,
         monteurNaam: vorigeMonteur.monteur_naam ?? "monteur",
         klantNaam: o.klant_naam ?? "de opdracht",

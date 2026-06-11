@@ -5,7 +5,6 @@ import {
   ontplanningSmsTekst,
   nieuwDocumentSmsTekst,
   herinneringSmsTekst,
-  overgenomenSmsTekst,
 } from "./sms-teksten";
 import type { MailbareOpdracht } from "./monteur-mail";
 
@@ -79,14 +78,6 @@ describe("losse meldingen", () => {
     const t = herinneringSmsTekst("Piet", ["Fam. Bakker"], APP);
     expect(t).toContain("bevestig");
     expect(t).toContain(APP);
-    expect(t.length).toBeLessThanOrEqual(160);
-  });
-
-  it("overgenomen meldt neutraal dat de klus niet meer voor de monteur is", () => {
-    const t = overgenomenSmsTekst("Piet", "Fam. Bakker", "7588");
-    expect(t).toContain("Fam. Bakker");
-    expect(t).toMatch(/niet meer voor jou/i);
-    expect(t).not.toMatch(/geannuleerd/i);
     expect(t.length).toBeLessThanOrEqual(160);
   });
 });

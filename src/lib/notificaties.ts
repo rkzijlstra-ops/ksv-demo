@@ -7,7 +7,6 @@ import {
   verstuurMonteurMail,
   verstuurNieuwDocument,
   verstuurHerinnering,
-  verstuurOvergenomen,
 } from "./mail";
 import {
   annuleringSmsTekst,
@@ -15,7 +14,6 @@ import {
   nieuweOpdrachtenSmsTekst,
   nieuwDocumentSmsTekst,
   herinneringSmsTekst,
-  overgenomenSmsTekst,
 } from "./sms-teksten";
 import { verstuurSms } from "./sms";
 import type { MailbareOpdracht } from "./monteur-mail";
@@ -156,33 +154,6 @@ export function notificeerOntplanning(input: {
         organisatie: input.zaaknaam ?? undefined,
       }),
     ontplanningSmsTekst(input.monteurNaam, input.klantNaam, input.referentienummer),
-  );
-}
-
-/**
- * De monteur van wie een al verstuurde klus is weggehaald doordat hij naar een andere monteur is
- * geschoven. Werk-kritiek: hij moet weten dat hij er niet meer heen hoeft.
- */
-export function notificeerOvergenomen(input: {
-  toegewezenAan: string | null;
-  monteurNaam: string;
-  klantNaam: string;
-  referentienummer: string | null;
-  zaaknaam: string | null;
-}): Promise<NotificatieResultaat> {
-  return vuurAf(
-    input.toegewezenAan,
-    "werk_kritiek",
-    input.zaaknaam,
-    (naar) =>
-      verstuurOvergenomen({
-        naar,
-        monteurNaam: input.monteurNaam,
-        klantNaam: input.klantNaam,
-        referentienummer: input.referentienummer,
-        organisatie: input.zaaknaam ?? undefined,
-      }),
-    overgenomenSmsTekst(input.monteurNaam, input.klantNaam, input.referentienummer),
   );
 }
 

@@ -10,7 +10,6 @@ import { ontplanningTekst } from "./ontplan-mail";
 import { terugmeldingTekst } from "./terugmeld-mail";
 import { nieuwDocumentTekst } from "./document-mail";
 import { herinneringTekst } from "./herinnering-mail";
-import { overgenomenTekst } from "./overgenomen-mail";
 
 export interface OpleverMailInput {
   naar: string;
@@ -95,15 +94,6 @@ export interface HerinneringMailInput {
   naar: string;
   monteurNaam: string;
   klantNamen: string[];
-  /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
-  organisatie?: string;
-}
-
-export interface OvergenomenMailInput {
-  naar: string;
-  monteurNaam: string;
-  klantNaam: string;
-  referentienummer: string | null;
   /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
   organisatie?: string;
 }
@@ -322,33 +312,6 @@ export async function verstuurHerinnering(input: HerinneringMailInput): Promise<
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Herinnering-mail versturen mislukt: ${msg}`);
-  }
-}
-
-/** Meldt de monteur dat een al verstuurde klus niet meer van hem is (naar een andere monteur geschoven). */
-export async function verstuurOvergenomen(input: OvergenomenMailInput): Promise<void> {
-  const { apiKey, from, replyTo } = mailConfig();
-  const resend = new Resend(apiKey);
-  const { subject, text } = overgenomenTekst(
-    input.monteurNaam,
-    input.klantNaam,
-    input.referentienummer,
-    input.organisatie,
-  );
-
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Overname-mail versturen mislukt: ${msg}`);
   }
 }
 
