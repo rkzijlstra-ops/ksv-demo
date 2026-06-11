@@ -353,6 +353,7 @@ export function OpleverFlow({ opdrachtId }: { opdrachtId: string }) {
             onChange={(e) => setOpmerking(e.target.value)}
             onBlur={() => bewaarConcept()}
             rows={3}
+            aria-label="Opmerking bij de oplevering"
             placeholder="Bijv. klant belt nog voor smetplinten, of een opmerking van de klant…"
             className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
           />

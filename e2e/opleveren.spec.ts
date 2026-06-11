@@ -76,13 +76,13 @@ test.afterEach(async () => {
 async function conceptVan(id: string) {
   const { data } = await admin
     .from("opleveringen")
-    .select("eindstaat_foto_urls, handtekening_url, opmerking")
+    .select("eindstaat_foto_urls, handtekening_url, opmerking, controle")
     .eq("opdracht_id", id)
     .maybeSingle();
   return data;
 }
 
-test("oplever-UI bewaart foto, handtekening en opmerking als concept (zonder mailen)", async ({ page }) => {
+test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (zonder mailen)", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/opleveren`);
 
   // De stappen gaan bewust snel achter elkaar, zonder tussentijds op de database te wachten. Dat
@@ -113,23 +113,28 @@ test("oplever-UI bewaart foto, handtekening en opmerking als concept (zonder mai
 
   // Meteen de opmerking typen en blur (Tab): dit is de race-trigger met de handtekening-save.
   const opmerking = `E2E oplevering ${Date.now()}`;
-  await page.getByPlaceholder("Typ hier of spreek in…").fill(opmerking);
+  await page.getByLabel("Opmerking bij de oplevering").fill(opmerking);
   await page.keyboard.press("Tab");
 
-  // Database: het concept bevat nu de foto, de handtekening-url én de opmerking. Geen mail verstuurd.
+  // Controlepunt aftekenen: "Akkoord" (slaat ook een concept op).
+  await page.getByRole("button", { name: "Akkoord" }).click();
+
+  // Database: het concept bevat nu de foto, de handtekening-url, de opmerking én het controle-akkoord.
   await expect
     .poll(
       async () => {
         const c = await conceptVan(opdrachtId);
+        const controle = Array.isArray(c?.controle) ? c.controle : [];
         return {
           fotos: c?.eindstaat_foto_urls?.length ?? 0,
           handtekening: !!c?.handtekening_url,
           opmerking: c?.opmerking ?? "",
+          controleAkkoord: controle.length > 0 ? controle[0].akkoord === true : false,
         };
       },
       { timeout: 15_000, intervals: [500] },
     )
-    .toEqual({ fotos: 1, handtekening: true, opmerking });
+    .toEqual({ fotos: 1, handtekening: true, opmerking, controleAkkoord: true });
 
   // De opdracht is NIET opgeleverd (we hebben niet verstuurd/gemaild).
   const { data: m } = await admin.from("meldingen").select("opdracht_status").eq("id", opdrachtId).single();
