@@ -67,6 +67,7 @@ export default async function OpdrachtgeverDetailPage({
   const documenten = await dbi.getDocumentenVoorOpdracht(id);
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   const oplevering = await dbi.getOpleveringVoorOpdracht(id);
+  const verzendingen = await dbi.getRapportVerzendingen(id);
   const gebeurtenissen = await dbi.getGebeurtenissenVoor(id);
   const historie = opdracht.referentienummer
     ? (await dbi.zoekOpReferentie(opdracht.referentienummer)).filter((h) => h.id !== opdracht.id)
@@ -212,6 +213,29 @@ export default async function OpdrachtgeverDetailPage({
                   alt="Handtekening klant"
                   className="h-24 border border-line bg-white object-contain"
                 />
+              </div>
+            )}
+
+            {verzendingen.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
+                  Verzonden
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {verzendingen.map((v) => (
+                    <li key={v.id} className="flex items-start gap-2 text-sm text-ink">
+                      <span
+                        className={`mt-0.5 shrink-0 border px-1.5 text-xs font-bold uppercase tracking-[0.03em] ${
+                          v.doelgroep === "zaak" ? "border-primary text-primary" : "border-ink-muted text-ink-muted"
+                        }`}
+                      >
+                        {v.doelgroep}
+                      </span>
+                      <span className="min-w-0 flex-1 break-all">{v.naar}</span>
+                      <span className="shrink-0 text-xs text-ink-muted">{formatDatumKort(v.created_at)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

@@ -39,6 +39,7 @@ export default async function MijnGegevensPage() {
           isMonteur={isMonteur}
           smsWerkKritiek={profiel.sms_werk_kritiek}
           smsOverig={profiel.sms_overig}
+          waarschuwKlantZicht={profiel.waarschuw_klant_zicht}
         />
       </section>
     </main>

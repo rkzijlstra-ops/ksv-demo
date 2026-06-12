@@ -108,6 +108,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       // Zet de opdracht pas nu op opgeleverd (kantoor ziet het oplevermoment nu pas).
       await dbi.registreerZaakRapport(id, rapportUrl);
     }
+    // Verzendgeschiedenis: elke verzending append-only vastleggen (wie, waarheen, wanneer, welke PDF),
+    // zodat dit niet meer in de mailprovider hoeft te worden teruggezocht.
+    await dbi.logRapportVerzending({
+      opdracht_id: id,
+      doelgroep,
+      naar,
+      rapport_url: rapportUrl,
+      door_id: opleveraarId,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: `Status bijwerken mislukt: ${(err as Error).message}` },

@@ -15,15 +15,19 @@ import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
 import { KEUKENZAKEN } from "@/lib/keukenzaken";
 import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
-import type { Adres } from "@/lib/db";
+import { formatDatumKort } from "@/lib/datum";
+import type { Adres, RapportVerzending } from "@/lib/db";
 
 export function OpleverFlow({
   opdrachtId,
   klantEmailVoorstel = null,
+  waarschuwKlantZicht = true,
 }: {
   opdrachtId: string;
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
   klantEmailVoorstel?: string | null;
+  /** Monteur-voorkeur: waarschuwen bij versturen naar de klant dat die alles ziet. */
+  waarschuwKlantZicht?: boolean;
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
@@ -40,6 +44,8 @@ export function OpleverFlow({
   const [klantEmail, setKlantEmail] = useState("");
   const [klantVerzondenAt, setKlantVerzondenAt] = useState<string | null>(null);
   const [zaakVerzondenAt, setZaakVerzondenAt] = useState<string | null>(null);
+  // Append-only verzendgeschiedenis: wat is wanneer naar welk adres gestuurd.
+  const [verzendingen, setVerzendingen] = useState<RapportVerzending[]>([]);
   const [klantBezig, setKlantBezig] = useState(false);
   const [zaakBezig, setZaakBezig] = useState(false);
   const [handmatig, setHandmatig] = useState(false);
@@ -76,7 +82,8 @@ export function OpleverFlow({
       try {
         const res = await fetch(`/api/opdrachten/${opdrachtId}/oplevering`);
         if (res.ok && actief) {
-          const { oplevering } = await res.json();
+          const { oplevering, verzendingen: vz } = await res.json();
+          setVerzendingen(Array.isArray(vz) ? vz : []);
           if (oplevering) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
@@ -256,6 +263,18 @@ export function OpleverFlow({
       setFout("Kies een ontvanger voor de zaak.");
       return;
     }
+    // Privacy-waarschuwing: de klant ziet ALLE foto's en meldingen, niet alleen de opmerking. Wil de
+    // monteur iets alleen voor de zaak kwijt, dan is daar de interne notitie voor. Aan/uit in Mijn gegevens.
+    if (
+      doelgroep === "klant" &&
+      waarschuwKlantZicht &&
+      !window.confirm(
+        "Let op: de klant ziet alle foto's en meldingen in dit rapport, niet alleen je opmerking. " +
+          "Wil je iets alleen voor de zaak kwijt, gebruik dan de interne notitie.\n\nToch naar de klant sturen?",
+      )
+    ) {
+      return;
+    }
     if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
 
     const zetBezig = doelgroep === "klant" ? setKlantBezig : setZaakBezig;
@@ -296,6 +315,19 @@ export function OpleverFlow({
       }
 
       const nu = new Date().toISOString();
+      // Direct in de zichtbare geschiedenis bijwerken (server heeft de regel ook vastgelegd).
+      setVerzendingen((prev) => [
+        {
+          id: nu,
+          created_at: nu,
+          opdracht_id: opdrachtId,
+          doelgroep,
+          naar: (doelgroep === "klant" ? klantEmail : rapportEmail).trim(),
+          rapport_url: null,
+          door_id: null,
+        },
+        ...prev,
+      ]);
       if (doelgroep === "klant") {
         // Klant gehad: status flipt, monteur blijft (kan nu of later naar de zaak).
         setKlantVerzondenAt(nu);
@@ -442,7 +474,7 @@ export function OpleverFlow({
                 onBlur={() => bewaarConcept()}
                 rows={3}
                 aria-label="Interne notitie voor de zaak"
-                placeholder="Bijv. klant lastig over meerwerk, of: nameten kastenwand volgende keer."
+                placeholder="Bijv. transportschade aan kastdeur, in het werk opgelost."
                 className="w-full rounded-none border border-urgent-geel bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
               />
               <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
@@ -648,7 +680,9 @@ export function OpleverFlow({
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-ink-muted">{huidigAdres.email}</span>
+                  <span className="min-w-0 flex-1 truncate text-ink-muted" title={huidigAdres.email}>
+                    {huidigAdres.email}
+                  </span>
                   <button
                     type="button"
                     onClick={() => {
@@ -656,7 +690,7 @@ export function OpleverFlow({
                       setBewerkNaam(huidigAdres.naam);
                       setBewerkEmail(huidigAdres.email);
                     }}
-                    className="ml-auto cursor-pointer font-bold text-primary hover:underline"
+                    className="shrink-0 cursor-pointer font-bold text-primary hover:underline"
                   >
                     Aanpassen
                   </button>
@@ -664,7 +698,7 @@ export function OpleverFlow({
                     type="button"
                     onClick={() => verwijderAdresUit(huidigAdres)}
                     disabled={adresBezig}
-                    className="cursor-pointer font-bold text-urgent-rood hover:underline disabled:opacity-50"
+                    className="shrink-0 cursor-pointer font-bold text-urgent-rood hover:underline disabled:opacity-50"
                   >
                     Wissen
                   </button>
@@ -746,6 +780,31 @@ export function OpleverFlow({
             </div>
           </div>
         </div>
+
+        {/* Verzendgeschiedenis: append-only, zodat terug te zien is wat wanneer waarheen ging. */}
+        {verzendingen.length > 0 && (
+          <div className="mt-3 border border-line bg-surface p-3">
+            <p className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
+              Verzendgeschiedenis
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {verzendingen.map((v) => (
+                <li key={v.id} className="flex items-start gap-2 text-sm text-ink">
+                  <span
+                    className={`mt-0.5 shrink-0 border px-1.5 text-xs font-bold uppercase tracking-[0.03em] ${
+                      v.doelgroep === "zaak" ? "border-primary text-primary" : "border-ink-muted text-ink-muted"
+                    }`}
+                  >
+                    {v.doelgroep}
+                  </span>
+                  <span className="min-w-0 flex-1 break-all">{v.naar}</span>
+                  <span className="shrink-0 text-xs text-ink-muted">{formatDatumKort(v.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {fout && (
           <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-urgent-rood">
             <AlertCircle size={18} strokeWidth={2.5} className="mt-0.5 shrink-0" aria-hidden="true" />

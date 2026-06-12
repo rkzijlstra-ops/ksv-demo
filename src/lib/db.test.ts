@@ -239,6 +239,16 @@ describe("createOpdracht", () => {
     expect(payload.meldingen).toEqual([]);
   });
 
+  it("schrijft klant_email mee uit de PDF (voorinvul klant-versie), null als afwezig", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht({ ...basisInput, klant_email: "hoek@voorbeeld.nl" });
+    expect(h.fns.insert.mock.calls[0][0].klant_email).toBe("hoek@voorbeeld.nl");
+
+    h.setResult({ data: { id: "opdr-2" }, error: null });
+    await createDb(cfg).createOpdracht(basisInput);
+    expect(h.fns.insert.mock.calls[1][0].klant_email).toBeNull();
+  });
+
   it("zet user_id/toegewezen_aan op null als niet meegegeven (toekomstvast)", async () => {
     h.setResult({ data: { id: "opdr-1" }, error: null });
     await createDb(cfg).createOpdracht(basisInput);

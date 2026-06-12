@@ -28,8 +28,10 @@ function geldigeUitkomst(v: unknown): v is Uitkomst {
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    const oplevering = await (await db()).getOpleveringVoorOpdracht(id);
-    return NextResponse.json({ oplevering }, { status: 200 });
+    const dbi = await db();
+    const oplevering = await dbi.getOpleveringVoorOpdracht(id);
+    const verzendingen = await dbi.getRapportVerzendingen(id);
+    return NextResponse.json({ oplevering, verzendingen }, { status: 200 });
   } catch (err) {
     return NextResponse.json(
       { error: `Ophalen mislukt: ${(err as Error).message}` },

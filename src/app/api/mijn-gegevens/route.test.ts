@@ -40,6 +40,7 @@ describe("PATCH /api/mijn-gegevens", () => {
       contact_email: "a@b.nl",
       sms_werk_kritiek: true,
       sms_overig: true,
+      waarschuw_klant_zicht: true,
     });
   });
 
@@ -49,6 +50,15 @@ describe("PATCH /api/mijn-gegevens", () => {
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ sms_werk_kritiek: true, sms_overig: false }),
     );
+  });
+
+  it("geeft de privacy-waarschuwing door (false expliciet, default true)", async () => {
+    await PATCH(req({ bedrijfsnaam: "X", waarschuw_klant_zicht: false }));
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ waarschuw_klant_zicht: false }));
+
+    mockUpdate.mockClear();
+    await PATCH(req({ bedrijfsnaam: "X" }));
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ waarschuw_klant_zicht: true }));
   });
 
   it("503 als de db-update faalt", async () => {

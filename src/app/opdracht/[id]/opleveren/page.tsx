@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { getAuthenticatedUserId } from "@/lib/auth";
 import { OpleverFlow } from "@/components/OpleverFlow";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,10 @@ export default async function OpleverenPage({
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) notFound();
   const meldingen = await dbi.getMeldingenVoorOpdracht(id);
+  // Privacy-voorkeur van de monteur: waarschuwen bij versturen naar de klant (standaard aan).
+  const userId = await getAuthenticatedUserId();
+  const profiel = userId ? await dbi.getProfiel(userId) : null;
+  const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-40">
@@ -44,7 +49,11 @@ export default async function OpleverenPage({
       )}
 
       <div className="mt-6">
-        <OpleverFlow opdrachtId={id} klantEmailVoorstel={opdracht.klant_email} />
+        <OpleverFlow
+          opdrachtId={id}
+          klantEmailVoorstel={opdracht.klant_email}
+          waarschuwKlantZicht={waarschuwKlantZicht}
+        />
       </div>
     </main>
   );

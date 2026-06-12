@@ -134,6 +134,25 @@ export interface OpleveringConceptInput {
   user_id?: string | null;
 }
 
+/** Eén verzending van het opleverrapport (append-only verzendgeschiedenis). */
+export interface RapportVerzending {
+  id: string;
+  created_at: string;
+  opdracht_id: string;
+  doelgroep: "klant" | "zaak";
+  naar: string;
+  rapport_url: string | null;
+  door_id: string | null;
+}
+
+export interface RapportVerzendingInput {
+  opdracht_id: string;
+  doelgroep: "klant" | "zaak";
+  naar: string;
+  rapport_url: string | null;
+  door_id: string | null;
+}
+
 /** Eén rij uit de documenten-tabel (origineel document bij een opdracht). */
 export interface Document {
   id: string;
@@ -176,6 +195,8 @@ export interface OpdrachtInput {
   referentienummer: string | null;
   adviseur: string | null;
   klant_telefoon: string | null;
+  /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie van het rapport. */
+  klant_email?: string | null;
   leverweek: string | null;
   keukenzaak?: string | null;
   meldingen?: MeldingItem[];
@@ -262,6 +283,8 @@ export interface Profiel {
   // blok 12: SMS-notificatie-voorkeuren (monteur regelt ze zelf in mijn-gegevens)
   sms_werk_kritiek: boolean;
   sms_overig: boolean;
+  // blok 17: waarschuwen bij klant-verzending dat de klant alle foto's/meldingen ziet
+  waarschuw_klant_zicht: boolean;
 }
 
 /** De velden die een gebruiker zelf mag bijwerken (naam + afzender, nooit zijn rol). */
@@ -272,6 +295,7 @@ export interface EigenGegevensInput {
   contact_email: string | null;
   sms_werk_kritiek: boolean;
   sms_overig: boolean;
+  waarschuw_klant_zicht: boolean;
 }
 
 export interface ProfielInput {
@@ -301,6 +325,11 @@ export interface Db {
   getMeldingen(): Promise<Melding[]>;
   /** De oplever-werkpool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
   getWerkpoolVoor(userId: string): Promise<Melding[]>;
+  /**
+   * Welke van de gegeven opdrachten een oplevering-in-uitvoering hebben (foto of handtekening gezet)
+   * die nog NIET naar de zaak is verstuurd. Voor de werkpool-marker "rapport niet verzonden".
+   */
+  getOpdrachtenRapportNietVerzonden(opdrachtIds: string[]): Promise<string[]>;
   getMeldingById(id: string): Promise<Melding | null>;
   getMeldingenVoorOpdracht(opdrachtId: string): Promise<Melding[]>;
   createMonteurMelding(data: MonteurMeldingInput): Promise<{ id: string }>;
@@ -320,6 +349,10 @@ export interface Db {
    * opgeleverd. Hierdoor ziet het kantoor het oplevermoment niet eerder dan de monteur het deelt.
    */
   registreerZaakRapport(opdrachtId: string, rapportUrl: string): Promise<void>;
+  /** Voegt een verzending toe aan de append-only verzendgeschiedenis van een opdracht. */
+  logRapportVerzending(input: RapportVerzendingInput): Promise<void>;
+  /** Verzendgeschiedenis van een opdracht, nieuwste eerst. */
+  getRapportVerzendingen(opdrachtId: string): Promise<RapportVerzending[]>;
   verwijderOpdracht(id: string): Promise<void>;
   herstelOpdracht(id: string): Promise<void>;
   definitiefVerwijderen(id: string): Promise<void>;
@@ -396,6 +429,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           referentienummer: input.referentienummer,
           adviseur: input.adviseur,
           klant_telefoon: input.klant_telefoon,
+          klant_email: input.klant_email ?? null,
           leverweek: input.leverweek,
           keukenzaak: input.keukenzaak ?? null,
           meldingen: input.meldingen ?? [],
@@ -531,6 +565,21 @@ function createDbFromClient(client: SupabaseClient): Db {
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as Melding[];
+    },
+
+    async getOpdrachtenRapportNietVerzonden(opdrachtIds) {
+      if (opdrachtIds.length === 0) return [];
+      const { data, error } = await client
+        .from("opleveringen")
+        .select("opdracht_id, eindstaat_foto_urls, handtekening_url, zaak_rapport_verzonden_at")
+        .in("opdracht_id", opdrachtIds);
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      const ids: string[] = [];
+      for (const r of data ?? []) {
+        const heeftWerk = r.handtekening_url != null || (r.eindstaat_foto_urls?.length ?? 0) > 0;
+        if (heeftWerk && !r.zaak_rapport_verzonden_at) ids.push(r.opdracht_id as string);
+      }
+      return ids;
     },
 
     async getMeldingenVoorOpdracht(opdrachtId: string) {
@@ -689,6 +738,27 @@ function createDbFromClient(client: SupabaseClient): Db {
         .update({ opdracht_status: "opgeleverd", opgeleverd_at: nu, rapport_url: rapportUrl })
         .eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
+    },
+
+    async logRapportVerzending(input) {
+      const { error } = await client.from("rapport_verzendingen").insert({
+        opdracht_id: input.opdracht_id,
+        doelgroep: input.doelgroep,
+        naar: input.naar,
+        rapport_url: input.rapport_url,
+        door_id: input.door_id,
+      });
+      if (error) throw new Error(`DB log verzending mislukt: ${error.message}`);
+    },
+
+    async getRapportVerzendingen(opdrachtId) {
+      const { data, error } = await client
+        .from("rapport_verzendingen")
+        .select("*")
+        .eq("opdracht_id", opdrachtId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as RapportVerzending[];
     },
 
     async verwijderOpdracht(id) {
@@ -977,6 +1047,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         p_contact_email: input.contact_email,
         p_sms_werk_kritiek: input.sms_werk_kritiek,
         p_sms_overig: input.sms_overig,
+        p_waarschuw_klant_zicht: input.waarschuw_klant_zicht,
       });
       if (error) throw new Error(`DB gegevens opslaan mislukt: ${error.message}`);
     },

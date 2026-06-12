@@ -26,7 +26,11 @@ const createdIds: string[] = [];
 
 /** Maakt een opdracht (eigen zaak) met een concept-oplevering en geeft id + klantnaam terug. */
 async function seedOplevering(
-  opts: { interne_opmerking?: string | null; opmerking?: string | null } = {},
+  opts: {
+    interne_opmerking?: string | null;
+    opmerking?: string | null;
+    klant_rapport_email?: string | null;
+  } = {},
 ): Promise<{ id: string; klantNaam: string }> {
   const zaak = await db.getStandaardOpdrachtgever();
   const stamp = `${Date.now()}`;
@@ -52,6 +56,7 @@ async function seedOplevering(
     video_url: null,
     opmerking: opts.opmerking ?? null,
     interne_opmerking: opts.interne_opmerking ?? null,
+    klant_rapport_email: opts.klant_rapport_email ?? null,
     handtekening_url: `https://x/htk-${id}.png`,
     rapport_email: null,
     user_id: MONTEUR.uid,
@@ -139,5 +144,83 @@ test.describe("privacy: opdrachtgever ziet de oplevering pas na zaak-versturen",
     await page.reload();
     await expect(page.getByRole("heading", { name: "Opleverrapport" })).toBeVisible();
     await expect(page.getByText(interne)).toBeVisible();
+  });
+});
+
+test.describe("verzendgeschiedenis (append-only)", () => {
+  test("elke verzending wordt toegevoegd in plaats van overschreven", async () => {
+    const { id } = await seedOplevering();
+    await db.logRapportVerzending({
+      opdracht_id: id,
+      doelgroep: "klant",
+      naar: "klant@voorbeeld.test",
+      rapport_url: `https://x/${id}-klant.pdf`,
+      door_id: MONTEUR.uid,
+    });
+    await db.logRapportVerzending({
+      opdracht_id: id,
+      doelgroep: "zaak",
+      naar: "zaak@voorbeeld.test",
+      rapport_url: `https://x/${id}.pdf`,
+      door_id: MONTEUR.uid,
+    });
+
+    const vz = await db.getRapportVerzendingen(id);
+    expect(vz).toHaveLength(2);
+    // Beide verzendingen blijven bewaard (geen overschrijving), met hun eigen adres.
+    expect(vz.map((v) => v.naar).sort()).toEqual(["klant@voorbeeld.test", "zaak@voorbeeld.test"]);
+    expect(vz.map((v) => v.doelgroep).sort()).toEqual(["klant", "zaak"]);
+  });
+});
+
+test.describe("werkpool-marker: rapport niet verzonden", () => {
+  test.use({ storageState: "e2e/.auth/monteur.json" });
+
+  test("een klus met oplevering-in-uitvoering toont 'Rapport niet verzonden' tot de zaak-verzending", async ({
+    page,
+  }) => {
+    // seedOplevering zet een handtekening op het concept (werk gedaan) en wijst de klus aan de monteur toe.
+    const { id, klantNaam } = await seedOplevering();
+
+    await page.goto("/");
+    const kaart = page.locator("a", { hasText: klantNaam });
+    await expect(kaart).toBeVisible();
+    await expect(kaart.getByText("Rapport niet verzonden")).toBeVisible();
+
+    // Na de zaak-verzending is de klus opgeleverd: hij zakt naar history en de marker is weg uit actief.
+    await db.registreerZaakRapport(id, `https://x/${id}.pdf`);
+    await page.reload();
+    await expect(page.locator("a", { hasText: klantNaam }).getByText("Rapport niet verzonden")).toHaveCount(0);
+  });
+});
+
+test.describe("privacy-waarschuwing bij versturen naar de klant", () => {
+  test.use({ storageState: "e2e/.auth/monteur.json" });
+
+  test("waarschuwt dat de klant alles ziet; afbreken stuurt niet", async ({ page }) => {
+    const { id } = await seedOplevering({ klant_rapport_email: "klant@voorbeeld.test" });
+
+    await page.goto(`/opdracht/${id}/opleveren`);
+    // Klant-adres is voorinvuld; de knop is dus actief.
+    await expect(page.getByLabel("E-mailadres van de klant")).toHaveValue("klant@voorbeeld.test");
+
+    // De waarschuwing verschijnt en we breken hem af: er mag dan niets verstuurd worden.
+    let dialoogTekst = "";
+    page.once("dialog", (d) => {
+      dialoogTekst = d.message();
+      d.dismiss();
+    });
+    await page.getByRole("button", { name: "Stuur naar klant" }).click();
+
+    expect(dialoogTekst).toContain("alle foto's en meldingen");
+    expect(dialoogTekst).toContain("interne notitie");
+
+    // Status met rust: klant-verzending niet geregistreerd.
+    const { data } = await admin
+      .from("opleveringen")
+      .select("klant_rapport_verzonden_at")
+      .eq("opdracht_id", id)
+      .single();
+    expect(data?.klant_rapport_verzonden_at).toBeNull();
   });
 });

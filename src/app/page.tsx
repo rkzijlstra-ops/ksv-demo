@@ -20,6 +20,11 @@ export default async function WerkpoolPage() {
   const tellingen = await dbi.getMeldingTellingen();
   const { actief, history } = groepeerMeldingen(meldingen);
 
+  // Welke actieve klussen wachten nog op verzending naar de zaak (oplevering vastgelegd, niet verstuurd).
+  const nietVerzonden = new Set(
+    await dbi.getOpdrachtenRapportNietVerzonden(actief.map((m) => m.id)),
+  );
+
   const prefetchIds = [...actief.map((m) => m.id), ...history.map((m) => m.id)];
 
   return (
@@ -64,6 +69,7 @@ export default async function WerkpoolPage() {
               magTerugmelden={
                 profiel.rol === "monteur" && m.user_id !== profiel.id && m.toegewezen_aan === profiel.id
               }
+              rapportNietVerzonden={nietVerzonden.has(m.id)}
             />
           ))}
         </div>

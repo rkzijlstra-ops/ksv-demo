@@ -16,6 +16,7 @@ export function OpdrachtCard({
   telling,
   magVerwijderen = true,
   magTerugmelden = false,
+  rapportNietVerzonden = false,
 }: {
   melding: Melding;
   telling?: { aantal: number; heeftSpoed: boolean };
@@ -23,6 +24,8 @@ export function OpdrachtCard({
   magVerwijderen?: boolean;
   /** Terugmeld-knop tonen? Bij een door kantoor ingeschoten klus die aan deze monteur is toegewezen. */
   magTerugmelden?: boolean;
+  /** Oplevering vastgelegd maar nog niet naar de zaak verstuurd: toon "rapport niet verzonden". */
+  rapportNietVerzonden?: boolean;
 }) {
   const titel = melding.klant_naam ?? "Onbekende klant";
   const opgeleverd = melding.opdracht_status === "opgeleverd";
@@ -79,6 +82,17 @@ export function OpdrachtCard({
                 ink: "text-accent",
                 border: "border-accent",
                 icon: "clock",
+              }}
+            />
+          )}
+          {!opgeleverd && rapportNietVerzonden && (
+            <Badge
+              config={{
+                label: "Rapport niet verzonden",
+                bg: "bg-urgent-geel/20",
+                ink: "text-ink",
+                border: "border-urgent-geel",
+                icon: "alert",
               }}
             />
           )}

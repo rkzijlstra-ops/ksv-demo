@@ -31,6 +31,7 @@ export async function PATCH(req: Request) {
       contact_email: tekst(body.contact_email),
       sms_werk_kritiek: boolOf(body.sms_werk_kritiek),
       sms_overig: boolOf(body.sms_overig),
+      waarschuw_klant_zicht: boolOf(body.waarschuw_klant_zicht),
     });
   } catch (err) {
     return NextResponse.json({ error: `Opslaan mislukt: ${(err as Error).message}` }, { status: 503 });

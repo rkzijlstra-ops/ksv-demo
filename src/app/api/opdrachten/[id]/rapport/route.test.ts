@@ -10,6 +10,7 @@ const {
   mockGetOpl,
   mockRegKlant,
   mockRegZaak,
+  mockLog,
 } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockGetMeldingen: vi.fn(),
@@ -20,6 +21,7 @@ const {
   mockGetOpl: vi.fn(),
   mockRegKlant: vi.fn(),
   mockRegZaak: vi.fn(),
+  mockLog: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -30,6 +32,7 @@ vi.mock("@/lib/db", () => ({
     getOpleveringVoorOpdracht: mockGetOpl,
     registreerKlantRapport: mockRegKlant,
     registreerZaakRapport: mockRegZaak,
+    logRapportVerzending: mockLog,
   }),
 }));
 vi.mock("@/lib/storage", () => ({ storage: () => ({ uploadOpdrachtDocument: mockUpload }) }));
@@ -65,7 +68,7 @@ function opl(over: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
-  for (const m of [mockGetById, mockGetMeldingen, mockGetProfiel, mockUpload, mockPdf, mockMail, mockGetOpl, mockRegKlant, mockRegZaak]) m.mockReset();
+  for (const m of [mockGetById, mockGetMeldingen, mockGetProfiel, mockUpload, mockPdf, mockMail, mockGetOpl, mockRegKlant, mockRegZaak, mockLog]) m.mockReset();
   mockGetById.mockResolvedValue({ id: "opdr-1", klant_naam: "van Dijk", referentienummer: "7407", toegewezen_aan: null });
   mockGetMeldingen.mockResolvedValue([]);
   mockGetProfiel.mockResolvedValue(null);
@@ -75,6 +78,7 @@ beforeEach(() => {
   mockMail.mockResolvedValue(undefined);
   mockRegKlant.mockResolvedValue(undefined);
   mockRegZaak.mockResolvedValue(undefined);
+  mockLog.mockResolvedValue(undefined);
   process.env = { ...ORIG, RAPPORT_EMAIL: "rein@example.com" };
 });
 afterEach(() => {
@@ -92,6 +96,10 @@ describe("POST /api/opdrachten/[id]/rapport", () => {
     expect(mockRegZaak).toHaveBeenCalledWith("opdr-1", "https://x/opdracht-documenten/r.pdf");
     expect(mockRegKlant).not.toHaveBeenCalled();
     expect(body.opgeleverd).toBe(true);
+    // Verzendgeschiedenis: de zaak-verzending is gelogd met adres en PDF.
+    expect(mockLog).toHaveBeenCalledWith(
+      expect.objectContaining({ doelgroep: "zaak", naar: "zaak@keukenzaak.nl", rapport_url: "https://x/opdracht-documenten/r.pdf" }),
+    );
   });
 
   it("default zonder doelgroep = zaak", async () => {
@@ -111,6 +119,10 @@ describe("POST /api/opdrachten/[id]/rapport", () => {
     expect(mockRegKlant).toHaveBeenCalledWith("opdr-1", "https://x/opdracht-documenten/r.pdf", "klant@voorbeeld.nl");
     expect(mockRegZaak).not.toHaveBeenCalled();
     expect(body.opgeleverd).toBe(false);
+    // Verzendgeschiedenis: de klant-verzending is gelogd.
+    expect(mockLog).toHaveBeenCalledWith(
+      expect.objectContaining({ doelgroep: "klant", naar: "klant@voorbeeld.nl" }),
+    );
   });
 
   it("zaak vermeldt dat de klant zijn versie ook kreeg (klantOok)", async () => {

@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockUpsert, mockGetOpl, mockUserId } = vi.hoisted(() => ({
+const { mockUpsert, mockGetOpl, mockUserId, mockGetVerz } = vi.hoisted(() => ({
   mockUpsert: vi.fn(),
   mockGetOpl: vi.fn(),
   mockUserId: vi.fn(),
+  mockGetVerz: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
-  db: () => ({ upsertOpleveringConcept: mockUpsert, getOpleveringVoorOpdracht: mockGetOpl }),
+  db: () => ({
+    upsertOpleveringConcept: mockUpsert,
+    getOpleveringVoorOpdracht: mockGetOpl,
+    getRapportVerzendingen: mockGetVerz,
+  }),
 }));
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: mockUserId }));
 
@@ -25,6 +30,8 @@ beforeEach(() => {
   mockUpsert.mockReset();
   mockGetOpl.mockReset();
   mockUserId.mockReset();
+  mockGetVerz.mockReset();
+  mockGetVerz.mockResolvedValue([]);
   mockUserId.mockResolvedValue("user-1");
   mockUpsert.mockResolvedValue({ id: "opl-1" });
 });

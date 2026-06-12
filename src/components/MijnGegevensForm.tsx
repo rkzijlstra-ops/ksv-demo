@@ -18,6 +18,7 @@ export function MijnGegevensForm({
   isMonteur = false,
   smsWerkKritiek = true,
   smsOverig = true,
+  waarschuwKlantZicht = true,
 }: {
   naam: string;
   bedrijfsnaam: string | null;
@@ -26,6 +27,7 @@ export function MijnGegevensForm({
   isMonteur?: boolean;
   smsWerkKritiek?: boolean;
   smsOverig?: boolean;
+  waarschuwKlantZicht?: boolean;
 }) {
   const router = useRouter();
   const [velden, setVelden] = useState({
@@ -35,6 +37,7 @@ export function MijnGegevensForm({
     contact_email: contactEmail ?? "",
     sms_werk_kritiek: smsWerkKritiek,
     sms_overig: smsOverig,
+    waarschuw_klant_zicht: waarschuwKlantZicht,
   });
   const [bezig, setBezig] = useState(false);
   const [klaar, setKlaar] = useState(false);
@@ -47,7 +50,10 @@ export function MijnGegevensForm({
     setKlaar(false);
   }
 
-  function zetBool(veld: "sms_werk_kritiek" | "sms_overig", waarde: boolean) {
+  function zetBool(
+    veld: "sms_werk_kritiek" | "sms_overig" | "waarschuw_klant_zicht",
+    waarde: boolean,
+  ) {
     setVelden((v) => ({ ...v, [veld]: waarde }));
     setKlaar(false);
   }
@@ -153,6 +159,27 @@ export function MijnGegevensForm({
               checked={velden.sms_overig}
               disabled={!nummerGeldig}
               onChange={(e) => zetBool("sms_overig", e.target.checked)}
+            />
+          </label>
+        </fieldset>
+      )}
+
+      {isMonteur && (
+        <fieldset className="flex flex-col gap-3 border-2 border-line p-4">
+          <legend className="px-1 text-sm font-semibold text-ink">Privacy bij versturen</legend>
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span>
+              Waarschuw bij versturen naar de klant
+              <span className="block text-xs font-normal text-ink-muted">
+                De klant ziet alle foto&apos;s en meldingen, niet alleen je opmerking. Zet je dit aan, dan
+                vraagt de app om bevestiging voor je naar de klant stuurt.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-6 w-6"
+              checked={velden.waarschuw_klant_zicht}
+              onChange={(e) => zetBool("waarschuw_klant_zicht", e.target.checked)}
             />
           </label>
         </fieldset>

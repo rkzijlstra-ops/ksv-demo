@@ -101,6 +101,7 @@ export async function POST(req: Request) {
         referentienummer: parsed.referentienummer,
         adviseur: parsed.adviseur,
         klant_telefoon: parsed.klant_telefoon,
+        klant_email: parsed.klant_email,
         leverweek: parsed.leverweek,
         keukenzaak: parsed.keukenzaak,
         meldingen: parsed.meldingen,
