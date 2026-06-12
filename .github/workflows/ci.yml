@@ -1,8 +1,12 @@
 name: CI
 
-# Draait de volledige testsuite in de cloud bij elke push naar master en bij pull requests.
-# Zo hoeft de zware browser-e2e niet meer op de lokale Windows-machine (waar de dev-server bleef
-# hangen). De geheime testomgeving komt uit de repo-secret ENV_TEST (de inhoud van .env.test).
+# Draait de snelle, betrouwbare checks in de cloud bij elke push naar master en bij pull requests:
+# typecheck + unit-tests + integratietests. De geheime testomgeving komt uit de repo-secret ENV_TEST
+# (de inhoud van .env.test).
+#
+# De zware browser-e2e draait hier (nog) NIET: met een dev-server in de cloud hangt die (net als lokaal
+# op Windows). Die wordt voorlopig handmatig in PowerShell gedraaid. Cloud-e2e volgt later, op de
+# snellere manier (de app één keer kant-en-klaar bouwen en daartegen testen).
 
 on:
   push:
@@ -39,9 +43,3 @@ jobs:
 
       - name: Integratietests
         run: npm run test:int
-
-      - name: Playwright-browser installeren
-        run: npx playwright install --with-deps chromium
-
-      - name: Browser-e2e
-        run: npm run test:e2e
