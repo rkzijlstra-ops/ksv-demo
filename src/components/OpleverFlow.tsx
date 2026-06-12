@@ -10,6 +10,7 @@ import { VideoMaken } from "@/components/VideoMaken";
 import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
 import { Voortgang } from "@/components/Voortgang";
+import { OntvangerKeuze } from "@/components/OntvangerKeuze";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
@@ -591,10 +592,10 @@ export function OpleverFlow({
               </p>
             )}
             <span className="text-sm font-semibold text-ink">Rapport naar</span>
-          <select
+          <OntvangerKeuze
             value={keuzeWaarde}
-            onChange={(e) => {
-              const v = e.target.value;
+            adresboek={adresboek}
+            onKies={(v) => {
               setBewerkId(null);
               if (v === "__anders__") {
                 setHandmatig(true);
@@ -619,27 +620,7 @@ export function OpleverFlow({
                 bewaarConcept(email);
               }
             }}
-            className="min-h-[48px] rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-          >
-            <option value="">Kies een ontvanger…</option>
-            {adresboek.length > 0 && (
-              <optgroup label="Mijn adressen">
-                {adresboek.map((a) => (
-                  <option key={a.id} value={`adr:${a.id}`}>
-                    {a.naam}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            <optgroup label="Keukenzaken">
-              {KEUKENZAKEN.map((z) => (
-                <option key={z.naam} value={z.naam}>
-                  {z.naam}
-                </option>
-              ))}
-            </optgroup>
-            <option value="__anders__">Anders (typ zelf)</option>
-          </select>
+          />
 
           {/* Beheer van het gekozen opgeslagen adres: aanpassen of wissen. */}
           {huidigAdres && (

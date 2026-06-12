@@ -224,3 +224,27 @@ test.describe("privacy-waarschuwing bij versturen naar de klant", () => {
     expect(data?.klant_rapport_verzonden_at).toBeNull();
   });
 });
+
+test.describe("ontvanger-keuze: eigen dropdown in app-stijl", () => {
+  test.use({ storageState: "e2e/.auth/monteur.json" });
+
+  test("open de keuzelijst, kies een keukenzaak; de knop toont de keuze en sluit", async ({ page }) => {
+    const { id } = await seedOplevering();
+    await page.goto(`/opdracht/${id}/opleveren`);
+    // Wacht tot het concept geladen is (handtekening "Gezet"), anders kan de async load een net
+    // gekozen ontvanger weer overschrijven met het bewaarde (lege) adres.
+    await expect(page.getByText("Gezet")).toBeVisible();
+
+    const knop = page.getByRole("button", { name: "Kies een ontvanger" });
+    await expect(knop).toBeVisible();
+    await knop.click();
+
+    // De eigen dropdown toont de groepen en opties.
+    await expect(page.getByText("Keukenzaken")).toBeVisible();
+    await page.getByRole("option", { name: "Keukenstudio Voorschoten" }).click();
+
+    // De knop toont nu de gekozen ontvanger en de lijst is gesloten.
+    await expect(page.getByRole("button", { name: "Keukenstudio Voorschoten" })).toBeVisible();
+    await expect(page.getByRole("option", { name: "Keukenstudio Voorschoten" })).toHaveCount(0);
+  });
+});
