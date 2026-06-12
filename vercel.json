@@ -1,5 +1,5 @@
 {
   "crons": [
-    { "path": "/api/cron/bevestig-herinneringen", "schedule": "0 7 * * *" }
+    { "path": "/api/cron/bevestig-herinneringen", "schedule": "0 7,14 * * *" }
   ]
 }
