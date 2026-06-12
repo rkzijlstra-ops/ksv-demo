@@ -31,6 +31,11 @@ export default defineConfig({
     baseURL: `http://localhost:${pwPort}`,
     storageState: "e2e/.auth/monteur.json",
     serviceWorkers: "block",
+    // Harde grenzen per handeling: zonder dit wacht een klik of navigatie eindeloos en kan de
+    // generator blijven hangen. Navigatie ruim, want de dev-server compileert een route vaak pas
+    // bij het eerste bezoek (Turbopack).
+    actionTimeout: 10_000,
+    navigationTimeout: 30_000,
     ...devices["Pixel 7"],
   },
   webServer: {

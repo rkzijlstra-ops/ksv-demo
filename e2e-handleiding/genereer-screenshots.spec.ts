@@ -46,9 +46,22 @@ test("genereer handleiding-screenshots", async ({ page }) => {
     for (const stap of HANDLEIDING_STAPPEN) {
       try {
         await page.goto(stap.route.replace(":id", id));
-        await page.waitForLoadState("networkidle");
+        // Niet op "networkidle" wachten: deze app pollt de database, dus dat moment komt nooit en
+        // de generator zou eindeloos blijven hangen. "domcontentloaded" rondt wel af; daarna een
+        // korte vaste pauze zodat de inhoud (na het skelet-laadscherm) echt staat.
+        await page.waitForLoadState("domcontentloaded");
+        await page.waitForTimeout(1200);
+        // De Next.js dev-indicator (het "N"-knopje linksonder) hoort niet op een handleiding-plaatje.
+        // Verbergen via de host van de dev-portal; moet per pagina opnieuw, want goto verlaat de vorige.
+        await page.addStyleTag({
+          content:
+            "nextjs-portal,[data-next-badge-root],[data-nextjs-dev-tools-button],#__next-build-watcher{display:none!important}",
+        });
         if (stap.interactie === "handtekening-modal") {
-          await page.getByRole("button", { name: /handtekening/i }).first().click();
+          // De knop "Klant laten tekenen" opent de teken-popup (HandtekeningModal). Wacht tot de
+          // popup-titel zichtbaar is, dan staat de popup gegarandeerd op de screenshot.
+          await page.getByRole("button", { name: /klant laten tekenen/i }).click({ timeout: 6000 });
+          await page.getByText("Handtekening klant").waitFor({ state: "visible", timeout: 6000 });
           await page.waitForTimeout(400);
         } else if (stap.interactie === "scroll-onder") {
           await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
