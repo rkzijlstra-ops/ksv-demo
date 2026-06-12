@@ -1,12 +1,9 @@
 name: CI
 
-# Draait de snelle, betrouwbare checks in de cloud bij elke push naar master en bij pull requests:
-# typecheck + unit-tests + integratietests. De geheime testomgeving komt uit de repo-secret ENV_TEST
-# (de inhoud van .env.test).
-#
-# De zware browser-e2e draait hier (nog) NIET: met een dev-server in de cloud hangt die (net als lokaal
-# op Windows). Die wordt voorlopig handmatig in PowerShell gedraaid. Cloud-e2e volgt later, op de
-# snellere manier (de app één keer kant-en-klaar bouwen en daartegen testen).
+# Draait de volledige testsuite in de cloud bij elke push naar master en bij pull requests:
+# typecheck + unit + integratie + browser-e2e. De e2e draait tegen een kant-en-klare productie-build
+# (next build + next start), niet tegen een dev-server, dus snel en zonder hangen.
+# De geheime testomgeving komt uit de repo-secret ENV_TEST (de inhoud van .env.test).
 
 on:
   push:
@@ -30,8 +27,12 @@ jobs:
       - name: Dependencies installeren
         run: npm ci
 
-      - name: Testomgeving (.env.test) aanmaken uit secret
-        run: printf '%s\n' "$ENV_TEST" > .env.test
+      - name: Testomgeving aanmaken uit secret
+        # .env.test voor de Playwright-config/global-setup; .env.local zodat `next build`/`next start`
+        # met dezelfde test-Supabase draaien (NEXT_PUBLIC-waarden worden in de build gebakken).
+        run: |
+          printf '%s\n' "$ENV_TEST" > .env.test
+          cp .env.test .env.local
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
 
@@ -43,3 +44,12 @@ jobs:
 
       - name: Integratietests
         run: npm run test:int
+
+      - name: App bouwen (productie)
+        run: npm run build
+
+      - name: Playwright-browser installeren
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser-e2e (tegen de productie-build)
+        run: npm run test:e2e

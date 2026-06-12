@@ -14,8 +14,14 @@ if (existsSync(envTestPath)) {
   }
 }
 
+// In de cloud (CI) draaien we tegen een kant-en-klare productie-build (`next start`) i.p.v. de
+// dev-server: die compileert niet pagina-voor-pagina tijdens de test, dus snel en geen hang.
+// Lokaal blijft het de vertrouwde `next dev`.
+const inCI = !!process.env.CI;
+const pwPort = process.env.PW_PORT ?? "3001";
+
 /**
- * Browser-e2e voor de KSV demo-app (Kluslus). Draait tegen een lokale `next dev` op poort 3001.
+ * Browser-e2e voor de KSV demo-app (Kluslus). Lokaal tegen `next dev`, in CI tegen `next start`.
  * De login gaat via global-setup (programmatische sessie); elke test start ingelogd als beheerder.
  * Als .env.test aanwezig is, draaien tests tegen het test-Supabase-zijspoor. Draaien: `npx playwright test`.
  */
@@ -41,9 +47,9 @@ export default defineConfig({
     serviceWorkers: "block",
   },
   webServer: {
-    command: `npm run dev -- -p ${process.env.PW_PORT ?? "3001"}`,
-    url: `http://localhost:${process.env.PW_PORT ?? "3001"}`,
-    reuseExistingServer: true,
+    command: inCI ? `npm run start -- -p ${pwPort}` : `npm run dev -- -p ${pwPort}`,
+    url: `http://localhost:${pwPort}`,
+    reuseExistingServer: !inCI,
     timeout: 120_000,
     // De testserver mag NOOIT echte SMS sturen (kost geld, en een trage gateway laat de e2e hangen).
     // Dit dwingt dry-run af, los van wat in .env.local/.env.test staat.
