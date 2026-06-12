@@ -1,19 +1,18 @@
 #!/bin/sh
-# Deploy-poort: niets gaat naar GitHub (en dus Vercel) als de tests rood zijn.
-# Draait de volledige suite (unit + integratie + browser-e2e). In nood bewust
-# overslaan met:  git push --no-verify
+# Snelle lokale poort: alleen de korte checks (unit-tests + typecheck). Die starten geen dev-server
+# en lopen dus niet vast. De zware browser-e2e draait NIET meer lokaal maar in de cloud (GitHub
+# Actions, zie .github/workflows/ci.yml), zodat een push hier nooit meer blijft hangen.
 #
-# Let op: dit is een lokale poort (alleen op deze machine, omzeilbaar). Voor een
-# server-side poort die niet te omzeilen is, zie de CI-stap in TOESTANDEN.md / README.
+# In nood bewust overslaan met:  git push --no-verify
 
-echo "[pre-push] Volledige test-suite draaien voor de push (npm run test:all)..."
-npm run test:all
+echo "[pre-push] Snelle checks (unit-tests + typecheck)..."
+npm test && npx tsc --noEmit
 status=$?
 if [ "$status" -ne 0 ]; then
   echo ""
-  echo "[pre-push] GEBLOKKEERD: de tests zijn rood. Fix ze voor je pusht."
+  echo "[pre-push] GEBLOKKEERD: unit-tests of typecheck zijn rood. Fix ze voor je pusht."
   echo "[pre-push] In nood bewust overslaan: git push --no-verify"
   exit 1
 fi
-echo "[pre-push] Alles groen. Push gaat door."
+echo "[pre-push] Snelle checks groen. Push gaat door (de volledige e2e draait daarna in de cloud)."
 exit 0

@@ -1,0 +1,47 @@
+name: CI
+
+# Draait de volledige testsuite in de cloud bij elke push naar master en bij pull requests.
+# Zo hoeft de zware browser-e2e niet meer op de lokale Windows-machine (waar de dev-server bleef
+# hangen). De geheime testomgeving komt uit de repo-secret ENV_TEST (de inhoud van .env.test).
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Code ophalen
+        uses: actions/checkout@v4
+
+      - name: Node opzetten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependencies installeren
+        run: npm ci
+
+      - name: Testomgeving (.env.test) aanmaken uit secret
+        run: printf '%s\n' "$ENV_TEST" > .env.test
+        env:
+          ENV_TEST: ${{ secrets.ENV_TEST }}
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit-tests
+        run: npm test
+
+      - name: Integratietests
+        run: npm run test:int
+
+      - name: Playwright-browser installeren
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser-e2e
+        run: npm run test:e2e
