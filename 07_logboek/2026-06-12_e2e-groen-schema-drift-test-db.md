@@ -37,12 +37,26 @@ Daarnaast een losse test-bug: de selector `getByRole("button", { name: "Akkoord"
 - Commit `e7454a8`, gepusht naar `master`. Pre-push hook draaide de volledige suite groen
   (542 unit + 13 integratie + 47 e2e). Vercel deployt.
 
+## Nieuwe-flow e2e geschreven (zelfde dag)
+
+`e2e/verzending.spec.ts` toegevoegd, drie tests groen tegen de test-DB, zonder echte mail:
+- klant-versturen registreert de klant-velden en laat de opdracht-status met rust;
+- zaak-versturen zet 'opgeleverd' en registreert de zaak-velden;
+- privacy (browser, als opdrachtgever): het oplever-blok én de interne notitie verschijnen pas na de
+  zaak-verzending (gate op `zaak_rapport_verzonden_at` in de dashboard-detailpagina).
+
+De zaak-verzending wordt gesimuleerd via dezelfde db-functies als de route (`registreerKlant/ZaakRapport`),
+zodat we niet echt mailen. De mailstap zelf blijft in `mail.spec` achter `E2E_MAIL` (tegen productie).
+De interne notitie die niet naar de klant-PDF mag lekken, blijft unit-gedekt in `rapport.test.ts`.
+
+Valkuil onderweg: de seed gebruikte eerst nep-foto-URL's (`https://x/...`); zodra het oplever-blok
+rendert gooit `next/image` een fout omdat de host niet in `next.config` (`*.supabase.co`) staat. Seed
+nu met een toegestane host.
+
 ## Nog open (bewust)
 
-- De nieuwe-flow-gedragingen hebben nog **geen eigen e2e-test**: klant-versturen laat de status met
-  rust, zaak-versturen zet 'opgeleverd', Ed ziet niets tot de zaak-mail, interne notitie wel in de
-  zaak-PDF maar niet in de klant-PDF. De huidige suite is het regressie-vangnet; deze specifieke
-  assertions moeten nog geschreven worden. (De lek-bewaking zit wel als unit-test.)
+- De mailstap zelf (klant- en zaak-mail echt versturen) blijft alleen E2E_MAIL-gedekt tegen productie;
+  geen test-DB-variant omdat er geen mail-dry-run is.
 - Werkpool-geheugensteun "rapport naar zaak nog versturen" nog niet gebouwd (los vervolgklusje).
 
 ## Les
