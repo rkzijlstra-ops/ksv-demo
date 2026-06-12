@@ -117,7 +117,7 @@ test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (
   await page.keyboard.press("Tab");
 
   // Controlepunt aftekenen: "Akkoord" (slaat ook een concept op).
-  await page.getByRole("button", { name: "Akkoord" }).click();
+  await page.getByRole("button", { name: "Akkoord", exact: true }).click();
 
   // Database: het concept bevat nu de foto, de handtekening-url, de opmerking én het controle-akkoord.
   await expect

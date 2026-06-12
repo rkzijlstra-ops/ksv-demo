@@ -27,7 +27,11 @@ const client = new pg.Client({ connectionString: url });
 try {
   await client.connect();
   await client.query(sql);
-  console.log(`OK: ${sqlPath} gedraaid tegen de test-DB.`);
+  // Forceer PostgREST om z'n schema-cache te herladen, zodat nieuwe kolommen meteen via de
+  // REST-laag (waar de app doorheen praat) bruikbaar zijn. Zonder dit kan een e2e-run vlak na
+  // een migratie op een stale cache vallen ("Could not find the 'X' column ... in the schema cache").
+  await client.query("notify pgrst, 'reload schema'");
+  console.log(`OK: ${sqlPath} gedraaid tegen de test-DB (schema-reload verstuurd).`);
 } catch (e) {
   console.error(`FOUT bij ${sqlPath}: ${e.message}`);
   process.exitCode = 1;
