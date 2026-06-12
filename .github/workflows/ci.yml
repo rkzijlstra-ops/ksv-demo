@@ -27,12 +27,23 @@ jobs:
       - name: Dependencies installeren
         run: npm ci
 
-      - name: Testomgeving aanmaken uit secret
-        # .env.test voor de Playwright-config/global-setup; .env.local zodat `next build`/`next start`
-        # met dezelfde test-Supabase draaien (NEXT_PUBLIC-waarden worden in de build gebakken).
+      - name: Testomgeving (.env) aanmaken uit secret
+        # De server-env-validator (src/lib/env.ts) eist SUPABASE_PUBLISHABLE_KEY (zonder NEXT_PUBLIC) en
+        # ANTHROPIC/OPENAI-keys. In .env.test staat alleen de NEXT_PUBLIC-publishable; lokaal vullen de
+        # AI-keys uit .env.local de rest aan. In de cloud forceren we ze: de publishable uit de
+        # NEXT_PUBLIC-variant, en geldige dummy AI-keys (de e2e roept Claude/OpenAI niet aan).
+        # .env.test = voor de Playwright-config/global-setup; .env.local = voor next build/next start.
         run: |
-          printf '%s\n' "$ENV_TEST" > .env.test
+          printf '%s\n' "$ENV_TEST" > .env.full
+          PUBKEY=$(grep -E '^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=' .env.full | head -1 | cut -d= -f2-)
+          grep -vE '^(SUPABASE_PUBLISHABLE_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY)=' .env.full > .env.test
+          {
+            echo "SUPABASE_PUBLISHABLE_KEY=$PUBKEY"
+            echo "ANTHROPIC_API_KEY=ci-e2e-dummy-anthropic-key-0000000000"
+            echo "OPENAI_API_KEY=ci-e2e-dummy-openai-key-0000000000"
+          } >> .env.test
           cp .env.test .env.local
+          rm -f .env.full
         env:
           ENV_TEST: ${{ secrets.ENV_TEST }}
 
