@@ -85,10 +85,11 @@ test("opdrachtgever mag bij het planbord", async ({ page }) => {
 
 test("opdrachtgever wordt weggestuurd van de monteur-werkpool naar zijn dashboard", async ({ page }) => {
   await page.goto("/");
-  expect(new URL(page.url()).pathname).toBe("/dashboard");
+  // Wacht op de redirect (async door het laadscherm), lees de URL niet meteen af.
+  await page.waitForURL((u) => new URL(u).pathname === "/dashboard");
 });
 
 test("opdrachtgever mag niet bij het gebruikersbeheer (beheerder-only)", async ({ page }) => {
   await page.goto("/gebruikers");
-  expect(new URL(page.url()).pathname).not.toBe("/gebruikers");
+  await page.waitForURL((u) => new URL(u).pathname !== "/gebruikers");
 });

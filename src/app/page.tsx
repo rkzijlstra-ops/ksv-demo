@@ -16,8 +16,10 @@ export default async function WerkpoolPage() {
   const dbi = await db();
   // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
   // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
-  const meldingen = await dbi.getWerkpoolVoor(profiel.id);
-  const tellingen = await dbi.getMeldingTellingen();
+  const [meldingen, tellingen] = await Promise.all([
+    dbi.getWerkpoolVoor(profiel.id),
+    dbi.getMeldingTellingen(),
+  ]);
   const { actief, history } = groepeerMeldingen(meldingen);
 
   // Welke actieve klussen wachten nog op verzending naar de zaak (oplevering vastgelegd, niet verstuurd).

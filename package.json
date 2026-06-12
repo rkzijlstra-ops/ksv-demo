@@ -15,6 +15,7 @@
     "test:mail": "cross-env E2E_MAIL=1 playwright test e2e/mail.spec.ts e2e/mail-opdracht.spec.ts e2e/mail-flows.spec.ts",
     "test:all": "npm test && npm run test:int && npm run test:e2e",
     "migrate:test": "node --env-file=.env.local scripts/migrate.mjs",
+    "perf": "node --env-file=.env.local scripts/perf-meting.mjs",
     "setup:test": "node --experimental-strip-types scripts/setup-test-users.ts",
     "check:env": "node --env-file=.env.local --experimental-strip-types scripts/check-env.ts",
     "generate:fake-pdf": "node --experimental-strip-types scripts/generate-fake-pdf.ts",

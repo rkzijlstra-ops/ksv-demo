@@ -12,11 +12,14 @@ export default async function OpleverenPage({
 }) {
   const { id } = await params;
   const dbi = await db();
-  const opdracht = await dbi.getMeldingById(id);
+  // Onafhankelijke gegevens tegelijk ophalen i.p.v. in een rij (sneller).
+  const [opdracht, meldingen, userId] = await Promise.all([
+    dbi.getMeldingById(id),
+    dbi.getMeldingenVoorOpdracht(id),
+    getAuthenticatedUserId(),
+  ]);
   if (!opdracht) notFound();
-  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
   // Privacy-voorkeur van de monteur: waarschuwen bij versturen naar de klant (standaard aan).
-  const userId = await getAuthenticatedUserId();
   const profiel = userId ? await dbi.getProfiel(userId) : null;
   const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
 

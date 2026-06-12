@@ -36,10 +36,13 @@ export default async function OpdrachtDetailPage({
 }) {
   const { id } = await params;
   const dbi = await db();
-  const opdracht = await dbi.getMeldingById(id);
+  // Onafhankelijke gegevens tegelijk ophalen i.p.v. in een rij (sneller).
+  const [opdracht, meldingen, documenten] = await Promise.all([
+    dbi.getMeldingById(id),
+    dbi.getMeldingenVoorOpdracht(id),
+    dbi.getDocumentenVoorOpdracht(id),
+  ]);
   if (!opdracht) notFound();
-  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
-  const documenten = await dbi.getDocumentenVoorOpdracht(id);
   const opgeleverd = opdracht.opdracht_status === "opgeleverd";
 
   return (

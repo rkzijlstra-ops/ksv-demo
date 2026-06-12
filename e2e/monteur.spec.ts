@@ -66,17 +66,18 @@ test("monteur ziet in de werkpool alleen zijn eigen klus, niet die van een ander
 
 test("monteur wordt weggestuurd van het dashboard naar zijn werkpool", async ({ page }) => {
   await page.goto("/dashboard");
-  expect(new URL(page.url()).pathname).toBe("/");
+  // Wacht op de redirect (async door het laadscherm), lees de URL niet meteen af.
+  await page.waitForURL((u) => new URL(u).pathname === "/");
   await expect(page.getByText("Werkpool")).toBeVisible();
 });
 
 test("monteur wordt weggestuurd van het planbord naar zijn werkpool", async ({ page }) => {
   await page.goto("/planbord");
-  expect(new URL(page.url()).pathname).toBe("/");
+  await page.waitForURL((u) => new URL(u).pathname === "/");
   await expect(page.getByText("Werkpool")).toBeVisible();
 });
 
 test("monteur mag niet bij het gebruikersbeheer (beheerder-only)", async ({ page }) => {
   await page.goto("/gebruikers");
-  expect(new URL(page.url()).pathname).not.toBe("/gebruikers");
+  await page.waitForURL((u) => new URL(u).pathname !== "/gebruikers");
 });

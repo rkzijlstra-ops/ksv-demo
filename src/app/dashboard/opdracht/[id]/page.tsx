@@ -64,14 +64,17 @@ export default async function OpdrachtgeverDetailPage({
     );
   }
 
-  const documenten = await dbi.getDocumentenVoorOpdracht(id);
-  const meldingen = await dbi.getMeldingenVoorOpdracht(id);
-  const oplevering = await dbi.getOpleveringVoorOpdracht(id);
-  const verzendingen = await dbi.getRapportVerzendingen(id);
-  const gebeurtenissen = await dbi.getGebeurtenissenVoor(id);
-  const historie = opdracht.referentienummer
-    ? (await dbi.zoekOpReferentie(opdracht.referentienummer)).filter((h) => h.id !== opdracht.id)
-    : [];
+  // De rest van de gegevens hangt niet van elkaar af: tegelijk ophalen i.p.v. in een rij (sneller).
+  const [documenten, meldingen, oplevering, verzendingen, gebeurtenissen, historieRuw] =
+    await Promise.all([
+      dbi.getDocumentenVoorOpdracht(id),
+      dbi.getMeldingenVoorOpdracht(id),
+      dbi.getOpleveringVoorOpdracht(id),
+      dbi.getRapportVerzendingen(id),
+      dbi.getGebeurtenissenVoor(id),
+      opdracht.referentienummer ? dbi.zoekOpReferentie(opdracht.referentienummer) : Promise.resolve([]),
+    ]);
+  const historie = historieRuw.filter((h) => h.id !== opdracht.id);
   const planning =
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
