@@ -45,6 +45,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   } catch (err) {
     return NextResponse.json({ error: `Afronden mislukt: ${(err as Error).message}` }, { status: 503 });
   }
+  // Vervolg nodig: de klus gaat meteen terug naar "te plannen" (historie blijft, niet meer toegewezen).
+  if (vervolgNodig) {
+    try {
+      await dbi.ontplanOpdracht(id);
+    } catch (err) {
+      return NextResponse.json({ error: `Vervolg inplannen mislukt: ${(err as Error).message}` }, { status: 503 });
+    }
+  }
   await logActie(dbi, id, "afgerond", { id: userId, naam: eigen?.naam, rol: eigen?.rol }, { toelichting, vervolgNodig });
 
   let gemaild = false;

@@ -69,6 +69,7 @@ export interface Melding {
   afgerond_vervolg_nodig: boolean;
   afgerond_foto_urls: string[];
   afgerond_video_url: string | null;
+  afgerond_akkoord_at: string | null;
   // wie de rij aanmaakte (aanmaker/inschieter): bepaalt o.a. of een monteur hem mag verwijderen
   user_id: string | null;
   // toegewezen monteur als uuid (auth-koppeling, blok 6) - kolom bestond al via createOpdracht
@@ -390,6 +391,8 @@ export interface Db {
     id: string,
     input: { toelichting: string | null; vervolgNodig: boolean; fotoUrls: string[]; videoUrl: string | null },
   ): Promise<void>;
+  heropenen(id: string): Promise<void>;
+  akkoordAfgerond(id: string): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
   getProfielen(): Promise<Profiel[]>;
@@ -1008,6 +1011,42 @@ function createDbFromClient(client: SupabaseClient): Db {
         })
         .eq("id", id);
       if (error) throw new Error(`DB afronden mislukt: ${error.message}`);
+    },
+
+    async heropenen(id) {
+      // Terug naar "te plannen" (zelfde reset als ontplannen) + de voltooid-velden wissen.
+      // Historie (meldingen, oplevering, teruggemeld_*) blijft staan.
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          afgerond_door_monteur_at: null,
+          afgerond_toelichting: null,
+          afgerond_vervolg_nodig: false,
+          afgerond_foto_urls: [],
+          afgerond_video_url: null,
+          afgerond_akkoord_at: null,
+          dashboard_status: "binnen",
+          toegewezen_aan: null,
+          monteur_naam: null,
+          startdatum: null,
+          starttijd: null,
+          uitvoerdatum: null,
+          gewijzigd_te_versturen: false,
+          verzonden_monteur: null,
+          verzonden_toegewezen_aan: null,
+          verzonden_startdatum: null,
+          verzonden_starttijd: null,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB heropenen mislukt: ${error.message}`);
+    },
+
+    async akkoordAfgerond(id) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ afgerond_akkoord_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw new Error(`DB akkoord mislukt: ${error.message}`);
     },
 
     async getProfiel(userId: string) {
