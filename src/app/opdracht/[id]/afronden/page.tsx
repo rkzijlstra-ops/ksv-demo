@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { vereisRol } from "@/lib/toegang";
+import { NietDoorgegaanKnop } from "@/components/NietDoorgegaanKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -55,16 +56,7 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
         </Link>
 
-        <Link
-          href="/"
-          className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
-        >
-          <span>
-            <span className="block font-mono text-lg font-extrabold text-ink">Niet doorgegaan</span>
-            <span className="block text-sm text-ink-muted">Klant niet thuis of werk niet af te ronden. Terugmelden doe je op de werkpool-kaart.</span>
-          </span>
-          <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
-        </Link>
+        <NietDoorgegaanKnop opdrachtId={id} klantNaam={klantNaam} />
       </div>
     </main>
   );

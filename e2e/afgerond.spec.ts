@@ -48,3 +48,14 @@ test("monteur meldt een klus afgerond via het keuzescherm", async ({ page }) => 
   const { data } = await admin.from("meldingen").select("afgerond_door_monteur_at").eq("id", opdrachtId).single();
   expect(data?.afgerond_door_monteur_at).not.toBeNull();
 });
+
+test("monteur meldt een klus niet doorgegaan via het keuzescherm", async ({ page }) => {
+  await page.goto(`/opdracht/${opdrachtId}/afronden`);
+  await page.getByRole("button", { name: /niet doorgegaan/i }).click();
+  await page.getByRole("textbox").fill("Meerdere keren aangebeld, niemand thuis.");
+  await page.getByRole("button", { name: "Terugmelden" }).click();
+  await page.waitForURL((u) => new URL(u).pathname === "/");
+
+  const { data } = await admin.from("meldingen").select("teruggemeld_at").eq("id", opdrachtId).single();
+  expect(data?.teruggemeld_at).not.toBeNull();
+});
