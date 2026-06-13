@@ -87,6 +87,8 @@ function maakMelding(over: Partial<Melding>): Melding {
     afgerond_door_monteur_at: null,
     afgerond_toelichting: null,
     afgerond_vervolg_nodig: false,
+    afgerond_foto_urls: [],
+    afgerond_video_url: null,
     user_id: null,
     toegewezen_aan: null,
     monteur_naam: null,

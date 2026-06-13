@@ -25,6 +25,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const toelichting =
     typeof body.toelichting === "string" && body.toelichting.trim() ? body.toelichting.trim() : null;
   const vervolgNodig = body.vervolgNodig === true;
+  const fotoUrls = Array.isArray(body.fotoUrls)
+    ? (body.fotoUrls as unknown[]).filter((u): u is string => typeof u === "string")
+    : [];
+  const videoUrl = typeof body.videoUrl === "string" && body.videoUrl.trim() ? body.videoUrl : null;
 
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
@@ -37,7 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    await dbi.markeerAfgerond(id, { toelichting, vervolgNodig });
+    await dbi.markeerAfgerond(id, { toelichting, vervolgNodig, fotoUrls, videoUrl });
   } catch (err) {
     return NextResponse.json({ error: `Afronden mislukt: ${(err as Error).message}` }, { status: 503 });
   }

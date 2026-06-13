@@ -67,6 +67,8 @@ export interface Melding {
   afgerond_door_monteur_at: string | null;
   afgerond_toelichting: string | null;
   afgerond_vervolg_nodig: boolean;
+  afgerond_foto_urls: string[];
+  afgerond_video_url: string | null;
   // wie de rij aanmaakte (aanmaker/inschieter): bepaalt o.a. of een monteur hem mag verwijderen
   user_id: string | null;
   // toegewezen monteur als uuid (auth-koppeling, blok 6) - kolom bestond al via createOpdracht
@@ -386,7 +388,7 @@ export interface Db {
   markeerTeruggemeld(id: string, input: { reden: string; toelichting: string | null }): Promise<void>;
   markeerAfgerond(
     id: string,
-    input: { toelichting: string | null; vervolgNodig: boolean },
+    input: { toelichting: string | null; vervolgNodig: boolean; fotoUrls: string[]; videoUrl: string | null },
   ): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
@@ -1001,6 +1003,8 @@ function createDbFromClient(client: SupabaseClient): Db {
           afgerond_door_monteur_at: new Date().toISOString(),
           afgerond_toelichting: input.toelichting,
           afgerond_vervolg_nodig: input.vervolgNodig,
+          afgerond_foto_urls: input.fotoUrls,
+          afgerond_video_url: input.videoUrl,
         })
         .eq("id", id);
       if (error) throw new Error(`DB afronden mislukt: ${error.message}`);

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { vereisRol } from "@/lib/toegang";
-import { AfgerondMeldenKnop } from "@/components/AfgerondMeldenKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -34,15 +33,16 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
       </header>
 
       <div className="flex flex-col gap-3">
-        <section className="border-2 border-line bg-white p-4">
-          <h2 className="font-mono text-lg font-extrabold text-ink">Klaar, snel</h2>
-          <p className="mt-1 text-sm text-ink-muted">
-            Voor service of een kleine klus. Optioneel een notitie. De zaak ziet dat het klaar is.
-          </p>
-          <div className="mt-3">
-            <AfgerondMeldenKnop opdrachtId={id} klantNaam={klantNaam} />
-          </div>
-        </section>
+        <Link
+          href={`/opdracht/${id}/afronden/snel`}
+          className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
+        >
+          <span>
+            <span className="block font-mono text-lg font-extrabold text-ink">Klaar, snel</span>
+            <span className="block text-sm text-ink-muted">Voor service of een kleine klus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is.</span>
+          </span>
+          <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
+        </Link>
 
         <Link
           href={`/opdracht/${id}/opleveren`}
