@@ -15,12 +15,12 @@ export default async function VoorbeeldRapportPage() {
   // Bepaal welke demo-foto's al op schijf staan zodat het rapport werkt zonder JPGs.
   const voorbeeldDir = path.join(process.cwd(), "public", "handleiding", "voorbeeld");
 
-  const kandidatenFotos = ["foto-1.jpg", "foto-2.jpg", "foto-3.jpg"];
+  const kandidatenFotos = ["foto-1.jpg", "foto-3.jpg", "foto-4.jpg", "foto-5.jpg", "foto-6.jpg"];
   const fotos = kandidatenFotos
     .filter((naam) => existsSync(path.join(voorbeeldDir, naam)))
     .map((naam) => `/handleiding/voorbeeld/${naam}`);
 
-  const kandidatenMelding = ["melding-1.jpg"];
+  const kandidatenMelding = ["melding-1.jpg", "melding-2.jpg"];
   const meldingFotos = kandidatenMelding
     .filter((naam) => existsSync(path.join(voorbeeldDir, naam)))
     .map((naam) => `/handleiding/voorbeeld/${naam}`);

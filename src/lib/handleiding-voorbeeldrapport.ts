@@ -14,7 +14,7 @@ export function voorbeeldRapportData(
   meldingFotos: string[],
 ): RapportWeergaveData {
   return {
-    afzenderKop: "Keukenmontage Reinier",
+    afzenderKop: "BKM Keukenmontage",
     opleverdatum,
     klantNaam: "Fam. Jansen",
     klantAdres: "Voorbeeldstraat 1, 2251 Voorschoten",
@@ -23,15 +23,15 @@ export function voorbeeldRapportData(
     handtekeningUrl: "/handleiding/voorbeeld/handtekening.svg",
     videoUrl: null,
     fotos,
-    opmerking:
-      "Keuken compleet gemonteerd en getest. Alles werkt, klant is akkoord. Geen openstaande punten.",
+    opmerking: null,
     meldingen: [
       {
         id: "demo-1",
         spoed: false,
         spoed_verzonden_at: null,
         created_at: opleverdatum,
-        ruwe_tekst: "Lichte kras op het zijpaneel van de onderkast, gemeld bij de zaak.",
+        ruwe_tekst:
+          "Knopje van de afzuigkap blijft soms hangen bij het indrukken, dan gaat hij niet automatisch aan. Klant kijkt het even aan.",
         foto_urls: meldingFotos,
       },
     ],
