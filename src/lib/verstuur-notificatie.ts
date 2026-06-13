@@ -65,7 +65,7 @@ export async function meldVerstuurd(
       await notificeerAnnulering({
         toegewezenAan: vorigeMonteur.toegewezen_aan,
         monteurNaam: vorigeMonteur.monteur_naam ?? "monteur",
-        klantNaam: o.klant_naam ?? "de opdracht",
+        klantNaam: o.klant_naam ?? "klant",
         referentienummer: o.referentienummer,
         zaaknaam: o.keukenzaak,
       }),

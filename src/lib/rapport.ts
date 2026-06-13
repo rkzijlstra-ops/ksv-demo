@@ -207,7 +207,7 @@ export async function genereerRapportPdf(
   sectieKop(2, meldingenKop(meldingen.length, meldingFotoAantal));
 
   if (meldingen.length === 0) {
-    tekst("Geen meldingen op deze opdracht.", { size: 10, kleur: MUTED });
+    tekst("Geen meldingen op deze klus.", { size: 10, kleur: MUTED });
   }
 
   for (const m of meldingen) {

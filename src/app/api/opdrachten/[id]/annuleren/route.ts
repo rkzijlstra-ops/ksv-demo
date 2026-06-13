@@ -45,7 +45,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const r = await notificeerAnnulering({
       toegewezenAan: opdracht.toegewezen_aan,
       monteurNaam: opdracht.monteur_naam,
-      klantNaam: opdracht.klant_naam ?? "de opdracht",
+      klantNaam: opdracht.klant_naam ?? "klant",
       referentienummer: opdracht.referentienummer,
       zaaknaam: opdracht.keukenzaak,
     });

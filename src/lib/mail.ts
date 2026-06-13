@@ -399,7 +399,7 @@ export async function verstuurSpoedMelding(input: SpoedMailInput): Promise<void>
   const { apiKey, from, replyTo } = mailConfig();
   const resend = new Resend(apiKey);
 
-  const klant = input.opdracht.klant_naam ?? "opdracht";
+  const klant = input.opdracht.klant_naam ?? "klant";
   const ref = input.opdracht.referentienummer ? ` (ref ${input.opdracht.referentienummer})` : "";
   const fotoRegels =
     input.melding.foto_urls.length > 0

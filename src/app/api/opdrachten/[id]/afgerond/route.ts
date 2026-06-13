@@ -67,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await verstuurAfgerondMelding({
         naar: kantoorAdres,
         monteurNaam: eigen?.naam ?? opdracht.monteur_naam ?? "De monteur",
-        klantNaam: opdracht.klant_naam ?? "de opdracht",
+        klantNaam: opdracht.klant_naam ?? "klant",
         referentienummer: opdracht.referentienummer,
         toelichting,
         vervolgNodig,

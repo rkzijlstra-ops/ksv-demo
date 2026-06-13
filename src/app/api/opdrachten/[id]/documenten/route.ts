@@ -91,7 +91,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await notificeerNieuwDocument({
       toegewezenAan: opdracht.toegewezen_aan,
       monteurNaam: opdracht.monteur_naam,
-      klantNaam: opdracht.klant_naam ?? "de opdracht",
+      klantNaam: opdracht.klant_naam ?? "klant",
       referentienummer: opdracht.referentienummer,
       zaaknaam: opdracht.keukenzaak,
     });

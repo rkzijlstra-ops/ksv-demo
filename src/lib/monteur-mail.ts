@@ -99,7 +99,7 @@ export function monteurMailTekst(
   // Eén opdracht die een verzetting is, krijgt een wijzig-toon i.p.v. "nieuwe opdracht". Bij een bundel
   // dekt de neutrale meervoudstekst zowel nieuwe als gewijzigde klussen.
   const verzet = n === 1 && !!opdrachten[0].verzet;
-  const klant1 = opdrachten[0]?.klant_naam ?? "opdracht";
+  const klant1 = opdrachten[0]?.klant_naam ?? "klant";
   const subject = verzet
     ? `Gewijzigde afspraak voor ${monteurNaam}: ${klant1}`
     : n === 1
