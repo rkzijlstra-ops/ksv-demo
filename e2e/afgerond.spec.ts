@@ -64,7 +64,7 @@ test("voltooid met vervolg-vinkje zet de klus terug naar te plannen", async ({ p
   await page.goto(`/opdracht/${opdrachtId}/afronden/snel`);
   await page.getByRole("checkbox").check();
   await page.getByRole("textbox").fill("Onderdelen komen later, vervolg nodig.");
-  await page.getByRole("button", { name: /voltooid melden/i }).click();
+  await page.getByRole("button", { name: /klus afsluiten/i }).click();
   await page.waitForURL((u) => new URL(u).pathname === "/");
 
   const { data } = await admin
@@ -95,7 +95,7 @@ test("voltooid met vervolg op een ad-hoc klus (geen kantoor) blijft bij de monte
   try {
     await page.goto(`/opdracht/${adhocId}/afronden/snel`);
     await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: /voltooid melden/i }).click();
+    await page.getByRole("button", { name: /klus afsluiten/i }).click();
     await page.waitForURL((u) => new URL(u).pathname === "/");
 
     const { data } = await admin
