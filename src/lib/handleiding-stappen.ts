@@ -22,8 +22,10 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
     bestand: "01-werkpool.png",
     titel: "Je werkpool",
     uitleg:
-      "Na het inloggen kom je in je werkpool. Hier staan de klussen die aan jou zijn toegewezen. " +
-      "Bovenaan de actieve klussen, daaronder je geschiedenis. Tik een klus aan om hem te openen.",
+      "In je werkpool staan je klussen, bovenaan de actieve, daaronder je geschiedenis. Een klus kan " +
+      "door de opdrachtgever zijn klaargezet, maar je kunt er ook zelf een toevoegen: bovenaan upload " +
+      "je een opdracht als PDF of foto, ook van andere opdrachtgevers, of je maakt een klus zonder " +
+      "document aan. Zo lever je voor elke opdrachtgever een net rapport op. Tik een klus aan om hem te openen.",
     route: "/",
   },
   {
