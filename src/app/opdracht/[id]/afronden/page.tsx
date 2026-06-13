@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { vereisRol } from "@/lib/toegang";
 import { NietDoorgegaanKnop } from "@/components/NietDoorgegaanKnop";
+import { KlusActiviteit } from "@/components/KlusActiviteit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,14 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) notFound();
   const klantNaam = opdracht.klant_naam ?? "deze klus";
+
+  // Activiteit (logboek + verzendingen) met service-rechten lezen, zodat de monteur ook
+  // de bevestiging van zijn eigen klus ziet (RLS blokkeert dit lezen anders soms).
+  const adm = dbAdmin();
+  const [gebeurtenissen, verzendingen] = await Promise.all([
+    adm.getGebeurtenissenVoor(id),
+    adm.getRapportVerzendingen(id),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -58,6 +67,8 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
 
         <NietDoorgegaanKnop opdrachtId={id} klantNaam={klantNaam} />
       </div>
+
+      <KlusActiviteit gebeurtenissen={gebeurtenissen} verzendingen={verzendingen} />
     </main>
   );
 }
