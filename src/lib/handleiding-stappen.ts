@@ -27,7 +27,7 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
     intro: "Je klussen: actief bovenaan, geschiedenis eronder.",
     punten: [
       "Een klus komt van de opdrachtgever, of je voegt er zelf een toe.",
-      "Zelf toevoegen: upload een klus als PDF of foto, ook van andere opdrachtgevers.",
+      "Zelf toevoegen: voeg een PDF toe, dan vult de app de gegevens vanzelf in (een foto of tekening kan ook).",
       "Of maak een klus zonder document aan.",
       "Tik een klus aan om te openen.",
     ],

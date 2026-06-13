@@ -230,7 +230,8 @@ export function OpdrachtAanmaken() {
 
           <div className="flex flex-col gap-3 px-4 py-4">
             <p className="text-sm text-ink-muted">
-              Vul in wat je weet. Niets is verplicht, de rest kun je later aanvullen.
+              Voeg een PDF van de opdrachtgever toe, dan vult de app de meeste velden vanzelf in. Niets is
+              verplicht, je kunt alles aanpassen.
             </p>
 
             {/* Document optioneel: zit er een PDF bij, dan vullen we de velden alvast voor. */}
