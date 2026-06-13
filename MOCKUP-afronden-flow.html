@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup - Klus afronden flow (KSV)</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --ink-muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --blauw:#1d4ed8; --afgerond:#0d9488;
+    --mono:ui-monospace,"Cascadia Mono","Consolas",monospace;
+    --sans:"Lexend",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e2e8f0;color:var(--ink);font-family:var(--sans);padding:28px 16px 60px}
+  .kop{max-width:1100px;margin:0 auto 28px}
+  .kop h1{font-family:var(--mono);font-weight:800;letter-spacing:-.5px;margin:0 0 6px}
+  .kop p{color:var(--ink-muted);margin:.2em 0;max-width:760px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:34px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto}
+  .col{width:380px}
+  .caption{margin-top:12px;font-size:14px;color:var(--ink-muted);line-height:1.5}
+  .caption b{color:var(--ink)}
+  .num{display:inline-block;font-family:var(--mono);font-weight:800;background:var(--ink);color:#fff;border-radius:999px;width:24px;height:24px;text-align:center;line-height:24px;margin-right:6px}
+
+  /* telefoon */
+  .phone{background:#fff;border:2px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.18)}
+  .screen{padding:14px;min-height:560px;display:flex;flex-direction:column;gap:12px;background:#fff}
+
+  /* bouwstenen in app-stijl */
+  .card{border:2px solid var(--line);background:#fff}
+  .hdr{position:relative;border:2px solid var(--line);border-bottom:none;background:#fff;padding:16px 18px}
+  .hdr .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-muted)}
+  .hdr h2{font-family:var(--mono);font-weight:800;letter-spacing:-.5px;font-size:24px;margin:4px 0 0}
+  .hdr .sub{font-size:13px;color:var(--ink-muted);margin-top:3px}
+  .accentbar{height:6px;background:var(--accent)}
+  .row{display:flex;gap:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:2px solid var(--ink);background:#fff;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.04em;padding:0 12px;cursor:pointer}
+  .btn.dark{background:var(--ink);color:#fff}
+  /* primaire actie in app-stijl: antraciet vlak met dun oranje streepje onderaan (geen oranje vulling) */
+  .btn.accent{background:var(--primary);border-color:var(--primary);color:#fff;position:relative;overflow:hidden}
+  .btn.accent::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.green{border-color:var(--success);color:var(--success)}
+  .btn.red{border-color:var(--rood);color:var(--rood)}
+  .btn.ghost{border-width:2px}
+  .btn.block{width:100%}
+  .pill{display:inline-block;border:1px solid var(--line);background:var(--surface);font-size:11px;font-weight:700;padding:2px 8px}
+  .pill.service{border-color:var(--ink);color:var(--ink)}
+  .label{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-muted)}
+  .muted{color:var(--ink-muted);font-size:13px;line-height:1.4}
+  .box{border:2px solid var(--line);background:var(--surface);padding:12px;font-size:13px;color:var(--ink-muted)}
+  .choice{border:2px solid var(--ink);background:#fff;padding:14px;cursor:pointer}
+  .choice .t{font-family:var(--mono);font-weight:800;font-size:16px}
+  .choice .d{font-size:12.5px;color:var(--ink-muted);margin-top:3px;line-height:1.4}
+  .choice .arrow{float:right;font-weight:800}
+  .statusbadge{display:inline-block;color:#fff;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px}
+  .check{display:flex;gap:10px;align-items:flex-start;border:2px solid var(--geel);background:#fffbeb;padding:12px}
+  .check .vk{width:20px;height:20px;border:2px solid var(--ink);flex:none;margin-top:1px}
+  .dashcard{border:2px solid var(--line);border-left:8px solid var(--afgerond);background:#fff;padding:14px}
+  .new{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;vertical-align:middle}
+  .tt{font-weight:800;font-size:18px}
+  .spacer{flex:1}
+</style>
+</head>
+<body>
+
+<div class="kop">
+  <h1>Mockup - "Klus afronden" flow</h1>
+  <p>Voorlopige plaatjes om de nieuwe flow te beoordelen voordat we bouwen. Teksten en kleuren zijn voorlopig en makkelijk te vervangen. <b>Alles wat nieuw is, staat met een oranje <span class="new">nieuw</span>-label.</b></p>
+  <p>Vijf schermen: 1) het opdracht-scherm met &eacute;&eacute;n afrond-knop, 2) het keuzescherm, 3) snel afgerond melden met het vervolg-vinkje, 4) de opgeschoonde versturen-knop, 5) het dashboard van de zaak met het eindoordeel.</p>
+</div>
+
+<div class="grid">
+
+  <!-- 1 -->
+  <div class="col">
+    <div class="phone"><div class="screen">
+      <div>
+        <div class="hdr">
+          <div class="eyebrow">Keukenstudio Voorschoten / Service</div>
+          <h2>Fam. Jansen</h2>
+          <div style="margin-top:8px"><span class="pill service">&#128295; SERVICE</span> <span class="pill">ref 192920</span></div>
+          <div class="sub" style="margin-top:8px">&#128205; Voorbeeldstraat 1, Voorschoten</div>
+          <div class="accentbar" style="position:absolute;left:0;right:0;bottom:0"></div>
+        </div>
+        <div class="card" style="padding:12px">
+          <div class="row">
+            <button class="btn dark" style="flex:1">&#9758; Navigeer</button>
+            <button class="btn" style="flex:1">&#9742; Bellen</button>
+            <button class="btn green" style="flex:1">&#128172; WA</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="label">Meldingen (0)</div>
+      <button class="btn accent block">+ Melding toevoegen</button>
+      <div class="box">Nog geen meldingen op deze opdracht.</div>
+
+      <div class="spacer"></div>
+      <div class="label">Klaar met deze klus? <span class="new">nieuw</span></div>
+      <button class="btn accent block" style="min-height:54px;font-size:16px">&#10003; Klus afronden</button>
+    </div></div>
+    <div class="caption"><span class="num">1</span><b>Opdracht-scherm.</b> In plaats van drie losse knoppen (afgerond / opleveren / terugmelden) die om aandacht vechten, &eacute;&eacute;n duidelijke knop <b>"Klus afronden"</b> onderaan. Rustig, &eacute;&eacute;n eindpunt.</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="col">
+    <div class="phone"><div class="screen">
+      <div class="hdr">
+        <div class="eyebrow">Klus afronden</div>
+        <h2>Hoe rond je af?</h2>
+        <div class="sub">Kies wat bij deze klus past.</div>
+        <div class="accentbar" style="position:absolute;left:0;right:0;bottom:0"></div>
+      </div>
+
+      <div class="choice">
+        <span class="arrow">&#8594;</span>
+        <div class="t">Klaar, snel</div>
+        <div class="d">Voor service of een kleine klus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is. Minimale moeite.</div>
+      </div>
+      <div class="choice">
+        <span class="arrow">&#8594;</span>
+        <div class="t">Klaar + rapport</div>
+        <div class="d">Volledige oplevering met foto's en handtekening. Voor een keuken of montage, of als de opdrachtgever het vraagt.</div>
+      </div>
+      <div class="choice">
+        <span class="arrow">&#8594;</span>
+        <div class="t">Niet doorgegaan</div>
+        <div class="d">Klant niet thuis, werk niet af te ronden. Gaat terug naar de zaak om opnieuw in te plannen.</div>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn block">Annuleren</button>
+    </div></div>
+    <div class="caption"><span class="num">2</span><b>Keuzescherm <span class="new">nieuw</span>.</b> Drie heldere wegen achter &eacute;&eacute;n knop. De monteur kiest bewust, geen knoppen-wildgroei. "Klaar + rapport" is gewoon je bestaande oplever-flow.</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="col">
+    <div class="phone"><div class="screen">
+      <div class="hdr">
+        <div class="eyebrow">Klaar, snel</div>
+        <h2>Afgerond melden</h2>
+        <div class="sub">Alles hieronder is optioneel. Je mag ook gewoon meteen melden.</div>
+        <div class="accentbar" style="position:absolute;left:0;right:0;bottom:0"></div>
+      </div>
+
+      <div class="label">Bewijs (optioneel)</div>
+      <div class="row">
+        <button class="btn" style="flex:1">&#128247; Foto</button>
+        <button class="btn" style="flex:1">&#127909; Video</button>
+      </div>
+
+      <div class="label">Notitie (optioneel)</div>
+      <div class="box" style="background:#fff;color:var(--ink-muted)">Bijv. "Lade afgesteld, alles getest, klant tevreden."</div>
+
+      <div class="check">
+        <div class="vk"></div>
+        <div>
+          <div style="font-weight:800">Er komt nog een vervolg</div>
+          <div class="muted">Bijv. onderdelen die later binnenkomen. De klus gaat dan naar de zaak om een vervolg in te plannen. Laat leeg als de klus helemaal klaar is.</div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn accent block" style="min-height:54px;font-size:16px">&#10003; Afgerond melden</button>
+    </div></div>
+    <div class="caption"><span class="num">3</span><b>Snel afgerond <span class="new">nieuw</span>.</b> Foto/video/notitie mogen leeg. &Eacute;&eacute;n subtiel vinkje vangt jouw twee situaties: helemaal klaar, of nog een vervolg (onderdelen). Standaard uit, geen stress.</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="col">
+    <div class="phone"><div class="screen">
+      <div class="hdr">
+        <div class="eyebrow">Opleveren / versturen</div>
+        <h2>Versturen</h2>
+        <div class="sub">Eerst: twee blokken naast elkaar. Nu: &eacute;&eacute;n knop met keuzes.</div>
+        <div class="accentbar" style="position:absolute;left:0;right:0;bottom:0"></div>
+      </div>
+
+      <div class="label" style="color:var(--rood)">Voorheen (rommelig)</div>
+      <div class="box" style="display:flex;gap:8px">
+        <div style="flex:1;border:1px dashed var(--line);padding:8px;text-align:center">blok: naar de zaak</div>
+        <div style="flex:1;border:1px dashed var(--line);padding:8px;text-align:center">blok: naar de klant</div>
+      </div>
+
+      <div class="label" style="color:var(--success)">Nieuw <span class="new">nieuw</span></div>
+      <button class="btn accent block" style="min-height:54px;font-size:16px">&#128228; Versturen</button>
+      <div class="card" style="padding:0">
+        <div class="choice" style="border:none;border-bottom:2px solid var(--line)">
+          <span class="arrow">&#8594;</span><div class="t" style="font-size:15px">Naar de zaak</div>
+          <div class="d">Volledige versie met interne notitie. Hierna staat de klus op "opgeleverd".</div>
+        </div>
+        <div class="choice" style="border:none">
+          <span class="arrow">&#8594;</span><div class="t" style="font-size:15px">Ook naar de klant</div>
+          <div class="d">Schone versie zonder interne notitie. Vul het mailadres in.</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="caption"><span class="num">4</span><b>Versturen opgeschoond <span class="new">nieuw</span>.</b> Jouw tweede vondst: dezelfde aanpak. E&eacute;n "Versturen"-knop opent de keuzes, in plaats van twee blokken die ruimte vreten.</div>
+  </div>
+
+  <!-- 5 -->
+  <div class="col">
+    <div class="phone"><div class="screen">
+      <div class="hdr">
+        <div class="eyebrow">Keukensale Katwijk / Dashboard</div>
+        <h2>Opdrachten</h2>
+        <div class="accentbar" style="position:absolute;left:0;right:0;bottom:0"></div>
+      </div>
+
+      <div class="dashcard">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="tt">Fam. Jansen</div>
+          <span class="statusbadge" style="background:var(--afgerond)">Afgerond</span>
+        </div>
+        <div class="muted" style="margin-top:4px">ref 192920 &middot; gemeld door monteur, vandaag</div>
+        <div class="box" style="margin-top:10px;background:#fff">Notitie monteur: "Lade afgesteld, alles getest, klant tevreden."</div>
+
+        <div class="label" style="margin-top:12px">Jullie oordeel <span class="new">nieuw</span></div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn green" style="flex:1">&#10003; Akkoord, klaar</button>
+          <button class="btn red" style="flex:1">&#8635; Toch nog open</button>
+        </div>
+      </div>
+
+      <div class="dashcard" style="border-left-color:var(--blauw);opacity:.7">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="tt">Fam. De Vries</div>
+          <span class="statusbadge" style="background:var(--blauw)">Bevestigd</span>
+        </div>
+        <div class="muted" style="margin-top:4px">ref 193044 &middot; gepland morgen</div>
+      </div>
+    </div></div>
+    <div class="caption"><span class="num">5</span><b>Dashboard van de zaak <span class="new">nieuw</span>.</b> De zaak ziet zeker dat de klus afgerond is (geen vergeten mailtje meer) en velt het eindoordeel: <b>Akkoord, klaar</b> of <b>Toch nog open</b> (heropenen, gaat dan naar "nog te plannen").</div>
+  </div>
+
+</div>
+
+</body>
+</html>
