@@ -12,7 +12,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
   const opdracht = await dbi.getMeldingById(melding.opdracht_id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
 
   const naar = process.env.RAPPORT_EMAIL?.trim();

@@ -61,7 +61,7 @@ export default async function OpdrachtgeverDetailPage({
     return (
       <main className="mx-auto w-full max-w-3xl p-4 pb-24">
         <TerugKnop href={terugHref} label={terugLabel} />
-        <p className="mt-6 text-sm text-ink-muted">Opdracht niet gevonden.</p>
+        <p className="mt-6 text-sm text-ink-muted">Klus niet gevonden.</p>
       </main>
     );
   }

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === "string") : [];
   if (ids.length === 0) {
-    return NextResponse.json({ error: "Geen opdrachten om te versturen" }, { status: 400 });
+    return NextResponse.json({ error: "Geen klussen om te versturen" }, { status: 400 });
   }
 
   const dbi = await db();

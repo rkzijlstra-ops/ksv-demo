@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   // Ophalen VÓÓR markeerVerzonden: verzonden_* moet nog de vorige plek bevatten (zie meldVerstuurd).
   const opdracht = await dbi.getOpdrachtById(id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
   if (!opdracht.monteur_naam) {
     return NextResponse.json(

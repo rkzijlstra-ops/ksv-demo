@@ -20,7 +20,7 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Kluslus",
-  description: "Monteur-app voor opleveringen, opdrachten en meldingen.",
+  description: "Monteur-app voor opleveringen, klussen en meldingen.",
 };
 
 export const viewport: Viewport = {

@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const dbi = await db();
   const opdracht = await dbi.getOpdrachtById(id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
 
   // Behoudt de bestaande waarde van een veld als het niet in de body zit ("meegegeven" = aanwezig).

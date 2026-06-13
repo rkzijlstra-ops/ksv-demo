@@ -38,7 +38,7 @@ export default async function WerkpoolPage() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">
               Werkpool
             </p>
-            <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Opdrachten</h1>
+            <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Klussen</h1>
             <p className="mt-1 text-sm text-ink-muted">
               {actief.length} {actief.length === 1 ? "actieve klus" : "actieve klussen"}
             </p>
@@ -57,7 +57,7 @@ export default async function WerkpoolPage() {
           <Inbox size={40} className="text-ink-muted" aria-hidden="true" />
           <p className="font-semibold text-ink">Geen actieve klussen</p>
           <p className="text-sm text-ink-muted">
-            Nieuwe opdrachten en meldingen verschijnen hier.
+            Nieuwe klussen en meldingen verschijnen hier.
           </p>
         </div>
       ) : (

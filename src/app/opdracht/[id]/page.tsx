@@ -136,7 +136,7 @@ export default async function OpdrachtDetailPage({
         </div>
         {documenten.length === 0 ? (
           <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
-            Geen documenten bij deze opdracht. Voeg een PDF of foto toe met de knop hierboven.
+            Geen documenten bij deze klus. Voeg een PDF of foto toe met de knop hierboven.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
@@ -149,7 +149,7 @@ export default async function OpdrachtDetailPage({
 
       {opdracht.meldingen.length > 0 && (
         <section className="mt-6">
-          <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Artikelen uit opdracht</h2>
+          <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Artikelen uit klus</h2>
           <ul className="flex flex-col gap-3">
             {opdracht.meldingen.map((item, i) => (
               <li key={i} className="rounded-none border border-line bg-white p-4">
@@ -181,7 +181,7 @@ export default async function OpdrachtDetailPage({
 
         {meldingen.length === 0 ? (
           <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
-            Nog geen meldingen op deze opdracht. Maak er een met de knop hierboven.
+            Nog geen meldingen op deze klus. Maak er een met de knop hierboven.
           </p>
         ) : (
           <ul className="flex flex-col gap-4">

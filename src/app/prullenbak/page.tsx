@@ -17,7 +17,7 @@ export default async function PrullenbakPage() {
       <header className="relative mt-2 mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Prullenbak</p>
         <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">
-          Verwijderde opdrachten
+          Verwijderde klussen
         </h1>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
@@ -27,7 +27,7 @@ export default async function PrullenbakPage() {
           <Trash2 size={40} className="text-ink-muted" aria-hidden="true" />
           <p className="font-semibold text-ink">Prullenbak is leeg</p>
           <p className="text-sm text-ink-muted">
-            Verwijderde opdrachten komen hier terecht en kun je herstellen.
+            Verwijderde klussen komen hier terecht en kun je herstellen.
           </p>
         </div>
       ) : (
@@ -45,7 +45,7 @@ export default async function PrullenbakPage() {
                 Verwijderd: {m.verwijderd_at ? formatDatumKort(m.verwijderd_at) : "onbekend"}
               </p>
               <div className="mt-3">
-                <PrullenbakActies opdrachtId={m.id} klantNaam={m.klant_naam ?? "deze opdracht"} />
+                <PrullenbakActies opdrachtId={m.id} klantNaam={m.klant_naam ?? "deze klus"} />
               </div>
             </li>
           ))}

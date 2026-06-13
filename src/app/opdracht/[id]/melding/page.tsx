@@ -22,7 +22,7 @@ export default async function MeldingToevoegenPagina({
           <div>
             <h1 className="mt-2 text-2xl font-bold text-ink">Melding toevoegen</h1>
             <p className="mt-1 text-sm text-ink-muted">
-              Voor {opdracht.klant_naam ?? "deze opdracht"}
+              Voor {opdracht.klant_naam ?? "deze klus"}
               {opdracht.referentienummer ? ` (ref ${opdracht.referentienummer})` : ""}
             </p>
           </div>

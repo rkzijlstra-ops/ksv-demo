@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const eigen = await dbi.getProfiel(userId);
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
   // Kantoor mag altijd; een monteur alleen op zijn eigen klus (die hij zelf aanmaakte).
   const isKantoor = eigen?.rol === "opdrachtgever" || eigen?.rol === "beheerder";

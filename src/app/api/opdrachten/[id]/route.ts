@@ -25,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const opdracht = await dbi.getOpdrachtById(id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
 
   let body: Record<string, unknown>;
@@ -75,7 +75,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
-    return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+    return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
   const eigen = await dbi.getProfiel(userId);
   if (eigen?.rol === "monteur" && opdracht.user_id !== userId) {

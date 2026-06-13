@@ -20,9 +20,9 @@ export default function OverPage() {
           <h2 className="mb-1 font-bold">Wat doet de app</h2>
           <p className="text-ink-muted">
             Je gebruikt de app voor twee soorten klussen: het <b>monteren van een nieuwe keuken</b>
-            {" "}en <b>servicewerk en nazorg</b> (reparaties, manco&apos;s, afmontage). Je opdrachten
+            {" "}en <b>servicewerk en nazorg</b> (reparaties, manco&apos;s, afmontage). Je klussen
             staan in de werkpool. Je voegt ze toe via een PDF of foto, of handmatig. Bij elke
-            opdracht kun je meldingen maken en de klus opleveren met bewijs. Dezelfde oplever-flow
+            klus kun je meldingen maken en de klus opleveren met bewijs. Dezelfde oplever-flow
             werkt voor allebei.
           </p>
         </section>
@@ -57,8 +57,8 @@ export default function OverPage() {
             <WifiOff size={18} aria-hidden="true" /> Offline werken
           </h2>
           <p className="text-ink-muted">
-            Opdrachten lezen en meldingen met foto maken kan zonder netwerk; die worden verstuurd
-            zodra je weer bereik hebt. Inspreken, opleveren en nieuwe opdrachten inlezen hebben wel
+            Klussen lezen en meldingen met foto maken kan zonder netwerk; die worden verstuurd
+            zodra je weer bereik hebt. Inspreken, opleveren en nieuwe klussen inlezen hebben wel
             netwerk nodig.
           </p>
         </section>

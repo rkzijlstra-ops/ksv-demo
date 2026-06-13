@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Kluslus",
     short_name: "Kluslus",
-    description: "Monteur-app voor opleveringen, opdrachten en meldingen.",
+    description: "Monteur-app voor opleveringen, klussen en meldingen.",
     id: "/",
     scope: "/",
     start_url: "/",

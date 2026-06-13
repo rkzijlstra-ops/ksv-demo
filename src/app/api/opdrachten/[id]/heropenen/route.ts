@@ -10,7 +10,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
-  if (!opdracht) return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+  if (!opdracht) return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   const eigen = await dbi.getProfiel(userId);
   const rol = eigen?.rol;
   const magZaak = rol === "opdrachtgever" || rol === "beheerder";
