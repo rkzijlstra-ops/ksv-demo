@@ -2,6 +2,8 @@ import { UserMenu } from "@/components/UserMenu";
 import { TerugKnop } from "@/components/TerugKnop";
 import { MijnGegevensForm } from "@/components/MijnGegevensForm";
 import { vereisRol } from "@/lib/toegang";
+import { dbAdmin } from "@/lib/db";
+import { inboundAdres } from "@/lib/inbound";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,12 @@ export default async function MijnGegevensPage() {
   const isMonteur = profiel.rol === "monteur";
   const terugHref = isMonteur ? "/" : "/dashboard";
   const terugLabel = isMonteur ? "Werkpool" : "Dashboard";
+
+  // Inbound-adres voor wie zelf klussen kan inschieten (monteur + beheerder). Token lui aanmaken.
+  const magInbound = profiel.rol === "monteur" || profiel.rol === "beheerder";
+  const inboundAdresStr = magInbound
+    ? inboundAdres(await dbAdmin().ensureInboundToken(profiel.id))
+    : null;
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -42,6 +50,22 @@ export default async function MijnGegevensPage() {
           waarschuwKlantZicht={profiel.waarschuw_klant_zicht}
         />
       </section>
+
+      {inboundAdresStr && (
+        <section className="mt-4 border-2 border-line bg-white px-5 py-5">
+          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
+            Klussen per mail ontvangen
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            Stuur een mail van je opdrachtgever (met PDF of foto&apos;s) naar dit adres. De app haalt eruit
+            wat bruikbaar is en zet het in je &quot;te verwerken&quot;-bakje, waar je het bevestigt.
+          </p>
+          <p className="mt-3 select-all break-all border-2 border-ink bg-surface px-3 py-3 font-mono text-sm font-bold text-ink">
+            {inboundAdresStr}
+          </p>
+          <p className="mt-2 text-xs text-ink-muted">Houd het adres ingedrukt om te kopiëren.</p>
+        </section>
+      )}
     </main>
   );
 }

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Inbox, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkpool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
@@ -16,9 +18,10 @@ export default async function WerkpoolPage() {
   const dbi = await db();
   // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
   // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
-  const [meldingen, tellingen] = await Promise.all([
+  const [meldingen, tellingen, inbox] = await Promise.all([
     dbi.getWerkpoolVoor(profiel.id),
     dbi.getMeldingTellingen(),
+    dbi.getInboxVoor(profiel.id),
   ]);
   const { actief, history } = groepeerMeldingen(meldingen);
 
@@ -47,6 +50,19 @@ export default async function WerkpoolPage() {
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      {inbox.length > 0 && (
+        <Link
+          href="/inbox"
+          className="mb-4 flex items-center gap-3 border-2 border-ink bg-accent/20 px-4 py-3 text-ink transition-colors hover:bg-accent/30 focus-visible:outline-3 focus-visible:outline-accent"
+        >
+          <Inbox size={20} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+          <span className="flex-1 text-sm font-extrabold">
+            {inbox.length} {inbox.length === 1 ? "klus" : "klussen"} te verwerken uit je mail
+          </span>
+          <ChevronRight size={20} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+        </Link>
+      )}
 
       <div className="mb-4">
         <OpdrachtAanmaken />
