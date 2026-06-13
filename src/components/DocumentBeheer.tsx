@@ -24,7 +24,7 @@ export function DocumentBeheer({
   const [fout, setFout] = useState("");
 
   async function verwijder(doc: Document) {
-    const extra = doc.is_primair ? " Dit is het bronbestand van de opdracht." : "";
+    const extra = doc.is_primair ? " Dit is het bronbestand van de klus." : "";
     if (!window.confirm(`"${doc.bestandsnaam}" verwijderen?${extra}`)) return;
     setBezigId(doc.id);
     setFout("");
@@ -92,7 +92,7 @@ export function DocumentBeheer({
       </div>
 
       {documenten.length === 0 ? (
-        <p className="text-sm text-ink-muted">Geen documenten bij deze opdracht.</p>
+        <p className="text-sm text-ink-muted">Geen documenten bij deze klus.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {documenten.map((doc) => (

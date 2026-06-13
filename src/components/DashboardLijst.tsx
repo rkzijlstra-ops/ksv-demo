@@ -77,7 +77,7 @@ export function DashboardLijst({
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
             placeholder="Zoek op klant, referentie, adres of monteur"
-            aria-label="Zoek een opdracht"
+            aria-label="Zoek een klus"
             className="w-full bg-transparent text-[15px] outline-none"
           />
         </label>
@@ -135,7 +135,7 @@ export function DashboardLijst({
       {/* Secties */}
       {groepen.length === 0 ? (
         <p className="mt-8 text-[14.5px] text-ink-muted">
-          Geen opdrachten gevonden voor deze filter of zoekopdracht.
+          Geen klussen gevonden voor deze filter of zoekopdracht.
         </p>
       ) : (
         groepen.map((g) => {

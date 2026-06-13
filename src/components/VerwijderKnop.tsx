@@ -18,7 +18,7 @@ export function VerwijderKnop({
 
   async function verwijder() {
     const ok = window.confirm(
-      `Opdracht "${klantNaam}" definitief verwijderen? De documenten en meldingen gaan ook weg. Dit kan niet ongedaan worden gemaakt.`,
+      `Klus "${klantNaam}" definitief verwijderen? De documenten en meldingen gaan ook weg. Dit kan niet ongedaan worden gemaakt.`,
     );
     if (!ok) return;
 
@@ -54,7 +54,7 @@ export function VerwijderKnop({
         ) : (
           <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" />
         )}
-        Opdracht verwijderen
+        Klus verwijderen
       </button>
       {fout && (
         <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-urgent-rood">

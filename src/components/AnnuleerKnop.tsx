@@ -27,7 +27,7 @@ export function AnnuleerKnop({
     return (
       <div className="mt-3 flex items-center gap-2 border border-line bg-surface p-3 text-sm font-semibold text-ink-muted">
         <Ban size={16} aria-hidden="true" />
-        Deze opdracht is geannuleerd
+        Deze klus is geannuleerd
       </div>
     );
   }
@@ -60,7 +60,7 @@ export function AnnuleerKnop({
           className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 border-2 border-urgent-rood px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-accent"
         >
           <Ban size={16} strokeWidth={2.5} aria-hidden="true" />
-          Opdracht annuleren
+          Klus annuleren
         </button>
       ) : (
         <div className="flex flex-col gap-2 border-2 border-urgent-rood bg-urgent-rood/5 p-3">

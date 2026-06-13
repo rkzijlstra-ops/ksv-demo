@@ -104,11 +104,11 @@ export function InschietZone() {
           <>
             <UploadCloud size={26} strokeWidth={2.2} className="text-primary" aria-hidden="true" />
             <span className="text-[15px] font-extrabold uppercase tracking-[0.05em]">
-              Sleep PDF&apos;s hier om opdrachten in te schieten
+              Sleep PDF&apos;s hier om klussen in te schieten
             </span>
             <span className="text-[13.5px] text-ink-muted">
-              Meerdere tegelijk kan. Dezelfde referentie wordt één opdracht, verschillende
-              referenties worden aparte opdrachten. Of klik om te kiezen.
+              Meerdere tegelijk kan. Dezelfde referentie wordt één klus, verschillende
+              referenties worden aparte klussen. Of klik om te kiezen.
             </span>
           </>
         )}
@@ -119,7 +119,7 @@ export function InschietZone() {
           <p className="flex items-center gap-2 text-sm font-extrabold text-success">
             <Check size={18} strokeWidth={2.5} aria-hidden="true" />
             {samenvatting.aantalOpdrachten}{" "}
-            {samenvatting.aantalOpdrachten === 1 ? "opdracht" : "opdrachten"} aangemaakt uit{" "}
+            {samenvatting.aantalOpdrachten === 1 ? "klus" : "klussen"} aangemaakt uit{" "}
             {samenvatting.aantalDocumenten}{" "}
             {samenvatting.aantalDocumenten === 1 ? "document" : "documenten"}
           </p>

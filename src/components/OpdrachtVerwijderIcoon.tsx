@@ -24,7 +24,7 @@ export function OpdrachtVerwijderIcoon({
     e.stopPropagation();
     if (
       !window.confirm(
-        `Opdracht "${klantNaam}" verwijderen? De documenten en meldingen gaan ook weg.`,
+        `Klus "${klantNaam}" verwijderen? De documenten en meldingen gaan ook weg.`,
       )
     )
       return;
@@ -45,7 +45,7 @@ export function OpdrachtVerwijderIcoon({
       type="button"
       onClick={verwijder}
       disabled={bezig}
-      aria-label={`Opdracht ${klantNaam} verwijderen`}
+      aria-label={`Klus ${klantNaam} verwijderen`}
       className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 cursor-pointer items-center justify-center border border-urgent-rood bg-white text-urgent-rood transition-colors duration-150 hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-accent"
     >
       {bezig ? (

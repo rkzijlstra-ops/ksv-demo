@@ -45,8 +45,8 @@ export function MailMonteurKnop({ opdrachtId, label }: { opdrachtId: string; lab
       type="button"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={verstuur}
-      title="Mail deze opdracht naar de monteur"
-      aria-label="Mail deze opdracht naar de monteur"
+      title="Mail deze klus naar de monteur"
+      aria-label="Mail deze klus naar de monteur"
       className={`inline-flex shrink-0 cursor-pointer items-center gap-1 border-[1.5px] bg-white px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.03em] ${kleur}`}
     >
       <Icon

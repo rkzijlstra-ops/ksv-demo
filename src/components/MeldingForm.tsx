@@ -164,7 +164,7 @@ export function MeldingForm({
 
   return (
     <div className="flex flex-col gap-5">
-      <TerugKnop href={terugHref} label="Terug naar opdracht" onClick={handleTerugClick} />
+      <TerugKnop href={terugHref} label="Terug naar klus" onClick={handleTerugClick} />
 
       {kop}
 

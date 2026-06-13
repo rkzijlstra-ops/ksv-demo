@@ -167,7 +167,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
 
       {data.meldingen.length === 0 ? (
         <p className="border border-line bg-surface p-4 text-sm text-ink-muted">
-          Geen meldingen op deze opdracht.
+          Geen meldingen op deze klus.
         </p>
       ) : (
         <ul className="flex flex-col gap-4">

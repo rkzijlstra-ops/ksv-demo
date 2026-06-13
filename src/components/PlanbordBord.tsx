@@ -382,7 +382,7 @@ export function PlanbordBord({
       </div>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-muted">
-        <span>Sleep een opdracht uit de strook naar een dag bij een monteur om in te plannen.</span>
+        <span>Sleep een klus uit de strook naar een dag bij een monteur om in te plannen.</span>
         <span>Sleep naar de rand (‹ ›) om een week te schuiven.</span>
       </p>
 
@@ -401,7 +401,7 @@ export function PlanbordBord({
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Opdracht van de planning halen"
+          aria-label="Klus van de planning halen"
           onClick={() => setBevestigOntplan(null)}
         >
           <div

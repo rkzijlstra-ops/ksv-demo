@@ -161,7 +161,7 @@ export function PlanbordGrid({
     return (
       <p className="mt-4 border-2 border-dashed border-line bg-white p-6 text-center text-sm text-ink-muted">
         Nog geen monteurs. Voeg eerst monteurs toe via het scherm Gebruikers (menu rechtsboven);
-        dan verschijnen ze hier als rij en kun je opdrachten naar een dag slepen.
+        dan verschijnen ze hier als rij en kun je klussen naar een dag slepen.
       </p>
     );
   }

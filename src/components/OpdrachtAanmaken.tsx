@@ -63,7 +63,7 @@ export function OpdrachtAanmaken() {
     await verstuur(fd, (body) => {
       const aantal = Array.isArray(body.documenten) ? body.documenten.length : 0;
       const naamDeel = body.klant_naam ? `: ${body.klant_naam}` : "";
-      return `Opdracht toegevoegd${naamDeel} (${aantal} ${aantal === 1 ? "document" : "documenten"})`;
+      return `Klus toegevoegd${naamDeel} (${aantal} ${aantal === 1 ? "document" : "documenten"})`;
     });
     if (inputRef.current) inputRef.current.value = "";
   }
@@ -77,7 +77,7 @@ export function OpdrachtAanmaken() {
     fd.append("klant_telefoon", telefoon);
     fd.append("keukenzaak", keukenzaak);
     const ok = await verstuur(fd, (body) =>
-      `Opdracht toegevoegd${body.klant_naam ? `: ${body.klant_naam}` : naam ? `: ${naam}` : ""}`,
+      `Klus toegevoegd${body.klant_naam ? `: ${body.klant_naam}` : naam ? `: ${naam}` : ""}`,
     );
     if (ok) {
       setNaam("");
@@ -132,7 +132,7 @@ export function OpdrachtAanmaken() {
           className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
         >
           <PencilLine size={18} strokeWidth={2.5} aria-hidden="true" />
-          Of: opdracht zonder document
+          Of: klus zonder document
         </button>
       ) : (
         <form
@@ -140,11 +140,11 @@ export function OpdrachtAanmaken() {
           className="flex flex-col gap-3 rounded-none border border-line bg-surface p-4"
         >
           <div className="flex items-center justify-between">
-            <span className="font-bold text-ink">Handmatige opdracht</span>
+            <span className="font-bold text-ink">Handmatige klus</span>
             <button
               type="button"
               onClick={() => setHandmatig(false)}
-              aria-label="Handmatige opdracht sluiten"
+              aria-label="Handmatige klus sluiten"
               className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-none text-ink-muted hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary"
             >
               <X size={20} aria-hidden="true" />
@@ -205,7 +205,7 @@ export function OpdrachtAanmaken() {
             className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-none bg-primary px-4 py-3 text-base font-bold text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {bezig ? <Loader2 size={22} className="animate-spin" aria-hidden="true" /> : null}
-            Opdracht aanmaken
+            Klus aanmaken
           </button>
         </form>
       )}
