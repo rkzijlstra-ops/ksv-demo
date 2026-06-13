@@ -11,12 +11,13 @@ function dagenGeleden(n: number): string {
 function opdr(
   id: string,
   status: DashboardStatus,
-  opts: { opgeleverd_at?: string | null; created_at?: string } = {},
+  opts: { opgeleverd_at?: string | null; created_at?: string; afgerond_akkoord_at?: string | null } = {},
 ): ScopebareOpdracht & { id: string } {
   return {
     id,
     dashboard_status: status,
     opgeleverd_at: opts.opgeleverd_at ?? null,
+    afgerond_akkoord_at: opts.afgerond_akkoord_at ?? null,
     created_at: opts.created_at ?? dagenGeleden(0),
   };
 }

@@ -30,7 +30,7 @@ export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
     if (VERBORGEN_VOOR_MONTEUR.has(m.dashboard_status)) continue;
     // Teruggemeld of opgeleverd: uit de actieve pool, maar in de history zodat de monteur het
     // (met de reden) kan terugkijken. Legacy verzonden-status idem.
-    if (m.teruggemeld_at || m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
+    if (m.afgerond_door_monteur_at || m.teruggemeld_at || m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
       history.push(m);
     } else {
       actief.push(m);
