@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { OpleverFlow } from "@/components/OpleverFlow";
@@ -25,6 +27,15 @@ export default async function OpleverenPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-40">
+      <div className="mb-4">
+        <Link
+          href={`/opdracht/${id}/afronden`}
+          className="inline-flex min-h-[44px] items-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface"
+        >
+          <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
+          Terug
+        </Link>
+      </div>
       <header className="relative border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">
           {opdracht.keukenzaak ? `${opdracht.keukenzaak} / ` : ""}Oplevering / Rapportage
