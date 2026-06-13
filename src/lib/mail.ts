@@ -8,6 +8,7 @@ import { afmeldingTekst } from "./afmeld-mail";
 import { annuleringTekst } from "./annuleer-mail";
 import { ontplanningTekst } from "./ontplan-mail";
 import { terugmeldingTekst } from "./terugmeld-mail";
+import { afgerondMeldingTekst } from "./afgerond-mail";
 import { nieuwDocumentTekst } from "./document-mail";
 import { herinneringTekst } from "./herinnering-mail";
 
@@ -347,6 +348,46 @@ export async function verstuurTerugmelding(input: TerugmeldingMailInput): Promis
         ? (error as { message: string }).message
         : JSON.stringify(error);
     throw new Error(`Terugmeld-mail versturen mislukt: ${msg}`);
+  }
+}
+
+export interface AfgerondMeldingMailInput {
+  naar: string;
+  monteurNaam: string;
+  klantNaam: string;
+  referentienummer: string | null;
+  toelichting: string | null;
+  vervolgNodig: boolean;
+  /** Naam van de keukenzaak; wordt de afsluiter van de mail. */
+  organisatie?: string;
+}
+
+/** Meldt kantoor dat de monteur een klus snel als afgerond heeft gemeld (geen volledig rapport). */
+export async function verstuurAfgerondMelding(opts: AfgerondMeldingMailInput): Promise<void> {
+  const { apiKey, from, replyTo } = mailConfig();
+  const resend = new Resend(apiKey);
+  const { subject, text } = afgerondMeldingTekst(
+    opts.monteurNaam,
+    opts.klantNaam,
+    opts.referentienummer,
+    opts.toelichting,
+    opts.vervolgNodig,
+    opts.organisatie ?? "",
+  );
+
+  const { error } = await resend.emails.send({
+    from,
+    to: opts.naar,
+    ...(replyTo ? { replyTo } : {}),
+    subject,
+    text,
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`Afgerond-mail versturen mislukt: ${msg}`);
   }
 }
 
