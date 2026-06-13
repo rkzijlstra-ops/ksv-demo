@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "./supabase-server";
 import { scopeVoorDashboard } from "./dashboard-scope";
 import { moetOpnieuwVersturen, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
 import type { ParsedPdf, MeldingItem } from "./parser-schema";
+import { genereerInboundToken } from "./inbound";
 import type { ControlePunt } from "./oplever-controle";
 
 export interface DbConfig {
@@ -91,6 +92,8 @@ export interface Melding {
   verzonden_toegewezen_aan: string | null;
   // compleet-systeem blok 6e: welke kantoor-zaak deze opdracht mag zien (null = ad-hoc, geen kantoor)
   opdrachtgever_id: string | null;
+  // blok 18 (inbound): per mail binnengekomen voorstel dat nog NIET in de werkpool staat tot bevestigd
+  te_verwerken: boolean;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -209,6 +212,8 @@ export interface OpdrachtInput {
   startdatum?: string | null;
   /** Starttijd bij de zelfgekozen datum (optioneel). */
   starttijd?: string | null;
+  /** Inbound: voorstel uit een binnengekomen mail; staat in het "te verwerken"-bakje, niet in de werkpool. */
+  te_verwerken?: boolean;
   keukenzaak?: string | null;
   meldingen?: MeldingItem[];
   user_id?: string | null;
@@ -296,6 +301,8 @@ export interface Profiel {
   sms_overig: boolean;
   // blok 17: waarschuwen bij klant-verzending dat de klant alle foto's/meldingen ziet
   waarschuw_klant_zicht: boolean;
+  // blok 18: per-monteur ontvangsttoken voor mail-naar-app (klus-<token>@inbound-domein)
+  inbound_token: string | null;
 }
 
 /** De velden die een gebruiker zelf mag bijwerken (naam + afzender, nooit zijn rol). */
@@ -399,6 +406,11 @@ export interface Db {
   akkoordAfgerond(id: string): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
+  // blok 18 (inbound): ontvangsttoken opzoeken/aanmaken, het bakje lezen en een voorstel bevestigen.
+  getProfielByInboundToken(token: string): Promise<Profiel | null>;
+  ensureInboundToken(userId: string): Promise<string>;
+  getInboxVoor(userId: string): Promise<Melding[]>;
+  markeerVerwerkt(id: string): Promise<void>;
   getProfielen(): Promise<Profiel[]>;
   getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
@@ -457,6 +469,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           user_id: input.user_id ?? null,
           toegewezen_aan: input.toegewezen_aan ?? null,
           opdrachtgever_id: input.opdrachtgever_id ?? null,
+          te_verwerken: input.te_verwerken ?? false,
         })
         .select("id")
         .single();
@@ -579,6 +592,8 @@ function createDbFromClient(client: SupabaseClient): Db {
         .select("*")
         .is("opdracht_id", null)
         .is("verwijderd_at", null)
+        // Inbound-voorstellen (te_verwerken) horen in het bakje, niet in de werkpool.
+        .eq("te_verwerken", false)
         .or(
           `and(gewijzigd_te_versturen.is.false,toegewezen_aan.eq.${userId}),` +
             `and(gewijzigd_te_versturen.is.true,verzonden_toegewezen_aan.eq.${userId})`,
@@ -1065,6 +1080,54 @@ function createDbFromClient(client: SupabaseClient): Db {
         .maybeSingle();
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data as Profiel | null) ?? null;
+    },
+
+    async getProfielByInboundToken(token: string) {
+      const { data, error } = await client
+        .from("profielen")
+        .select("*")
+        .eq("inbound_token", token)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Profiel | null) ?? null;
+    },
+
+    async ensureInboundToken(userId: string) {
+      const { data: rij } = await client
+        .from("profielen")
+        .select("inbound_token")
+        .eq("id", userId)
+        .maybeSingle();
+      const huidig = (rij as { inbound_token: string | null } | null)?.inbound_token;
+      if (huidig) return huidig;
+      const token = genereerInboundToken();
+      const { error } = await client
+        .from("profielen")
+        .update({ inbound_token: token })
+        .eq("id", userId);
+      if (error) throw new Error(`Inbound-token opslaan mislukt: ${error.message}`);
+      return token;
+    },
+
+    async getInboxVoor(userId: string) {
+      const { data, error } = await client
+        .from("meldingen")
+        .select("*")
+        .is("opdracht_id", null)
+        .is("verwijderd_at", null)
+        .eq("te_verwerken", true)
+        .eq("toegewezen_aan", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Melding[];
+    },
+
+    async markeerVerwerkt(id: string) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ te_verwerken: false })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 
     async getProfielen() {

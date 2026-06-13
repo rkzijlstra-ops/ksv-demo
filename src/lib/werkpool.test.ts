@@ -56,6 +56,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     verzonden_starttijd: null,
     verzonden_toegewezen_aan: null,
     opdrachtgever_id: null,
+    te_verwerken: false,
     ...over,
   };
 }
