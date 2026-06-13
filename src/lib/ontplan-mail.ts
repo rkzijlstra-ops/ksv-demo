@@ -9,12 +9,12 @@ export function ontplanningTekst(
   referentienummer: string | null,
   organisatie = "",
 ): { subject: string; text: string } {
-  const subject = `Opdracht van je planning gehaald: ${klantNaam}`;
+  const subject = `Klus van je planning gehaald: ${klantNaam}`;
   const ref = referentienummer ? ` (ref ${referentienummer})` : "";
   const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${monteurNaam},
 
-De geplande opdracht voor ${klantNaam}${ref} is van je planning gehaald en staat niet meer in je werkpool. Mogelijk plannen we hem later opnieuw in; je krijgt dan vanzelf weer bericht.
+De geplande klus voor ${klantNaam}${ref} is van je planning gehaald en staat niet meer in je werkpool. Mogelijk plannen we hem later opnieuw in; je krijgt dan vanzelf weer bericht.
 
 ${afzender}`;
   return { subject, text };

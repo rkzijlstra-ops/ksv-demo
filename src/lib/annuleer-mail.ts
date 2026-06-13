@@ -8,12 +8,12 @@ export function annuleringTekst(
   referentienummer: string | null,
   organisatie = "",
 ): { subject: string; text: string } {
-  const subject = `Opdracht geannuleerd: ${klantNaam}`;
+  const subject = `Klus geannuleerd: ${klantNaam}`;
   const ref = referentienummer ? ` (ref ${referentienummer})` : "";
   const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${monteurNaam},
 
-De opdracht voor ${klantNaam}${ref} is geannuleerd. Je hoeft er niets meer mee te doen; hij staat niet meer in je werkpool.
+De klus voor ${klantNaam}${ref} is geannuleerd. Je hoeft er niets meer mee te doen; hij staat niet meer in je werkpool.
 
 ${afzender}`;
   return { subject, text };

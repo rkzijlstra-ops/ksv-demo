@@ -19,7 +19,7 @@ function o(over: Partial<MailbareOpdracht> = {}): MailbareOpdracht {
 describe("monteurMailTekst", () => {
   it("onderwerp en aanhef voor één opdracht noemen klant en monteur", () => {
     const { subject, text } = monteurMailTekst("Rein", [o({ klant_naam: "Fam. Bakker" })]);
-    expect(subject).toBe("Opdracht voor Rein: Fam. Bakker");
+    expect(subject).toBe("Klus voor Rein: Fam. Bakker");
     expect(text).toContain("Hoi Rein,");
     expect(text).toContain("Klant: Fam. Bakker");
     expect(text).toContain("Referentie: 7588");
@@ -27,14 +27,14 @@ describe("monteurMailTekst", () => {
 
   it("onderwerp telt bij meerdere opdrachten", () => {
     const { subject } = monteurMailTekst("Dani", [o(), o({ klant_naam: "Mevr. de Wit" })]);
-    expect(subject).toBe("2 opdrachten voor Dani");
+    expect(subject).toBe("2 klussen voor Dani");
   });
 
   it("een verzetting krijgt een gewijzigd-onderwerp en wijzig-toon i.p.v. 'opdracht klaar'", () => {
     const { subject, text } = monteurMailTekst("Rein", [o({ klant_naam: "Fam. Bakker", verzet: true })]);
     expect(subject).toBe("Gewijzigde afspraak voor Rein: Fam. Bakker");
     expect(text).toMatch(/afspraak is gewijzigd/i);
-    expect(text).not.toMatch(/Er staat een opdracht voor je klaar/);
+    expect(text).not.toMatch(/Er staat een klus voor je klaar/);
     expect(text).toContain("Klant: Fam. Bakker");
   });
 

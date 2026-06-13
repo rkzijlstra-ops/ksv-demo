@@ -4,7 +4,7 @@ import { nieuwDocumentTekst } from "./document-mail";
 describe("nieuwDocumentTekst", () => {
   it("noemt de klant en meldt het nieuwe document, zonder herbevestiging", () => {
     const { subject, text } = nieuwDocumentTekst("Piet", "Fam. Bakker", "7588", "Keukenstudio Voorschoten");
-    expect(subject).toBe("Nieuw document bij je opdracht: Fam. Bakker");
+    expect(subject).toBe("Nieuw document bij je klus: Fam. Bakker");
     expect(text).toContain("Hoi Piet,");
     expect(text).toMatch(/nieuw document/i);
     expect(text).toContain("7588");

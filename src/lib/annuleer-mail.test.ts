@@ -4,7 +4,7 @@ import { annuleringTekst } from "./annuleer-mail";
 describe("annuleringTekst", () => {
   it("noemt de klant en meldt dat de opdracht geannuleerd is", () => {
     const { subject, text } = annuleringTekst("Piet", "Fam. Bakker", "7588", "Keukenstudio Voorschoten");
-    expect(subject).toBe("Opdracht geannuleerd: Fam. Bakker");
+    expect(subject).toBe("Klus geannuleerd: Fam. Bakker");
     expect(text).toContain("Hoi Piet,");
     expect(text).toMatch(/geannuleerd/i);
     expect(text).toContain("7588");

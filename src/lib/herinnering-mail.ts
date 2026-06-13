@@ -12,12 +12,12 @@ export function herinneringTekst(
   const afzender = organisatie.trim() || "Het planning-team";
   const subject =
     n === 1
-      ? `Herinnering: bevestig je opdracht voor ${klantNamen[0]}`
-      : `Herinnering: bevestig je ${n} opdrachten`;
+      ? `Herinnering: bevestig je klus voor ${klantNamen[0]}`
+      : `Herinnering: bevestig je ${n} klussen`;
   const intro =
     n === 1
-      ? `Je hebt de opdracht voor ${klantNamen[0]} nog niet bevestigd.`
-      : `Je hebt ${n} opdrachten nog niet bevestigd:\n\n${klantNamen.map((k) => `- ${k}`).join("\n")}`;
+      ? `Je hebt de klus voor ${klantNamen[0]} nog niet bevestigd.`
+      : `Je hebt ${n} klussen nog niet bevestigd:\n\n${klantNamen.map((k) => `- ${k}`).join("\n")}`;
   const text = `Hoi ${monteurNaam},
 
 ${intro}

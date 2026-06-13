@@ -9,12 +9,12 @@ export function nieuwDocumentTekst(
   referentienummer: string | null,
   organisatie = "",
 ): { subject: string; text: string } {
-  const subject = `Nieuw document bij je opdracht: ${klantNaam}`;
+  const subject = `Nieuw document bij je klus: ${klantNaam}`;
   const ref = referentienummer ? ` (ref ${referentienummer})` : "";
   const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${monteurNaam},
 
-Er is een nieuw document toegevoegd aan de opdracht voor ${klantNaam}${ref}. Je vindt het in de app bij de opdracht. De afspraak blijft ongewijzigd; je hoeft niets opnieuw te bevestigen.
+Er is een nieuw document toegevoegd aan de klus voor ${klantNaam}${ref}. Je vindt het in de app bij de klus. De afspraak blijft ongewijzigd; je hoeft niets opnieuw te bevestigen.
 
 ${afzender}`;
   return { subject, text };

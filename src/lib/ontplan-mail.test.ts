@@ -4,7 +4,7 @@ import { ontplanningTekst } from "./ontplan-mail";
 describe("ontplanningTekst", () => {
   it("noemt de klant en meldt dat de opdracht van de planning is gehaald", () => {
     const { subject, text } = ontplanningTekst("Piet", "Fam. Bakker", "7588", "Keukenstudio Voorschoten");
-    expect(subject).toBe("Opdracht van je planning gehaald: Fam. Bakker");
+    expect(subject).toBe("Klus van je planning gehaald: Fam. Bakker");
     expect(text).toContain("Hoi Piet,");
     expect(text).toMatch(/van je planning gehaald/i);
     expect(text).toContain("7588");

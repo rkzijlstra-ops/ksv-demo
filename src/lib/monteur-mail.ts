@@ -103,13 +103,13 @@ export function monteurMailTekst(
   const subject = verzet
     ? `Gewijzigde afspraak voor ${monteurNaam}: ${klant1}`
     : n === 1
-      ? `Opdracht voor ${monteurNaam}: ${klant1}`
-      : `${n} opdrachten voor ${monteurNaam}`;
+      ? `Klus voor ${monteurNaam}: ${klant1}`
+      : `${n} klussen voor ${monteurNaam}`;
   const intro = verzet
     ? `Hoi ${monteurNaam},\n\nEen afspraak is gewijzigd. Let op de nieuwe datum:`
     : n === 1
-      ? `Hoi ${monteurNaam},\n\nEr staat een opdracht voor je klaar:`
-      : `Hoi ${monteurNaam},\n\nEr staan ${n} opdrachten voor je klaar:`;
+      ? `Hoi ${monteurNaam},\n\nEr staat een klus voor je klaar:`
+      : `Hoi ${monteurNaam},\n\nEr staan ${n} klussen voor je klaar:`;
   const blokken = opdrachten.map(opdrachtBlok).join("\n\n----------------\n\n");
   const afzender = zaaknaam.trim() || "Het planning-team";
   const text = `${intro}\n\n${blokken}\n\nBevestig de ontvangst in de app.\n\n${afzender}`;
