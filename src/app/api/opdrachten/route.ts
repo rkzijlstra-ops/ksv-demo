@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { parsePdfWithClaude } from "@/lib/claude-client";
 import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
+import type { MeldingItem } from "@/lib/parser-schema";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const DOCUMENTTYPES = ["orderbevestiging", "werkbon_service", "onbekend", "tekst"] as const;
 
 function strVeld(fd: FormData, naam: string): string | null {
   const v = fd.get(naam);
@@ -28,43 +30,6 @@ export async function POST(req: Request) {
   }
 
   const files = formData.getAll("files").filter((f): f is File => f instanceof File);
-
-  // --- Tekst-only opdracht (geen documenten) ---
-  if (files.length === 0) {
-    const klant_naam = strVeld(formData, "klant_naam");
-    const klant_adres = strVeld(formData, "klant_adres");
-    const referentienummer = strVeld(formData, "referentienummer");
-    const klant_telefoon = strVeld(formData, "klant_telefoon");
-    const keukenzaak = strVeld(formData, "keukenzaak");
-    if (!klant_naam && !klant_adres && !referentienummer && !klant_telefoon) {
-      return NextResponse.json(
-        { error: "Geen documenten en geen klantgegevens opgegeven" },
-        { status: 400 },
-      );
-    }
-    try {
-      const { id } = await (await db()).createOpdracht({
-        documenttype: "tekst",
-        klant_naam,
-        klant_adres,
-        referentienummer,
-        adviseur: null,
-        klant_telefoon,
-        leverweek: null,
-        keukenzaak,
-        user_id: userId,
-        // Zelf inschieten in de oplever-app = de opdracht is meteen van jou (verschijnt in je werkpool).
-        toegewezen_aan: userId,
-      });
-      return NextResponse.json({ id, documenttype: "tekst", documenten: [] }, { status: 200 });
-    } catch (err) {
-      return NextResponse.json(
-        { error: `DB-insert mislukt: ${(err as Error).message}` },
-        { status: 503 },
-      );
-    }
-  }
-
   for (const f of files) {
     if (f.size > MAX_FILE_BYTES) {
       return NextResponse.json(
@@ -74,45 +39,122 @@ export async function POST(req: Request) {
     }
   }
 
-  // Primair document = eerste PDF (waaruit de kop wordt uitgelezen).
-  const primair = files.find((f) => f.type === "application/pdf") ?? null;
-
-  let kop: OpdrachtInput = {
-    documenttype: "onbekend",
-    klant_naam: null,
-    klant_adres: null,
-    referentienummer: null,
-    adviseur: null,
-    klant_telefoon: null,
-    leverweek: null,
-    meldingen: [],
-    user_id: userId,
-    // Zelf inschieten in de oplever-app = de opdracht is meteen van jou (verschijnt in je werkpool).
-    toegewezen_aan: userId,
-  };
-
-  if (primair) {
+  // --- Alleen lezen: parse de eerste PDF en geef de velden terug, maak NIETS aan en sla niks op. ---
+  // Voor de zelf-invoer: het formulier laat zo de gevonden gegevens zien om te bevestigen of aan te vullen.
+  if (strVeld(formData, "actie") === "parse") {
+    const pdf = files.find((f) => f.type === "application/pdf");
+    if (!pdf) {
+      return NextResponse.json({ error: "Geen PDF om te lezen" }, { status: 400 });
+    }
     try {
-      const parsed = await parsePdfWithClaude(Buffer.from(await primair.arrayBuffer()));
-      kop = {
-        documenttype: parsed.documenttype,
-        klant_naam: parsed.klant_naam,
-        klant_adres: parsed.klant_adres,
-        referentienummer: parsed.referentienummer,
-        adviseur: parsed.adviseur,
-        klant_telefoon: parsed.klant_telefoon,
-        klant_email: parsed.klant_email,
-        leverweek: parsed.leverweek,
-        keukenzaak: parsed.keukenzaak,
-        meldingen: parsed.meldingen,
-        user_id: userId,
-        toegewezen_aan: userId,
-      };
-    } catch {
-      // Parser faalt: opdracht tóch aanmaken met lege kop, origineel blijft bewaard.
-      kop.documenttype = "onbekend";
+      const parsed = await parsePdfWithClaude(Buffer.from(await pdf.arrayBuffer()));
+      return NextResponse.json({ parsed }, { status: 200 });
+    } catch (err) {
+      // Parser faalt: geen blokkade. De gebruiker vult zelf in; het document blijft hij straks toevoegen.
+      return NextResponse.json({ parsed: null, fout: (err as Error).message }, { status: 200 });
     }
   }
+
+  // --- Aanmaken ---
+  const velden = {
+    klant_naam: strVeld(formData, "klant_naam"),
+    klant_adres: strVeld(formData, "klant_adres"),
+    referentienummer: strVeld(formData, "referentienummer"),
+    adviseur: strVeld(formData, "adviseur"),
+    klant_telefoon: strVeld(formData, "klant_telefoon"),
+    klant_email: strVeld(formData, "klant_email"),
+    leverweek: strVeld(formData, "leverweek"),
+    startdatum: strVeld(formData, "startdatum"),
+    starttijd: strVeld(formData, "starttijd"),
+    keukenzaak: strVeld(formData, "keukenzaak"),
+  };
+  const heeftVeld = Object.values(velden).some(Boolean);
+
+  if (!heeftVeld && files.length === 0) {
+    return NextResponse.json(
+      { error: "Geen document en geen gegevens opgegeven" },
+      { status: 400 },
+    );
+  }
+
+  let kop: OpdrachtInput;
+
+  if (heeftVeld) {
+    // De gebruiker heeft gegevens ingevuld (al dan niet voorgevuld door de parser): die zijn leidend,
+    // we parsen niet opnieuw zodat zijn correcties blijven staan. Document(en) worden gewoon bewaard.
+    const dtRaw = strVeld(formData, "documenttype");
+    const documenttype = (DOCUMENTTYPES as readonly string[]).includes(dtRaw ?? "")
+      ? (dtRaw as OpdrachtInput["documenttype"])
+      : files.length > 0
+        ? "onbekend"
+        : "tekst";
+    let meldingen: MeldingItem[] = [];
+    const meldingenRaw = strVeld(formData, "meldingen");
+    if (meldingenRaw) {
+      try {
+        const p = JSON.parse(meldingenRaw);
+        if (Array.isArray(p)) meldingen = p as MeldingItem[];
+      } catch {
+        // ongeldige JSON: dan zonder artikelen, geen blokkade.
+      }
+    }
+    kop = {
+      documenttype,
+      klant_naam: velden.klant_naam,
+      klant_adres: velden.klant_adres,
+      referentienummer: velden.referentienummer,
+      adviseur: velden.adviseur,
+      klant_telefoon: velden.klant_telefoon,
+      klant_email: velden.klant_email,
+      leverweek: velden.leverweek,
+      startdatum: velden.startdatum,
+      starttijd: velden.starttijd,
+      keukenzaak: velden.keukenzaak,
+      meldingen,
+      user_id: userId,
+      // Zelf inschieten = de klus is meteen van jou (verschijnt in je werkpool).
+      toegewezen_aan: userId,
+    };
+  } else {
+    // Geen velden, wel document(en): de eerste PDF wordt uitgelezen (snelle inschiet zonder review).
+    const primair = files.find((f) => f.type === "application/pdf") ?? null;
+    kop = {
+      documenttype: "onbekend",
+      klant_naam: null,
+      klant_adres: null,
+      referentienummer: null,
+      adviseur: null,
+      klant_telefoon: null,
+      leverweek: null,
+      meldingen: [],
+      user_id: userId,
+      toegewezen_aan: userId,
+    };
+    if (primair) {
+      try {
+        const parsed = await parsePdfWithClaude(Buffer.from(await primair.arrayBuffer()));
+        kop = {
+          documenttype: parsed.documenttype,
+          klant_naam: parsed.klant_naam,
+          klant_adres: parsed.klant_adres,
+          referentienummer: parsed.referentienummer,
+          adviseur: parsed.adviseur,
+          klant_telefoon: parsed.klant_telefoon,
+          klant_email: parsed.klant_email,
+          leverweek: parsed.leverweek,
+          keukenzaak: parsed.keukenzaak,
+          meldingen: parsed.meldingen,
+          user_id: userId,
+          toegewezen_aan: userId,
+        };
+      } catch {
+        // Parser faalt: klus tóch aanmaken met lege kop, origineel blijft bewaard.
+        kop.documenttype = "onbekend";
+      }
+    }
+  }
+
+  const primair = files.find((f) => f.type === "application/pdf") ?? null;
 
   let opdrachtId: string;
   const dbi = await db();

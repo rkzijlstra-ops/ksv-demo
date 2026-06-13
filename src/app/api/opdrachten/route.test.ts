@@ -143,4 +143,46 @@ describe("POST /api/opdrachten", () => {
     expect(res.status).toBe(400);
     expect(mockCreateOpdracht).not.toHaveBeenCalled();
   });
+
+  it("actie=parse: leest de PDF uit en geeft de velden terug, maakt NIETS aan", async () => {
+    mockParse.mockResolvedValue(orderParsed);
+
+    const res = await POST(multipart([pdfFile()], { actie: "parse" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockParse).toHaveBeenCalledOnce();
+    expect(body.parsed.klant_naam).toBe("De heer en mevrouw van Dijk");
+    expect(mockCreateOpdracht).not.toHaveBeenCalled();
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it("actie=parse zonder PDF: 400", async () => {
+    const res = await POST(multipart([pngFile()], { actie: "parse" }));
+    expect(res.status).toBe(400);
+    expect(mockParse).not.toHaveBeenCalled();
+  });
+
+  it("ingevulde velden + document: gebruikt de velden (geen herparse), bewaart het document, zet de datum", async () => {
+    const res = await POST(
+      multipart([pdfFile()], {
+        klant_naam: "Eigen klus Veering",
+        klant_email: "veering@voorbeeld.nl",
+        startdatum: "2026-06-15",
+        starttijd: "09:00",
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockParse).not.toHaveBeenCalled(); // de ingevulde velden zijn leidend
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.klant_naam).toBe("Eigen klus Veering");
+    expect(arg.klant_email).toBe("veering@voorbeeld.nl");
+    expect(arg.startdatum).toBe("2026-06-15");
+    expect(arg.starttijd).toBe("09:00");
+    expect(arg.documenttype).toBe("onbekend"); // document aanwezig, niet geparsed
+    expect(mockAddDocument).toHaveBeenCalledOnce();
+    expect(body.documenten).toHaveLength(1);
+  });
 });

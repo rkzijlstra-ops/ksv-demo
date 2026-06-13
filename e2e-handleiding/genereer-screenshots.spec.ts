@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { createDb } from "@/lib/db";
 import { HANDLEIDING_STAPPEN } from "@/lib/handleiding-stappen";
+import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "../e2e/test-env";
 
 /**
@@ -22,6 +23,16 @@ const UIT = path.join(process.cwd(), "public", "handleiding");
 test("genereer handleiding-screenshots", async ({ page }) => {
   test.slow();
   mkdirSync(UIT, { recursive: true });
+
+  // Het welkom-/onboarding-blok op de werkpool hoort niet op de handleiding-plaatjes (de handleiding
+  // ís de uitleg). Onderdruk het door de "weggeklikt"-markering vooraf te zetten.
+  await page.addInitScript((k) => {
+    try {
+      localStorage.setItem(k as string, "1");
+    } catch {
+      // geen localStorage beschikbaar: dan staat het blok er even op, geen ramp.
+    }
+  }, WELKOM_WEG_KEY);
 
   // Een eventuele restant-demo van een afgebroken run eerst opruimen (idempotent).
   await admin.from("meldingen").delete().eq("referentienummer", "DEMO-001");

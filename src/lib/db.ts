@@ -205,6 +205,10 @@ export interface OpdrachtInput {
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie van het rapport. */
   klant_email?: string | null;
   leverweek: string | null;
+  /** Door de gebruiker zelf gekozen uitvoerdatum (zelf-invoer); vult uitvoerdatum + startdatum. */
+  startdatum?: string | null;
+  /** Starttijd bij de zelfgekozen datum (optioneel). */
+  starttijd?: string | null;
   keukenzaak?: string | null;
   meldingen?: MeldingItem[];
   user_id?: string | null;
@@ -444,6 +448,10 @@ function createDbFromClient(client: SupabaseClient): Db {
           klant_telefoon: input.klant_telefoon,
           klant_email: input.klant_email ?? null,
           leverweek: input.leverweek,
+          startdatum: input.startdatum ?? null,
+          starttijd: input.starttijd ?? null,
+          // De werkpool leest uitvoerdatum; gelijkhouden aan de gekozen startdatum (net als het planbord).
+          uitvoerdatum: input.startdatum ?? null,
           keukenzaak: input.keukenzaak ?? null,
           meldingen: input.meldingen ?? [],
           user_id: input.user_id ?? null,

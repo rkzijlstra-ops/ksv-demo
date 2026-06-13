@@ -1,4 +1,5 @@
 import type { Melding, DashboardStatus } from "./db";
+import { uitvoerdatumVoorMonteur } from "./opdracht-status";
 
 export interface Werkpool {
   actief: Melding[];
@@ -38,5 +39,28 @@ export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
       actief.push(m);
     }
   }
+  actief.sort(sorteerActief);
   return { actief, history };
+}
+
+/**
+ * Volgorde van de actieve werkpool: geplande klussen eerst, op uitvoerdatum oplopend (de eerstvolgende
+ * bovenaan), bij gelijke datum op starttijd. Klussen zonder datum komen daarna, nieuwste invoer eerst.
+ * Zo komt een zelf ingevoerde klus met datum meteen op de juiste plek te staan.
+ */
+function sorteerActief(a: Melding, b: Melding): number {
+  const da = uitvoerdatumVoorMonteur(a);
+  const dbtum = uitvoerdatumVoorMonteur(b);
+  if (da && dbtum) {
+    if (da !== dbtum) return da < dbtum ? -1 : 1;
+    const ta = a.starttijd ?? "99:99";
+    const tb = b.starttijd ?? "99:99";
+    if (ta !== tb) return ta < tb ? -1 : 1;
+    return 0;
+  }
+  if (da && !dbtum) return -1;
+  if (!da && dbtum) return 1;
+  // Beide ongepland: nieuwste invoer eerst (created_at aflopend).
+  if (a.created_at === b.created_at) return 0;
+  return a.created_at < b.created_at ? 1 : -1;
 }

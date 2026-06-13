@@ -129,4 +129,24 @@ describe("groepeerMeldingen", () => {
     const { history } = groepeerMeldingen(rows);
     expect(history.map((m) => m.id)).toEqual(["a", "b"]);
   });
+
+  it("sorteert actieve klussen op uitvoerdatum, ongeplande achteraan", () => {
+    const rows = [
+      maakMelding({ id: "geen-datum", uitvoerdatum: null }),
+      maakMelding({ id: "later", uitvoerdatum: "2026-06-20" }),
+      maakMelding({ id: "eerder", uitvoerdatum: "2026-06-10" }),
+    ];
+    const { actief } = groepeerMeldingen(rows);
+    expect(actief.map((m) => m.id)).toEqual(["eerder", "later", "geen-datum"]);
+  });
+
+  it("sorteert bij gelijke datum op starttijd (lege tijd achteraan)", () => {
+    const rows = [
+      maakMelding({ id: "zonder-tijd", uitvoerdatum: "2026-06-10", starttijd: null }),
+      maakMelding({ id: "middag", uitvoerdatum: "2026-06-10", starttijd: "13:00" }),
+      maakMelding({ id: "ochtend", uitvoerdatum: "2026-06-10", starttijd: "08:30" }),
+    ];
+    const { actief } = groepeerMeldingen(rows);
+    expect(actief.map((m) => m.id)).toEqual(["ochtend", "middag", "zonder-tijd"]);
+  });
 });

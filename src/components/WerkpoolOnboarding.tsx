@@ -68,7 +68,7 @@ export function WerkpoolOnboarding({ leeg }: { leeg: boolean }) {
         <div className="px-5 py-4">
           <p className="text-sm text-ink">Je hebt nog geen klussen. Zo werkt het:</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink">
-            <li>Voeg een klus toe (knoppen hierboven).</li>
+            <li>Voeg een klus toe (knop hierboven).</li>
             <li>Open de klus, maak een melding of lever op.</li>
             <li>Verstuur het naar de opdrachtgever.</li>
           </ol>
