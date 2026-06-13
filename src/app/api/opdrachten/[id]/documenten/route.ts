@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { storage } from "@/lib/storage";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { notificeerNieuwDocument } from "@/lib/notificaties";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
@@ -16,12 +16,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const dbi = await db();
   const eigen = await dbi.getProfiel(userId);
-  if (!eigen || eigen.rol === "monteur") {
-    return NextResponse.json({ error: "Alleen kantoor mag documenten beheren" }, { status: 403 });
-  }
   const opdracht = await dbi.getMeldingById(id);
   if (!opdracht) {
     return NextResponse.json({ error: "Opdracht niet gevonden" }, { status: 404 });
+  }
+  // Kantoor mag altijd; een monteur alleen op zijn eigen klus (die hij zelf aanmaakte).
+  const isKantoor = eigen?.rol === "opdrachtgever" || eigen?.rol === "beheerder";
+  const isEigenKlus = eigen?.rol === "monteur" && opdracht.user_id === userId;
+  if (!eigen || (!isKantoor && !isEigenKlus)) {
+    return NextResponse.json(
+      { error: "Je mag alleen documenten toevoegen aan je eigen klus, of als kantoor" },
+      { status: 403 },
+    );
   }
 
   let formData: FormData;
@@ -58,7 +64,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const type = f.type === "application/pdf" ? "pdf" : "afbeelding";
       const buf = Buffer.from(await f.arrayBuffer());
       const { pad, publieke_url } = await storage().uploadOpdrachtDocument(buf, f.name, f.type);
-      const { id: docId } = await dbi.addDocument({
+      // Insert met service-rechten: de autorisatie is hierboven al gedaan; RLS zou een monteur anders blokkeren.
+      const { id: docId } = await dbAdmin().addDocument({
         opdracht_id: id,
         type,
         bestandsnaam: f.name,

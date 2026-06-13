@@ -9,7 +9,9 @@ const { mockGetById, mockAddDocument, mockUpload, mockGetProfiel, mockNotify } =
 }));
 
 vi.mock("@/lib/db", () => ({
-  db: () => ({ getMeldingById: mockGetById, addDocument: mockAddDocument, getProfiel: mockGetProfiel }),
+  db: () => ({ getMeldingById: mockGetById, getProfiel: mockGetProfiel }),
+  // De insert loopt na de autorisatie-check via service-rechten (dbAdmin), om RLS te omzeilen.
+  dbAdmin: () => ({ addDocument: mockAddDocument }),
 }));
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
@@ -47,11 +49,20 @@ describe("POST /api/opdrachten/[id]/documenten", () => {
     mockNotify.mockResolvedValue({ gemaild: false, mailFout: null, gesmst: true, smsFout: null });
   });
 
-  it("403 voor een monteur", async () => {
+  it("403 voor een monteur op een klus die niet van hem is", async () => {
     mockGetProfiel.mockResolvedValue({ rol: "monteur" });
+    mockGetById.mockResolvedValue({ id: "opdr-1", user_id: "andere-uid" });
     const res = await POST(req([pdfFile()]), params("opdr-1"));
     expect(res.status).toBe(403);
     expect(mockAddDocument).not.toHaveBeenCalled();
+  });
+
+  it("200 voor een monteur op zijn eigen klus", async () => {
+    mockGetProfiel.mockResolvedValue({ rol: "monteur" });
+    mockGetById.mockResolvedValue({ id: "opdr-1", referentienummer: "7407", user_id: "test-user-uuid" });
+    const res = await POST(req([pdfFile()]), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockAddDocument).toHaveBeenCalledOnce();
   });
 
   it("voegt een document toe aan een bestaande opdracht, 200", async () => {
