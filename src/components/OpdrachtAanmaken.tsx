@@ -129,7 +129,7 @@ export function OpdrachtAanmaken() {
           type="button"
           onClick={() => setHandmatig(true)}
           disabled={bezig || !online}
-          className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+          className="inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
         >
           <PencilLine size={18} strokeWidth={2.5} aria-hidden="true" />
           Of: klus zonder document

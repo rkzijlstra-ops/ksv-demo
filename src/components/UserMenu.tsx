@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, Info, Trash2, Users, IdCard, BookOpen } from "lucide-react";
+import { LogOut, User, Info, Trash2, Users, IdCard, BookOpen, Menu } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { APP_VERSIE } from "@/lib/versie";
 
@@ -39,9 +39,10 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Menu voor ${email}`}
-        className="flex h-10 w-10 cursor-pointer items-center justify-center border-2 border-ink bg-surface font-mono text-base font-extrabold text-ink transition-colors duration-150 hover:bg-line/50 focus-visible:outline-3 focus-visible:outline-accent"
+        className="flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-0.5 border-2 border-ink bg-surface text-ink transition-colors duration-150 hover:bg-line/50 focus-visible:outline-3 focus-visible:outline-accent"
       >
-        {initiaal}
+        <span className="font-mono text-sm font-extrabold leading-none">{initiaal}</span>
+        <Menu size={12} strokeWidth={2.75} className="text-ink-muted" aria-hidden="true" />
       </button>
       {open && (
         <div
