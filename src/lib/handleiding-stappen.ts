@@ -27,7 +27,7 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
     intro: "Je klussen: actief bovenaan, geschiedenis eronder.",
     punten: [
       "Een klus komt van de opdrachtgever, of je voegt er zelf een toe.",
-      "Zelf toevoegen: upload een opdracht als PDF of foto, ook van andere opdrachtgevers.",
+      "Zelf toevoegen: upload een klus als PDF of foto, ook van andere opdrachtgevers.",
       "Of maak een klus zonder document aan.",
       "Tik een klus aan om te openen.",
     ],
