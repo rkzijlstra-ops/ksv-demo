@@ -38,11 +38,11 @@ test.afterEach(async () => {
 
 test("monteur meldt een klus afgerond via het keuzescherm", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/afronden`);
-  await expect(page.getByRole("heading", { name: "Hoe voltooi je deze klus?" })).toBeVisible();
-  await page.getByRole("link", { name: /voltooid, snel/i }).click();
+  await expect(page.getByRole("heading", { name: "Op welke manier sluit je af?" })).toBeVisible();
+  await page.getByRole("link", { name: /snel afsluiten/i }).click();
   await page.waitForURL((u) => new URL(u).pathname.endsWith("/afronden/snel"));
   await page.getByRole("textbox").fill("Alles getest, klant tevreden.");
-  await page.getByRole("button", { name: /voltooid melden/i }).click();
+  await page.getByRole("button", { name: /klus afsluiten/i }).click();
   await page.waitForURL((u) => new URL(u).pathname === "/");
 
   const { data } = await admin.from("meldingen").select("afgerond_door_monteur_at").eq("id", opdrachtId).single();

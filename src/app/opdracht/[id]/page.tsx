@@ -241,7 +241,7 @@ export default async function OpdrachtDetailPage({
             href={`/opdracht/${id}/afronden`}
             className="relative inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
           >
-            Klus voltooien
+            Klus afsluiten
             <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
           </Link>
         </div>

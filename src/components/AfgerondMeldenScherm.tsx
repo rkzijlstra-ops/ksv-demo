@@ -99,7 +99,7 @@ export function AfgerondMeldenScherm({ opdrachtId, klantNaam }: { opdrachtId: st
         className="relative mt-5 flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 text-base font-extrabold uppercase tracking-[0.05em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
       >
         {bezig ? <Loader2 size={22} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden="true" />}
-        Voltooid melden
+        Klus afsluiten
       </button>
     </div>
   );
