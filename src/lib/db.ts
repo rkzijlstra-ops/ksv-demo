@@ -63,6 +63,10 @@ export interface Melding {
   teruggemeld_at: string | null;
   teruggemeld_reden: string | null;
   teruggemeld_toelichting: string | null;
+  // Klus afronden (plan 1): monteur meldt snel afgerond, los van de volledige oplevering
+  afgerond_door_monteur_at: string | null;
+  afgerond_toelichting: string | null;
+  afgerond_vervolg_nodig: boolean;
   // wie de rij aanmaakte (aanmaker/inschieter): bepaalt o.a. of een monteur hem mag verwijderen
   user_id: string | null;
   // toegewezen monteur als uuid (auth-koppeling, blok 6) - kolom bestond al via createOpdracht
@@ -380,6 +384,10 @@ export interface Db {
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
   markeerTeruggemeld(id: string, input: { reden: string; toelichting: string | null }): Promise<void>;
+  markeerAfgerond(
+    id: string,
+    input: { toelichting: string | null; vervolgNodig: boolean },
+  ): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
   getProfielen(): Promise<Profiel[]>;
@@ -984,6 +992,18 @@ function createDbFromClient(client: SupabaseClient): Db {
         })
         .eq("id", id);
       if (error) throw new Error(`DB terugmelden mislukt: ${error.message}`);
+    },
+
+    async markeerAfgerond(id, input) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          afgerond_door_monteur_at: new Date().toISOString(),
+          afgerond_toelichting: input.toelichting,
+          afgerond_vervolg_nodig: input.vervolgNodig,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB afronden mislukt: ${error.message}`);
     },
 
     async getProfiel(userId: string) {
