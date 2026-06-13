@@ -11,7 +11,7 @@ const ACTIE_LABEL: Record<string, string> = {
   afgerond: "Voltooid gemeld",
   teruggemeld: "Niet doorgegaan (teruggemeld)",
   heropend: "Heropend",
-  voltooid_akkoord: "Goedgekeurd door de zaak",
+  voltooid_akkoord: "Goedgekeurd door de opdrachtgever",
   geannuleerd: "Geannuleerd",
   gewijzigd: "Gegevens gewijzigd",
   verwijderd: "Verwijderd",
@@ -43,7 +43,7 @@ export function KlusActiviteit({
     items.push({
       id: `v-${v.id}`,
       when: v.created_at,
-      titel: `Rapport verstuurd naar ${v.doelgroep === "zaak" ? "de zaak" : "de klant"}`,
+      titel: `Rapport verstuurd naar ${v.doelgroep === "zaak" ? "de opdrachtgever" : "de klant"}`,
       detail: v.naar,
     });
   }

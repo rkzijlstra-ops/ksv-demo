@@ -48,7 +48,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return doelgroep === "klant"
       ? NextResponse.json({ error: "Geen klant-mailadres ingevuld" }, { status: 400 })
       : NextResponse.json(
-          { error: "Geen ontvanger voor de zaak (vul een e-mailadres in of stel RAPPORT_EMAIL in)" },
+          { error: "Geen ontvanger voor de opdrachtgever (vul een e-mailadres in of stel RAPPORT_EMAIL in)" },
           { status: 500 },
         );
   }

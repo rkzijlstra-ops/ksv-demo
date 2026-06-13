@@ -115,13 +115,13 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
 
   // Rapport naar een leesbaar test-adres (eigen dropdown: open en kies "Anders").
-  await page.getByRole("button", { name: "Naar de zaak" }).click();
+  await page.getByRole("button", { name: "Naar de opdrachtgever" }).click();
   await page.getByRole("button", { name: "Kies een ontvanger" }).click();
   await page.getByRole("option", { name: "Anders (typ zelf)" }).click();
   await page.getByLabel("E-mailadres voor het rapport").fill(RAPPORT_NAAR);
 
   // Versturen naar de zaak: genereert de PDF en mailt. Dit is het afrond-moment (opgeleverd).
-  await page.getByRole("button", { name: "Stuur naar zaak" }).click();
+  await page.getByRole("button", { name: "Stuur naar opdrachtgever" }).click();
   await expect(page.getByText("Opgeleverd!")).toBeVisible({ timeout: 40_000 });
 
   // Appkant: opdracht is opgeleverd met een rapport.

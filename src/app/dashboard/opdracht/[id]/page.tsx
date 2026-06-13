@@ -219,7 +219,7 @@ export default async function OpdrachtgeverDetailPage({
             {oplevering.interne_opmerking && (
               <div className="border-2 border-urgent-geel bg-urgent-geel/10 p-3">
                 <p className="mb-1 text-xs font-bold uppercase tracking-[0.05em] text-ink">
-                  Interne notitie · alleen voor de zaak
+                  Interne notitie · alleen voor de opdrachtgever
                 </p>
                 <p className="text-sm text-ink">{oplevering.interne_opmerking}</p>
               </div>

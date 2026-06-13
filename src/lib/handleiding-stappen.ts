@@ -58,10 +58,10 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
   {
     bestand: "04-voltooien.png",
     titel: "Klus voltooien",
-    intro: "Klaar? Tik 'Klus voltooien' onderaan en kies hoe.",
+    intro: "Klaar? Tik 'Klus voltooien' onderaan en kies hoe. Foto, video en handtekening zijn altijd optioneel, niks is verplicht.",
     punten: [
-      "Voltooid, snel: voor een serviceklus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is.",
-      "Voltooid + rapport: volledige oplevering met foto's en handtekening, voor een keuken.",
+      "Voltooid, snel: voor een serviceklus. Optioneel foto, video of een notitie. De opdrachtgever ziet dat het klaar is.",
+      "Voltooid + rapport: volledige oplevering, optioneel met foto, video en handtekening, voor een keuken.",
       "Niet doorgegaan: klant niet thuis of werk niet af te ronden. Meld terug met een reden.",
       "Komt er nog een vervolg (onderdelen later)? Zet dat vinkje aan bij 'Voltooid, snel'.",
     ],
@@ -83,7 +83,7 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
     titel: "Versturen",
     intro: "Onderaan verstuur je het rapport.",
     punten: [
-      "Zaak-versie naar kantoor: pas dan staat de klus op 'opgeleverd'.",
+      "Versie voor de opdrachtgever: pas dan staat de klus op 'opgeleverd'.",
       "Klant-versie is optioneel: vul het mailadres in, de interne notitie gaat niet mee.",
       "Foto's en meldingen gaan wel mee naar de klant.",
     ],

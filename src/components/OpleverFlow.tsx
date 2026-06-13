@@ -263,7 +263,7 @@ export function OpleverFlow({
       return;
     }
     if (doelgroep === "zaak" && !rapportEmail.trim()) {
-      setFout("Kies een ontvanger voor de zaak.");
+      setFout("Kies een ontvanger voor de opdrachtgever.");
       return;
     }
     // Privacy-waarschuwing: de klant ziet ALLE foto's en meldingen, niet alleen de opmerking. Wil de
@@ -273,7 +273,7 @@ export function OpleverFlow({
       waarschuwKlantZicht &&
       !window.confirm(
         "Let op: de klant ziet alle foto's en meldingen in dit rapport, niet alleen je opmerking. " +
-          "Wil je iets alleen voor de zaak kwijt, gebruik dan de interne notitie.\n\nToch naar de klant sturen?",
+          "Wil je iets alleen voor de opdrachtgever kwijt, gebruik dan de interne notitie.\n\nToch naar de klant sturen?",
       )
     ) {
       return;
@@ -361,7 +361,7 @@ export function OpleverFlow({
         />
         <CheckCircle2 size={72} strokeWidth={2.5} className="-mt-[84px] text-success" aria-hidden="true" />
         <p className="mt-2 font-mono text-2xl font-extrabold text-ink">Opgeleverd!</p>
-        <p className="text-sm text-ink-muted">Het rapport is naar de zaak verstuurd.</p>
+        <p className="text-sm text-ink-muted">Het rapport is naar de opdrachtgever verstuurd.</p>
       </div>
     );
   }
@@ -464,7 +464,7 @@ export function OpleverFlow({
             <span className="text-sm font-semibold leading-tight text-ink">
               Interne notitie
               <span className="block text-xs font-bold uppercase tracking-[0.04em] text-ink-muted">
-                Alleen voor de zaak
+                Alleen voor de opdrachtgever
               </span>
             </span>
             <span className="ml-auto text-lg font-extrabold text-ink-muted">{internOpen ? "−" : "+"}</span>
@@ -476,7 +476,7 @@ export function OpleverFlow({
                 onChange={(e) => setInternOpmerking(e.target.value)}
                 onBlur={() => bewaarConcept()}
                 rows={3}
-                aria-label="Interne notitie voor de zaak"
+                aria-label="Interne notitie voor de opdrachtgever"
                 placeholder="Bijv. transportschade aan kastdeur, in het werk opgelost."
                 className="w-full rounded-none border border-urgent-geel bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
               />
@@ -563,7 +563,7 @@ export function OpleverFlow({
               onClick={() => setVerstuurKeuze("zaak")}
               className="flex items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
             >
-              <span className="font-mono text-base font-extrabold text-ink">Naar de zaak</span>
+              <span className="font-mono text-base font-extrabold text-ink">Naar de opdrachtgever</span>
               <span className={`text-sm font-semibold ${zaakVerzondenAt ? "text-success" : "text-ink-muted"}`}>
                 {zaakVerzondenAt ? "Verzonden" : "nog niet"}
               </span>
@@ -631,7 +631,7 @@ export function OpleverFlow({
             </button>
         <div className="mt-3 border-2 border-line">
           <div className="border-b border-line bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
-            Naar de zaak
+            Naar de opdrachtgever
           </div>
           <div className="flex flex-col gap-2 p-3">
             {klantVerzondenAt && (
@@ -796,7 +796,7 @@ export function OpleverFlow({
               ) : (
                 <>
                   <PackageCheck size={18} strokeWidth={2.5} aria-hidden="true" />
-                  Stuur naar zaak
+                  Stuur naar opdrachtgever
                 </>
               )}
             </button>

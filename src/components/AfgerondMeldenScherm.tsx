@@ -50,7 +50,7 @@ export function AfgerondMeldenScherm({ opdrachtId, klantNaam }: { opdrachtId: st
   return (
     <div className="border-2 border-t-0 border-line bg-white px-5 py-5">
       <p className="text-sm text-ink-muted">
-        Klus voor <span className="font-bold text-ink">{klantNaam}</span>. De zaak krijgt bericht dat hij voltooid is. Alles hieronder is optioneel.
+        Klus voor <span className="font-bold text-ink">{klantNaam}</span>. De opdrachtgever krijgt bericht dat hij voltooid is. Alles hieronder is optioneel.
       </p>
 
       <h2 className="mt-4 mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Foto&apos;s (optioneel)</h2>
@@ -80,7 +80,7 @@ export function AfgerondMeldenScherm({ opdrachtId, klantNaam }: { opdrachtId: st
         <span>
           <span className="font-bold text-ink">Er komt nog een vervolg</span>
           <span className="block text-ink-muted">
-            Bijv. onderdelen die later binnenkomen. De klus gaat dan terug naar de zaak om opnieuw in te plannen.
+            Bijv. onderdelen die later binnenkomen. De klus gaat dan terug naar de opdrachtgever om opnieuw in te plannen.
           </span>
         </span>
       </label>

@@ -403,7 +403,7 @@ export async function genereerRapportPdf(
     });
     page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: INTERN });
     let ty = top - 6;
-    page.drawText("INTERN — alleen voor de zaak", {
+    page.drawText("INTERN: alleen voor de opdrachtgever", {
       x: MARGE + 12,
       y: ty,
       size: 8,

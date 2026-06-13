@@ -9,7 +9,7 @@ const ACTIE_LABEL: Record<string, string> = {
   geannuleerd: "Geannuleerd",
   afgerond: "Voltooid gemeld",
   heropend: "Heropend",
-  voltooid_akkoord: "Goedgekeurd door de zaak",
+  voltooid_akkoord: "Goedgekeurd door de opdrachtgever",
 };
 
 const REDEN_LABEL: Record<string, string> = {

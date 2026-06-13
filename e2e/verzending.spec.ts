@@ -236,7 +236,7 @@ test.describe("ontvanger-keuze: eigen dropdown in app-stijl", () => {
     // gekozen ontvanger weer overschrijven met het bewaarde (lege) adres.
     await expect(page.getByText("Gezet")).toBeVisible();
 
-    await page.getByRole("button", { name: "Naar de zaak" }).click();
+    await page.getByRole("button", { name: "Naar de opdrachtgever" }).click();
     const knop = page.getByRole("button", { name: "Kies een ontvanger" });
     await expect(knop).toBeVisible();
     await knop.click();
