@@ -2,6 +2,27 @@
 
 Datum: 2026-06-13
 
+## STATUS: GEPAUZEERD (2026-06-13)
+
+De app-kant is af, getest en **live op productie** (migratie 18 op prod gedraaid, CI groen). De feature
+**werkt nog niet end-to-end**, want de mail-ontvangst-infra staat nog niet aan. Je ziet wel je
+ontvangstadres bij Mijn gegevens en het lege "te verwerken"-bakje, maar er komt nog geen mail binnen.
+
+**Hervatten = deze externe setup doen (Rein), daarna een test:**
+1. Resend → Domains → `kluslus.nl` → **Receiving aanzetten**; het getoonde **MX-record** toevoegen bij de
+   DNS van kluslus.nl.
+2. Resend → Webhooks → event **`email.received`** → URL `https://<app-url>/api/inbound`; **signing secret**
+   (`whsec_...`) kopiëren.
+3. Vercel env: `RESEND_WEBHOOK_SECRET=<whsec_...>` en `INBOUND_DOMAIN=kluslus.nl`; **redeploy**.
+4. Test: mail met PDF naar `klus-<token>@kluslus.nl` → verschijnt als voorstel in `/inbox`.
+
+**Daarna nog open (verfijning, niet blokkerend):** een voorstel aanpassen vóór bevestigen (zelf-invoer-
+formulier in edit-modus). En het idee "verstuurd met Kluslus"-regel op de zaak-versie van het rapport
+om de lead-blootstelling te versterken (zie [[project_ksv-leads-model]] in geheugen).
+
+---
+
+
 Tweede spoor van "zelf invoeren makkelijker": een monteur stuurt een mail van zijn opdrachtgever
 (met PDF/foto's) naar een eigen adres, de app haalt eruit wat bruikbaar is en zet het als voorstel
 in een "te verwerken"-bakje dat hij bevestigt. App-kant gebouwd en live; mail-ontvangst wacht op de
