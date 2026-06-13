@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import Link from "next/link";
 import { UserMenu } from "@/components/UserMenu";
 import { TerugKnop } from "@/components/TerugKnop";
 import { vereisRol } from "@/lib/toegang";
@@ -62,6 +63,15 @@ export default async function HandleidingPage() {
           );
         })}
       </ol>
+
+      <div className="mt-6">
+        <Link
+          href="/handleiding/voorbeeldrapport"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-primary px-4 text-sm font-extrabold uppercase tracking-[0.05em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+        >
+          Bekijk een voorbeeldrapport
+        </Link>
+      </div>
     </main>
   );
 }
