@@ -15,9 +15,9 @@ describe("afrondStatus", () => {
   it("'voltooid' als de monteur het meldde, zonder akkoord of vervolg", () => {
     expect(afrondStatus({ ...basis, afgerond_door_monteur_at: "2026-06-13T10:00:00Z" })).toBe("voltooid");
   });
-  it("'vervolg-plannen' als vervolg nodig en terug op 'binnen'", () => {
+  it("'vervolg-plannen' als vervolg nodig is (kantoor of ad-hoc, ongeacht de status)", () => {
     expect(
-      afrondStatus({ ...basis, afgerond_door_monteur_at: "x", afgerond_vervolg_nodig: true, dashboard_status: "binnen" }),
+      afrondStatus({ ...basis, afgerond_door_monteur_at: "x", afgerond_vervolg_nodig: true }),
     ).toBe("vervolg-plannen");
   });
   it("'voltooid-akkoord' als de zaak akkoord gaf (heeft voorrang)", () => {

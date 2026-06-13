@@ -45,10 +45,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   } catch (err) {
     return NextResponse.json({ error: `Afronden mislukt: ${(err as Error).message}` }, { status: 503 });
   }
-  // Vervolg nodig: de klus gaat meteen terug naar "te plannen" (historie blijft, niet meer toegewezen).
-  // Ontplannen is een kantoor-actie; de monteur mag dat niet onder RLS. Daarom met service-rechten,
-  // na de autorisatie-check hierboven (alleen de toegewezen monteur komt hier).
-  if (vervolgNodig) {
+  // Vervolg nodig EN er is een kantoor: terug naar "te plannen" zodat het kantoor het oppakt (historie
+  // blijft, niet meer toegewezen). Ontplannen is een kantoor-actie; met service-rechten na de check.
+  // Bij een ad-hoc klus (geen opdrachtgever) is de monteur zelf het kantoor: dan NIET ontplannen, anders
+  // verdwijnt de klus uit zijn werkpool en is hij nergens meer te zien. Hij blijft bij de monteur met
+  // de "Vervolg plannen"-markering (afgerond_vervolg_nodig).
+  if (vervolgNodig && opdracht.opdrachtgever_id) {
     try {
       await dbAdmin().ontplanOpdracht(id);
     } catch (err) {

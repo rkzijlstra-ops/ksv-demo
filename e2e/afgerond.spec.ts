@@ -76,3 +76,36 @@ test("voltooid met vervolg-vinkje zet de klus terug naar te plannen", async ({ p
   expect(data?.dashboard_status).toBe("binnen");
   expect(data?.toegewezen_aan).toBeNull();
 });
+
+test("voltooid met vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async ({ page }) => {
+  // Zelf-aangemaakte klus zonder opdrachtgever: er is geen kantoor om het op te pakken.
+  const { id: adhocId } = await db.createOpdracht({
+    documenttype: "onbekend",
+    klant_naam: `ADHOC ${Date.now()}`,
+    klant_adres: "Teststraat 1",
+    referentienummer: `A${Date.now()}`,
+    adviseur: null,
+    klant_telefoon: null,
+    leverweek: null,
+    keukenzaak: null,
+    user_id: RK,
+    toegewezen_aan: RK,
+    opdrachtgever_id: null,
+  });
+  try {
+    await page.goto(`/opdracht/${adhocId}/afronden/snel`);
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: /voltooid melden/i }).click();
+    await page.waitForURL((u) => new URL(u).pathname === "/");
+
+    const { data } = await admin
+      .from("meldingen")
+      .select("afgerond_vervolg_nodig, toegewezen_aan")
+      .eq("id", adhocId)
+      .single();
+    expect(data?.afgerond_vervolg_nodig).toBe(true);
+    expect(data?.toegewezen_aan).toBe(RK); // bleef bij de monteur, niet weg-geontplanned
+  } finally {
+    await admin.from("meldingen").delete().eq("id", adhocId);
+  }
+});

@@ -28,9 +28,11 @@ export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
   const history: Melding[] = [];
   for (const m of meldingen) {
     if (VERBORGEN_VOOR_MONTEUR.has(m.dashboard_status)) continue;
-    // Teruggemeld of opgeleverd: uit de actieve pool, maar in de history zodat de monteur het
-    // (met de reden) kan terugkijken. Legacy verzonden-status idem.
-    if (m.afgerond_door_monteur_at || m.teruggemeld_at || m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
+    // Voltooid gemeld, teruggemeld of opgeleverd: uit de actieve pool, in de history om terug te kijken.
+    // Uitzondering: voltooid MET een vervolg (ad-hoc klus, bleef bij de monteur) blijft actief, want
+    // hij moet er nog iets mee. Legacy verzonden-status idem als opgeleverd.
+    const voltooidZonderVervolg = Boolean(m.afgerond_door_monteur_at) && !m.afgerond_vervolg_nodig;
+    if (voltooidZonderVervolg || m.teruggemeld_at || m.opdracht_status === "opgeleverd" || m.status === "verzonden") {
       history.push(m);
     } else {
       actief.push(m);
