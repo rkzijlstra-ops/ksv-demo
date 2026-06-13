@@ -845,22 +845,16 @@ export function OpleverFlow({
         )}
       </section>
 
-      {/* Vaste onderbalk: voorvertonen + terug naar de meldingen. Versturen gebeurt per kaart hierboven. */}
+      {/* Vaste onderbalk: rapport voorvertonen. Terug gaat via de knop bovenaan; de meldingen staan al
+          als lijstje op dit scherm. Versturen gebeurt per kaart hierboven. */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+        <div className="mx-auto flex w-full max-w-2xl">
           <Link
             href={`/opdracht/${opdrachtId}/rapport`}
             className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
             <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
             Rapport voorvertonen
-          </Link>
-          <Link
-            href={`/opdracht/${opdrachtId}`}
-            className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-          >
-            <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
-            Meldingen
           </Link>
         </div>
       </div>
