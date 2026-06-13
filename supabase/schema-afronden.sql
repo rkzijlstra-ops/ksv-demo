@@ -3,4 +3,7 @@
 alter table public.meldingen
   add column if not exists afgerond_door_monteur_at timestamptz,
   add column if not exists afgerond_toelichting       text,
-  add column if not exists afgerond_vervolg_nodig      boolean not null default false;
+  add column if not exists afgerond_vervolg_nodig      boolean not null default false,
+  -- optioneel bewijs bij de snelle afronding (hergebruikt het foto/video-systeem van de oplevering)
+  add column if not exists afgerond_foto_urls          text[] not null default '{}',
+  add column if not exists afgerond_video_url          text;
