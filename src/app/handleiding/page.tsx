@@ -35,34 +35,57 @@ export default async function HandleidingPage() {
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
 
-      <ol className="space-y-4">
+      <ol className="space-y-8">
         {HANDLEIDING_STAPPEN.map((stap, i) => {
           const bestaat = existsSync(path.join(process.cwd(), "public", "handleiding", stap.bestand));
+          const laatste = i === HANDLEIDING_STAPPEN.length - 1;
           return (
-            <li key={stap.bestand} className="border-2 border-line bg-white">
-              <div className="border-b-2 border-line px-5 py-4">
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink-muted">Stap {i + 1}</p>
-                <h2 className="mt-1 font-mono text-xl font-extrabold tracking-tight text-ink">{stap.titel}</h2>
-                {stap.intro && <p className="mt-2 text-sm text-ink">{stap.intro}</p>}
+            <li key={stap.bestand} className="relative border-2 border-ink bg-white">
+              {/* Donkere kopbalk met oranje stapnummer: maakt het begin van elke stap meteen zichtbaar. */}
+              <div className="flex items-center gap-3 bg-ink px-4 py-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-accent font-mono text-lg font-extrabold leading-none text-ink">
+                  {i + 1}
+                </span>
+                <h2 className="font-mono text-xl font-extrabold tracking-tight text-white">{stap.titel}</h2>
+                <span className="ml-auto font-mono text-xs uppercase tracking-[0.18em] text-white/50">
+                  {i + 1}/{HANDLEIDING_STAPPEN.length}
+                </span>
+              </div>
+
+              <div className="px-5 py-4">
+                {stap.intro && <p className="text-sm text-ink">{stap.intro}</p>}
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
                   {stap.punten.map((punt) => (
                     <li key={punt}>{punt}</li>
                   ))}
                 </ul>
               </div>
+
               {bestaat ? (
                 // Bewust een gewone <img>: de bestanden staan in /public en worden los gegenereerd,
                 // geen next/image-optimalisatie nodig.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/handleiding/${stap.bestand}`}
-                  alt={`Schermafbeelding: ${stap.titel}`}
-                  className="mx-auto block w-full max-w-sm"
-                />
+                <div className="border-t-2 border-line bg-surface/40 p-4">
+                  <img
+                    src={`/handleiding/${stap.bestand}`}
+                    alt={`Schermafbeelding: ${stap.titel}`}
+                    className="mx-auto block w-full max-w-sm border border-line"
+                  />
+                </div>
               ) : (
-                <div className="flex min-h-[200px] items-center justify-center bg-surface p-5 text-center text-sm text-ink-muted">
+                <div className="flex min-h-[200px] items-center justify-center border-t-2 border-line bg-surface p-5 text-center text-sm text-ink-muted">
                   Schermafbeelding nog niet gegenereerd ({stap.bestand}).
                 </div>
+              )}
+
+              {/* Stippellijn-pijl naar de volgende stap, behalve onder de laatste. */}
+              {!laatste && (
+                <span
+                  aria-hidden
+                  className="absolute -bottom-8 left-1/2 flex h-8 w-px -translate-x-1/2 items-end justify-center"
+                >
+                  <span className="h-full w-px border-l-2 border-dashed border-ink/30" />
+                </span>
               )}
             </li>
           );
