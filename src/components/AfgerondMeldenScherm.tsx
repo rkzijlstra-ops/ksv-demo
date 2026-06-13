@@ -50,7 +50,7 @@ export function AfgerondMeldenScherm({ opdrachtId, klantNaam }: { opdrachtId: st
   return (
     <div className="border-2 border-t-0 border-line bg-white px-5 py-5">
       <p className="text-sm text-ink-muted">
-        Klus voor <span className="font-bold text-ink">{klantNaam}</span>. De zaak krijgt bericht dat hij klaar is. Alles hieronder is optioneel.
+        Klus voor <span className="font-bold text-ink">{klantNaam}</span>. De zaak krijgt bericht dat hij voltooid is. Alles hieronder is optioneel.
       </p>
 
       <h2 className="mt-4 mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Foto&apos;s (optioneel)</h2>
@@ -99,7 +99,7 @@ export function AfgerondMeldenScherm({ opdrachtId, klantNaam }: { opdrachtId: st
         className="relative mt-5 flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 text-base font-extrabold uppercase tracking-[0.05em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent disabled:opacity-60 after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
       >
         {bezig ? <Loader2 size={22} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden="true" />}
-        Afgerond melden
+        Voltooid melden
       </button>
     </div>
   );

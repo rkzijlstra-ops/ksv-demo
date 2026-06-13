@@ -26,8 +26,8 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
       <header className="relative mb-4 border-2 border-b-0 border-line bg-white px-5 py-5">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Klus afronden</p>
-        <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Hoe rond je af?</h1>
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Klus voltooien</p>
+        <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Hoe voltooi je deze klus?</h1>
         <p className="mt-1 text-sm text-ink-muted">Kies wat bij deze klus past.</p>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
@@ -38,7 +38,7 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
           className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
         >
           <span>
-            <span className="block font-mono text-lg font-extrabold text-ink">Klaar, snel</span>
+            <span className="block font-mono text-lg font-extrabold text-ink">Voltooid, snel</span>
             <span className="block text-sm text-ink-muted">Voor service of een kleine klus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is.</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
@@ -49,7 +49,7 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
           className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
         >
           <span>
-            <span className="block font-mono text-lg font-extrabold text-ink">Klaar + rapport</span>
+            <span className="block font-mono text-lg font-extrabold text-ink">Voltooid + rapport</span>
             <span className="block text-sm text-ink-muted">Volledige oplevering met foto&apos;s en handtekening.</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
