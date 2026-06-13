@@ -34,6 +34,8 @@ export function OpleverFlow({
   const { online } = useOfflineState();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  // Versturen: eerst kiezen naar wie, dan pas het bijbehorende blok tonen (minder rommel).
+  const [verstuurKeuze, setVerstuurKeuze] = useState<"klant" | "zaak" | null>(null);
   const [opmerking, setOpmerking] = useState("");
   // Interne notitie: alleen voor de zaak, komt nooit in de klant-versie van het rapport.
   const [internOpmerking, setInternOpmerking] = useState("");
@@ -544,7 +546,42 @@ export function OpleverFlow({
           4. Versturen
         </h2>
 
+        {verstuurKeuze === null && (
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setVerstuurKeuze("klant")}
+              className="flex items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+            >
+              <span className="font-mono text-base font-extrabold text-ink">Naar de klant</span>
+              <span className={`text-sm font-semibold ${klantVerzondenAt ? "text-success" : "text-ink-muted"}`}>
+                {klantVerzondenAt ? "Verzonden" : "nog niet"}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVerstuurKeuze("zaak")}
+              className="flex items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+            >
+              <span className="font-mono text-base font-extrabold text-ink">Naar de zaak</span>
+              <span className={`text-sm font-semibold ${zaakVerzondenAt ? "text-success" : "text-ink-muted"}`}>
+                {zaakVerzondenAt ? "Verzonden" : "nog niet"}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Naar de klant: schone versie (zonder interne notitie). Optioneel, meestal meteen. */}
+        {verstuurKeuze === "klant" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setVerstuurKeuze(null)}
+              className="mb-2 inline-flex min-h-[40px] cursor-pointer items-center gap-1.5 text-sm font-bold text-primary hover:underline"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
+              Andere ontvanger
+            </button>
         <div className="border-2 border-line">
           <div className="border-b border-line bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
             Naar de klant
@@ -578,8 +615,20 @@ export function OpleverFlow({
             </div>
           </div>
         </div>
+          </>
+        )}
 
         {/* Naar de zaak: volledige versie (mét interne notitie). Dit is het afrond-moment. */}
+        {verstuurKeuze === "zaak" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setVerstuurKeuze(null)}
+              className="mb-2 inline-flex min-h-[40px] cursor-pointer items-center gap-1.5 text-sm font-bold text-primary hover:underline"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
+              Andere ontvanger
+            </button>
         <div className="mt-3 border-2 border-line">
           <div className="border-b border-line bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-ink-muted">
             Naar de zaak
@@ -761,6 +810,8 @@ export function OpleverFlow({
             </div>
           </div>
         </div>
+          </>
+        )}
 
         {/* Verzendgeschiedenis: append-only, zodat terug te zien is wat wanneer waarheen ging. */}
         {verzendingen.length > 0 && (
