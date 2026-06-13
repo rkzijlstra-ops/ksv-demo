@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Inbox, BookOpen, X, Sparkles } from "lucide-react";
-
-// Per toestel onthouden dat de gebruiker de welkom-uitleg heeft weggeklikt (geen migratie nodig).
-const KEY = "kluslus_welkom_weg";
+import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 
 /**
  * Onboarding voor de werkpool: leidt een nieuwe gebruiker naar de handleiding. Past zich aan:
@@ -21,7 +19,7 @@ export function WerkpoolOnboarding({ leeg }: { leeg: boolean }) {
 
   useEffect(() => {
     try {
-      setWeg(localStorage.getItem(KEY) === "1");
+      setWeg(localStorage.getItem(WELKOM_WEG_KEY) === "1");
     } catch {
       setWeg(false);
     }
@@ -29,7 +27,7 @@ export function WerkpoolOnboarding({ leeg }: { leeg: boolean }) {
 
   function verberg() {
     try {
-      localStorage.setItem(KEY, "1");
+      localStorage.setItem(WELKOM_WEG_KEY, "1");
     } catch {
       // private mode e.d.: dan blijft het deze sessie weg, dat is genoeg.
     }
