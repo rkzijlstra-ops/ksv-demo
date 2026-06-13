@@ -51,7 +51,7 @@ test.describe("monteur meldt een Ed-klus terug", () => {
     const kaart = page.locator(`a[href="/opdracht/${id}"]`);
     await expect(kaart).toBeVisible();
     await expect(kaart.getByRole("button", { name: "Terugmelden" })).toBeVisible();
-    await expect(page.getByRole("button", { name: `Opdracht ${klant} verwijderen` })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: `Klus ${klant} verwijderen` })).toHaveCount(0);
   });
 
   test("terugmelden haalt de klus uit de actieve werkpool en logt de gebeurtenis", async ({ page }) => {

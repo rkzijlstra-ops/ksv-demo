@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test("beheerder ziet het dashboard", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole("heading", { name: "Opdrachten" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Klussen" })).toBeVisible();
 });
 
 test("beheerder ziet het planbord", async ({ page }) => {

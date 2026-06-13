@@ -40,7 +40,7 @@ test.afterEach(async () => {
 
 test("kantoor annuleert een opdracht via het dashboard", async ({ page }) => {
   await page.goto(`/dashboard/opdracht/${id}`);
-  await page.getByRole("button", { name: "Opdracht annuleren" }).click();
+  await page.getByRole("button", { name: "Klus annuleren" }).click();
   await page.getByRole("button", { name: "Ja, annuleren" }).click();
 
   await expect
@@ -53,5 +53,5 @@ test("kantoor annuleert een opdracht via het dashboard", async ({ page }) => {
     )
     .toBe("geannuleerd");
 
-  await expect(page.getByText("Deze opdracht is geannuleerd")).toBeVisible();
+  await expect(page.getByText("Deze klus is geannuleerd")).toBeVisible();
 });

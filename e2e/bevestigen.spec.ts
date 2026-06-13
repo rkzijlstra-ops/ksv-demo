@@ -71,7 +71,7 @@ test("monteur bevestigt direct vanaf de werkpool-kaart, zonder door te klikken",
   await kaart.getByRole("button", { name: "Ontvangst bevestigen" }).click();
 
   // De klik mag NIET naar de detailpagina navigeren; we blijven op de werkpool.
-  await expect(page.getByRole("heading", { name: "Opdrachten" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Klussen" })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe("/");
 
   // Database: status op 'bevestigd'.
