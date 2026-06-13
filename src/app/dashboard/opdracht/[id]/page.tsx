@@ -22,6 +22,8 @@ import { DocumentBeheer } from "@/components/DocumentBeheer";
 import { Logboek } from "@/components/Logboek";
 import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
+import { afrondStatus } from "@/lib/afrond-status";
+import { AfgerondKeuren } from "@/components/AfgerondKeuren";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +81,7 @@ export default async function OpdrachtgeverDetailPage({
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
       : planningTijd(opdracht);
+  const afStat = afrondStatus(opdracht);
 
   return (
     <main className="mx-auto w-full max-w-3xl p-4 pb-24">
@@ -105,6 +108,23 @@ export default async function OpdrachtgeverDetailPage({
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      {afStat === "voltooid" && (
+        <section className="mt-6 border-2 border-success bg-success/5 p-4">
+          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Door de monteur voltooid gemeld</h2>
+          {opdracht.afgerond_toelichting && (
+            <p className="mt-2 border border-line border-l-[3px] border-l-success bg-white px-3 py-2 text-base text-ink">
+              {opdracht.afgerond_toelichting}
+            </p>
+          )}
+          {opdracht.afgerond_foto_urls.length > 0 && (
+            <div className="mt-3">
+              <FotoGalerij urls={opdracht.afgerond_foto_urls} />
+            </div>
+          )}
+          <AfgerondKeuren opdrachtId={opdracht.id} />
+        </section>
+      )}
 
       {/* Gegevens */}
       <section className="border-2 border-t-0 border-line bg-white px-5 py-4">

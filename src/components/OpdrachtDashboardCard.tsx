@@ -7,6 +7,7 @@ import { planningTijd, duurLabel } from "@/lib/opdracht-weergave";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtStatusBadge } from "./OpdrachtStatusBadge";
 import { MailMonteurKnop } from "./MailMonteurKnop";
+import { afrondStatus, afrondStatusLabel } from "@/lib/afrond-status";
 
 /** Kleur van de linker strip (8px) per status. Literal Tailwind-classes (JIT-veilig). */
 const STRIP: Record<DashboardStatus, string> = {
@@ -23,6 +24,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
   const status = melding.dashboard_status;
   const titel = melding.klant_naam ?? "Onbekende klant";
   const geannuleerd = status === "geannuleerd";
+  const afStat = afrondStatus(melding);
   const gepland = status === "concept_gepland" || status === "gepland" || status === "bevestigd";
   const geenRef = isActief(status) && !melding.referentienummer;
   const nogTeVersturen = status === "concept_gepland" || melding.gewijzigd_te_versturen;
@@ -59,6 +61,15 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
           {melding.teruggemeld_at && (
             <span className="inline-flex items-center gap-1.5 border-[1.5px] border-ink bg-ink px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
               Teruggemeld
+            </span>
+          )}
+          {afStat && (
+            <span
+              className={`inline-flex items-center gap-1.5 border-[1.5px] px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white ${
+                afStat === "vervolg-plannen" ? "border-accent bg-accent" : "border-success bg-success"
+              }`}
+            >
+              {afrondStatusLabel(afStat)}
             </span>
           )}
           {geenRef && (
