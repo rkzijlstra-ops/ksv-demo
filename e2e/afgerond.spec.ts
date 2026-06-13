@@ -38,7 +38,7 @@ test.afterEach(async () => {
 
 test("monteur meldt een klus afgerond via het keuzescherm", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/afronden`);
-  await expect(page.getByRole("heading", { name: "Hoe rond je af?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hoe voltooi je deze klus?" })).toBeVisible();
   await page.getByRole("link", { name: /voltooid, snel/i }).click();
   await page.waitForURL((u) => new URL(u).pathname.endsWith("/afronden/snel"));
   await page.getByRole("textbox").fill("Alles getest, klant tevreden.");
