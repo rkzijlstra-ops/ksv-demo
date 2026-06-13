@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { logActie } from "@/lib/gebeurtenis";
 
@@ -19,7 +19,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Geen rechten om te heropenen" }, { status: 403 });
   }
   try {
-    await dbi.heropenen(id);
+    // Reset naar te plannen is een kantoor-actie; met service-rechten na de autorisatie-check hierboven.
+    await dbAdmin().heropenen(id);
   } catch (err) {
     return NextResponse.json({ error: `Heropenen mislukt: ${(err as Error).message}` }, { status: 503 });
   }

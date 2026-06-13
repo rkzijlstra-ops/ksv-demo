@@ -48,11 +48,11 @@ export function NietDoorgegaanKnop({ opdrachtId, klantNaam }: { opdrachtId: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+        className="flex w-full items-center justify-between border-2 border-line bg-white p-5 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
       >
         <span>
-          <span className="block font-mono text-lg font-extrabold text-ink">Niet doorgegaan</span>
-          <span className="block text-sm text-ink-muted">
+          <span className="block font-mono text-xl font-extrabold text-ink">Niet doorgegaan</span>
+          <span className="block text-base text-ink-muted">
             Klant niet thuis of werk niet af te ronden. Meld terug aan kantoor met een reden.
           </span>
         </span>

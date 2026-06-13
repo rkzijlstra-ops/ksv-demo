@@ -59,3 +59,20 @@ test("monteur meldt een klus niet doorgegaan via het keuzescherm", async ({ page
   const { data } = await admin.from("meldingen").select("teruggemeld_at").eq("id", opdrachtId).single();
   expect(data?.teruggemeld_at).not.toBeNull();
 });
+
+test("voltooid met vervolg-vinkje zet de klus terug naar te plannen", async ({ page }) => {
+  await page.goto(`/opdracht/${opdrachtId}/afronden/snel`);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("textbox").fill("Onderdelen komen later, vervolg nodig.");
+  await page.getByRole("button", { name: /voltooid melden/i }).click();
+  await page.waitForURL((u) => new URL(u).pathname === "/");
+
+  const { data } = await admin
+    .from("meldingen")
+    .select("afgerond_vervolg_nodig, dashboard_status, toegewezen_aan")
+    .eq("id", opdrachtId)
+    .single();
+  expect(data?.afgerond_vervolg_nodig).toBe(true);
+  expect(data?.dashboard_status).toBe("binnen");
+  expect(data?.toegewezen_aan).toBeNull();
+});

@@ -3,6 +3,7 @@ import { ChevronRight, CalendarClock, CalendarPlus, Truck } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
+import { afrondStatus, afrondStatusLabel } from "@/lib/afrond-status";
 import { opgeleverdBadgeConfig, bevestigBadgeConfig } from "@/lib/urgentie";
 import { redenLabel } from "@/lib/terugmeld-mail";
 import { Badge } from "./Badge";
@@ -31,6 +32,7 @@ export function OpdrachtCard({
   const opgeleverd = melding.opdracht_status === "opgeleverd";
   const aantalOpen = telling?.aantal ?? 0;
   const bevestig = opgeleverd ? null : bevestigBadgeConfig(melding.dashboard_status);
+  const afStat = afrondStatus(melding);
 
   // Kleur-staat: gekleurde linker strip (8px) per staat (rood=spoed, oranje=open, groen=opgeleverd)
   const stripKleur = opgeleverd
@@ -67,7 +69,16 @@ export function OpdrachtCard({
               Teruggemeld
             </span>
           )}
-          {bevestig && <Badge config={bevestig} />}
+          {afStat && (
+            <span
+              className={`inline-flex items-center gap-1.5 border-[1.5px] px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white ${
+                afStat === "vervolg-plannen" ? "border-accent bg-accent" : "border-success bg-success"
+              }`}
+            >
+              {afrondStatusLabel(afStat)}
+            </span>
+          )}
+          {bevestig && !afStat && <Badge config={bevestig} />}
           <DocumenttypeBadge type={melding.documenttype} />
           {melding.referentienummer && (
             <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">

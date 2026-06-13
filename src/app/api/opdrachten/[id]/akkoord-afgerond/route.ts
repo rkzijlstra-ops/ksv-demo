@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { logActie } from "@/lib/gebeurtenis";
 
@@ -16,7 +16,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Alleen de zaak kan goedkeuren" }, { status: 403 });
   }
   try {
-    await dbi.akkoordAfgerond(id);
+    await dbAdmin().akkoordAfgerond(id);
   } catch (err) {
     return NextResponse.json({ error: `Goedkeuren mislukt: ${(err as Error).message}` }, { status: 503 });
   }

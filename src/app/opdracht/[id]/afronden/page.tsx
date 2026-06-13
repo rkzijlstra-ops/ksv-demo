@@ -36,22 +36,22 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
       <div className="flex flex-col gap-3">
         <Link
           href={`/opdracht/${id}/afronden/snel`}
-          className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
+          className="flex items-center justify-between border-2 border-line bg-white p-5 hover:bg-surface"
         >
           <span>
-            <span className="block font-mono text-lg font-extrabold text-ink">Voltooid, snel</span>
-            <span className="block text-sm text-ink-muted">Voor service of een kleine klus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is.</span>
+            <span className="block font-mono text-xl font-extrabold text-ink">Voltooid, snel</span>
+            <span className="block text-base text-ink-muted">Voor service of een kleine klus. Optioneel foto, video of een notitie. De zaak ziet dat het klaar is.</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
         </Link>
 
         <Link
           href={`/opdracht/${id}/opleveren`}
-          className="flex items-center justify-between border-2 border-line bg-white p-4 hover:bg-surface"
+          className="flex items-center justify-between border-2 border-line bg-white p-5 hover:bg-surface"
         >
           <span>
-            <span className="block font-mono text-lg font-extrabold text-ink">Voltooid + rapport</span>
-            <span className="block text-sm text-ink-muted">Volledige oplevering met foto&apos;s en handtekening.</span>
+            <span className="block font-mono text-xl font-extrabold text-ink">Voltooid + rapport</span>
+            <span className="block text-base text-ink-muted">Volledige oplevering met foto&apos;s en handtekening.</span>
           </span>
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
         </Link>

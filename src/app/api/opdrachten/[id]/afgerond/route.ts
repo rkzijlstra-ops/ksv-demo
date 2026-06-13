@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { verstuurAfgerondMelding } from "@/lib/mail";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { logActie } from "@/lib/gebeurtenis";
@@ -46,9 +46,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: `Afronden mislukt: ${(err as Error).message}` }, { status: 503 });
   }
   // Vervolg nodig: de klus gaat meteen terug naar "te plannen" (historie blijft, niet meer toegewezen).
+  // Ontplannen is een kantoor-actie; de monteur mag dat niet onder RLS. Daarom met service-rechten,
+  // na de autorisatie-check hierboven (alleen de toegewezen monteur komt hier).
   if (vervolgNodig) {
     try {
-      await dbi.ontplanOpdracht(id);
+      await dbAdmin().ontplanOpdracht(id);
     } catch (err) {
       return NextResponse.json({ error: `Vervolg inplannen mislukt: ${(err as Error).message}` }, { status: 503 });
     }
