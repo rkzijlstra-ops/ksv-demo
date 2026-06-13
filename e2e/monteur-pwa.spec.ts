@@ -81,10 +81,9 @@ test.afterEach(async () => {
 });
 
 test("monteur maakt een melding met een foto, die als kind-rij bij de opdracht komt", async ({ page }) => {
-  // Quarantaine in CI: de client-side foto-compressie (canvas.toBlob) blijft hier in de schermloze
-  // cloud-browser hangen op deze pagina, terwijl exact dezelfde upload op het oplever-scherm wél
-  // slaagt. Geen app-fout; nog niet doorgrond. Draait lokaal in PowerShell wel. Zie logboek.
-  test.skip(!!process.env.CI, "Foto-compressie hangt in headless CI op de melding-pagina; draait lokaal.");
+  // Stond eerder in CI op skip ("foto-compressie hangt"); dat bleek dezelfde hydratie-race als de
+  // andere upload-tests (de pagina bleef in de beginstaat, niet in "Foto's verwerken..."). Met
+  // wachtOpHydratie hieronder is de race weg, dus de skip is eraf.
   await page.goto(`/opdracht/${opdrachtId}/melding`);
   await wachtOpHydratie(page); // pas na hydratie is de change-handler van de foto-input gekoppeld
 
