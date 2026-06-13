@@ -10,7 +10,7 @@ export default function GeenToegangPage() {
         <h1 className="mt-3 text-xl font-extrabold text-ink">Account nog niet ingesteld</h1>
         <p className="mt-2 text-sm text-ink-muted">
           Je bent ingelogd, maar je account heeft nog geen rol. Neem contact op met de beheerder
-          (BKM) om toegang te krijgen.
+          van Kluslus om toegang te krijgen.
         </p>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </div>

@@ -21,7 +21,7 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">
-              KSV / Dashboard
+              Kluslus / Dashboard
             </p>
             <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Opdrachten</h1>
             <p className="mt-1 text-sm text-ink-muted">

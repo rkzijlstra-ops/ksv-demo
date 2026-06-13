@@ -14,7 +14,7 @@ export function voorbeeldRapportData(
   meldingFotos: string[],
 ): RapportWeergaveData {
   return {
-    afzenderKop: "BKM Keukenmontage",
+    afzenderKop: "Keukenmontage Jansen",
     opleverdatum,
     klantNaam: "Fam. Jansen",
     klantAdres: "Voorbeeldstraat 1, 2251 Voorschoten",

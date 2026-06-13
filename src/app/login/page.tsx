@@ -61,7 +61,7 @@ function LoginInhoud() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center p-4">
       <header className="relative mb-6 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Oplever App / Login</p>
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Kluslus / Login</p>
         <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Inloggen</h1>
         <p className="mt-1 text-sm text-ink-muted">Monteur-app voor opleveringen en meldingen</p>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />

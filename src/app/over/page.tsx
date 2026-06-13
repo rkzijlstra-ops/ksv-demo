@@ -68,7 +68,7 @@ export default function OverPage() {
             <Phone size={18} aria-hidden="true" /> Vragen?
           </h2>
           <p className="text-ink-muted">
-            Bel of mail Reinier (BKM Keukenmontage): 06-31665814, bkmkeukenmontage@gmail.com.
+            Bel of mail de support: Reinier, 06-31665814, bkmkeukenmontage@gmail.com.
           </p>
         </section>
 

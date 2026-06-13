@@ -88,7 +88,7 @@ export default async function OpdrachtgeverDetailPage({
       <TerugKnop href={terugHref} label={terugLabel} />
 
       <header className="relative mt-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">KSV / Opdracht</p>
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Kluslus / Klus</p>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
           {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>

@@ -107,7 +107,7 @@ export function MijnGegevensForm({
           className={inputClass}
           value={velden.bedrijfsnaam}
           onChange={(e) => zet("bedrijfsnaam", e.target.value)}
-          placeholder="Bijv. BKM Keukenmontage"
+          placeholder="Bijv. Keukenmontage Jansen"
         />
       </label>
 
