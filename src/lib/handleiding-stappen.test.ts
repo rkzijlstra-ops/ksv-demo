@@ -6,10 +6,11 @@ describe("HANDLEIDING_STAPPEN", () => {
     expect(HANDLEIDING_STAPPEN.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("elke stap heeft een titel, uitleg, route en bestand", () => {
+  it("elke stap heeft een titel, punten, route en bestand", () => {
     for (const stap of HANDLEIDING_STAPPEN) {
       expect(stap.titel.trim().length).toBeGreaterThan(0);
-      expect(stap.uitleg.trim().length).toBeGreaterThan(0);
+      expect(stap.punten.length).toBeGreaterThan(0);
+      for (const punt of stap.punten) expect(punt.trim().length).toBeGreaterThan(0);
       expect(stap.route.startsWith("/")).toBe(true);
       expect(stap.bestand).toMatch(/^\d{2}-[a-z0-9-]+\.png$/);
     }

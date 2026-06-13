@@ -33,7 +33,9 @@ test("genereer handleiding-screenshots", async ({ page }) => {
     klant_adres: "Voorbeeldstraat 1, Voorschoten",
     referentienummer: "DEMO-001",
     adviseur: null,
-    klant_telefoon: null,
+    // Nep-nummer, zodat de knoppen "bellen" en "WhatsApp" op de opdracht-detail verschijnen
+    // (die tonen alleen als er een telefoonnummer bekend is) en in stap 2 op de screenshot staan.
+    klant_telefoon: "0612345678",
     leverweek: null,
     keukenzaak: "Keukenstudio Voorschoten",
     user_id: MONTEUR.uid,
@@ -62,6 +64,10 @@ test("genereer handleiding-screenshots", async ({ page }) => {
           // popup-titel zichtbaar is, dan staat de popup gegarandeerd op de screenshot.
           await page.getByRole("button", { name: /klant laten tekenen/i }).click({ timeout: 6000 });
           await page.getByText("Handtekening klant").waitFor({ state: "visible", timeout: 6000 });
+          await page.waitForTimeout(400);
+        } else if (stap.interactie === "interne-notitie") {
+          // Scroll naar het (dichtgeklapte) interne-notitie-blok zodat het op de screenshot staat.
+          await page.getByText(/interne notitie/i).first().scrollIntoViewIfNeeded({ timeout: 6000 });
           await page.waitForTimeout(400);
         } else if (stap.interactie === "scroll-onder") {
           await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

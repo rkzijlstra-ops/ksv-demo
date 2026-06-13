@@ -4,15 +4,18 @@
  * Puur data, geen opmaak, zodat dezelfde lijst later ook een losse mini-site kan voeden.
  *
  * - bestand: bestandsnaam in public/handleiding/, ook de stabiele sleutel. Formaat: "NN-naam.png".
+ * - intro: optionele korte introzin boven de steekwoorden.
+ * - punten: korte steekwoorden, bewust geen volle zinnen, zodat het snel te scannen is.
  * - route: waar de generator naartoe navigeert. ":id" wordt vervangen door de demo-opdracht-id.
- * - interactie: optionele extra handeling vóór de screenshot (modal openen of naar onder scrollen).
+ * - interactie: optionele handeling vóór de screenshot (popup openen of naar een blok scrollen).
  */
-export type Interactie = "handtekening-modal" | "scroll-onder";
+export type Interactie = "handtekening-modal" | "scroll-onder" | "interne-notitie";
 
 export type HandleidingStap = {
   bestand: string;
   titel: string;
-  uitleg: string;
+  intro?: string;
+  punten: string[];
   route: string;
   interactie?: Interactie;
 };
@@ -21,53 +24,70 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
   {
     bestand: "01-werkpool.png",
     titel: "Je werkpool",
-    uitleg:
-      "In je werkpool staan je klussen, bovenaan de actieve, daaronder je geschiedenis. Een klus kan " +
-      "door de opdrachtgever zijn klaargezet, maar je kunt er ook zelf een toevoegen: bovenaan upload " +
-      "je een opdracht als PDF of foto, ook van andere opdrachtgevers, of je maakt een klus zonder " +
-      "document aan. Zo lever je voor elke opdrachtgever een net rapport op. Tik een klus aan om hem te openen.",
+    intro: "Je klussen: actief bovenaan, geschiedenis eronder.",
+    punten: [
+      "Een klus komt van de opdrachtgever, of je voegt er zelf een toe.",
+      "Zelf toevoegen: upload een opdracht als PDF of foto, ook van andere opdrachtgevers.",
+      "Of maak een klus zonder document aan.",
+      "Tik een klus aan om te openen.",
+    ],
     route: "/",
   },
   {
     bestand: "02-opdracht-openen.png",
     titel: "Een klus openen",
-    uitleg:
-      "In de klus zie je de klantgegevens en het adres. Met de knoppen bovenin bel je de klant, " +
-      "stuur je een WhatsApp of start je de navigatie. Onderaan komen de meldingen van deze klus.",
+    intro: "Klantgegevens en adres in beeld.",
+    punten: [
+      "Knoppen bovenin: bellen, WhatsApp, navigeren.",
+      "Wat niet bekend is, zie je niet: geen nummer betekent geen belknop.",
+      "Vanaf hier voeg je een melding toe of ga je opleveren.",
+    ],
     route: "/opdracht/:id",
   },
   {
     bestand: "03-melding-toevoegen.png",
-    titel: "Een melding toevoegen",
-    uitleg:
-      "Loop je tegen een schade of manco aan? Voeg een melding toe. Maak een foto, spreek de melding " +
-      "in met je stem of typ hem. Zet de urgentie op rood of geel zodat het kantoor de ernst ziet.",
+    titel: "Een melding maken",
+    intro: "Schade of manco vastleggen: foto, ingesproken of getypt.",
+    punten: [
+      "Gewone melding: komt in het opleverrapport.",
+      "Spoed: gaat meteen los naar kantoor, buiten de oplevering om, en komt later ook in het rapport.",
+      "Spoed alleen als het echt niet kan wachten.",
+    ],
     route: "/opdracht/:id/melding",
   },
   {
     bestand: "04-opleveren.png",
-    titel: "Opleveren starten",
-    uitleg:
-      "Klaar met de klus? Start het opleveren. Leg de eindstaat vast met foto's (en eventueel video), " +
-      "vul de controle-checklist in en zet je opmerking erbij. De interne notitie komt nooit bij de klant.",
+    titel: "Opleveren",
+    intro: "Eén flow voor een snelle serviceklus en een volledige montage.",
+    punten: [
+      "Leg de eindstaat vast: minstens één foto of video.",
+      "Optioneel: een opmerking en de controle-checklist.",
+      "Interne notitie (geel slotje, dichtgeklapt): alleen voor de zaak, nooit voor de klant.",
+      "Daarna teken je af en verstuur je.",
+    ],
     route: "/opdracht/:id/opleveren",
+    interactie: "interne-notitie",
   },
   {
     bestand: "05-handtekening.png",
     titel: "Handtekening van de klant",
-    uitleg:
-      "Laat de klant tekenen op het scherm. De handtekening komt op het opleverrapport. " +
-      "Geen klant bij de hand? Je kunt deze stap overslaan.",
+    intro: "Laat de klant op het scherm tekenen.",
+    punten: [
+      "De handtekening komt op het rapport.",
+      "Geen klant erbij? Sla deze stap over.",
+    ],
     route: "/opdracht/:id/opleveren",
     interactie: "handtekening-modal",
   },
   {
     bestand: "06-versturen.png",
-    titel: "Versturen naar klant en zaak",
-    uitleg:
-      "Onderaan verstuur je het rapport. De zaak-versie gaat naar het kantoor, de klant-versie " +
-      "(zonder interne notitie) naar de klant als je het mailadres invult. De klus gaat op 'opgeleverd' " +
-      "zodra de zaak-versie verstuurd is.",
+    titel: "Versturen",
+    intro: "Onderaan verstuur je het rapport.",
+    punten: [
+      "Zaak-versie naar kantoor: pas dan staat de klus op 'opgeleverd'.",
+      "Klant-versie is optioneel: vul het mailadres in, de interne notitie gaat niet mee.",
+      "Foto's en meldingen gaan wel mee naar de klant.",
+    ],
     route: "/opdracht/:id/opleveren",
     interactie: "scroll-onder",
   },

@@ -43,7 +43,12 @@ export default async function HandleidingPage() {
               <div className="border-b-2 border-line px-5 py-4">
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink-muted">Stap {i + 1}</p>
                 <h2 className="mt-1 font-mono text-xl font-extrabold tracking-tight text-ink">{stap.titel}</h2>
-                <p className="mt-2 text-sm text-ink">{stap.uitleg}</p>
+                {stap.intro && <p className="mt-2 text-sm text-ink">{stap.intro}</p>}
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
+                  {stap.punten.map((punt) => (
+                    <li key={punt}>{punt}</li>
+                  ))}
+                </ul>
               </div>
               {bestaat ? (
                 // Bewust een gewone <img>: de bestanden staan in /public en worden los gegenereerd,
