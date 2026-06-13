@@ -113,6 +113,7 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
 
   // Rapport naar een leesbaar test-adres (eigen dropdown: open en kies "Anders").
+  await page.getByRole("button", { name: "Naar de zaak" }).click();
   await page.getByRole("button", { name: "Kies een ontvanger" }).click();
   await page.getByRole("option", { name: "Anders (typ zelf)" }).click();
   await page.getByLabel("E-mailadres voor het rapport").fill(RAPPORT_NAAR);

@@ -201,6 +201,7 @@ test.describe("privacy-waarschuwing bij versturen naar de klant", () => {
     const { id } = await seedOplevering({ klant_rapport_email: "klant@voorbeeld.test" });
 
     await page.goto(`/opdracht/${id}/opleveren`);
+    await page.getByRole("button", { name: "Naar de klant" }).click();
     // Klant-adres is voorinvuld; de knop is dus actief.
     await expect(page.getByLabel("E-mailadres van de klant")).toHaveValue("klant@voorbeeld.test");
 
@@ -235,6 +236,7 @@ test.describe("ontvanger-keuze: eigen dropdown in app-stijl", () => {
     // gekozen ontvanger weer overschrijven met het bewaarde (lege) adres.
     await expect(page.getByText("Gezet")).toBeVisible();
 
+    await page.getByRole("button", { name: "Naar de zaak" }).click();
     const knop = page.getByRole("button", { name: "Kies een ontvanger" });
     await expect(knop).toBeVisible();
     await knop.click();
