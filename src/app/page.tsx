@@ -1,9 +1,9 @@
-import { Inbox } from "lucide-react";
 import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkpool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
 import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
+import { WerkpoolOnboarding } from "@/components/WerkpoolOnboarding";
 import { UserMenu } from "@/components/UserMenu";
 import { PrefetchOpdrachten } from "@/components/PrefetchOpdrachten";
 import { vereisRol } from "@/lib/toegang";
@@ -52,15 +52,9 @@ export default async function WerkpoolPage() {
         <OpdrachtAanmaken />
       </div>
 
-      {actief.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center gap-3 rounded-none border border-line bg-surface p-8 text-center">
-          <Inbox size={40} className="text-ink-muted" aria-hidden="true" />
-          <p className="font-semibold text-ink">Geen actieve klussen</p>
-          <p className="text-sm text-ink-muted">
-            Nieuwe klussen en meldingen verschijnen hier.
-          </p>
-        </div>
-      ) : (
+      <WerkpoolOnboarding leeg={actief.length === 0} />
+
+      {actief.length > 0 && (
         <div className="flex flex-col gap-3">
           {actief.map((m) => (
             <OpdrachtCard
