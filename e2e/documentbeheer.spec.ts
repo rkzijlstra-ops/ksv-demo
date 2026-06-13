@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "./test-env";
+import { wachtOpHydratie } from "./hydratie";
 
 /**
  * Documentbeheer op de opdracht-detailpagina (kantoor): een document bijvoegen en weer verwijderen,
@@ -38,6 +39,7 @@ test.afterEach(async () => {
 
 test("kantoor voegt een document bij en verwijdert het weer", async ({ page }) => {
   await page.goto(`/dashboard/opdracht/${opdrachtId}`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de file-input gekoppeld
 
   const naam = `bijlage-${Date.now()}.pdf`;
   await page.locator('input[type="file"]').setInputFiles({

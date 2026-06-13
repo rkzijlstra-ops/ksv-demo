@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR as MONTEUR_ACC } from "./test-env";
 import zlib from "node:zlib";
+import { wachtOpHydratie } from "./hydratie";
 
 /**
  * Monteur-PWA-flows in de browser: een melding maken met een foto (veilig, geen mail). De foto wordt
@@ -85,6 +86,7 @@ test("monteur maakt een melding met een foto, die als kind-rij bij de opdracht k
   // slaagt. Geen app-fout; nog niet doorgrond. Draait lokaal in PowerShell wel. Zie logboek.
   test.skip(!!process.env.CI, "Foto-compressie hangt in headless CI op de melding-pagina; draait lokaal.");
   await page.goto(`/opdracht/${opdrachtId}/melding`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de foto-input gekoppeld
 
   // Foto kiezen (galerij-input) -> compressie + upload naar storage -> thumbnail verschijnt.
   await page.locator('input[type="file"][multiple]').setInputFiles({
@@ -126,6 +128,7 @@ test("monteur maakt een melding met een foto, die als kind-rij bij de opdracht k
 
 test("monteur legt de oplevering vast: eindstaat-foto en handtekening (concept, geen verzending)", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/opleveren`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de foto-input gekoppeld
 
   // Eindstaat-foto: upload -> thumbnail. Dit slaat meteen een concept-oplevering op.
   await page.locator('input[type="file"][multiple]').first().setInputFiles({

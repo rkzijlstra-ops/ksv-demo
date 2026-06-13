@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "./test-env";
 import zlib from "node:zlib";
+import { wachtOpHydratie } from "./hydratie";
 
 /**
  * De oplever-UI van de monteur, zonder te mailen: foto uploaden, handtekening op het canvas zetten en
@@ -84,6 +85,7 @@ async function conceptVan(id: string) {
 
 test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (zonder mailen)", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/opleveren`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de foto-input gekoppeld
 
   // De stappen gaan bewust snel achter elkaar, zonder tussentijds op de database te wachten. Dat
   // oefent de race in de concept-opslag uit: alleen door de saves te serialiseren (OpleverFlow) blijft

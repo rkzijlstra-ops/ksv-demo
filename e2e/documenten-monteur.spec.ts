@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR as MONTEUR_ACC } from "./test-env";
+import { wachtOpHydratie } from "./hydratie";
 
 /**
  * Multi-opdrachtgever: een monteur mag documenten toevoegen aan een klus die hij ZELF heeft
@@ -41,6 +42,7 @@ test.afterEach(async () => {
 
 test("monteur voegt een document toe aan zijn eigen klus", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de file-input gekoppeld
 
   const naam = `gegevens-${Date.now()}.pdf`;
   await page.locator('input[type="file"]').first().setInputFiles({

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Image as ImageIcon, ExternalLink, Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
 import type { Document } from "@/lib/db";
+import { HydratieKlaar } from "@/components/HydratieKlaar";
 
 /**
  * Documentbeheer voor kantoor op de opdracht-detailpagina: de documenten openen, een document
@@ -68,6 +69,7 @@ export function DocumentBeheer({
 
   return (
     <section className="mt-6">
+      <HydratieKlaar />
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
           Documenten ({documenten.length})

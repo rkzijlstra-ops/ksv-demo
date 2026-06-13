@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, APP_URL, MONTEUR as MONTEUR_ACC } from "./test-env";
 import zlib from "node:zlib";
+import { wachtOpHydratie } from "./hydratie";
 
 /**
  * Mail-end-to-end: de monteur levert een opdracht op (foto + handtekening) en VERSTUURT het rapport.
@@ -91,6 +92,7 @@ test.afterEach(async () => {
 test("oplevering versturen mailt het rapport naar het ingestelde adres", async ({ page }) => {
   page.on("dialog", (d) => d.accept()); // eventuele waarschuwing (weinig foto's/geen video) accepteren
   await page.goto(`/opdracht/${opdrachtId}/opleveren`);
+  await wachtOpHydratie(page); // pas na hydratie is de change-handler van de foto-input gekoppeld
 
   await page.locator('input[type="file"][multiple]').first().setInputFiles({
     name: "eindstaat.png",

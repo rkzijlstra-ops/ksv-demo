@@ -6,6 +6,7 @@ import { Camera, Image as ImageIcon, Loader2, X, AlertCircle, CloudOff } from "l
 import { compressImage } from "@/lib/foto-compress";
 import { bewaarFotoBlob } from "@/lib/queue";
 import { useQuota } from "@/lib/use-quota";
+import { HydratieKlaar } from "@/components/HydratieKlaar";
 
 const LOCAL_PREFIX = "local:";
 
@@ -91,6 +92,7 @@ export function FotoMaken({
 
   return (
     <div>
+      <HydratieKlaar />
       {bezig ? (
         <div className="flex min-h-[56px] items-center justify-center gap-2 rounded-none border-2 border-dashed border-line bg-surface px-4 py-3 text-base font-semibold text-ink">
           <Loader2 size={22} className="animate-spin" aria-hidden="true" />
