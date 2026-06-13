@@ -42,6 +42,9 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
     videoUrl: oplevering?.video_url ?? null,
     fotos,
     opmerking,
+    controle: oplevering?.controle ?? [],
+    // Voorvertonen is voor de monteur: toon de interne notitie wel, zodat hij ziet wat de opdrachtgever krijgt.
+    interneNotitie: oplevering?.interne_opmerking?.trim() || null,
     meldingen: meldingen.map((m) => ({
       id: m.id,
       spoed: m.spoed,

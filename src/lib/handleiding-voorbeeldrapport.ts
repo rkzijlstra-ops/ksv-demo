@@ -23,7 +23,14 @@ export function voorbeeldRapportData(
     handtekeningUrl: "/handleiding/voorbeeld/handtekening.svg",
     videoUrl: null,
     fotos,
-    opmerking: null,
+    opmerking: "Keuken compleet gemonteerd en getest, klant tevreden.",
+    controle: [
+      { punt: "Keuken waterpas gesteld en bevestigd", akkoord: true },
+      { punt: "Apparatuur aangesloten en getest", akkoord: true },
+      { punt: "Werkblad en spoelbak afgekit", akkoord: true },
+      { punt: "Lade onder de spoelbak loopt stroef", akkoord: false },
+    ],
+    interneNotitie: "Lade-rail bij de spoelbak vervangen, onderdeel nabestellen. Klant is op de hoogte.",
     meldingen: [
       {
         id: "demo-1",

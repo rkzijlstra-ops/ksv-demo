@@ -1,4 +1,4 @@
-import { CheckCircle2, Video, Play } from "lucide-react";
+import { CheckCircle2, XCircle, Video, Play, Lock } from "lucide-react";
 import { formatDatumKort } from "@/lib/datum";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
@@ -25,6 +25,10 @@ export type RapportWeergaveData = {
   videoUrl: string | null;
   fotos: string[];
   opmerking: string | null;
+  /** Controle-checklist die de klant aftekende (akkoord/niet akkoord per punt). */
+  controle: { punt: string; akkoord: boolean }[];
+  /** Interne notitie: alleen in de versie voor de opdrachtgever, nooit in de klant-versie. */
+  interneNotitie: string | null;
   meldingen: RapportMelding[];
 };
 
@@ -128,6 +132,16 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
         </p>
       )}
 
+      {data.interneNotitie && (
+        <div className="mt-3 border-2 border-urgent-geel bg-urgent-geel/10 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.04em] text-ink">
+            <Lock size={13} strokeWidth={2.5} aria-hidden="true" />
+            Intern: alleen voor de opdrachtgever
+          </p>
+          <p className="mt-1 font-[family-name:var(--font-body)] text-base text-ink">{data.interneNotitie}</p>
+        </div>
+      )}
+
       {data.videoUrl && (
         <a
           href={data.videoUrl}
@@ -160,6 +174,30 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
             className="h-20 w-44 border border-line bg-white object-contain p-1"
           />
         </div>
+      )}
+
+      {/* sectie: Controle bij oplevering (de afgetekende checklist, zoals in de PDF) */}
+      {data.controle.length > 0 && (
+        <>
+          <SectieKop label="Controle bij oplevering" kleur="accent" />
+          <ul className="flex flex-col gap-1.5">
+            {data.controle.map((c, i) => (
+              <li key={i} className="flex items-start gap-2 border border-line bg-white px-3 py-2 text-sm">
+                {c.akkoord ? (
+                  <CheckCircle2 size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+                ) : (
+                  <XCircle size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-urgent-rood" aria-hidden="true" />
+                )}
+                <span className="flex-1 text-ink">{c.punt}</span>
+                {!c.akkoord && (
+                  <span className="shrink-0 text-xs font-extrabold uppercase tracking-[0.04em] text-urgent-rood">
+                    niet akkoord
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {/* sectie: Meldingen */}
