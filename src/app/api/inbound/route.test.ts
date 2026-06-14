@@ -61,7 +61,17 @@ function webhook(attachments: Array<{ id: string; filename: string; content_type
     error: null,
     data: { subject: "Klacht keuken", text: "lade onder de oven is kapot", attachments },
   });
-  const event = { type: "email.received", data: { email_id: "em1", to: [`klus-${TOKEN}@kluslus.nl`] } };
+  // De echte Resend-payload bevat onderwerp/tekst/bijlagen al; nodig voor de terugval als get faalt.
+  const event = {
+    type: "email.received",
+    data: {
+      email_id: "em1",
+      to: [`klus-${TOKEN}@kluslus.nl`],
+      subject: "Klacht keuken",
+      text: "lade onder de oven is kapot",
+      attachments,
+    },
+  };
   return new Request("http://localhost/api/inbound", { method: "POST", body: JSON.stringify(event) });
 }
 
@@ -142,6 +152,18 @@ describe("POST /api/inbound", () => {
     const kop = mockCreateOpdracht.mock.calls[0][0];
     expect(kop.klant_naam).toBe("Klacht keuken");
     expect(kop.werkomschrijving).toBe("lade onder de oven is kapot");
+  });
+
+  it("receiving.get faalt: valt terug op de webhook-payload, klus wordt tóch gemaakt", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockGet.mockResolvedValue({ error: { message: "geen toegang" }, data: null });
+
+    const res = await POST(webhook([])); // geen PDF: voorstel uit onderwerp + mailtekst van de payload
+    expect(res.status).toBe(200);
+    expect(mockCreateOpdracht).toHaveBeenCalledOnce();
+    const kop = mockCreateOpdracht.mock.calls[0][0];
+    expect(kop.klant_naam).toBe("Klacht keuken"); // onderwerp uit de payload
+    expect(kop.werkomschrijving).toBe("lade onder de oven is kapot"); // tekst uit de payload
   });
 
   it("onbekend token: doet niets (200)", async () => {
