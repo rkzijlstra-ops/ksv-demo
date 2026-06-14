@@ -4,6 +4,7 @@ import { MijnGegevensForm } from "@/components/MijnGegevensForm";
 import { vereisRol } from "@/lib/toegang";
 import { dbAdmin } from "@/lib/db";
 import { inboundAdres } from "@/lib/inbound";
+import { KopieerKnop } from "@/components/KopieerKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -60,10 +61,12 @@ export default async function MijnGegevensPage() {
             Stuur een mail van je opdrachtgever (met PDF of foto&apos;s) naar dit adres. De app haalt eruit
             wat bruikbaar is en zet het in je &quot;te verwerken&quot;-bakje, waar je het bevestigt.
           </p>
-          <p className="mt-3 select-all break-all border-2 border-ink bg-surface px-3 py-3 font-mono text-sm font-bold text-ink">
-            {inboundAdresStr}
-          </p>
-          <p className="mt-2 text-xs text-ink-muted">Houd het adres ingedrukt om te kopiëren.</p>
+          <div className="mt-3 flex items-stretch gap-2">
+            <p className="min-w-0 flex-1 select-all break-all border-2 border-ink bg-surface px-3 py-3 font-mono text-sm font-bold text-ink">
+              {inboundAdresStr}
+            </p>
+            <KopieerKnop tekst={inboundAdresStr} />
+          </div>
         </section>
       )}
     </main>

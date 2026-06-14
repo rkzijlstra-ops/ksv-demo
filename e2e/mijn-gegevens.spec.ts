@@ -85,6 +85,12 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
     await expect(page.getByText("BKM", { exact: true })).toHaveCount(0);
   });
 
+  test("inbound-mailadres heeft een kopieer-knop", async ({ page }) => {
+    await page.goto("/mijn-gegevens");
+    await expect(page.getByText("Klussen per mail ontvangen")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Kopieer" })).toBeVisible();
+  });
+
   test("SMS-schakelaars: uit zonder nummer, instelbaar met nummer, keuze blijft bewaard", async ({ page }) => {
     const werkKritiek = page.locator("label", { hasText: "Werk-kritiek" }).getByRole("checkbox");
     const overig = page.locator("label", { hasText: "Herinneringen en overig" }).getByRole("checkbox");

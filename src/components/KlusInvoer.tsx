@@ -12,6 +12,7 @@ import {
   FileText,
   Image as ImageIcon,
   Paperclip,
+  Camera,
 } from "lucide-react";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
 import { useOfflineState } from "@/lib/use-offline-state";
@@ -39,6 +40,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   const router = useRouter();
   const { online } = useOfflineState();
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const bezigRef = useRef(false);
 
   const [open, setOpen] = useState(false);
@@ -214,6 +216,17 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
         onChange={handleFiles}
         disabled={parsing || saving}
       />
+      {/* Aparte camera-invoer: op de telefoon opent dit direct de camera om een papieren order te
+          fotograferen (de app leest 'm uit). Op desktop valt het terug op een afbeelding kiezen. */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={handleFiles}
+        disabled={parsing || saving}
+      />
 
       {!open ? (
         <button
@@ -245,30 +258,40 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
               verplicht, je kunt alles aanpassen.
             </p>
 
-            {/* Order optioneel: zit er een PDF of foto bij, dan vullen we de velden alvast voor. */}
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              disabled={parsing || saving || !online}
-              className="inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {parsing ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                  Document inlezen…
-                </>
-              ) : !online ? (
-                <>
-                  <CloudOff size={18} strokeWidth={2.5} aria-hidden="true" />
-                  Order toevoegen – netwerk nodig
-                </>
-              ) : (
-                <>
+            {/* Order toevoegen: een PDF/foto wordt uitgelezen en vult de velden alvast voor. Op de
+                telefoon kun je ook direct de order fotograferen. */}
+            {parsing ? (
+              <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary">
+                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                Order inlezen…
+              </div>
+            ) : !online ? (
+              <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-ink-muted">
+                <CloudOff size={18} strokeWidth={2.5} aria-hidden="true" />
+                Order toevoegen – netwerk nodig
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={saving}
+                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Camera size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Order fotograferen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={saving}
+                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   <Paperclip size={18} strokeWidth={2.5} aria-hidden="true" />
-                  Order toevoegen (PDF of foto)
-                </>
-              )}
-            </button>
+                  Bestand kiezen
+                </button>
+              </div>
+            )}
 
             {files.length > 0 && (
               <ul className="flex flex-col gap-1">
