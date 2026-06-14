@@ -75,8 +75,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Order toevoegen via "Order fotograferen" (camera op mobiel) + "Bestand kiezen" | E | zelf-invoer.spec (knop zichtbaar) | via CI |
 | Subtiel kopieer-knopje bij het inbound-mailadres (Mijn gegevens) | E | mijn-gegevens.spec (Kopieer-knop zichtbaar) | via CI |
 | Kantoor corrigeert uitgebreide velden op de detailpagina (e-mail/adviseur/leverweek/werk-omschrijving) | U, E | opdrachten/[id]/route.test, verplaatsen-detail.spec | via CI |
+| Inbound gladgetrokken: groeperen op ref, mailtekst → werk-veld, rol-bewust (monteur → /inbox; kantoor → direct dashboard) | U | inbound/route.test | groen |
+| Opdrachtgever (Ed) heeft een inbound-mailadres op Mijn gegevens | E | opdrachtgever.spec | via CI |
 
-**Nog te bouwen (volgende PR's):** botsing-UI bij een bijgevoegde order met afwijkend veld (leunt op echt parsen, daarom live door Rein), `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
+**Nog te bouwen (volgende PR's):** botsing-UI bij een bijgevoegde order met afwijkend veld (leunt op echt parsen, daarom live door Rein), volledige `OpdrachtBewerken` → component-samensmelting (blok 7, lage prio), opruimen `InschietZone` (blok 7). De inbound end-to-end (echte Resend-webhook + parsen) bevestigt Rein live. Zie `PLAN-INVOER-UNIFICATIE-2.md`.
 
 ## Bekende gaten (eerlijk, nog te dekken)
 

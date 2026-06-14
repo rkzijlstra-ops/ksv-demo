@@ -14,8 +14,10 @@ export default async function MijnGegevensPage() {
   const terugHref = isMonteur ? "/" : "/dashboard";
   const terugLabel = isMonteur ? "Werkpool" : "Dashboard";
 
-  // Inbound-adres voor wie zelf klussen kan inschieten (monteur + beheerder). Token lui aanmaken.
-  const magInbound = profiel.rol === "monteur" || profiel.rol === "beheerder";
+  // Inbound-adres voor iedereen die klussen kan binnenkrijgen: monteur (eigen werkpool), en kantoor
+  // (beheerder/opdrachtgever) dat een mail doorstuurt zodat de klus op het dashboard belandt. Token lui aanmaken.
+  const magInbound =
+    profiel.rol === "monteur" || profiel.rol === "beheerder" || profiel.rol === "opdrachtgever";
   const inboundAdresStr = magInbound
     ? inboundAdres(await dbAdmin().ensureInboundToken(profiel.id))
     : null;
@@ -58,8 +60,8 @@ export default async function MijnGegevensPage() {
             Klussen per mail ontvangen
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Stuur een mail van je opdrachtgever (met PDF of foto&apos;s) naar dit adres. De app haalt eruit
-            wat bruikbaar is en zet het in je &quot;te verwerken&quot;-bakje, waar je het bevestigt.
+            Stuur een mail (met PDF of foto&apos;s) van een order of klacht naar dit adres. De app leest
+            eruit wat bruikbaar is en maakt er een klus van, met de mailtekst erbij.
           </p>
           <div className="mt-3 flex items-stretch gap-2">
             <p className="min-w-0 flex-1 select-all break-all border-2 border-ink bg-surface px-3 py-3 font-mono text-sm font-bold text-ink">
