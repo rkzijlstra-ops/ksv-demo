@@ -15,10 +15,13 @@ export function voorbeeldRapportData(
 ): RapportWeergaveData {
   return {
     afzenderKop: "Keukenmontage Jansen",
+    afzenderVoet: "Keukenmontage Jansen  ·  06-12345678  ·  info@keukenmontagejansen.nl",
     opleverdatum,
     klantNaam: "Fam. Jansen",
     klantAdres: "Voorbeeldstraat 1, 2251 Voorschoten",
-    chips: ["Ref DEMO-001", "Keukenstudio Voorschoten"],
+    referentienummer: "DEMO-001",
+    leverweek: "22/2026",
+    keukenzaak: "Keukenstudio Voorschoten",
     ondertekend: true,
     handtekeningUrl: "/handleiding/voorbeeld/handtekening.svg",
     videoUrl: null,

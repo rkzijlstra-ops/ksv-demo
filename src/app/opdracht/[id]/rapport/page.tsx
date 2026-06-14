@@ -26,17 +26,15 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
   const ondertekend = Boolean(oplevering?.handtekening_url);
   const opmerking = oplevering?.opmerking?.trim() || null;
 
-  const chips: string[] = [];
-  if (opdracht.referentienummer) chips.push(`Ref ${opdracht.referentienummer}`);
-  if (opdracht.leverweek) chips.push(`Leverweek ${opdracht.leverweek}`);
-  if (opdracht.keukenzaak) chips.push(opdracht.keukenzaak);
-
   const data: RapportWeergaveData = {
     afzenderKop: afzender.kop,
+    afzenderVoet: afzender.voet,
     opleverdatum,
     klantNaam: opdracht.klant_naam ?? "Onbekende klant",
     klantAdres: opdracht.klant_adres ?? null,
-    chips,
+    referentienummer: opdracht.referentienummer ?? null,
+    leverweek: opdracht.leverweek ?? null,
+    keukenzaak: opdracht.keukenzaak ?? null,
     ondertekend,
     handtekeningUrl: oplevering?.handtekening_url ?? null,
     videoUrl: oplevering?.video_url ?? null,
