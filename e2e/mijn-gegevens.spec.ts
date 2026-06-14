@@ -80,7 +80,8 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
     await db.markeerOpgeleverd(opdrachtId, "https://storage.example/afz.pdf");
 
     await page.goto(`/opdracht/${opdrachtId}/rapport`);
-    await expect(page.getByText("Testmontage VOF")).toBeVisible();
+    // De bedrijfsnaam staat zowel in de kop als in de voetregel; eerste volstaat.
+    await expect(page.getByText("Testmontage VOF").first()).toBeVisible();
     await expect(page.getByText("BKM", { exact: true })).toHaveCount(0);
   });
 
