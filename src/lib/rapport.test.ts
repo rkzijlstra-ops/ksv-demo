@@ -105,6 +105,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     verzonden_toegewezen_aan: null,
     opdrachtgever_id: null,
     te_verwerken: false,
+    werkomschrijving: null,
     ...over,
   };
 }

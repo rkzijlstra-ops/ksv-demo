@@ -16,6 +16,7 @@ import {
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { HydratieKlaar } from "@/components/HydratieKlaar";
+import { SpraakOpname } from "@/components/SpraakOpname";
 import type { ParsedPdf } from "@/lib/parser-schema";
 
 type Status = "idle" | "parsing" | "saving" | "success" | "error";
@@ -50,6 +51,7 @@ export function OpdrachtAanmaken() {
   const [telefoon, setTelefoon] = useState("");
   const [email, setEmail] = useState("");
   const [keukenzaak, setKeukenzaak] = useState("");
+  const [werkomschrijving, setWerkomschrijving] = useState("");
   const [datum, setDatum] = useState("");
   const [tijd, setTijd] = useState("");
   // Parser-passthrough: niet getoond maar wel meegestuurd, zodat niets verloren gaat.
@@ -70,6 +72,7 @@ export function OpdrachtAanmaken() {
     setTelefoon("");
     setEmail("");
     setKeukenzaak("");
+    setWerkomschrijving("");
     setDatum("");
     setTijd("");
     setDocumenttype("");
@@ -143,7 +146,8 @@ export function OpdrachtAanmaken() {
     e.preventDefault();
     if (bezigRef.current) return;
     const heeftIets =
-      Boolean(naam || adres || ref || telefoon || email || keukenzaak || datum) || files.length > 0;
+      Boolean(naam || adres || ref || telefoon || email || keukenzaak || werkomschrijving || datum) ||
+      files.length > 0;
     if (!heeftIets) {
       setStatus("error");
       setMessage("Voeg een document toe of vul minstens één veld in.");
@@ -161,6 +165,7 @@ export function OpdrachtAanmaken() {
       fd.append("klant_telefoon", telefoon);
       fd.append("klant_email", email);
       fd.append("keukenzaak", keukenzaak);
+      fd.append("werkomschrijving", werkomschrijving);
       fd.append("startdatum", datum);
       fd.append("starttijd", tijd);
       if (documenttype) fd.append("documenttype", documenttype);
@@ -328,6 +333,23 @@ export function OpdrachtAanmaken() {
               Keukenzaak / opdrachtgever
               <input value={keukenzaak} onChange={(e) => setKeukenzaak(e.target.value)} className={veldKlasse} placeholder="Bijv. Keukenstudio Voorschoten" />
             </label>
+
+            <div className={labelKlasse}>
+              Wat moet er gebeuren?
+              <textarea
+                value={werkomschrijving}
+                onChange={(e) => setWerkomschrijving(e.target.value)}
+                rows={3}
+                placeholder="Bijv. kasten nastellen. Typ of spreek in."
+                className="min-h-[72px] w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent"
+              />
+              <span className="mt-1 block text-xs font-normal text-ink-muted">
+                Alleen voor jezelf, komt niet in het opleverrapport.
+              </span>
+              <div className="mt-1">
+                <SpraakOpname onTekst={(t) => setWerkomschrijving((prev) => (prev ? `${prev} ${t}` : t))} />
+              </div>
+            </div>
 
             <button
               type="submit"

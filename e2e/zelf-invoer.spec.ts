@@ -29,3 +29,36 @@ test("monteur voegt zelf een klus toe met datum, die in de werkpool verschijnt",
     await admin.from("meldingen").delete().eq("klant_naam", naam);
   }
 });
+
+/**
+ * De monteur voegt een werk-omschrijving toe bij zelf-invoer ("kasten nastellen"), ziet die terug op de
+ * detailpagina en past hem daar aan. Puur intern veld; controleert tonen + bewerken-tegenhanger.
+ */
+test("werk-omschrijving: invoeren, tonen op detail en bewerken", async ({ page }) => {
+  const naam = `WERKOMS ${Date.now()}`;
+  try {
+    await page.goto("/");
+    await wachtOpHydratie(page);
+
+    await page.getByRole("button", { name: "Klus toevoegen" }).click();
+    await page.getByLabel("Klantnaam").fill(naam);
+    await page.getByPlaceholder("Bijv. kasten nastellen").fill("kasten nastellen");
+    await page.getByRole("button", { name: "Klus opslaan" }).click();
+
+    // Open de klus vanuit de werkpool.
+    await page.getByText(naam).click();
+    await expect(page).toHaveURL(/\/opdracht\//);
+
+    // De werk-omschrijving staat op de detailpagina.
+    await expect(page.getByText("kasten nastellen")).toBeVisible({ timeout: 15_000 });
+
+    // Bewerken: tekst aanpassen en opslaan.
+    await page.getByRole("button", { name: "Bewerken" }).first().click();
+    await page.getByPlaceholder("Bijv. kasten nastellen").fill("kasten nastellen en lade repareren");
+    await page.getByRole("button", { name: "Opslaan" }).click();
+
+    await expect(page.getByText("kasten nastellen en lade repareren")).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await admin.from("meldingen").delete().eq("klant_naam", naam);
+  }
+});

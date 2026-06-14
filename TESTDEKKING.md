@@ -2,7 +2,7 @@
 
 Per feature/flow welke testlagen en welk(e) testbestand(en) hem dekken. Werk dit bij in dezelfde
 commit als elke nieuwe feature of wijziging (afrond-check uit de skill projectstart-discipline).
-Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-11.
+Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-14.
 
 Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = browser-e2e (Playwright),
 **M** = e2e-mail (echt versturen achter `E2E_MAIL=1`).
@@ -44,6 +44,8 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Werkpool-zichtbaarheid bij kantoor-statuswijziging (geannuleerd/concept verborgen, afspraak + monteur vasthouden) | U, E | werkpool.test, opdracht-status.test, werkpool-zichtbaarheid.spec | groen |
 | Bevestigen op de detailpagina | E | bevestigen.spec | groen |
 | Bevestigen vanaf de werkpool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
+| Zelf-invoer klus (gecombineerd: PDF voorvullen + handmatig, niets verplicht) | U, E | opdrachten/route.test, zelf-invoer.spec | groen |
+| Werk-omschrijving (typen + spraak): invoeren, tonen op detail, bewerken (eigen klus + kantoor), puur intern (niet in rapport) | U, E | db.test (createOpdracht/updateWerkomschrijving), opdrachten/route.test, opdrachten/[id]/werkomschrijving/route.test, zelf-invoer.spec | groen (E door Rein) |
 | Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |
 | Oplevering: foto-upload + handtekening-canvas + opmerking als concept (saves geserialiseerd) | U, E | rapport.test, opleveren.spec | groen |
 | Controle-checklist bij oplevering (akkoord/niet akkoord, opgeslagen met tekst, in rapport boven de handtekening) | U, E | oplevering/route.test (controle door + ongemoeid), rapport.test (controle render), opleveren.spec (Akkoord aanvinken → in concept) | groen (E draait Rein mee) |

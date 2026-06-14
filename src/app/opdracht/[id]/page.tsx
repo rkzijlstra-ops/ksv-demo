@@ -26,6 +26,7 @@ import { WhatsAppKnop } from "@/components/WhatsAppKnop";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
 import { BevestigOntvangstKnop } from "@/components/BevestigOntvangstKnop";
+import { WerkomschrijvingBlok } from "@/components/WerkomschrijvingBlok";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,8 @@ export default async function OpdrachtDetailPage({
           )}
         </div>
       )}
+
+      <WerkomschrijvingBlok opdrachtId={id} initieel={opdracht.werkomschrijving} />
 
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between gap-2">

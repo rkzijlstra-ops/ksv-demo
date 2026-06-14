@@ -300,9 +300,44 @@ describe("createOpdracht", () => {
     expect(payload.keukenzaak).toBeNull();
   });
 
+  it("neemt werkomschrijving mee als die is meegegeven", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht({ ...basisInput, werkomschrijving: "kasten nastellen" });
+    expect(h.fns.insert.mock.calls[0][0].werkomschrijving).toBe("kasten nastellen");
+  });
+
+  it("zet werkomschrijving op null als niet meegegeven", async () => {
+    h.setResult({ data: { id: "opdr-1" }, error: null });
+    await createDb(cfg).createOpdracht(basisInput);
+    expect(h.fns.insert.mock.calls[0][0].werkomschrijving).toBeNull();
+  });
+
   it("gooit Error bij insert-fout", async () => {
     h.setResult({ data: null, error: { message: "permission denied" } });
     await expect(createDb(cfg).createOpdracht(basisInput)).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("updateWerkomschrijving", () => {
+  it("update de werkomschrijving op de juiste id", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateWerkomschrijving("opdr-1", "kasten nastellen");
+    expect(h.fns.from).toHaveBeenCalledWith("meldingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "opdr-1");
+    expect(h.fns.update.mock.calls[0][0]).toEqual({ werkomschrijving: "kasten nastellen" });
+  });
+
+  it("zet de werkomschrijving op null bij leeg", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).updateWerkomschrijving("opdr-1", null);
+    expect(h.fns.update.mock.calls[0][0]).toEqual({ werkomschrijving: null });
+  });
+
+  it("gooit Error bij update-fout", async () => {
+    h.setResult({ data: null, error: { message: "permission denied" } });
+    await expect(createDb(cfg).updateWerkomschrijving("opdr-1", "x")).rejects.toThrow(
+      /permission denied/,
+    );
   });
 });
 

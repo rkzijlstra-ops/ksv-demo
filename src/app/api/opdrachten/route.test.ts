@@ -114,6 +114,22 @@ describe("POST /api/opdrachten", () => {
     expect(body.documenten).toEqual([]);
   });
 
+  it("werkomschrijving wordt meegegeven aan createOpdracht", async () => {
+    const res = await POST(
+      multipart([], { klant_naam: "Mevrouw Veering", werkomschrijving: "kasten nastellen" }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockCreateOpdracht.mock.calls[0][0].werkomschrijving).toBe("kasten nastellen");
+  });
+
+  it("alleen een werkomschrijving (geen files, geen klantvelden) telt als ingevuld: 200", async () => {
+    const res = await POST(multipart([], { werkomschrijving: "kasten nastellen" }));
+    expect(res.status).toBe(200);
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.documenttype).toBe("tekst");
+    expect(arg.werkomschrijving).toBe("kasten nastellen");
+  });
+
   it("alleen een afbeelding (geen PDF): opdracht 'onbekend', parser niet aangeroepen", async () => {
     const res = await POST(multipart([pngFile()]));
     const body = await res.json();

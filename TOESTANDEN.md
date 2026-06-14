@@ -38,6 +38,13 @@ bericht aan de oude monteur bij een wissel; zie 07_logboek/2026-06-10_mail-sms-k
 
 Legenda: ✓ klopt en/of getest · ⚠️ aandachtspunt/ontwerpvraag · ❌ gat
 
+### Werk-omschrijving (sub-attribuut, geen statusovergang)
+De werk-omschrijving ("wat moet er gebeuren", typen/spraak) is een vrij-tekstveld op de opdracht, geen
+status. Levenscyclus: aanmaken (zelf-invoer) → tonen (detailpagina) → wijzigen (inline op detail, eigen
+klus + kantoor) → leeg. Puur intern, komt bewust NIET in het opleverrapport (zie
+BRAINSTORM-INVOER-UNIFICATIE.md voor de afweging). Volledige toestandsmatrix daarvan staat in dat
+brainstorm-document. Gedekt: db.test, opdrachten/route.test, werkomschrijving/route.test, zelf-invoer.spec.
+
 ## Gaten (status)
 
 1. **✅ OPGELOST. Wijziging na versturen (datum), monteur-kant.** De monteur houdt de afgesproken

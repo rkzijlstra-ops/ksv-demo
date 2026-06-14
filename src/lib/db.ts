@@ -94,6 +94,9 @@ export interface Melding {
   opdrachtgever_id: string | null;
   // blok 18 (inbound): per mail binnengekomen voorstel dat nog NIET in de werkpool staat tot bevestigd
   te_verwerken: boolean;
+  // werk-omschrijving: vrij-tekst "wat moet er gebeuren" voor een zelf-aangemaakte klus. Puur intern
+  // (komt niet in het opleverrapport), als geheugensteun voor de monteur.
+  werkomschrijving: string | null;
 }
 
 /** Eén rij uit de opleveringen-tabel (één per opdracht). */
@@ -220,6 +223,8 @@ export interface OpdrachtInput {
   toegewezen_aan?: string | null;
   /** Kantoor-zaak waar de opdracht bij hoort; null = ad-hoc (zelf ingeschoten, geen kantoor). */
   opdrachtgever_id?: string | null;
+  /** Vrij-tekst "wat moet er gebeuren" (typen/spraak); puur intern, niet in het rapport. */
+  werkomschrijving?: string | null;
 }
 
 /** Corrigeerbare kop-gegevens van een opdracht (parser-fouten herstellen na inschieten). */
@@ -335,6 +340,7 @@ export interface Db {
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
   /** Corrigeert de kop-gegevens van een opdracht (klant, adres, referentie, keukenzaak, type). */
   updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput): Promise<void>;
+  updateWerkomschrijving(id: string, tekst: string | null): Promise<void>;
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   getDocumentById(id: string): Promise<Document | null>;
@@ -470,6 +476,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           toegewezen_aan: input.toegewezen_aan ?? null,
           opdrachtgever_id: input.opdrachtgever_id ?? null,
           te_verwerken: input.te_verwerken ?? false,
+          werkomschrijving: input.werkomschrijving ?? null,
         })
         .select("id")
         .single();
@@ -491,6 +498,14 @@ function createDbFromClient(client: SupabaseClient): Db {
           keukenzaak: input.keukenzaak,
           documenttype: input.documenttype,
         })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
+    },
+
+    async updateWerkomschrijving(id: string, tekst: string | null) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ werkomschrijving: tekst })
         .eq("id", id);
       if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },

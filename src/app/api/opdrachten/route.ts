@@ -67,6 +67,7 @@ export async function POST(req: Request) {
     startdatum: strVeld(formData, "startdatum"),
     starttijd: strVeld(formData, "starttijd"),
     keukenzaak: strVeld(formData, "keukenzaak"),
+    werkomschrijving: strVeld(formData, "werkomschrijving"),
   };
   const heeftVeld = Object.values(velden).some(Boolean);
 
@@ -110,6 +111,7 @@ export async function POST(req: Request) {
       startdatum: velden.startdatum,
       starttijd: velden.starttijd,
       keukenzaak: velden.keukenzaak,
+      werkomschrijving: velden.werkomschrijving,
       meldingen,
       user_id: userId,
       // Zelf inschieten = de klus is meteen van jou (verschijnt in je werkpool).
