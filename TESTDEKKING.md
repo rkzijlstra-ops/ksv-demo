@@ -58,6 +58,20 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
+## Invoer-unificatie Part 2 (backend-fundament, blok 0/1/3.3/6)
+
+| Feature / flow | Lagen | Testbestand(en) | Status |
+|---|---|---|---|
+| Parser leest order uit PDF **én** foto (Claude vision; mediaType-bewust) | U | claude-client.test (buildOrderContent + image-block), opdrachten/route.test (foto = order-foto, 200) | groen |
+| Samenvoegen geparste order met bestaand blok (vul leeg, met rust bij gelijk, botsing bij verschil, nooit stil overschrijven) | U | order-samenvoegen.test | groen |
+| Andere-referentie-waarschuwing (bijgevoegde PDF hoort bij andere keuken) | U | order-samenvoegen.test | groen |
+| Rol-bewuste invoer-bestemming (monteur → eigen werkpool; kantoor → zaak/te plannen) | U | invoer-bestemming.test | groen |
+| Kantoor-correctie uitgebreide velden (e-mail/adviseur/leverweek/werkomschrijving), alleen als meegestuurd | U | opdrachten/[id]/route.test | groen |
+| Gat A: gegevens wijzigen ná versturen zet "gewijzigd, opnieuw versturen"-markering | U | opdrachten/[id]/route.test (gepland=markeren, binnen=niet) | groen |
+| Gat B: opgeleverde/geannuleerde klus niet meer bewerkbaar (409) | U | opdrachten/[id]/route.test | groen |
+
+**Nog te bouwen (UI + wiring, e2e door Rein):** het gedeelde `KlusInvoer`-component (twee staten leeg/gevuld, order-zone, botsing-UI, subtiel kopieer-knopje), dashboard "Nieuwe klus", `OpdrachtBewerken` → component, inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), monteur-wiring, opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3/4/5/7.
+
 ## Bekende gaten (eerlijk, nog te dekken)
 
 - **E2e voor de nieuwe verzend-flow (klant/zaak) staat nog open.** De backend is unit-gedekt

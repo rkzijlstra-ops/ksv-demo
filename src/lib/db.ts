@@ -235,6 +235,11 @@ export interface OpdrachtGegevensInput {
   referentienummer: string | null;
   keukenzaak: string | null;
   documenttype: "orderbevestiging" | "werkbon_service" | "tekst" | "onbekend";
+  // uitgebreide kop-velden (invoer-unificatie part 2): kantoor kan nu alles corrigeren
+  klant_email?: string | null;
+  adviseur?: string | null;
+  leverweek?: string | null;
+  werkomschrijving?: string | null;
 }
 
 export interface DocumentInput {
@@ -339,7 +344,11 @@ export interface Db {
   insertPdfMelding(data: ParsedPdf): Promise<{ id: string }>;
   createOpdracht(input: OpdrachtInput): Promise<{ id: string }>;
   /** Corrigeert de kop-gegevens van een opdracht (klant, adres, referentie, keukenzaak, type). */
-  updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput): Promise<void>;
+  updateOpdrachtGegevens(
+    id: string,
+    input: OpdrachtGegevensInput,
+    opts?: { markeerGewijzigd?: boolean },
+  ): Promise<void>;
   updateWerkomschrijving(id: string, tekst: string | null): Promise<void>;
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
@@ -487,18 +496,29 @@ function createDbFromClient(client: SupabaseClient): Db {
       return { id: row.id };
     },
 
-    async updateOpdrachtGegevens(id: string, input: OpdrachtGegevensInput) {
-      const { error } = await client
-        .from("meldingen")
-        .update({
-          klant_naam: input.klant_naam,
-          klant_adres: input.klant_adres,
-          klant_telefoon: input.klant_telefoon,
-          referentienummer: input.referentienummer,
-          keukenzaak: input.keukenzaak,
-          documenttype: input.documenttype,
-        })
-        .eq("id", id);
+    async updateOpdrachtGegevens(
+      id: string,
+      input: OpdrachtGegevensInput,
+      opts?: { markeerGewijzigd?: boolean },
+    ) {
+      // Alleen de meegegeven (gedefinieerde) velden bijwerken; uitgebreide velden zijn optioneel.
+      const patch: Record<string, unknown> = {
+        klant_naam: input.klant_naam,
+        klant_adres: input.klant_adres,
+        klant_telefoon: input.klant_telefoon,
+        referentienummer: input.referentienummer,
+        keukenzaak: input.keukenzaak,
+        documenttype: input.documenttype,
+      };
+      if (input.klant_email !== undefined) patch.klant_email = input.klant_email;
+      if (input.adviseur !== undefined) patch.adviseur = input.adviseur;
+      if (input.leverweek !== undefined) patch.leverweek = input.leverweek;
+      if (input.werkomschrijving !== undefined) patch.werkomschrijving = input.werkomschrijving;
+      // Gat A: wijziging ná versturen markeren zodat kantoor opnieuw moet sturen en de monteur niet
+      // stil verouderde gegevens ziet (zelfde mechaniek als een planning-wijziging).
+      if (opts?.markeerGewijzigd) patch.gewijzigd_te_versturen = true;
+
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parsePdfWithClaude } from "@/lib/claude-client";
+import { parseOrderWithClaude } from "@/lib/claude-client";
 import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
 import type { MeldingItem } from "@/lib/parser-schema";
@@ -42,12 +42,17 @@ export async function POST(req: Request) {
   // --- Alleen lezen: parse de eerste PDF en geef de velden terug, maak NIETS aan en sla niks op. ---
   // Voor de zelf-invoer: het formulier laat zo de gevonden gegevens zien om te bevestigen of aan te vullen.
   if (strVeld(formData, "actie") === "parse") {
-    const pdf = files.find((f) => f.type === "application/pdf");
-    if (!pdf) {
-      return NextResponse.json({ error: "Geen PDF om te lezen" }, { status: 400 });
+    const orderFile =
+      files.find((f) => f.type === "application/pdf") ??
+      files.find((f) => f.type.startsWith("image/"));
+    if (!orderFile) {
+      return NextResponse.json({ error: "Geen PDF of foto om te lezen" }, { status: 400 });
     }
     try {
-      const parsed = await parsePdfWithClaude(Buffer.from(await pdf.arrayBuffer()));
+      const parsed = await parseOrderWithClaude(
+        Buffer.from(await orderFile.arrayBuffer()),
+        orderFile.type,
+      );
       return NextResponse.json({ parsed }, { status: 200 });
     } catch (err) {
       // Parser faalt: geen blokkade. De gebruiker vult zelf in; het document blijft hij straks toevoegen.
@@ -118,8 +123,11 @@ export async function POST(req: Request) {
       toegewezen_aan: userId,
     };
   } else {
-    // Geen velden, wel document(en): de eerste PDF wordt uitgelezen (snelle inschiet zonder review).
-    const primair = files.find((f) => f.type === "application/pdf") ?? null;
+    // Geen velden, wel document(en): de eerste PDF of foto wordt uitgelezen (snelle inschiet zonder review).
+    const orderFile =
+      files.find((f) => f.type === "application/pdf") ??
+      files.find((f) => f.type.startsWith("image/")) ??
+      null;
     kop = {
       documenttype: "onbekend",
       klant_naam: null,
@@ -132,9 +140,12 @@ export async function POST(req: Request) {
       user_id: userId,
       toegewezen_aan: userId,
     };
-    if (primair) {
+    if (orderFile) {
       try {
-        const parsed = await parsePdfWithClaude(Buffer.from(await primair.arrayBuffer()));
+        const parsed = await parseOrderWithClaude(
+          Buffer.from(await orderFile.arrayBuffer()),
+          orderFile.type,
+        );
         kop = {
           documenttype: parsed.documenttype,
           klant_naam: parsed.klant_naam,

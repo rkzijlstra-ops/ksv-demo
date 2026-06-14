@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Klus-invoerblok, twee staten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&family=Source+Sans+3:wght@400;600;700&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --groen:#16a34a; --blauw:#1d4ed8;
+    --sans:'Lexend',system-ui,sans-serif; --body:'Source Sans 3',system-ui,sans-serif;
+    --mono:'Spline Sans Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);font-family:var(--body);line-height:1.45}
+  h1,h2,h3,.sans{font-family:var(--sans)}
+  .stempel{font-family:var(--mono);text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--muted);font-weight:500}
+  .wrap{max-width:640px;margin:0 auto;padding:24px 16px 80px}
+  .uitleg{border:2px solid var(--ink);background:var(--surface);padding:18px 20px;margin-bottom:32px}
+  .uitleg h1{margin:.1em 0 .3em;font-size:24px;font-weight:800}
+  .uitleg p{margin:.3em 0;color:var(--muted)}
+  .uitleg b{color:var(--ink)}
+  .variant{margin:0 0 48px}
+  .vkop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .vkop h2{font-size:20px;font-weight:800;margin:0}
+  .vnr{font-family:var(--mono);font-weight:700;background:var(--primary);color:#fff;padding:2px 10px;text-transform:uppercase;font-size:12px;letter-spacing:.08em}
+  .vpro{color:var(--muted);font-size:14px;margin:0 0 16px}
+
+  .blok{border:2px solid var(--ink);background:#fff}
+  .strip{border-left:6px solid var(--accent)}
+  .strip-grijs{border-left:6px solid var(--line)}
+  .kop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:2px solid var(--ink)}
+  .kop .titel{font-family:var(--sans);font-weight:800;font-size:18px}
+  .badge{font-family:var(--mono);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:4px 9px;border:2px solid var(--accent);color:#9a3412;background:#fff7ed;white-space:nowrap}
+  .badge.nieuw{border-color:var(--line);color:var(--muted);background:var(--surface)}
+  .body{padding:18px}
+  .veld{margin-bottom:14px}
+  .veld label{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;font-weight:500}
+  .inp{width:100%;border:2px solid var(--ink);background:#fff;padding:9px 11px;font-family:var(--body);font-size:15px;color:var(--ink)}
+  .inp.leeg{color:#94a3b8}
+  .inp.mono{font-family:var(--mono);font-weight:700}
+  textarea.inp{resize:vertical;min-height:78px}
+  .rij{display:flex;gap:12px}
+  .rij>.veld{flex:1}
+  .werk{position:relative}
+  .mic{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border:2px solid var(--ink);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .mic svg{width:18px;height:18px}
+
+  /* sleep-zones: groot (leeg) vs strook (gevuld) */
+  .sleep-hero{border:2px dashed var(--ink);background:var(--surface);padding:34px 18px;text-align:center;margin-bottom:18px}
+  .sleep-hero .ico{font-size:30px}
+  .sleep-hero .t1{font-size:16px;font-weight:700;margin-top:6px;font-family:var(--sans)}
+  .sleep-hero .t2{color:var(--muted);margin-top:3px;font-size:14px}
+  .sleep-strook{border:2px dashed var(--line);background:var(--surface);padding:9px 12px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px}
+  .sleep-strook b{color:var(--ink)}
+  .mail-hint{border:2px solid var(--line);background:#fff;padding:10px 12px;font-size:13px;color:var(--muted);margin-bottom:18px}
+  .mail-hint b{color:var(--ink);font-family:var(--mono);font-weight:700}
+  .adres-rij{display:flex;align-items:stretch;gap:0;margin-top:8px;border:2px solid var(--ink)}
+  .adres-rij .adres{flex:1;padding:8px 10px;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--ink);background:var(--surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center}
+  .adres-rij .kopieer{border:0;border-left:2px solid var(--ink);background:var(--accent);color:var(--ink);font-family:var(--sans);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:0 12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+
+  .docs{border:2px solid var(--line);background:var(--surface);padding:10px;margin-bottom:14px}
+  .doc{display:flex;align-items:center;gap:8px;font-size:14px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .doc:last-child{border-bottom:0}
+  .doc .x{margin-left:auto;color:var(--rood);font-weight:700;cursor:pointer}
+  .meer-bar{display:flex;align-items:center;gap:8px;width:100%;border:2px solid var(--line);background:#fff;padding:10px 12px;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;font-weight:500}
+  .meer-bar .chev{margin-left:auto}
+  .acts{display:flex;gap:10px;flex-wrap:wrap;padding:16px 18px;border-top:2px solid var(--ink);background:var(--surface)}
+  .btn{font-family:var(--sans);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px;padding:11px 16px;border:2px solid var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-acc{background:var(--accent);color:var(--ink)}
+  .btn-ghost{background:#fff;color:var(--ink)}
+  .btn-dang{background:#fff;color:var(--rood);border-color:var(--rood)}
+  .spacer{flex:1}
+
+  /* botsing-veld */
+  .botsing{border:2px solid var(--accent);background:#fff7ed;padding:8px 10px}
+  .botsing .kopje{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#9a3412;font-family:var(--sans);margin-bottom:7px}
+  .keuzes{display:flex;gap:8px;flex-wrap:wrap}
+  .keuze{border:2px solid var(--line);background:#fff;padding:6px 10px;font-size:13px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+  .keuze.gekozen{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  .keuze .bron{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .keuze .waarde{font-weight:600}
+
+  .ref-warn{display:flex;gap:8px;align-items:flex-start;border:2px solid var(--rood);background:#fef2f2;color:#991b1b;padding:9px 11px;font-size:13px;margin-bottom:16px}
+  .ref-warn b{color:#991b1b}
+  .note{font-size:13px;color:var(--muted);margin-top:12px;border-left:3px solid var(--accent);padding-left:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="uitleg">
+    <p class="stempel">Mock-up / invoer-unificatie part 2</p>
+    <h1>Het klus-invoerblok, twee staten</h1>
+    <p>Eén component dat van staat wisselt: <b>leeg</b> (sleep/typ-zone groot, uitnodigend) en <b>gevuld</b> (velden voorop, zone klein). Onderaan: hoe een <b>tegenstrijdig veld</b> eruitziet als je een PDF erbij sleept.</p>
+    <p style="margin-top:8px"><b>Let op:</b> statisch, niets werkt. Puur om de indeling en het gedrag te zien.</p>
+  </div>
+
+  <!-- ============ STAAT A: LEEG / NIEUW ============ -->
+  <section class="variant">
+    <div class="vkop"><span class="vnr">Staat A</span><h2>Leeg — Ed begint zelf, niets gemaild</h2></div>
+    <p class="vpro">Sleep/typ-zone groot bovenaan met uitleg-tekst: meteen duidelijk wat kan. Velden eronder nog leeg.</p>
+    <div class="blok strip-grijs">
+      <div class="kop">
+        <div>
+          <p class="stempel">Nieuwe klus</p>
+          <div class="titel" style="color:#94a3b8">Nog geen klant</div>
+        </div>
+        <span class="badge nieuw">Nieuw</span>
+      </div>
+      <div class="body">
+        <div class="sleep-hero">
+          <div class="ico">📄⬇</div>
+          <div class="t1">Sleep PDF('s) of foto's hierheen</div>
+          <div class="t2">de app leest ze uit en vult de velden — of begin gewoon hieronder te typen</div>
+        </div>
+        <div class="mail-hint">📧 Of stuur een mail (met PDF) naar dit adres — dan verschijnt de klus vanzelf in je lijst, met de mailtekst al ingevuld.
+          <div class="adres-rij"><span class="adres">klus-a1b2c3@klus.kluslus.nl</span><button class="kopieer">📋 Kopieer</button></div>
+        </div>
+        <div class="rij">
+          <div class="veld"><label>Referentie</label><input class="inp mono leeg" placeholder="bijv. KSV-2026-…" /></div>
+          <div class="veld"><label>Telefoon</label><input class="inp leeg" placeholder="06-…" /></div>
+        </div>
+        <div class="veld"><label>Klant</label><input class="inp leeg" placeholder="naam klant" /></div>
+        <div class="veld"><label>Adres</label><input class="inp leeg" placeholder="straat, plaats" /></div>
+        <div class="veld werk">
+          <label>Wat moet er gebeuren?</label>
+          <textarea class="inp leeg" placeholder="bijv. kasten nastellen, lade vervangen…"></textarea>
+          <div class="mic" title="Inspreken"><svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div>
+        </div>
+        <button class="meer-bar">Meer velden (e-mail, adviseur, leverweek, type) <span class="chev">▸</span></button>
+      </div>
+      <div class="acts">
+        <button class="btn btn-acc">Opslaan</button>
+        <button class="btn btn-ghost">Opslaan & inplannen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STAAT B: GEVULD (mail binnen) + botsing ============ -->
+  <section class="variant">
+    <div class="vkop"><span class="vnr">Staat B</span><h2>Gevuld — mail binnengekomen, met een PDF erbij gesleept</h2></div>
+    <p class="vpro">Velden al ingevuld uit de mail, sleep-zone gekrompen tot rustige strook. De bijgesleepte PDF had een ander adres: het veld vraagt jou te kiezen, overschrijft niks.</p>
+    <div class="blok strip">
+      <div class="kop">
+        <div>
+          <p class="stempel">Binnengekomen per mail</p>
+          <div class="titel">Fam. De Bruijn</div>
+        </div>
+        <span class="badge">Te verwerken</span>
+      </div>
+      <div class="body">
+        <div class="ref-warn">⚠ <div>De zojuist gesleepte PDF hoort bij <b>KSV-2026-0492</b>, niet bij deze klus (0481). Zeker bij deze klus voegen?</div></div>
+        <div class="veld"><label>Referentie</label><input class="inp mono" value="KSV-2026-0481" /></div>
+        <div class="veld"><label>Klant</label><input class="inp" value="Fam. De Bruijn" /></div>
+
+        <!-- botsing op adres -->
+        <div class="veld">
+          <label>Adres</label>
+          <div class="botsing">
+            <div class="kopje">⚠ Verschilt — kies welke je houdt</div>
+            <div class="keuzes">
+              <div class="keuze gekozen"><span class="bron">Uit de mail</span><span class="waarde">Dorpsstraat 14, Noordwijkerhout</span></div>
+              <div class="keuze"><span class="bron">Uit de PDF</span><span class="waarde">Kerkstraat 9, Noordwijkerhout</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="veld"><label>Telefoon</label><input class="inp" value="06-1234 5678" /></div>
+        <div class="veld werk">
+          <label>Wat moet er gebeuren? (uit de mail)</label>
+          <textarea class="inp">Klant belt: lade onder de oven sluit niet goed en plint links is los na de montage vorige week. Graag opvolgen.</textarea>
+          <div class="mic" title="Inspreken"><svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div>
+        </div>
+        <div class="docs">
+          <p class="stempel" style="margin:0 0 6px">Documenten</p>
+          <div class="doc">📄 klacht-mail.pdf <span class="x">×</span></div>
+          <div class="doc">🖼 foto_lade.jpg <span class="x">×</span></div>
+          <div class="doc">📄 order_0492.pdf <span class="x">×</span></div>
+        </div>
+        <div class="sleep-strook">Nog een PDF/foto erbij? <b>Sleep hierheen of kies bestand</b></div>
+        <button class="meer-bar">Meer velden (e-mail, adviseur, leverweek, type) <span class="chev">▸</span></button>
+      </div>
+      <div class="acts">
+        <button class="btn btn-acc">✓ Bevestigen</button>
+        <button class="btn btn-ghost">Opslaan & inplannen</button>
+        <span class="spacer"></span>
+        <button class="btn btn-dang">Weggooien</button>
+      </div>
+    </div>
+    <p class="note">Lege velden vult de PDF vanzelf. Velden die kloppen blijven met rust. Alleen waar het botst (hier het adres) moet jij kiezen, en standaard blijft de bestaande (mail-)waarde staan.</p>
+  </section>
+
+</div>
+</body>
+</html>

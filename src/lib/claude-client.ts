@@ -33,19 +33,50 @@ Alleen bij werkbon_service de "meldingen":
 Roep ALTIJD de tool aan, geef nooit een vrij tekstantwoord.`;
 
 const USER_INSTRUCTION =
-  "Bepaal het documenttype en extract alle gegevens uit deze keuken-PDF via de tool extract_pdf_data.";
+  "Bepaal het documenttype en extract alle gegevens uit deze keuken-order (PDF of foto) via de tool extract_pdf_data.";
+
+const IMAGE_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+
+/**
+ * Bouwt de message-content voor de parser. Een order komt binnen als PDF (document-block) of als
+ * foto van een papieren/uitgeprinte order (image-block). Onbekende types vallen terug op PDF.
+ * Puur en testbaar; raakt geen API.
+ */
+export function buildOrderContent(
+  file: Buffer,
+  mediaType: string,
+  instruction: string,
+): Anthropic.ContentBlockParam[] {
+  const data = file.toString("base64");
+  const isImage = (IMAGE_MEDIA_TYPES as readonly string[]).includes(mediaType);
+  const bron = isImage
+    ? ({
+        type: "image",
+        source: { type: "base64", media_type: mediaType as (typeof IMAGE_MEDIA_TYPES)[number], data },
+      } as const)
+    : ({
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data },
+      } as const);
+  return [bron, { type: "text", text: instruction }];
+}
 
 export interface ClaudeClientConfig {
   apiKey: string;
   model: string;
 }
 
-export type ParsePdfFn = (pdf: Buffer) => Promise<ParsedPdf>;
+export type ParseOrderFn = (file: Buffer, mediaType?: string) => Promise<ParsedPdf>;
+/** @deprecated Gebruik ParseOrderFn; alias voor backward-compat. */
+export type ParsePdfFn = ParseOrderFn;
 
-export function createParser(config: ClaudeClientConfig): ParsePdfFn {
+export function createParser(config: ClaudeClientConfig): ParseOrderFn {
   const client = new Anthropic({ apiKey: config.apiKey });
 
-  return async function parsePdf(pdf: Buffer): Promise<ParsedPdf> {
+  return async function parseOrder(
+    file: Buffer,
+    mediaType: string = "application/pdf",
+  ): Promise<ParsedPdf> {
     const response = await client.messages.create({
       model: config.model,
       max_tokens: 4096,
@@ -54,7 +85,7 @@ export function createParser(config: ClaudeClientConfig): ParsePdfFn {
         {
           name: TOOL_NAME,
           description:
-            "Extract documenttype, klantgegevens en (bij service) meldinggegevens uit een Keukenstudio-PDF.",
+            "Extract documenttype, klantgegevens en (bij service) meldinggegevens uit een Keukenstudio-order (PDF of foto).",
           input_schema: ParsedPdfJsonSchema as unknown as Anthropic.Tool.InputSchema,
         },
       ],
@@ -62,17 +93,7 @@ export function createParser(config: ClaudeClientConfig): ParsePdfFn {
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdf.toString("base64"),
-              },
-            },
-            { type: "text", text: USER_INSTRUCTION },
-          ],
+          content: buildOrderContent(file, mediaType, USER_INSTRUCTION),
         },
       ],
     });
@@ -94,9 +115,13 @@ export function createParser(config: ClaudeClientConfig): ParsePdfFn {
   };
 }
 
-let cachedParser: ParsePdfFn | null = null;
+let cachedParser: ParseOrderFn | null = null;
 
-export function parsePdfWithClaude(pdf: Buffer): Promise<ParsedPdf> {
+/** Leest een order uit een PDF of een foto (mediaType, default PDF) en geeft de gevalideerde velden terug. */
+export function parseOrderWithClaude(
+  file: Buffer,
+  mediaType: string = "application/pdf",
+): Promise<ParsedPdf> {
   if (!cachedParser) {
     const e = env();
     cachedParser = createParser({
@@ -104,5 +129,10 @@ export function parsePdfWithClaude(pdf: Buffer): Promise<ParsedPdf> {
       model: e.ANTHROPIC_MODEL,
     });
   }
-  return cachedParser(pdf);
+  return cachedParser(file, mediaType);
+}
+
+/** @deprecated Gebruik parseOrderWithClaude. Behouden voor bestaande aanroepers (PDF). */
+export function parsePdfWithClaude(pdf: Buffer): Promise<ParsedPdf> {
+  return parseOrderWithClaude(pdf, "application/pdf");
 }

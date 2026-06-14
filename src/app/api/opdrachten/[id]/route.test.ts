@@ -123,7 +123,9 @@ describe("PATCH /api/opdrachten/[id]", () => {
       params("opdr-1"),
     );
     expect(res.status).toBe(200);
-    expect(mockUpdateGegevens).toHaveBeenCalledWith("opdr-1", {
+    const [id, input, opts] = mockUpdateGegevens.mock.calls[0];
+    expect(id).toBe("opdr-1");
+    expect(input).toMatchObject({
       klant_naam: "Fam. de Wit",
       klant_adres: null,
       klant_telefoon: null,
@@ -131,5 +133,50 @@ describe("PATCH /api/opdrachten/[id]", () => {
       keukenzaak: null,
       documenttype: "werkbon_service",
     });
+    expect(opts).toEqual({ markeerGewijzigd: false });
+  });
+
+  it("slaat de uitgebreide velden op (e-mail, adviseur, leverweek, werkomschrijving)", async () => {
+    await PATCH(
+      patchReq({
+        klant_naam: "Fam. De Bruijn",
+        klant_email: "bruijn@x.nl",
+        adviseur: "Ed",
+        leverweek: "22/2026",
+        werkomschrijving: "lade vervangen",
+      }),
+      params("opdr-1"),
+    );
+    const input = mockUpdateGegevens.mock.calls[0][1];
+    expect(input.klant_email).toBe("bruijn@x.nl");
+    expect(input.adviseur).toBe("Ed");
+    expect(input.leverweek).toBe("22/2026");
+    expect(input.werkomschrijving).toBe("lade vervangen");
+  });
+
+  it("Gat A: wijzigen NA versturen (gepland) zet de gewijzigd-markering", async () => {
+    mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", dashboard_status: "gepland", documenttype: "onbekend" });
+    await PATCH(patchReq({ klant_adres: "Nieuwstraat 1" }), params("opdr-1"));
+    expect(mockUpdateGegevens.mock.calls[0][2]).toEqual({ markeerGewijzigd: true });
+  });
+
+  it("Gat A: wijzigen vóór versturen (binnen) zet de markering NIET", async () => {
+    mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", dashboard_status: "binnen", documenttype: "onbekend" });
+    await PATCH(patchReq({ klant_adres: "Nieuwstraat 1" }), params("opdr-1"));
+    expect(mockUpdateGegevens.mock.calls[0][2]).toEqual({ markeerGewijzigd: false });
+  });
+
+  it("Gat B: opgeleverde klus mag niet meer bewerkt worden (409)", async () => {
+    mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", dashboard_status: "opgeleverd" });
+    const res = await PATCH(patchReq({ klant_naam: "X" }), params("opdr-1"));
+    expect(res.status).toBe(409);
+    expect(mockUpdateGegevens).not.toHaveBeenCalled();
+  });
+
+  it("Gat B: geannuleerde klus mag niet meer bewerkt worden (409)", async () => {
+    mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", dashboard_status: "geannuleerd" });
+    const res = await PATCH(patchReq({ klant_naam: "X" }), params("opdr-1"));
+    expect(res.status).toBe(409);
+    expect(mockUpdateGegevens).not.toHaveBeenCalled();
   });
 });
