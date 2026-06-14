@@ -1,15 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGet, mockAttGet, mockGetProfielByToken, mockCreateOpdracht, mockAddDocument, mockUpload, mockParse } =
-  vi.hoisted(() => ({
-    mockGet: vi.fn(),
-    mockAttGet: vi.fn(),
-    mockGetProfielByToken: vi.fn(),
-    mockCreateOpdracht: vi.fn(),
-    mockAddDocument: vi.fn(),
-    mockUpload: vi.fn(),
-    mockParse: vi.fn(),
-  }));
+const {
+  mockGet,
+  mockAttGet,
+  mockGetProfielByToken,
+  mockCreateOpdracht,
+  mockAddDocument,
+  mockUpload,
+  mockParse,
+  mockStandaard,
+} = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockAttGet: vi.fn(),
+  mockGetProfielByToken: vi.fn(),
+  mockCreateOpdracht: vi.fn(),
+  mockAddDocument: vi.fn(),
+  mockUpload: vi.fn(),
+  mockParse: vi.fn(),
+  mockStandaard: vi.fn(),
+}));
 
 vi.mock("resend", () => ({
   Resend: class {
@@ -22,6 +31,7 @@ vi.mock("@/lib/db", () => ({
     getProfielByInboundToken: mockGetProfielByToken,
     createOpdracht: mockCreateOpdracht,
     addDocument: mockAddDocument,
+    getStandaardOpdrachtgever: mockStandaard,
   }),
 }));
 vi.mock("@/lib/storage", () => ({ storage: () => ({ uploadOpdrachtDocument: mockUpload }) }));
@@ -67,6 +77,7 @@ describe("POST /api/inbound", () => {
     mockAddDocument.mockResolvedValue({ id: "doc-1" });
     mockUpload.mockResolvedValue({ pad: "p.pdf", publieke_url: "https://x/p.pdf" });
     mockAttGet.mockResolvedValue({ data: { download_url: "https://x/att" } });
+    mockStandaard.mockResolvedValue({ id: "zaak-ksv" });
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
@@ -98,6 +109,18 @@ describe("POST /api/inbound", () => {
     const kop = mockCreateOpdracht.mock.calls[0][0];
     expect(kop.te_verwerken).toBe(false); // verschijnt direct op het dashboard
     expect(kop.opdrachtgever_id).toBe("zaak1");
+    expect(kop.toegewezen_aan).toBeNull();
+  });
+
+  it("beheerder-adres zonder eigen zaak: valt terug op de standaard-zaak (komt op het dashboard)", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "rein1", rol: "beheerder" });
+    mockParse.mockResolvedValue(parsed("R1"));
+
+    await POST(webhook([pdf("a1")]));
+
+    const kop = mockCreateOpdracht.mock.calls[0][0];
+    expect(kop.opdrachtgever_id).toBe("zaak-ksv");
+    expect(kop.te_verwerken).toBe(false);
     expect(kop.toegewezen_aan).toBeNull();
   });
 

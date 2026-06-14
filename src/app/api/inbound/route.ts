@@ -124,7 +124,14 @@ export async function POST(req: Request) {
 
   const userId = profiel.id;
   const rol = (profiel.rol ?? "monteur") as Rol;
-  const bestemming = bestemmingVoor(rol, { id: userId, opdrachtgever_id: profiel.opdrachtgever_id });
+  // Een beheerder hangt niet aan één zaak; net als bij handmatig inschieten valt hij terug op de
+  // standaard-zaak (de eerst aangemaakte opdrachtgever), zodat een doorgestuurde mail ergens landt.
+  const gekozenZaak = rol === "beheerder" ? ((await adm.getStandaardOpdrachtgever())?.id ?? null) : null;
+  const bestemming = bestemmingVoor(
+    rol,
+    { id: userId, opdrachtgever_id: profiel.opdrachtgever_id },
+    gekozenZaak,
+  );
   // Monteur: voorstel eerst in zijn /inbox (te_verwerken). Kantoor: direct als gewone klus op het
   // dashboard (te plannen), zoals Ed het wil zien.
   const teVerwerken = rol === "monteur";
