@@ -45,8 +45,9 @@ test("werk-omschrijving: invoeren, tonen op detail en bewerken", async ({ page }
     await page.getByPlaceholder("Bijv. kasten nastellen").fill("kasten nastellen");
     await page.getByRole("button", { name: "Klus opslaan" }).click();
 
-    // Open de klus vanuit de werkpool.
-    await page.getByText(naam).click();
+    // Open de klus vanuit de werkpool. Gericht de kaart-link aanklikken (niet de succesmelding, die
+    // ook de naam bevat); Playwright wacht tot de kaart na de refresh verschenen is.
+    await page.locator('a[href^="/opdracht/"]', { hasText: naam }).click();
     await expect(page).toHaveURL(/\/opdracht\//);
 
     // De werk-omschrijving staat op de detailpagina.
