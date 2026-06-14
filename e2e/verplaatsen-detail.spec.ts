@@ -66,3 +66,26 @@ test("kantoor verplaatst datum en duur via het detailscherm", async ({ page }) =
     )
     .toBe("2026-06-17|2");
 });
+
+test("kantoor corrigeert de uitgebreide velden (e-mail + werk-omschrijving)", async ({ page }) => {
+  await page.goto(`/dashboard/opdracht/${id}`);
+  await page.getByRole("button", { name: "Gegevens corrigeren" }).click();
+
+  await page.getByLabel("E-mail").fill("klant@voorbeeld.nl");
+  await page.getByLabel("Wat moet er gebeuren?").fill("lade onder de oven nastellen");
+  await page.getByRole("button", { name: "Opslaan" }).click();
+
+  await expect
+    .poll(
+      async () => {
+        const { data } = await admin
+          .from("meldingen")
+          .select("klant_email, werkomschrijving")
+          .eq("id", id)
+          .single();
+        return `${data?.klant_email ?? ""}|${data?.werkomschrijving ?? ""}`;
+      },
+      { timeout: 10_000, intervals: [400] },
+    )
+    .toBe("klant@voorbeeld.nl|lade onder de oven nastellen");
+});

@@ -20,6 +20,11 @@ export function OpdrachtBewerken(props: {
   referentienummer: string | null;
   keukenzaak: string | null;
   documenttype: Documenttype;
+  // Uitgebreide kop-velden (invoer-unificatie part 2): kantoor kan nu alles corrigeren.
+  klant_email?: string | null;
+  adviseur?: string | null;
+  leverweek?: string | null;
+  werkomschrijving?: string | null;
   // Planning (alleen aanwezig als de opdracht al is ingepland): hiermee kun je verplaatsen.
   startdatum?: string | null;
   starttijd?: string | null;
@@ -36,6 +41,10 @@ export function OpdrachtBewerken(props: {
   const [tel, setTel] = useState(props.klant_telefoon ?? "");
   const [ref, setRef] = useState(props.referentienummer ?? "");
   const [zaak, setZaak] = useState(props.keukenzaak ?? "");
+  const [email, setEmail] = useState(props.klant_email ?? "");
+  const [adviseur, setAdviseur] = useState(props.adviseur ?? "");
+  const [leverweek, setLeverweek] = useState(props.leverweek ?? "");
+  const [werk, setWerk] = useState(props.werkomschrijving ?? "");
   const [type, setType] = useState<Documenttype>(
     props.documenttype === "tekst" ? "onbekend" : props.documenttype,
   );
@@ -65,6 +74,10 @@ export function OpdrachtBewerken(props: {
           referentienummer: ref,
           keukenzaak: zaak,
           documenttype: type,
+          klant_email: email,
+          adviseur,
+          leverweek,
+          werkomschrijving: werk,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -165,6 +178,30 @@ export function OpdrachtBewerken(props: {
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
         Keukenzaak
         <input value={zaak} onChange={(e) => setZaak(e.target.value)} className={veld} />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+        E-mail
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veld} />
+      </label>
+      <div className="flex gap-3">
+        <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-ink">
+          Adviseur
+          <input value={adviseur} onChange={(e) => setAdviseur(e.target.value)} className={veld} />
+        </label>
+        <label className="flex w-32 flex-col gap-1 text-sm font-semibold text-ink">
+          Leverweek
+          <input value={leverweek} onChange={(e) => setLeverweek(e.target.value)} className={veld} placeholder="22/2026" />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+        Wat moet er gebeuren?
+        <textarea
+          value={werk}
+          onChange={(e) => setWerk(e.target.value)}
+          rows={3}
+          className="min-h-[72px] border-2 border-line bg-white p-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent"
+        />
+        <span className="text-xs font-normal text-ink-muted">Wat de monteur moet doen op locatie. Hij ziet dit bij de klus.</span>
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
         Type

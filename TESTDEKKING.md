@@ -74,6 +74,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
 | Order toevoegen via "Order fotograferen" (camera op mobiel) + "Bestand kiezen" | E | zelf-invoer.spec (knop zichtbaar) | via CI |
 | Subtiel kopieer-knopje bij het inbound-mailadres (Mijn gegevens) | E | mijn-gegevens.spec (Kopieer-knop zichtbaar) | via CI |
+| Kantoor corrigeert uitgebreide velden op de detailpagina (e-mail/adviseur/leverweek/werk-omschrijving) | U, E | opdrachten/[id]/route.test, verplaatsen-detail.spec | via CI |
 
 **Nog te bouwen (volgende PR's):** botsing-UI bij een bijgevoegde order met afwijkend veld (leunt op echt parsen, daarom live door Rein), `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
 

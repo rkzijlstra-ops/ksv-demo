@@ -157,6 +157,10 @@ export default async function OpdrachtgeverDetailPage({
           referentienummer={opdracht.referentienummer}
           keukenzaak={opdracht.keukenzaak}
           documenttype={opdracht.documenttype ?? "onbekend"}
+          klant_email={opdracht.klant_email}
+          adviseur={opdracht.adviseur}
+          leverweek={opdracht.leverweek}
+          werkomschrijving={opdracht.werkomschrijving}
           startdatum={opdracht.startdatum}
           starttijd={opdracht.starttijd}
           duur_dagen={opdracht.duur_dagen}
