@@ -4,6 +4,7 @@ import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
 import type { MeldingItem } from "@/lib/parser-schema";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const DOCUMENTTYPES = ["orderbevestiging", "werkbon_service", "onbekend", "tekst"] as const;
@@ -171,6 +172,26 @@ export async function POST(req: Request) {
 
   let opdrachtId: string;
   const dbi = await db();
+
+  // Rol-bewuste bestemming (één motor, twee gezichten): een monteur schiet voor zichzelf in (eigen
+  // werkpool, ad-hoc); kantoor (beheerder/opdrachtgever) maakt een klus voor een zaak die nog gepland
+  // moet worden ("te plannen"). De inline toegewezen_aan hierboven wordt hiermee overschreven.
+  const eigenProfiel = await dbi.getProfiel(userId);
+  const rol = (eigenProfiel?.rol ?? "monteur") as Rol;
+  let gekozenZaak: string | null = null;
+  if (rol !== "monteur") {
+    gekozenZaak =
+      strVeld(formData, "opdrachtgever_id") ??
+      (rol === "beheerder" ? ((await dbi.getStandaardOpdrachtgever())?.id ?? null) : null);
+  }
+  const bestemming = bestemmingVoor(
+    rol,
+    { id: userId, opdrachtgever_id: eigenProfiel?.opdrachtgever_id },
+    gekozenZaak,
+  );
+  kop.toegewezen_aan = bestemming.toegewezen_aan;
+  kop.opdrachtgever_id = bestemming.opdrachtgever_id;
+
   try {
     const r = await dbi.createOpdracht(kop);
     opdrachtId = r.id;

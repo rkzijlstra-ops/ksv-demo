@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkpool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
-import { OpdrachtAanmaken } from "@/components/OpdrachtAanmaken";
+import { KlusInvoer } from "@/components/KlusInvoer";
 import { WerkpoolOnboarding } from "@/components/WerkpoolOnboarding";
 import { UserMenu } from "@/components/UserMenu";
 import { PrefetchOpdrachten } from "@/components/PrefetchOpdrachten";
@@ -65,7 +65,7 @@ export default async function WerkpoolPage() {
       )}
 
       <div className="mb-4">
-        <OpdrachtAanmaken />
+        <KlusInvoer context="monteur" />
       </div>
 
       <WerkpoolOnboarding leeg={actief.length === 0} />

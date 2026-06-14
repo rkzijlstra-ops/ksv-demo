@@ -69,8 +69,11 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Kantoor-correctie uitgebreide velden (e-mail/adviseur/leverweek/werkomschrijving), alleen als meegestuurd | U | opdrachten/[id]/route.test | groen |
 | Gat A: gegevens wijzigen ná versturen zet "gewijzigd, opnieuw versturen"-markering | U | opdrachten/[id]/route.test (gepland=markeren, binnen=niet) | groen |
 | Gat B: opgeleverde/geannuleerde klus niet meer bewerkbaar (409) | U | opdrachten/[id]/route.test | groen |
+| Rol-bewuste create in `/api/opdrachten` (monteur → werkpool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
+| Gedeeld `KlusInvoer`-component, monteur-context (vervangt `OpdrachtAanmaken`, zelfde flow) | E | zelf-invoer.spec | groen (CI) |
+| Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
 
-**Nog te bouwen (UI + wiring, e2e door Rein):** het gedeelde `KlusInvoer`-component (twee staten leeg/gevuld, order-zone, botsing-UI, subtiel kopieer-knopje), dashboard "Nieuwe klus", `OpdrachtBewerken` → component, inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), monteur-wiring, opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3/4/5/7.
+**Nog te bouwen (volgende PR's):** order-zone met camera-knop + botsing-UI + subtiel kopieer-knopje in het component, `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
 
 ## Bekende gaten (eerlijk, nog te dekken)
 

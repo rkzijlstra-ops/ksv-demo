@@ -1,19 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ParsedPdf } from "@/lib/parser-schema";
 
-const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload } = vi.hoisted(() => ({
-  mockParse: vi.fn(),
-  mockCreateOpdracht: vi.fn(),
-  mockAddDocument: vi.fn(),
-  mockUpload: vi.fn(),
-}));
+const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload, mockGetProfiel, mockStandaard } =
+  vi.hoisted(() => ({
+    mockParse: vi.fn(),
+    mockCreateOpdracht: vi.fn(),
+    mockAddDocument: vi.fn(),
+    mockUpload: vi.fn(),
+    mockGetProfiel: vi.fn(),
+    mockStandaard: vi.fn(),
+  }));
 
 vi.mock("@/lib/claude-client", () => ({
   parseOrderWithClaude: mockParse,
   parsePdfWithClaude: mockParse,
 }));
 vi.mock("@/lib/db", () => ({
-  db: () => ({ createOpdracht: mockCreateOpdracht, addDocument: mockAddDocument }),
+  db: () => ({
+    createOpdracht: mockCreateOpdracht,
+    addDocument: mockAddDocument,
+    getProfiel: mockGetProfiel,
+    getStandaardOpdrachtgever: mockStandaard,
+  }),
 }));
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
@@ -60,6 +68,34 @@ describe("POST /api/opdrachten", () => {
     mockCreateOpdracht.mockResolvedValue({ id: "opdr-1" });
     mockAddDocument.mockResolvedValue({ id: "doc-x" });
     mockUpload.mockResolvedValue({ pad: "uuid.pdf", publieke_url: "https://x/opdracht-documenten/uuid.pdf" });
+    mockGetProfiel.mockReset();
+    mockStandaard.mockReset();
+    // standaard: de inschieter is een monteur (zelf-invoer → eigen werkpool, ad-hoc)
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "monteur" });
+    mockStandaard.mockResolvedValue({ id: "zaak-standaard" });
+  });
+
+  it("monteur (zelf-invoer): klus aan zichzelf toegewezen, geen opdrachtgever (ad-hoc)", async () => {
+    await POST(multipart([], { klant_naam: "Mevrouw Veering" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.toegewezen_aan).toBe("test-user-uuid");
+    expect(arg.opdrachtgever_id).toBeNull();
+  });
+
+  it("kantoor (opdrachtgever): klus aan eigen zaak, niet toegewezen (te plannen)", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "opdrachtgever", opdrachtgever_id: "zaak-ksv" });
+    await POST(multipart([], { klant_naam: "Fam. De Bruijn" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.opdrachtgever_id).toBe("zaak-ksv");
+    expect(arg.toegewezen_aan).toBeNull();
+  });
+
+  it("kantoor (beheerder): valt terug op de standaard-zaak", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "beheerder" });
+    await POST(multipart([], { klant_naam: "Fam. De Bruijn" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.opdrachtgever_id).toBe("zaak-standaard");
+    expect(arg.toegewezen_aan).toBeNull();
   });
 
   it("één PDF: parseert kop, maakt opdracht + 1 primair document, 200", async () => {
