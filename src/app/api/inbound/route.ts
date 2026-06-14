@@ -2,40 +2,28 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { dbAdmin, type Db, type OpdrachtInput } from "@/lib/db";
 import { storage } from "@/lib/storage";
-import { parsePdfWithClaude } from "@/lib/claude-client";
+import { parseOrderWithClaude } from "@/lib/claude-client";
 import { tokenUitAdressen } from "@/lib/inbound";
 import { verifyResendSignature } from "@/lib/webhook-handtekening";
+import { groepeerOpRef } from "@/lib/inschiet-groep";
+import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
 export const runtime = "nodejs";
 
 /**
  * Ontvangst-endpoint voor mail-naar-app (Resend Receiving). Resend POST een `email.received`-webhook.
- * We verifiëren de handtekening, herkennen de monteur aan zijn ontvangstadres (klus-<token>@...),
- * halen de mail + bijlagen op via de Resend-API en maken per PDF een "te verwerken"-voorstel aan dat
- * de monteur in zijn bakje bevestigt. Geen PDF: één voorstel met het onderwerp als hint + de bijlagen.
- * Maakt nooit blind een echte klus: alles staat op `te_verwerken` tot de monteur het nakijkt.
+ * We verifiëren de handtekening, herkennen de ontvanger aan zijn ontvangstadres (klus-<token>@...),
+ * halen de mail + bijlagen op via de Resend-API en maken per keuken (gegroepeerd op referentienummer,
+ * net als slepen op het dashboard) één voorstel aan. De mailtekst landt in het werk-veld. Rol-bewust:
+ * - een MONTEUR-adres -> voorstel op `te_verwerken` in zijn /inbox-bakje (hij bevestigt eerst);
+ * - een KANTOOR-adres (opdrachtgever/beheerder) -> direct als gewone klus voor de zaak op het dashboard
+ *   ("te plannen"), want kantoor wil het meteen in de planlijst zien.
  */
 
 interface InboundAttachmentMeta {
   id: string;
   filename: string | null;
   content_type: string;
-}
-
-function leegKop(userId: string): OpdrachtInput {
-  return {
-    documenttype: "onbekend",
-    klant_naam: null,
-    klant_adres: null,
-    referentienummer: null,
-    adviseur: null,
-    klant_telefoon: null,
-    leverweek: null,
-    meldingen: [],
-    user_id: userId,
-    toegewezen_aan: userId,
-    te_verwerken: true,
-  };
 }
 
 async function bewaarBijlage(
@@ -135,32 +123,75 @@ export async function POST(req: Request) {
   }
 
   const userId = profiel.id;
+  const rol = (profiel.rol ?? "monteur") as Rol;
+  const bestemming = bestemmingVoor(rol, { id: userId, opdrachtgever_id: profiel.opdrachtgever_id });
+  // Monteur: voorstel eerst in zijn /inbox (te_verwerken). Kantoor: direct als gewone klus op het
+  // dashboard (te plannen), zoals Ed het wil zien.
+  const teVerwerken = rol === "monteur";
+  // De mailtekst (body) komt in het werk-veld zodat de doorgestuurde context meteen zichtbaar is.
+  const mailtekst = ((mail as { text?: string | null }).text ?? "").trim() || null;
+
+  /** Bouwt een volledige kop uit een (deels) geparste basis, met rol-bewuste bestemming + mailtekst. */
+  function maakKop(basis: Partial<OpdrachtInput>): OpdrachtInput {
+    return {
+      documenttype: "onbekend",
+      klant_naam: null,
+      klant_adres: null,
+      referentienummer: null,
+      adviseur: null,
+      klant_telefoon: null,
+      leverweek: null,
+      meldingen: [],
+      ...basis,
+      user_id: userId,
+      toegewezen_aan: bestemming.toegewezen_aan,
+      opdrachtgever_id: bestemming.opdrachtgever_id,
+      te_verwerken: teVerwerken,
+      werkomschrijving: basis.werkomschrijving ?? mailtekst,
+    };
+  }
+
   const pdfs = bijlagen.filter((a) => (a.content_type ?? "").includes("pdf"));
   const overige = bijlagen.filter((a) => !(a.content_type ?? "").includes("pdf"));
   const voorstellen: string[] = [];
 
   try {
     if (pdfs.length > 0) {
-      // Elke PDF = één voorstel: parsen, voorstel aanmaken, document bewaren.
-      for (let i = 0; i < pdfs.length; i++) {
-        const att = pdfs[i];
+      // Parse elke PDF, groepeer dan op referentienummer (zelfde keuken = één voorstel met meerdere
+      // documenten, net als meerdere PDF's tegelijk slepen op het dashboard).
+      const koppen: OpdrachtInput[] = [];
+      const bytesPerPdf: (Buffer | null)[] = [];
+      for (const att of pdfs) {
         const bytes = await haalBytes(att.id);
-        let kop = leegKop(userId);
+        bytesPerPdf.push(bytes);
+        let basis: Partial<OpdrachtInput> = {};
         if (bytes) {
           try {
-            const p = await parsePdfWithClaude(bytes);
-            kop = { ...p, user_id: userId, toegewezen_aan: userId, te_verwerken: true };
+            basis = { ...(await parseOrderWithClaude(bytes, att.content_type)) };
           } catch {
-            // Parser faalt: leeg voorstel, het document blijft bewaard zodat de monteur het zelf leest.
+            // Parser faalt: leeg voorstel, het document blijft bewaard zodat de ontvanger het zelf leest.
           }
         }
+        koppen.push(maakKop(basis));
+      }
+
+      const groepen = groepeerOpRef(koppen.map((k) => ({ referentienummer: k.referentienummer })));
+      for (let g = 0; g < groepen.length; g++) {
+        const groep = groepen[g];
+        const kop = koppen[groep.indexen[0]];
         const { id: opdrachtId } = await adm.createOpdracht(kop);
         voorstellen.push(opdrachtId);
-        if (bytes) {
-          await bewaarBijlage(adm, opdrachtId, att, bytes, userId, kop.referentienummer ?? null, true);
+        for (const idx of groep.indexen) {
+          const bytes = bytesPerPdf[idx];
+          if (bytes) {
+            await bewaarBijlage(
+              adm, opdrachtId, pdfs[idx], bytes, userId, kop.referentienummer ?? null,
+              idx === groep.indexen[0],
+            );
+          }
         }
         // Losse afbeeldingen bij het eerste voorstel hangen.
-        if (i === 0) {
+        if (g === 0) {
           for (const img of overige) {
             const imgBytes = await haalBytes(img.id);
             if (imgBytes) await bewaarBijlage(adm, opdrachtId, img, imgBytes, userId, kop.referentienummer ?? null, false);
@@ -168,9 +199,8 @@ export async function POST(req: Request) {
         }
       }
     } else {
-      // Geen PDF: één voorstel met het onderwerp als hint en de bijlagen erbij.
-      const kop = leegKop(userId);
-      kop.klant_naam = mail.subject?.trim() || null;
+      // Geen PDF: één voorstel met het onderwerp als hint, de mailtekst in het werk-veld, bijlagen erbij.
+      const kop = maakKop({ klant_naam: mail.subject?.trim() || null });
       const { id: opdrachtId } = await adm.createOpdracht(kop);
       voorstellen.push(opdrachtId);
       for (const img of overige) {

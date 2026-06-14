@@ -93,3 +93,11 @@ test("opdrachtgever mag niet bij het gebruikersbeheer (beheerder-only)", async (
   await page.goto("/gebruikers");
   await page.waitForURL((u) => new URL(u).pathname !== "/gebruikers");
 });
+
+test("opdrachtgever heeft een inbound-mailadres op Mijn gegevens (mail doorsturen naar het dashboard)", async ({
+  page,
+}) => {
+  await page.goto("/mijn-gegevens");
+  await expect(page.getByText("Klussen per mail ontvangen")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kopieer" })).toBeVisible();
+});
