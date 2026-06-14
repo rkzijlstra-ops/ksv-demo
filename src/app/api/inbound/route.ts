@@ -77,7 +77,16 @@ export async function POST(req: Request) {
     console.warn("[inbound] RESEND_WEBHOOK_SECRET niet gezet: webhook niet geverifieerd.");
   }
 
-  let event: { type?: string; data?: { email_id?: string; to?: string[] } };
+  let event: {
+    type?: string;
+    data?: {
+      email_id?: string;
+      to?: string[];
+      subject?: string | null;
+      text?: string | null;
+      attachments?: Array<{ id: string; filename: string | null; content_type: string }>;
+    };
+  };
   try {
     event = JSON.parse(body);
   } catch {
@@ -104,22 +113,43 @@ export async function POST(req: Request) {
   if (!apiKey) return NextResponse.json({ error: "RESEND_API_KEY ontbreekt" }, { status: 500 });
   const resend = new Resend(apiKey);
 
-  const volledig = await resend.emails.receiving.get(emailId);
+  // De volledige mail erbij ophalen geeft de body-tekst. Lukt dat niet, dan loggen we de échte fout en
+  // gaan we door op de webhook-payload (die onderwerp + bijlagen al bevat), zodat de klus tóch ontstaat.
+  const volledig = await resend.emails.receiving
+    .get(emailId)
+    .catch((e: unknown) => ({ error: e, data: null }));
   if (volledig.error || !volledig.data) {
-    return NextResponse.json({ error: "Mail ophalen mislukt" }, { status: 502 });
+    console.error(
+      "[inbound] receiving.get faalde, val terug op de webhook-payload:",
+      JSON.stringify(volledig.error ?? "geen data"),
+    );
   }
-  const mail = volledig.data;
+  // mail = de opgehaalde mail, of anders de payload uit de webhook.
+  const mail = (volledig.data ?? event.data ?? {}) as {
+    subject?: string | null;
+    text?: string | null;
+    attachments?: Array<{ id: string; filename: string | null; content_type: string }>;
+  };
   const bijlagen: InboundAttachmentMeta[] = Array.isArray(mail.attachments)
     ? mail.attachments.map((a) => ({ id: a.id, filename: a.filename, content_type: a.content_type }))
     : [];
 
   async function haalBytes(attId: string): Promise<Buffer | null> {
-    const att = await resend.emails.receiving.attachments.get({ emailId: emailId!, id: attId });
-    const url = att.data?.download_url;
-    if (!url) return null;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return Buffer.from(await res.arrayBuffer());
+    try {
+      const att = await resend.emails.receiving.attachments.get({ emailId: emailId!, id: attId });
+      if (att.error) {
+        console.error("[inbound] attachments.get faalde:", JSON.stringify(att.error));
+        return null;
+      }
+      const url = att.data?.download_url;
+      if (!url) return null;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return Buffer.from(await res.arrayBuffer());
+    } catch (e) {
+      console.error("[inbound] bijlage downloaden faalde:", JSON.stringify(e));
+      return null;
+    }
   }
 
   const userId = profiel.id;
