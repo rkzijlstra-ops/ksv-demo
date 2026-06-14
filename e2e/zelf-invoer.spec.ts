@@ -19,6 +19,8 @@ test("monteur voegt zelf een klus toe met datum, die in de werkpool verschijnt",
     await wachtOpHydratie(page);
 
     await page.getByRole("button", { name: "Klus toevoegen" }).click();
+    // Order toevoegen kan via fotograferen (camera op de telefoon) of bestand kiezen.
+    await expect(page.getByRole("button", { name: "Order fotograferen" })).toBeVisible();
     await page.getByLabel("Klantnaam").fill(naam);
     await page.getByLabel("Datum").fill("2026-06-20");
     await page.getByRole("button", { name: "Klus opslaan" }).click();

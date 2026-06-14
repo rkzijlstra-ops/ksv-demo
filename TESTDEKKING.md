@@ -72,8 +72,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Rol-bewuste create in `/api/opdrachten` (monteur → werkpool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
 | Gedeeld `KlusInvoer`-component, monteur-context (vervangt `OpdrachtAanmaken`, zelfde flow) | E | zelf-invoer.spec | groen (CI) |
 | Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
+| Order toevoegen via "Order fotograferen" (camera op mobiel) + "Bestand kiezen" | E | zelf-invoer.spec (knop zichtbaar) | via CI |
+| Subtiel kopieer-knopje bij het inbound-mailadres (Mijn gegevens) | E | mijn-gegevens.spec (Kopieer-knop zichtbaar) | via CI |
 
-**Nog te bouwen (volgende PR's):** order-zone met camera-knop + botsing-UI + subtiel kopieer-knopje in het component, `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
+**Nog te bouwen (volgende PR's):** botsing-UI bij een bijgevoegde order met afwijkend veld (leunt op echt parsen, daarom live door Rein), `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
 
 ## Bekende gaten (eerlijk, nog te dekken)
 
