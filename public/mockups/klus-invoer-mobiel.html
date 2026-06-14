@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Klus-invoerblok, monteur op mobiel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&family=Source+Sans+3:wght@400;600;700&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --groen:#16a34a;
+    --sans:'Lexend',system-ui,sans-serif; --body:'Source Sans 3',system-ui,sans-serif;
+    --mono:'Spline Sans Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e2e8f0;color:var(--ink);font-family:var(--body);line-height:1.45}
+  .stempel{font-family:var(--mono);text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--muted);font-weight:500}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 16px 80px}
+  .uitleg{border:2px solid var(--ink);background:#fff;padding:18px 20px;margin-bottom:28px}
+  .uitleg h1{margin:.1em 0 .3em;font-size:23px;font-weight:800;font-family:var(--sans)}
+  .uitleg p{margin:.3em 0;color:var(--muted)} .uitleg b{color:var(--ink)}
+
+  .telefoons{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .kolom{flex:0 0 auto}
+  .kolom h2{font-family:var(--sans);font-size:16px;font-weight:800;text-align:center;margin:0 0 4px}
+  .kolom .sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 14px;max-width:360px}
+
+  .phone{width:360px;background:#0f172a;border-radius:38px;padding:12px;box-shadow:0 18px 40px rgba(15,23,42,.35)}
+  .screen{background:#fff;border-radius:26px;overflow:hidden}
+  .statusbar{height:30px;background:#fff;display:flex;align-items:center;justify-content:center}
+  .notch{width:120px;height:18px;background:#0f172a;border-radius:0 0 14px 14px}
+  .app{padding:14px}
+
+  .strip{border-left:6px solid var(--accent)}
+  .strip-grijs{border-left:6px solid var(--line)}
+  .blok{border:2px solid var(--ink);background:#fff}
+  .kop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:13px 14px;border-bottom:2px solid var(--ink)}
+  .kop .titel{font-family:var(--sans);font-weight:800;font-size:17px}
+  .badge{font-family:var(--mono);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.08em;padding:3px 7px;border:2px solid var(--accent);color:#9a3412;background:#fff7ed;white-space:nowrap}
+  .badge.nieuw{border-color:var(--line);color:var(--muted);background:var(--surface)}
+  .body{padding:14px}
+
+  .veld{margin-bottom:13px}
+  .veld label{display:block;font-family:var(--sans);font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px}
+  .veld .hint{font-weight:400;color:var(--muted);font-size:12px}
+  .inp{width:100%;border:2px solid var(--ink);background:#fff;padding:11px 12px;font-family:var(--body);font-size:16px;color:var(--ink)}
+  .inp.leeg{color:#94a3b8}
+  .inp.mono{font-family:var(--mono);font-weight:700}
+  .werk{position:relative}
+  textarea.inp{resize:vertical;min-height:78px;padding-right:58px}
+  .mic{position:absolute;right:9px;bottom:9px;width:44px;height:44px;border:2px solid var(--ink);background:var(--accent);display:flex;align-items:center;justify-content:center}
+  .mic svg{width:22px;height:22px}
+
+  /* order toevoegen: op mobiel geen 'slepen' maar knoppen */
+  .order-zone{border:2px dashed var(--ink);background:var(--surface);padding:14px;margin-bottom:14px}
+  .order-zone .t1{font-family:var(--sans);font-weight:700;font-size:14px;text-align:center}
+  .media-knoppen{display:flex;gap:10px;margin-top:11px}
+  .mediaknop{flex:1;border:2px solid var(--ink);background:#fff;padding:11px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--sans);font-weight:700;font-size:13px}
+  .mediaknop .i{font-size:21px}
+  .order-of{text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
+
+  .docs{border:2px solid var(--line);background:var(--surface);padding:9px;margin-bottom:13px}
+  .doc{display:flex;align-items:center;gap:8px;font-size:14px;padding:4px 0}
+  .doc .x{margin-left:auto;color:var(--rood);font-weight:700}
+
+  .meer-bar{display:flex;align-items:center;gap:8px;width:100%;border:2px solid var(--line);background:#fff;padding:11px 12px;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+  .meer-bar .chev{margin-left:auto}
+
+  .mail-hint{font-size:12px;color:var(--muted);margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+  .mail-hint b{color:var(--ink);font-family:var(--mono);font-weight:700;font-size:11px;word-break:break-all}
+  .adres-rij{display:flex;align-items:stretch;gap:0;margin-top:8px;border:2px solid var(--ink)}
+  .adres-rij .adres{flex:1;min-width:0;padding:9px 10px;font-family:var(--mono);font-weight:700;font-size:12px;color:var(--ink);background:var(--surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center}
+  .adres-rij .kopieer{border:0;border-left:2px solid var(--ink);background:var(--accent);color:var(--ink);font-family:var(--sans);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:0 13px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+
+  .acts{display:flex;flex-direction:column;gap:9px;padding:14px;border-top:2px solid var(--ink);background:var(--surface)}
+  .btn{font-family:var(--sans);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:14px;padding:13px 16px;border:2px solid var(--ink);text-align:center}
+  .btn-acc{background:var(--accent);color:var(--ink)}
+
+  .verbeterlijst{border:2px solid var(--ink);background:#fff;padding:16px 20px;margin-top:30px}
+  .verbeterlijst h3{font-family:var(--sans);margin:.2em 0 .5em;font-size:16px}
+  .verbeterlijst li{margin-bottom:6px;color:var(--muted)} .verbeterlijst b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="uitleg">
+    <p class="stempel">Mock-up / invoer-unificatie — monteur op mobiel</p>
+    <h1>De monteur-versie op de telefoon</h1>
+    <p>Zelfde component als het dashboard, maar mobiel en order-gedreven: de monteur zet een <b>order van een keukenzaak</b> in (opstartfase, of een zaak die nog niet meedoet). PDF of foto van de order erbij → de app leest 'm uit → nakijken → <b>Opslaan in werkpool</b>. Links leeg, rechts ingevuld vanuit een PDF. (Situatie-foto's hoef je hier niet, die maak je later op locatie bij meldingen.)</p>
+    <p style="margin-top:8px"><b>Verschil met Ed:</b> alleen de bestemming. Bij de monteur landt het in zijn eigen werkpool (hij doet 'm zelf), bij Ed in "te plannen".</p>
+  </div>
+
+  <div class="telefoons">
+
+    <!-- LEEG -->
+    <div class="kolom">
+      <h2>Leeg — order toevoegen</h2>
+      <p class="sub">Geen "slepen" op een telefoon: foto maken of bestand kiezen. Of typen, of doormailen.</p>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><div class="notch"></div></div>
+        <div class="app">
+          <div class="blok strip-grijs">
+            <div class="kop">
+              <div><p class="stempel">Nieuwe klus</p><div class="titel" style="color:#94a3b8">Order toevoegen</div></div>
+              <span class="badge nieuw">Nieuw</span>
+            </div>
+            <div class="body">
+              <div class="order-zone">
+                <div class="t1">Order van de keukenzaak erin</div>
+                <div class="media-knoppen">
+                  <div class="mediaknop"><span class="i">📷</span>Order fotograferen</div>
+                  <div class="mediaknop"><span class="i">📎</span>PDF kiezen</div>
+                </div>
+                <div class="order-of">de app leest de PDF of foto van de order uit en vult de velden — of vul hieronder zelf in</div>
+              </div>
+              <div class="veld"><label>Keukenzaak</label><input class="inp leeg" placeholder="bijv. Keukenstudio Voorschoten" /></div>
+              <div class="veld"><label>Klant</label><input class="inp leeg" placeholder="naam" /></div>
+              <div class="veld"><label>Adres</label><input class="inp leeg" placeholder="straat, plaats" /></div>
+              <div class="veld"><label>Referentie</label><input class="inp mono leeg" placeholder="ordernummer" /></div>
+              <div class="veld werk">
+                <label>Wat moet er gebeuren? <span class="hint">— optioneel, typ of spreek in</span></label>
+                <textarea class="inp leeg" placeholder="bijv. kasten nastellen"></textarea>
+                <div class="mic" title="Inspreken"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div>
+              </div>
+              <button class="meer-bar">Meer velden (telefoon, type, e-mail, leverweek) <span class="chev">▸</span></button>
+              <div class="mail-hint">📧 Of mail de order naar dit adres — dan staat 'ie hier vanzelf klaar:
+                <div class="adres-rij"><span class="adres">klus-a1b2c3@klus.kluslus.nl</span><button class="kopieer">📋 Kopieer</button></div>
+              </div>
+            </div>
+            <div class="acts"><div class="btn btn-acc">Opslaan in werkpool</div></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- GEVULD -->
+    <div class="kolom">
+      <h2>Gevuld — PDF uitgelezen</h2>
+      <p class="sub">Velden komen uit de PDF van de keukenzaak. Nakijken, evt. een notitie, opslaan.</p>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><div class="notch"></div></div>
+        <div class="app">
+          <div class="blok strip">
+            <div class="kop">
+              <div><p class="stempel">Nieuwe klus</p><div class="titel">Fam. De Bruijn</div></div>
+              <span class="badge nieuw">Nieuw</span>
+            </div>
+            <div class="body">
+              <div class="docs">
+                <div class="doc">📄 order_keukenstudio.pdf <span class="x">×</span></div>
+              </div>
+              <div class="veld"><label>Keukenzaak</label><input class="inp" value="Keukenstudio Voorschoten" /></div>
+              <div class="veld"><label>Klant</label><input class="inp" value="Fam. De Bruijn" /></div>
+              <div class="veld"><label>Adres</label><input class="inp" value="Dorpsstraat 14, Noordwijkerhout" /></div>
+              <div class="veld"><label>Referentie</label><input class="inp mono" value="KSV-2026-0481" /></div>
+              <div class="veld werk">
+                <label>Wat moet er gebeuren? <span class="hint">— optioneel</span></label>
+                <textarea class="inp" placeholder="eigen notitie erbij…"></textarea>
+                <div class="mic" title="Inspreken"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div>
+              </div>
+              <button class="meer-bar">Meer velden (telefoon, type, e-mail, leverweek) <span class="chev">▸</span></button>
+              <div class="mail-hint">📧 Of mail de order naar dit adres:
+                <div class="adres-rij"><span class="adres">klus-a1b2c3@klus.kluslus.nl</span><button class="kopieer">📋 Kopieer</button></div>
+              </div>
+            </div>
+            <div class="acts"><div class="btn btn-acc">Opslaan in werkpool</div></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <div class="verbeterlijst">
+    <h3>Monteur-versie t.o.v. de dashboard-versie</h3>
+    <ul>
+      <li><b>Zelfde velden</b> als Ed (keukenzaak, klant, adres, referentie), want het is een echte order van een zaak.</li>
+      <li><b>Order erin bovenaan</b>: op mobiel geen "slepen" maar <b>Order fotograferen</b> / <b>PDF kiezen</b>; de app leest de order (PDF of foto) uit. Géén situatie-foto's hier, die komen later bij meldingen.</li>
+      <li><b>Eén knop</b>: "Opslaan in werkpool" — de monteur doet de klus zelf, geen plannen/toewijzen.</li>
+      <li><b>Meer velden weggevouwen</b> op de telefoon voor rust; op het brede dashboard staan ze open.</li>
+      <li><b>Werk-veld is optioneel</b>: een eigen notitie, geen verplicht veld.</li>
+      <li><b>Mail-doorsturen</b> blijft als derde manier (klein onderaan).</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

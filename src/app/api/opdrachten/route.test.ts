@@ -1,16 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ParsedPdf } from "@/lib/parser-schema";
 
-const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload } = vi.hoisted(() => ({
-  mockParse: vi.fn(),
-  mockCreateOpdracht: vi.fn(),
-  mockAddDocument: vi.fn(),
-  mockUpload: vi.fn(),
-}));
+const { mockParse, mockCreateOpdracht, mockAddDocument, mockUpload, mockGetProfiel, mockStandaard } =
+  vi.hoisted(() => ({
+    mockParse: vi.fn(),
+    mockCreateOpdracht: vi.fn(),
+    mockAddDocument: vi.fn(),
+    mockUpload: vi.fn(),
+    mockGetProfiel: vi.fn(),
+    mockStandaard: vi.fn(),
+  }));
 
-vi.mock("@/lib/claude-client", () => ({ parsePdfWithClaude: mockParse }));
+vi.mock("@/lib/claude-client", () => ({
+  parseOrderWithClaude: mockParse,
+  parsePdfWithClaude: mockParse,
+}));
 vi.mock("@/lib/db", () => ({
-  db: () => ({ createOpdracht: mockCreateOpdracht, addDocument: mockAddDocument }),
+  db: () => ({
+    createOpdracht: mockCreateOpdracht,
+    addDocument: mockAddDocument,
+    getProfiel: mockGetProfiel,
+    getStandaardOpdrachtgever: mockStandaard,
+  }),
 }));
 vi.mock("@/lib/storage", () => ({
   storage: () => ({ uploadOpdrachtDocument: mockUpload }),
@@ -57,6 +68,34 @@ describe("POST /api/opdrachten", () => {
     mockCreateOpdracht.mockResolvedValue({ id: "opdr-1" });
     mockAddDocument.mockResolvedValue({ id: "doc-x" });
     mockUpload.mockResolvedValue({ pad: "uuid.pdf", publieke_url: "https://x/opdracht-documenten/uuid.pdf" });
+    mockGetProfiel.mockReset();
+    mockStandaard.mockReset();
+    // standaard: de inschieter is een monteur (zelf-invoer → eigen werkpool, ad-hoc)
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "monteur" });
+    mockStandaard.mockResolvedValue({ id: "zaak-standaard" });
+  });
+
+  it("monteur (zelf-invoer): klus aan zichzelf toegewezen, geen opdrachtgever (ad-hoc)", async () => {
+    await POST(multipart([], { klant_naam: "Mevrouw Veering" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.toegewezen_aan).toBe("test-user-uuid");
+    expect(arg.opdrachtgever_id).toBeNull();
+  });
+
+  it("kantoor (opdrachtgever): klus aan eigen zaak, niet toegewezen (te plannen)", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "opdrachtgever", opdrachtgever_id: "zaak-ksv" });
+    await POST(multipart([], { klant_naam: "Fam. De Bruijn" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.opdrachtgever_id).toBe("zaak-ksv");
+    expect(arg.toegewezen_aan).toBeNull();
+  });
+
+  it("kantoor (beheerder): valt terug op de standaard-zaak", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "beheerder" });
+    await POST(multipart([], { klant_naam: "Fam. De Bruijn" }));
+    const arg = mockCreateOpdracht.mock.calls[0][0];
+    expect(arg.opdrachtgever_id).toBe("zaak-standaard");
+    expect(arg.toegewezen_aan).toBeNull();
   });
 
   it("één PDF: parseert kop, maakt opdracht + 1 primair document, 200", async () => {
@@ -130,13 +169,17 @@ describe("POST /api/opdrachten", () => {
     expect(arg.werkomschrijving).toBe("kasten nastellen");
   });
 
-  it("alleen een afbeelding (geen PDF): opdracht 'onbekend', parser niet aangeroepen", async () => {
+  it("alleen een foto (geen PDF): leest de foto uit (order-foto) en bewaart de afbeelding", async () => {
+    mockParse.mockResolvedValue(orderParsed);
+
     const res = await POST(multipart([pngFile()]));
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(mockParse).not.toHaveBeenCalled();
-    expect(mockCreateOpdracht.mock.calls[0][0].documenttype).toBe("onbekend");
+    // Een foto van een papieren order wordt nu wél uitgelezen (Claude vision).
+    expect(mockParse).toHaveBeenCalledOnce();
+    expect(mockParse.mock.calls[0][1]).toBe("image/png"); // mediaType meegegeven
+    expect(mockCreateOpdracht.mock.calls[0][0].documenttype).toBe("orderbevestiging");
     expect(mockAddDocument).toHaveBeenCalledOnce();
     expect(mockAddDocument.mock.calls[0][0].type).toBe("afbeelding");
     expect(body.documenten).toHaveLength(1);
@@ -173,8 +216,21 @@ describe("POST /api/opdrachten", () => {
     expect(mockUpload).not.toHaveBeenCalled();
   });
 
-  it("actie=parse zonder PDF: 400", async () => {
+  it("actie=parse met alleen een foto: leest de foto uit (order-foto), 200", async () => {
+    mockParse.mockResolvedValue(orderParsed);
+
     const res = await POST(multipart([pngFile()], { actie: "parse" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockParse).toHaveBeenCalledOnce();
+    expect(mockParse.mock.calls[0][1]).toBe("image/png");
+    expect(body.parsed.klant_naam).toBe("De heer en mevrouw van Dijk");
+    expect(mockCreateOpdracht).not.toHaveBeenCalled();
+  });
+
+  it("actie=parse zonder PDF of foto: 400", async () => {
+    const res = await POST(multipart([], { actie: "parse" }));
     expect(res.status).toBe(400);
     expect(mockParse).not.toHaveBeenCalled();
   });

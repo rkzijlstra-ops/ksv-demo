@@ -52,4 +52,22 @@ Klus-taal. Label "Wat moet er gebeuren?" (sluit aan bij MeldingForm's "Wat is er
 - e2e (Playwright, Rein draait zelf): zelf-invoer met werk-omschrijving → detailpagina toont → bewerken.
 
 ## Part 2: alle invoer naar één gecombineerd veld (ALLEEN ONTWERPEN)
-Na Part 1 uitwerken: dashboard-inschiet en de bewerk-velden in dashboard/planbord naar hetzelfde gecombineerde invoer-component, zodat kantoor net zo snel handmatig een klus kan invoeren (ref/klant/adres/tel + getypt/gesproken werk) zonder externe PDF. Daarna de losse oude invoer-versies opruimen. Apart design-document.
+Na Part 1 uitwerken: dashboard-inschiet en de bewerk-velden in dashboard/planbord naar hetzelfde gecombineerde invoer-component, zodat kantoor net zo snel handmatig een klus kan invoeren (ref/klant/adres/tel + getypt/gesproken werk) zonder externe PDF. Daarna de losse oude invoer-versies opruimen. Apart design-document (in een verse terminal te starten).
+
+### Vooronderzoek invoerkanalen (2026-06-14)
+Alle huidige manieren waarop een klus de app in komt:
+1. **Monteur zelf-invoer** (`OpdrachtAanmaken` + `POST /api/opdrachten`): de góede gecombineerde flow (PDF voorvullen + handmatig aanvullen + werk-omschrijving). Landt direct in de werkpool. Dit is het referentie-patroon voor het unified component.
+2. **Dashboard-inschiet** (`InschietZone` + `POST /api/dashboard/inschieten`): alleen PDF's slepen, bulk, groepeert op referentie. GEEN handmatig aanvullen, GEEN review. = de "oude losse invoer" om te unificeren.
+3. **Inbound-mail** (`POST /api/inbound` + `InboxItem` + `/api/inbound/[id]/bevestigen`): mail met PDF -> geparset tot een `te_verwerken`-voorstel -> monteur bevestigt BLIND (alleen de vlag om; geen nakijken/aanvullen vooraf, hooguit de detailpagina openen). Staat gepauzeerd (wacht op Resend Receiving + DNS; domein nu `klus.kluslus.nl`).
+4. **Bewerk-velden** dashboard/planbord (kantoor-correctie `PATCH /api/opdrachten/[id]` + werk-omschrijving-route).
+
+### Inbound hoort hierbij — combineren, niet apart bouwen (advies)
+Inbound is gewoon een vierde invoerkanaal. De natuurlijke "bevestig dit voorstel"-stap IS wat Part 2 bouwt: het voorstel openen in het gecombineerde invoer-component, geparste velden nakijken/corrigeren, evt. getypt/gesproken werk erbij, dan bevestigen. Inbound dwingt bovendien een eis af die Part 2 toch al nodig heeft: een **"bestaand record nakijken/bewerken"-modus** (het voorstel bestaat al in de DB) — dezelfde modus als een bestaande klus bewerken. Ze komen dus samen.
+
+**Advies:** bouw GEEN los inbound-review-scherm (zou Part 2 daarna weer ontdubbelen). In plaats daarvan:
+- Part 2 = één gecombineerd **klus-invoer/bewerk-component** met twee modi: `nieuw` (aanmaken) en `bestaand` (nakijken/bewerken).
+- Consumenten: dashboard-handmatig-invoer (nieuw), zelf-invoer (al deels), **inbound-bevestigen** (nakijken vóór de vlag om), en bestaande-klus-bewerken.
+- Bulk-PDF-sleep (`InschietZone`) is een apart snel kanaal voor veel orders tegelijk; in het ontwerp beslissen of die blijft naast het component of erin opgaat.
+- Geen druk om inbound los af te bouwen (gepauzeerd), dus prima om mee te nemen.
+
+Te beslissen in het Part 2-ontwerp: scope van het component (welke velden + werk-omschrijving), de twee modi, per kanaal de wiring, wat er met `InschietZone` gebeurt, en welke oude paden daarna weg kunnen.

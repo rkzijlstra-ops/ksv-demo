@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, type OpdrachtGegevensInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { logActie } from "@/lib/gebeurtenis";
+import { moetOpnieuwVersturen } from "@/lib/opdracht-status";
 
 const DOCUMENTTYPES = ["orderbevestiging", "werkbon_service", "tekst", "onbekend"] as const;
 
@@ -28,6 +29,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Klus niet gevonden" }, { status: 404 });
   }
 
+  // Gat B: een afgeronde of geannuleerde klus is "klaar" en mag niet meer bewerkt worden.
+  if (opdracht.dashboard_status === "opgeleverd" || opdracht.dashboard_status === "geannuleerd") {
+    return NextResponse.json(
+      { error: "Deze klus is opgeleverd of geannuleerd en kan niet meer worden bewerkt." },
+      { status: 409 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -46,10 +55,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     referentienummer: tekstOfNull(body.referentienummer),
     keukenzaak: tekstOfNull(body.keukenzaak),
     documenttype: type,
+    // Uitgebreide velden alleen bijwerken als ze meegestuurd zijn (anders niet stil leegmaken).
+    klant_email: "klant_email" in body ? tekstOfNull(body.klant_email) : undefined,
+    adviseur: "adviseur" in body ? tekstOfNull(body.adviseur) : undefined,
+    leverweek: "leverweek" in body ? tekstOfNull(body.leverweek) : undefined,
+    werkomschrijving: "werkomschrijving" in body ? tekstOfNull(body.werkomschrijving) : undefined,
   };
 
+  // Gat A: is de klus al naar de monteur (gepland/bevestigd), dan markeren als "opnieuw versturen".
+  const markeerGewijzigd = moetOpnieuwVersturen(opdracht.dashboard_status);
+
   try {
-    await dbi.updateOpdrachtGegevens(id, input);
+    await dbi.updateOpdrachtGegevens(id, input, { markeerGewijzigd });
   } catch (err) {
     return NextResponse.json(
       { error: `Bijwerken mislukt: ${(err as Error).message}` },

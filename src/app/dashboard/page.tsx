@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { teDoenTelling } from "@/lib/te-doen";
 import { DashboardLijst } from "@/components/DashboardLijst";
 import { InschietZone } from "@/components/InschietZone";
+import { KlusInvoer } from "@/components/KlusInvoer";
 import { UserMenu } from "@/components/UserMenu";
 import { PaginaNavKnop } from "@/components/PaginaNavKnop";
 import { vereisRol } from "@/lib/toegang";
@@ -35,6 +36,10 @@ export default async function DashboardPage() {
 
       <div className="mb-4">
         <PaginaNavKnop href="/planbord" label="Naar het planbord" icon="agenda" />
+      </div>
+
+      <div className="mb-4">
+        <KlusInvoer context="kantoor" />
       </div>
 
       <div className="mb-4">

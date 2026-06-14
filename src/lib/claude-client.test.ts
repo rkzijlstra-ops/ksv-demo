@@ -10,7 +10,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
 }));
 
 // Pas importeren NA vi.mock zodat de mock wordt opgepikt
-import { createParser } from "./claude-client";
+import { createParser, buildOrderContent } from "./claude-client";
 
 const dummyPdf = Buffer.from("%PDF-1.4 fake pdf bytes", "utf-8");
 
@@ -158,5 +158,57 @@ describe("createParser", () => {
     const parse = createParser({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
 
     await expect(parse(dummyPdf)).rejects.toThrow();
+  });
+
+  it("stuurt een foto als image-block mee (parser leest ook beeld)", async () => {
+    mockCreate.mockResolvedValue(validToolUseResponse);
+    const parse = createParser({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    await parse(dummyPdf, "image/jpeg");
+
+    const callArg = mockCreate.mock.calls[0][0];
+    const imgBlock = callArg.messages[0].content.find(
+      (c: { type: string }) => c.type === "image",
+    );
+    expect(imgBlock).toBeDefined();
+    expect(imgBlock.source.media_type).toBe("image/jpeg");
+    expect(imgBlock.source.data).toBe(dummyPdf.toString("base64"));
+  });
+});
+
+const buf = Buffer.from("hallo");
+
+describe("buildOrderContent", () => {
+  it("maakt een document-block voor een PDF", () => {
+    const content = buildOrderContent(buf, "application/pdf", "lees dit");
+    expect(content[0].type).toBe("document");
+    // @ts-expect-error source bestaat op document-block
+    expect(content[0].source.media_type).toBe("application/pdf");
+    // @ts-expect-error source bestaat op document-block
+    expect(content[0].source.data).toBe(buf.toString("base64"));
+  });
+
+  it("maakt een image-block voor een foto (jpeg/png/webp)", () => {
+    for (const mt of ["image/jpeg", "image/png", "image/webp"]) {
+      const content = buildOrderContent(buf, mt, "lees dit");
+      expect(content[0].type).toBe("image");
+      // @ts-expect-error source bestaat op image-block
+      expect(content[0].source.media_type).toBe(mt);
+    }
+  });
+
+  it("valt terug op een document-block (pdf) bij een onbekend type", () => {
+    const content = buildOrderContent(buf, "application/octet-stream", "lees dit");
+    expect(content[0].type).toBe("document");
+    // @ts-expect-error source bestaat op document-block
+    expect(content[0].source.media_type).toBe("application/pdf");
+  });
+
+  it("zet de instructie als tekst-block erachter", () => {
+    const content = buildOrderContent(buf, "application/pdf", "lees dit");
+    const tekst = content[content.length - 1];
+    expect(tekst.type).toBe("text");
+    // @ts-expect-error text bestaat op text-block
+    expect(tekst.text).toBe("lees dit");
   });
 });

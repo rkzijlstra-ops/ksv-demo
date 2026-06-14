@@ -58,6 +58,23 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
+## Invoer-unificatie Part 2 (backend-fundament, blok 0/1/3.3/6)
+
+| Feature / flow | Lagen | Testbestand(en) | Status |
+|---|---|---|---|
+| Parser leest order uit PDF **én** foto (Claude vision; mediaType-bewust) | U | claude-client.test (buildOrderContent + image-block), opdrachten/route.test (foto = order-foto, 200) | groen |
+| Samenvoegen geparste order met bestaand blok (vul leeg, met rust bij gelijk, botsing bij verschil, nooit stil overschrijven) | U | order-samenvoegen.test | groen |
+| Andere-referentie-waarschuwing (bijgevoegde PDF hoort bij andere keuken) | U | order-samenvoegen.test | groen |
+| Rol-bewuste invoer-bestemming (monteur → eigen werkpool; kantoor → zaak/te plannen) | U | invoer-bestemming.test | groen |
+| Kantoor-correctie uitgebreide velden (e-mail/adviseur/leverweek/werkomschrijving), alleen als meegestuurd | U | opdrachten/[id]/route.test | groen |
+| Gat A: gegevens wijzigen ná versturen zet "gewijzigd, opnieuw versturen"-markering | U | opdrachten/[id]/route.test (gepland=markeren, binnen=niet) | groen |
+| Gat B: opgeleverde/geannuleerde klus niet meer bewerkbaar (409) | U | opdrachten/[id]/route.test | groen |
+| Rol-bewuste create in `/api/opdrachten` (monteur → werkpool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
+| Gedeeld `KlusInvoer`-component, monteur-context (vervangt `OpdrachtAanmaken`, zelfde flow) | E | zelf-invoer.spec | groen (CI) |
+| Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
+
+**Nog te bouwen (volgende PR's):** order-zone met camera-knop + botsing-UI + subtiel kopieer-knopje in het component, `OpdrachtBewerken` → component (bestaand-modus), inbound gladtrekken (groeperen + mailtekst + review + Ed-adres + "te verwerken"-strook), opruimen `InschietZone`. Zie `PLAN-INVOER-UNIFICATIE-2.md` blok 2/3.3/4/7.
+
 ## Bekende gaten (eerlijk, nog te dekken)
 
 - **E2e voor de nieuwe verzend-flow (klant/zaak) staat nog open.** De backend is unit-gedekt
