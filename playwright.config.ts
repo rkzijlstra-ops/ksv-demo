@@ -29,7 +29,10 @@ export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
-  timeout: 30_000,
+  // In de cloud praat de US-runner met de EU-test-database: hogere latency dan lokaal. Daarom ruimere
+  // timeouts in CI, zodat geseede/aangemaakte data de tijd krijgt om te verschijnen (lokaal blijft strak).
+  timeout: inCI ? 60_000 : 30_000,
+  expect: { timeout: inCI ? 15_000 : 8_000 },
   fullyParallel: false,
   workers: 1,
   // Eén herkansing: sommige UI-flows (oplevering met foto-upload + handtekening) zijn af en toe traag
