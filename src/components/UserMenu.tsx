@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User, Info, Trash2, Users, IdCard, BookOpen, Menu, Sparkles, Hammer } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -9,7 +8,6 @@ import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 import { APP_VERSIE } from "@/lib/versie";
 
 export function UserMenu({ email, isBeheerder = false }: { email: string; isBeheerder?: boolean }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [bezig, setBezig] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -24,10 +22,17 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
 
   async function uitloggen() {
     setBezig(true);
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      const supabase = createSupabaseBrowserClient();
+      // scope "local": wist de sessie-cookies lokaal zonder de globale server-revoke (die kan hangen
+      // bij een trage/verlopen sessie en zo het uitloggen blokkeren). De cookies zijn daarna leeg.
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Mocht signOut toch falen: we navigeren sowieso hard weg met gewiste cookies.
+    }
+    // Harde navigatie i.p.v. router.push: forceert een schone herlaad zodat de server de gewiste sessie
+    // ziet (router.refresh kan in de PWA de oude staat vasthouden).
+    window.location.assign("/login");
   }
 
   const initiaal = email.charAt(0).toUpperCase();
