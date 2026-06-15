@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Inbox, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkpool";
@@ -12,8 +13,20 @@ import { vereisRol } from "@/lib/toegang";
 
 export const dynamic = "force-dynamic";
 
-export default async function WerkpoolPage() {
+export default async function WerkpoolPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ werkpool?: string }>;
+}) {
   const { email, profiel } = await vereisRol(["monteur", "beheerder"]);
+
+  // Een beheerder is dubbelrol (mag werkpool én dashboard). Standaard sturen we 'm naar het dashboard,
+  // zijn echte thuis. Wil hij tóch zijn eigen werkpool zien, dan komt hij hier via ?werkpool=1
+  // (link in het accountmenu). Een monteur en het param-geval renderen gewoon de werkpool hieronder.
+  const sp = await searchParams;
+  if (profiel.rol === "beheerder" && sp?.werkpool !== "1") {
+    redirect("/dashboard");
+  }
 
   const dbi = await db();
   // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
