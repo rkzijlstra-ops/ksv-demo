@@ -51,7 +51,10 @@ export default defineConfig({
     serviceWorkers: "block",
   },
   webServer: {
-    command: inCI ? `npm run start -- -p ${pwPort}` : `npm run dev -- -p ${pwPort}`,
+    // Ook in CI tegen `next dev` (zoals lokaal, waar alle tests groen zijn). De productie-build (`next
+    // start`) gaf in de CI-omgeving valse "data verschijnt niet"-fouten die in de echte productie op
+    // Vercel niet optreden; de build zelf wordt nog gevalideerd door de aparte build-stap + Vercel.
+    command: `npm run dev -- -p ${pwPort}`,
     url: `http://localhost:${pwPort}`,
     reuseExistingServer: !inCI,
     timeout: 120_000,
