@@ -57,6 +57,7 @@ export default defineConfig({
     command: `npm run dev -- -p ${pwPort}`,
     url: `http://localhost:${pwPort}`,
     reuseExistingServer: !inCI,
+    stdout: "pipe",
     timeout: 120_000,
     // De testserver mag NOOIT echte SMS sturen (kost geld, en een trage gateway laat de e2e hangen).
     // Dit dwingt dry-run af, los van wat in .env.local/.env.test staat.
