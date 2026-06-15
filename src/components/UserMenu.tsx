@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, Info, Trash2, Users, IdCard, BookOpen, Menu, Sparkles } from "lucide-react";
+import { LogOut, User, Info, Trash2, Users, IdCard, BookOpen, Menu, Sparkles, Hammer } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 import { APP_VERSIE } from "@/lib/versie";
@@ -83,7 +83,8 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
                 // private mode e.d.: niets te wissen, gewoon doorgaan.
               }
               setOpen(false);
-              window.location.assign("/");
+              // ?werkpool=1 zodat ook een beheerder de werkpool (met uitleg) ziet i.p.v. naar het dashboard te gaan.
+              window.location.assign("/?werkpool=1");
             }}
             className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
@@ -100,15 +101,26 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
             Mijn gegevens
           </Link>
           {isBeheerder && (
-            <Link
-              href="/gebruikers"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-            >
-              <Users size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
-              Gebruikers
-            </Link>
+            <>
+              <Link
+                href="/?werkpool=1"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                <Hammer size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+                Mijn werkpool
+              </Link>
+              <Link
+                href="/gebruikers"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                <Users size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
+                Gebruikers
+              </Link>
+            </>
           )}
           <Link
             href="/prullenbak"
