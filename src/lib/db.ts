@@ -635,7 +635,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         )
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
-      console.log("[diag-werkpool]", JSON.stringify({ userId, count: (data ?? []).length }));
+      console.error("[diag-werkpool]", JSON.stringify({ userId, count: (data ?? []).length }));
       return (data ?? []) as Melding[];
     },
 

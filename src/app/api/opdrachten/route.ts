@@ -195,7 +195,7 @@ export async function POST(req: Request) {
   try {
     const r = await dbi.createOpdracht(kop);
     opdrachtId = r.id;
-    console.log("[diag-post]", JSON.stringify({ userId, rol, toegewezen: kop.toegewezen_aan, opdrachtgever: kop.opdrachtgever_id, id: opdrachtId }));
+    console.error("[diag-post]", JSON.stringify({ userId, rol, toegewezen: kop.toegewezen_aan, opdrachtgever: kop.opdrachtgever_id, id: opdrachtId }));
   } catch (err) {
     console.error("[diag-post-fout]", (err as Error).message);
     return NextResponse.json(
