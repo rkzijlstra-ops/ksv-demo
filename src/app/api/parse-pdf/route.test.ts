@@ -33,6 +33,7 @@ const dummyParsed: ParsedPdf = {
       melding_tekst: "Beschadigd",
     },
   ],
+  adressen: [],
 };
 
 function buildRequest(file: File): Request {

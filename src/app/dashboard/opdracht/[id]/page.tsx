@@ -18,6 +18,7 @@ import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { TerugKnop } from "@/components/TerugKnop";
 import { OpdrachtBewerken } from "@/components/OpdrachtBewerken";
+import { AdresControleBlok } from "@/components/AdresControleBlok";
 import { DocumentBeheer } from "@/components/DocumentBeheer";
 import { Logboek } from "@/components/Logboek";
 import { AnnuleerKnop } from "@/components/AnnuleerKnop";
@@ -108,6 +109,10 @@ export default async function OpdrachtgeverDetailPage({
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      {opdracht.adres_keuze_nodig && (
+        <AdresControleBlok opdrachtId={opdracht.id} kandidaten={opdracht.adres_kandidaten ?? []} />
+      )}
 
       {afStat === "voltooid" && (
         <section className="mt-6 border-2 border-success bg-success/5 p-4">

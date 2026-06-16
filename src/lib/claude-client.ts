@@ -20,11 +20,16 @@ Kop-velden (gelden voor beide types):
 - Geef het referentienummer altijd als string terug (ook al staat het als cijfer).
 - "klant_telefoon": telefoonnummer van de klant als string (bijv. '071-1234567' of '06-12345678'), of null. Staan er meerdere nummers, neem ze samen in één string.
 - "klant_email": het e-mailadres van de klant, vaak in de kop bij "Email-adres" (één adres als string), of null. Bij service-werkbonnen vaak afwezig.
-- "klant_naam" en "klant_adres" uit de klant-/afleveradres-gegevens.
+- "klant_naam" uit de klant-/afleveradres-gegevens.
 - "adviseur": de adviseur/orderverwerker.
 - "leverweek": de "Gepl. leverweek" (bijv. '22/2026') bij een orderbevestiging; null bij een werkbon of als niet vindbaar.
 - "keukenzaak": de naam van de keukenzaak/opdrachtgever uit de kop of voettekst van het document (bijv. 'Keukenstudio Voorschoten', 'Keukensale.com Katwijk' of 'Küchen-Dump Almere'); null als niet vindbaar.
 - Bij twijfel over een veld: geef null terug, verzin niets.
+
+Adressen ("adressen" en "klant_adres"):
+- Een order bevat soms MEERDERE adressen: het MONTAGE-/afleveradres (waar de keuken geplaatst wordt en waar de monteur heen moet), het OPDRACHTGEVER-adres (een bouwbedrijf, aannemer of de keukenzaak zelf) en/of een FACTUUR-adres. Deze kunnen ver uit elkaar liggen.
+- Geef in "adressen" ALLE gevonden adressen terug, elk met het juiste soort-label ("montage", "opdrachtgever", "factuur", "onbekend"). Staat er maar één adres, geef dan dat ene. Geen adres vindbaar: lege array.
+- "klant_adres": het MONTAGE-/afleveradres als je dat met zekerheid kunt aanwijzen; anders null. Verzin niets en gok NIET tussen meerdere adressen; bij twijfel laat je "klant_adres" null en vertrouw je op "adressen" zodat een mens kiest.
 
 Alleen bij werkbon_service de "meldingen":
 - Voor elke artikel-regel met "Uw melding" tekst één item.

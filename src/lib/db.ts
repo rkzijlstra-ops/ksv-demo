@@ -3,7 +3,8 @@ import { env } from "./env";
 import { createSupabaseServerClient } from "./supabase-server";
 import { scopeVoorDashboard } from "./dashboard-scope";
 import { moetOpnieuwVersturen, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
-import type { ParsedPdf, MeldingItem } from "./parser-schema";
+import type { ParsedPdf, MeldingItem, AdresKandidaat } from "./parser-schema";
+import { adresKeuzeNodig } from "./adres-keuze";
 import { genereerInboundToken } from "./inbound";
 import type { ControlePunt } from "./oplever-controle";
 
@@ -38,6 +39,10 @@ export interface Melding {
   klant_telefoon: string | null;
   // klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie van het rapport, aanpasbaar
   klant_email: string | null;
+  // Adres-keuze (blok 20): alle op de PDF gevonden adressen + vlag dat een mens nog moet kiezen
+  // welke de montagelocatie is (zolang true: dashboard blokkeert plannen).
+  adres_kandidaten: AdresKandidaat[] | null;
+  adres_keuze_nodig: boolean;
   meldingen: MeldingItem[];
   foto_urls: string[];
   spraak_tekst: string | null;
@@ -225,6 +230,10 @@ export interface OpdrachtInput {
   opdrachtgever_id?: string | null;
   /** Vrij-tekst "wat moet er gebeuren" (typen/spraak); puur intern, niet in het rapport. */
   werkomschrijving?: string | null;
+  /** Adres-keuze (blok 20): alle gevonden adressen ([{adres, soort}, ...]). */
+  adres_kandidaten?: AdresKandidaat[] | null;
+  /** Adres-keuze (blok 20): true zolang er meerdere adressen zijn en nog niet gekozen is. */
+  adres_keuze_nodig?: boolean;
 }
 
 /** Corrigeerbare kop-gegevens van een opdracht (parser-fouten herstellen na inschieten). */
@@ -350,6 +359,8 @@ export interface Db {
     opts?: { markeerGewijzigd?: boolean },
   ): Promise<void>;
   updateWerkomschrijving(id: string, tekst: string | null): Promise<void>;
+  /** Adres-keuze (blok 20): legt het gekozen montageadres vast en haalt de keuze-vlag eraf. */
+  kiesAdres(id: string, adres: string): Promise<void>;
   addDocument(input: DocumentInput): Promise<{ id: string }>;
   getDocumentenVoorOpdracht(opdrachtId: string): Promise<Document[]>;
   getDocumentById(id: string): Promise<Document | null>;
@@ -423,6 +434,11 @@ export interface Db {
   getProfiel(userId: string): Promise<Profiel | null>;
   // blok 18 (inbound): ontvangsttoken opzoeken/aanmaken, het bakje lezen en een voorstel bevestigen.
   getProfielByInboundToken(token: string): Promise<Profiel | null>;
+  /**
+   * Inbound-idempotentie: registreer dat deze mail (email_id) verwerkt is. Geeft true als het de
+   * eerste keer is, false als de mail al eerder verwerkt was (Resend leverde 'm opnieuw af).
+   */
+  markeerInboundVerwerkt(emailId: string): Promise<boolean>;
   ensureInboundToken(userId: string): Promise<string>;
   getInboxVoor(userId: string): Promise<Melding[]>;
   markeerVerwerkt(id: string): Promise<void>;
@@ -450,9 +466,19 @@ export interface Db {
 function createDbFromClient(client: SupabaseClient): Db {
   return {
     async insertPdfMelding(data: ParsedPdf) {
+      // "adressen" is geen kolom: map het naar adres_kandidaten + de keuze-vlag. Bij meerdere
+      // adressen laten we klant_adres leeg zodat een mens bewust kiest (geen gok-adres tonen).
+      const { adressen, ...rest } = data;
+      const keuzeNodig = adresKeuzeNodig(adressen);
       const { data: row, error } = await client
         .from("meldingen")
-        .insert({ bron: "pdf", ...data })
+        .insert({
+          bron: "pdf",
+          ...rest,
+          adres_kandidaten: adressen.length ? adressen : null,
+          adres_keuze_nodig: keuzeNodig,
+          ...(keuzeNodig ? { klant_adres: null } : {}),
+        })
         .select("id")
         .single();
       if (error) throw new Error(`DB insert mislukt: ${error.message}`);
@@ -486,6 +512,8 @@ function createDbFromClient(client: SupabaseClient): Db {
           opdrachtgever_id: input.opdrachtgever_id ?? null,
           te_verwerken: input.te_verwerken ?? false,
           werkomschrijving: input.werkomschrijving ?? null,
+          adres_kandidaten: input.adres_kandidaten ?? null,
+          adres_keuze_nodig: input.adres_keuze_nodig ?? false,
         })
         .select("id")
         .single();
@@ -526,6 +554,14 @@ function createDbFromClient(client: SupabaseClient): Db {
       const { error } = await client
         .from("meldingen")
         .update({ werkomschrijving: tekst })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
+    },
+
+    async kiesAdres(id: string, adres: string) {
+      const { error } = await client
+        .from("meldingen")
+        .update({ klant_adres: adres, adres_keuze_nodig: false })
         .eq("id", id);
       if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
@@ -1125,6 +1161,15 @@ function createDbFromClient(client: SupabaseClient): Db {
         .maybeSingle();
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data as Profiel | null) ?? null;
+    },
+
+    async markeerInboundVerwerkt(emailId: string) {
+      // Atomisch: insert met email_id als primary key. Lukt het, dan is dit de eerste keer (true).
+      // Een duplicate-key (Postgres 23505) betekent dat de mail al verwerkt was -> false, sla over.
+      const { error } = await client.from("inbound_verwerkt").insert({ email_id: emailId });
+      if (!error) return true;
+      if (error.code === "23505") return false;
+      throw new Error(`Inbound-idempotentie mislukt: ${error.message}`);
     },
 
     async ensureInboundToken(userId: string) {

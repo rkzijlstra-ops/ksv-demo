@@ -4,6 +4,7 @@ const {
   mockGet,
   mockAttGet,
   mockGetProfielByToken,
+  mockMarkeerVerwerkt,
   mockCreateOpdracht,
   mockAddDocument,
   mockUpload,
@@ -13,6 +14,7 @@ const {
   mockGet: vi.fn(),
   mockAttGet: vi.fn(),
   mockGetProfielByToken: vi.fn(),
+  mockMarkeerVerwerkt: vi.fn(),
   mockCreateOpdracht: vi.fn(),
   mockAddDocument: vi.fn(),
   mockUpload: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock("resend", () => ({
 vi.mock("@/lib/db", () => ({
   dbAdmin: () => ({
     getProfielByInboundToken: mockGetProfielByToken,
+    markeerInboundVerwerkt: mockMarkeerVerwerkt,
     createOpdracht: mockCreateOpdracht,
     addDocument: mockAddDocument,
     getStandaardOpdrachtgever: mockStandaard,
@@ -41,7 +44,9 @@ import { POST } from "./route";
 
 const TOKEN = "abc123";
 
-function parsed(ref: string | null) {
+type AdresK = { adres: string; soort: "montage" | "opdrachtgever" | "factuur" | "onbekend" };
+
+function parsed(ref: string | null, adressen: AdresK[] = []) {
   return {
     klant_naam: "Fam. De Bruijn",
     klant_adres: "Dorpsstraat 14",
@@ -53,6 +58,7 @@ function parsed(ref: string | null) {
     leverweek: null,
     keukenzaak: "Keukenstudio Voorschoten",
     meldingen: [],
+    adressen,
   };
 }
 
@@ -83,6 +89,7 @@ describe("POST /api/inbound", () => {
     vi.stubEnv("RESEND_API_KEY", "test-key");
     vi.stubEnv("RESEND_WEBHOOK_SECRET", ""); // geen secret -> handtekening overslaan
     vi.stubEnv("INBOUND_DOMAIN", "kluslus.nl");
+    mockMarkeerVerwerkt.mockResolvedValue(true); // standaard: eerste keer dat deze mail binnenkomt
     mockCreateOpdracht.mockResolvedValue({ id: "opdr-1" });
     mockAddDocument.mockResolvedValue({ id: "doc-1" });
     mockUpload.mockResolvedValue({ pad: "p.pdf", publieke_url: "https://x/p.pdf" });
@@ -171,5 +178,48 @@ describe("POST /api/inbound", () => {
     const res = await POST(webhook([pdf("a1")]));
     expect(res.status).toBe(200);
     expect(mockCreateOpdracht).not.toHaveBeenCalled();
+  });
+
+  it("idempotentie: dezelfde mail tweede keer wordt overgeslagen, geen dubbele klus", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockMarkeerVerwerkt.mockResolvedValue(false); // al eerder verwerkt
+    mockParse.mockResolvedValue(parsed("R1"));
+
+    const res = await POST(webhook([pdf("a1")]));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ dubbel: true });
+    expect(mockParse).not.toHaveBeenCalled(); // niet eens parsen
+    expect(mockCreateOpdracht).not.toHaveBeenCalled();
+  });
+
+  it("meerdere adressen op de PDF: klant_adres leeg, kandidaten bewaard, keuze-vlag aan", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockParse.mockResolvedValue(
+      parsed("R1", [
+        { adres: "Marshalllaan 2, 2215 NZ Voorhout", soort: "montage" },
+        { adres: "Ambachtsweg 7, 2222 AH Katwijk", soort: "opdrachtgever" },
+      ]),
+    );
+
+    await POST(webhook([pdf("a1")]));
+
+    const kop = mockCreateOpdracht.mock.calls[0][0];
+    expect(kop.adres_keuze_nodig).toBe(true);
+    expect(kop.klant_adres).toBeNull();
+    expect(kop.adres_kandidaten).toHaveLength(2);
+  });
+
+  it("één adres op de PDF: gewoon overnemen, geen keuze nodig", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockParse.mockResolvedValue(
+      parsed("R1", [{ adres: "Dorpsstraat 14", soort: "montage" }]),
+    );
+
+    await POST(webhook([pdf("a1")]));
+
+    const kop = mockCreateOpdracht.mock.calls[0][0];
+    expect(kop.adres_keuze_nodig).toBe(false);
+    expect(kop.klant_adres).toBe("Dorpsstraat 14");
   });
 });

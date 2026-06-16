@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parsePdfWithClaude } from "@/lib/claude-client";
+import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
@@ -64,10 +65,13 @@ export async function POST(req: Request) {
     if (f.type === "application/pdf") {
       try {
         const parsed = await parsePdfWithClaude(buf);
+        // Adres-keuze: meerdere adressen op de PDF? Niets gokken; klant_adres leeg en de klus
+        // vlaggen zodat de planner op het dashboard bewust de montagelocatie kiest.
+        const keuzeNodig = adresKeuzeNodig(parsed.adressen);
         koppen.push({
           documenttype: parsed.documenttype,
           klant_naam: parsed.klant_naam,
-          klant_adres: parsed.klant_adres,
+          klant_adres: keuzeNodig ? null : parsed.klant_adres,
           referentienummer: parsed.referentienummer,
           adviseur: parsed.adviseur,
           klant_telefoon: parsed.klant_telefoon,
@@ -75,6 +79,8 @@ export async function POST(req: Request) {
           leverweek: parsed.leverweek,
           keukenzaak: parsed.keukenzaak,
           meldingen: parsed.meldingen,
+          adres_kandidaten: parsed.adressen.length ? parsed.adressen : null,
+          adres_keuze_nodig: keuzeNodig,
           user_id: userId,
         });
       } catch {

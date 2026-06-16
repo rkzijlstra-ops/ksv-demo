@@ -43,6 +43,7 @@ const orderParsed: ParsedPdf = {
   leverweek: "22/2026",
   keukenzaak: "Keukensale.com Katwijk",
   meldingen: [],
+  adressen: [],
 };
 
 function pdfFile(name = "7407.pdf"): File {

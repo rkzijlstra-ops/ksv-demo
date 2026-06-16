@@ -62,6 +62,8 @@ function maakMelding(over: Partial<Melding>): Melding {
     adviseur: "Marco van Leeuwen",
     klant_telefoon: "06-40200603",
     klant_email: null,
+    adres_kandidaten: null,
+    adres_keuze_nodig: false,
     meldingen: [],
     foto_urls: [],
     spraak_tekst: null,
