@@ -1,8 +1,9 @@
 name: CI
 
 # Draait de volledige testsuite in de cloud bij elke push naar master en bij pull requests:
-# typecheck + unit + integratie + browser-e2e. De e2e draait tegen een kant-en-klare productie-build
-# (next build + next start), niet tegen een dev-server, dus snel en zonder hangen.
+# typecheck + unit + integratie + browser-e2e. De build wordt apart gevalideerd (stap "App bouwen"),
+# maar de e2e zelf draait tegen `next dev` (zie playwright.config.ts): de productie-build gaf in CI
+# valse "data verschijnt niet"-fouten die op Vercel niet optreden, terwijl next dev lokaal-groen matcht.
 # De geheime testomgeving komt uit de repo-secret ENV_TEST (de inhoud van .env.test).
 
 on:
@@ -16,10 +17,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Code ophalen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node opzetten
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -67,7 +68,7 @@ jobs:
 
       - name: Test-resultaten bewaren bij een fout (trace + snapshots)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-resultaten
           path: test-results/

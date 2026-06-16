@@ -55,3 +55,12 @@ Typecheck groen. Verificatie = groene e2e-run (door Rein / push naar CI).
 Een gedeelde storageState-sessie + een test die uitlogt = collapse voor alle volgende tests met die
 sessie. Een sessie-vernietigende test hoort een eigen wegwerp-sessie te krijgen. En: instrumenteer bij
 "data verschijnt niet" eerst de auth-/middleware-laag (belandt de request op /login?) vóór de datalaag.
+
+## Afronding (2026-06-16)
+
+- Lokaal 74 groen, CI groen (commit a3834fd op ci-stabilisatie).
+- Meteen meegenomen: de GitHub-deprecatiewaarschuwing. De workflow-actions liepen nog op Node 20;
+  gebumpt naar Node 24-versies: `actions/checkout@v5`, `actions/setup-node@v5`,
+  `actions/upload-artifact@v5`. Ook de verouderde header-comment in `ci.yml` rechtgezet (de e2e draait
+  tegen `next dev`, niet `next start`; de build wordt apart gevalideerd).
+- PR #9 (ci-stabilisatie -> master) gemerged nadat CI met de gebumpte actions groen was.
