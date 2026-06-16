@@ -47,7 +47,14 @@ test("monteur bevestigt een inbound-voorstel, dat naar de werkpool verhuist", as
   await page.goto("/inbox");
   await wachtOpHydratie(page);
   await expect(page.getByText(naam)).toBeVisible();
-  await page.getByRole("button", { name: "Bevestigen" }).click();
+  // Wacht tot de bevestig-POST klaar is vóór we wegnavigeren: anders annuleert page.goto de nog
+  // lopende fetch (de knop-handler is async) en blijft te_verwerken=true -> klus niet in de werkpool.
+  await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes(`/api/inbound/${voorstelId}/bevestigen`) && r.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Bevestigen" }).click(),
+  ]);
 
   // Daarna staat het als gewone klus in de werkpool.
   await page.goto("/");
