@@ -27,9 +27,11 @@ Kop-velden (gelden voor beide types):
 - Bij twijfel over een veld: geef null terug, verzin niets.
 
 Adressen ("adressen" en "klant_adres"):
-- Een order bevat soms MEERDERE adressen: het MONTAGE-/afleveradres (waar de keuken geplaatst wordt en waar de monteur heen moet), het OPDRACHTGEVER-adres (een bouwbedrijf, aannemer of de keukenzaak zelf) en/of een FACTUUR-adres. Deze kunnen ver uit elkaar liggen.
-- Geef in "adressen" ALLE gevonden adressen terug, elk met het juiste soort-label ("montage", "opdrachtgever", "factuur", "onbekend"). Staat er maar één adres, geef dan dat ene. Geen adres vindbaar: lege array.
-- "klant_adres": het MONTAGE-/afleveradres als je dat met zekerheid kunt aanwijzen; anders null. Verzin niets en gok NIET tussen meerdere adressen; bij twijfel laat je "klant_adres" null en vertrouw je op "adressen" zodat een mens kiest.
+- Het MONTAGE-/afleveradres is waar de keuken geplaatst wordt en waar de monteur heen moet (het klantadres). Geef dit altijd.
+- Soms staat er een TWEEDE, ander adres dat ertoe doet: een OPDRACHTGEVER die een DERDE partij is (een bouwbedrijf of aannemer die de opdracht geeft) of een afwijkend FACTUUR-adres. Neem zulke adressen ook op in "adressen" met het juiste soort-label.
+- HEEL BELANGRIJK: neem het EIGEN adres van de keukenzaak/showroom NIET op in "adressen". Dat staat vaak in de kop of voettekst bij de bedrijfsnaam, telefoon, e-mail, website of KvK (bijvoorbeeld de showroom van Keukenstudio Voorschoten aan de Kon. Julianalaan 46 te Voorschoten, of Keukensale Katwijk aan de Ambachtsweg te Katwijk). Dat is GEEN montage- of opdrachtgever-adres in deze zin; het hoort bij het veld "keukenzaak", niet bij "adressen". Een gewone klantorder heeft dus maar ÉÉN adres in "adressen": dat van de klant.
+- Geef in "adressen" dus alleen het montage-/afleveradres van de klant en eventuele afwijkende opdrachtgever-/factuuradressen van DERDEN. Eén relevant adres? Geef dat ene. Geen adres vindbaar: lege array.
+- "klant_adres": het MONTAGE-/afleveradres als je dat met zekerheid kunt aanwijzen; anders null. Verzin niets en gok NIET tussen meerdere ECHTE adressen (klant vs bouwbedrijf); bij die twijfel laat je "klant_adres" null en vertrouw je op "adressen" zodat een mens kiest.
 
 Alleen bij werkbon_service de "meldingen":
 - Voor elke artikel-regel met "Uw melding" tekst één item.
