@@ -3,9 +3,10 @@ import { Resend } from "resend";
 import { dbAdmin, type Db, type OpdrachtInput } from "@/lib/db";
 import { storage } from "@/lib/storage";
 import { parseOrderWithClaude } from "@/lib/claude-client";
+import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { tokenUitAdressen } from "@/lib/inbound";
 import { verifyResendSignature } from "@/lib/webhook-handtekening";
-import { groepeerOpRef } from "@/lib/inschiet-groep";
+import { groepeerInboundOrder } from "@/lib/inbound-groep";
 import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
 export const runtime = "nodejs";
@@ -109,6 +110,11 @@ export async function POST(req: Request) {
   const profiel = await adm.getProfielByInboundToken(token);
   if (!profiel) return NextResponse.json({ ok: true }); // onbekend token
 
+  // Idempotentie: Resend kan dezelfde mail opnieuw afleveren (het parsen hieronder duurt 10-30s,
+  // langer dan Resend wacht). Verwerk elke email_id maar één keer, anders ontstaan dubbele klussen.
+  const eersteKeer = await adm.markeerInboundVerwerkt(emailId);
+  if (!eersteKeer) return NextResponse.json({ ok: true, dubbel: true });
+
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) return NextResponse.json({ error: "RESEND_API_KEY ontbreekt" }, { status: 500 });
   const resend = new Resend(apiKey);
@@ -204,7 +210,17 @@ export async function POST(req: Request) {
         let basis: Partial<OpdrachtInput> = {};
         if (bytes) {
           try {
-            basis = { ...(await parseOrderWithClaude(bytes, att.content_type)) };
+            const p = await parseOrderWithClaude(bytes, att.content_type);
+            // Adres-keuze: meerdere adressen op de PDF? Dan niets gokken: klant_adres leeg laten en
+            // de klus vlaggen, zodat de ontvanger (monteur in z'n inbox / kantoor op het dashboard)
+            // bewust de montagelocatie kiest. Eén adres: gewoon overnemen.
+            const keuzeNodig = adresKeuzeNodig(p.adressen);
+            basis = {
+              ...p,
+              adres_kandidaten: p.adressen.length ? p.adressen : null,
+              adres_keuze_nodig: keuzeNodig,
+              klant_adres: keuzeNodig ? null : p.klant_adres,
+            };
           } catch {
             // Parser faalt: leeg voorstel, het document blijft bewaard zodat de ontvanger het zelf leest.
           }
@@ -212,10 +228,13 @@ export async function POST(req: Request) {
         koppen.push(maakKop(basis));
       }
 
-      const groepen = groepeerOpRef(koppen.map((k) => ({ referentienummer: k.referentienummer })));
+      // Eén mail = één keuken (tenzij echt meerdere refs). Zo ontstaat er geen kale, lege klus uit
+      // een tweede PDF (bijv. een leidingadvies of een leeg-geparste order). De meest complete kop
+      // wordt de kop van de klus.
+      const groepen = groepeerInboundOrder(koppen);
       for (let g = 0; g < groepen.length; g++) {
         const groep = groepen[g];
-        const kop = koppen[groep.indexen[0]];
+        const kop = koppen[groep.kopIndex];
         const { id: opdrachtId } = await adm.createOpdracht(kop);
         voorstellen.push(opdrachtId);
         for (const idx of groep.indexen) {
@@ -223,7 +242,7 @@ export async function POST(req: Request) {
           if (bytes) {
             await bewaarBijlage(
               adm, opdrachtId, pdfs[idx], bytes, userId, kop.referentienummer ?? null,
-              idx === groep.indexen[0],
+              idx === groep.kopIndex,
             );
           }
         }

@@ -69,6 +69,7 @@ const validParsedPdf: ParsedPdf = {
       melding_tekst: "Beschadigd bij ontvangst",
     },
   ],
+  adressen: [],
 };
 
 beforeEach(() => {
@@ -82,7 +83,14 @@ describe("insertPdfMelding", () => {
     await createDb(cfg).insertPdfMelding(validParsedPdf);
 
     expect(h.fns.from).toHaveBeenCalledWith("meldingen");
-    expect(h.fns.insert).toHaveBeenCalledWith({ bron: "pdf", ...validParsedPdf });
+    // "adressen" wordt gemapt naar adres_kandidaten + de keuze-vlag; bij 0 adressen: null/false.
+    const { adressen: _adressen, ...rest } = validParsedPdf;
+    expect(h.fns.insert).toHaveBeenCalledWith({
+      bron: "pdf",
+      ...rest,
+      adres_kandidaten: null,
+      adres_keuze_nodig: false,
+    });
   });
 
   it("returnt id van de aangemaakte rij", async () => {
@@ -994,5 +1002,55 @@ describe("gebruikersbeheer", () => {
       keukenzaak: "Keukenstudio Voorschoten",
       documenttype: "werkbon_service",
     });
+  });
+});
+
+describe("insertPdfMelding met meerdere adressen", () => {
+  it("mapt adressen naar adres_kandidaten, zet de keuze-vlag en laat klant_adres leeg", async () => {
+    h.setResult({ data: { id: "x" }, error: null });
+    const adressen = [
+      { adres: "Marshalllaan 2, 2215 NZ Voorhout", soort: "montage" as const },
+      { adres: "Ambachtsweg 7, 2222 AH Katwijk", soort: "opdrachtgever" as const },
+    ];
+    await createDb(cfg).insertPdfMelding({
+      ...validParsedPdf,
+      klant_adres: "Ambachtsweg 7, 2222 AH Katwijk",
+      adressen,
+    });
+    const arg = h.fns.insert.mock.calls[0][0] as Record<string, unknown>;
+    expect(arg.adres_kandidaten).toEqual(adressen);
+    expect(arg.adres_keuze_nodig).toBe(true);
+    expect(arg.klant_adres).toBeNull();
+  });
+});
+
+describe("kiesAdres", () => {
+  it("zet klant_adres en haalt de keuze-vlag eraf", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).kiesAdres("id-1", "Marshalllaan 2, 2215 NZ Voorhout");
+    expect(h.fns.update).toHaveBeenCalledWith({
+      klant_adres: "Marshalllaan 2, 2215 NZ Voorhout",
+      adres_keuze_nodig: false,
+    });
+    expect(h.fns.eq).toHaveBeenCalledWith("id", "id-1");
+  });
+});
+
+describe("markeerInboundVerwerkt", () => {
+  it("geeft true bij de eerste keer (insert lukt)", async () => {
+    h.setResult({ data: null, error: null });
+    expect(await createDb(cfg).markeerInboundVerwerkt("mail-1")).toBe(true);
+    expect(h.fns.from).toHaveBeenCalledWith("inbound_verwerkt");
+    expect(h.fns.insert).toHaveBeenCalledWith({ email_id: "mail-1" });
+  });
+
+  it("geeft false als de mail al verwerkt was (duplicate key 23505)", async () => {
+    h.setResult({ data: null, error: { code: "23505", message: "duplicate key value" } });
+    expect(await createDb(cfg).markeerInboundVerwerkt("mail-1")).toBe(false);
+  });
+
+  it("gooit bij een andere DB-fout", async () => {
+    h.setResult({ data: null, error: { code: "42501", message: "permission denied" } });
+    await expect(createDb(cfg).markeerInboundVerwerkt("mail-1")).rejects.toThrow(/permission denied/);
   });
 });

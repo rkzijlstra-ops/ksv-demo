@@ -23,6 +23,7 @@ const fullValid: ParsedPdf = {
       melding_tekst: "Krom, nabestellen",
     },
   ],
+  adressen: [],
 };
 
 describe("ParsedPdfSchema", () => {
@@ -109,5 +110,39 @@ describe("ParsedPdfSchema", () => {
   it("verwerpt object zonder meldingen-veld", () => {
     const { meldingen: _ignored, ...withoutMeldingen } = fullValid;
     expect(() => ParsedPdfSchema.parse(withoutMeldingen)).toThrow(/meldingen/);
+  });
+});
+
+describe("ParsedPdfSchema.adressen", () => {
+  it("valt terug op een lege array als 'adressen' ontbreekt (backward compat)", () => {
+    const { adressen: _weg, ...zonderAdressen } = fullValid;
+    const parsed = ParsedPdfSchema.parse(zonderAdressen);
+    expect(parsed.adressen).toEqual([]);
+  });
+
+  it("accepteert meerdere adressen met soort-label", () => {
+    const met = {
+      ...fullValid,
+      adressen: [
+        { adres: "Marshalllaan 2, 2215 NZ Voorhout", soort: "montage" },
+        { adres: "Ambachtsweg 7, 2222 AH Katwijk", soort: "opdrachtgever" },
+      ],
+    };
+    const parsed = ParsedPdfSchema.parse(met);
+    expect(parsed.adressen).toHaveLength(2);
+    expect(parsed.adressen[0].soort).toBe("montage");
+  });
+
+  it("verwerpt een onbekende soort-waarde", () => {
+    const invalid = {
+      ...fullValid,
+      adressen: [{ adres: "Straat 1", soort: "verzend" }],
+    };
+    expect(() => ParsedPdfSchema.parse(invalid)).toThrow();
+  });
+
+  it("verwerpt een adres-kandidaat zonder adres-string", () => {
+    const invalid = { ...fullValid, adressen: [{ soort: "montage" }] };
+    expect(() => ParsedPdfSchema.parse(invalid)).toThrow();
   });
 });

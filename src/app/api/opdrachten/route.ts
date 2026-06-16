@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { parseOrderWithClaude } from "@/lib/claude-client";
+import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
-import type { MeldingItem } from "@/lib/parser-schema";
+import type { MeldingItem, AdresKandidaat } from "@/lib/parser-schema";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
@@ -105,6 +106,18 @@ export async function POST(req: Request) {
         // ongeldige JSON: dan zonder artikelen, geen blokkade.
       }
     }
+    // Adres-keuze: vond de parser meerdere adressen, dan koos de monteur er één in het formulier
+    // (klant_adres is die keuze). We bewaren de kandidaten voor de historie; keuze is al gemaakt.
+    let adresKandidaten: AdresKandidaat[] | null = null;
+    const adresKandidatenRaw = strVeld(formData, "adres_kandidaten");
+    if (adresKandidatenRaw) {
+      try {
+        const p = JSON.parse(adresKandidatenRaw);
+        if (Array.isArray(p)) adresKandidaten = p as AdresKandidaat[];
+      } catch {
+        // ongeldige JSON: dan zonder kandidaten, geen blokkade.
+      }
+    }
     kop = {
       documenttype,
       klant_naam: velden.klant_naam,
@@ -119,6 +132,9 @@ export async function POST(req: Request) {
       keukenzaak: velden.keukenzaak,
       werkomschrijving: velden.werkomschrijving,
       meldingen,
+      adres_kandidaten: adresKandidaten,
+      // De monteur koos zelf in het formulier, dus geen openstaande keuze meer.
+      adres_keuze_nodig: false,
       user_id: userId,
       // Zelf inschieten = de klus is meteen van jou (verschijnt in je werkpool).
       toegewezen_aan: userId,
@@ -147,10 +163,13 @@ export async function POST(req: Request) {
           Buffer.from(await orderFile.arrayBuffer()),
           orderFile.type,
         );
+        // Snelle inschiet zonder review: niemand koos een adres. Bij meerdere adressen klant_adres
+        // leeg laten en vlaggen, zodat de keuze later alsnog bewust gemaakt wordt.
+        const keuzeNodig = adresKeuzeNodig(parsed.adressen);
         kop = {
           documenttype: parsed.documenttype,
           klant_naam: parsed.klant_naam,
-          klant_adres: parsed.klant_adres,
+          klant_adres: keuzeNodig ? null : parsed.klant_adres,
           referentienummer: parsed.referentienummer,
           adviseur: parsed.adviseur,
           klant_telefoon: parsed.klant_telefoon,
@@ -158,6 +177,8 @@ export async function POST(req: Request) {
           leverweek: parsed.leverweek,
           keukenzaak: parsed.keukenzaak,
           meldingen: parsed.meldingen,
+          adres_kandidaten: parsed.adressen.length ? parsed.adressen : null,
+          adres_keuze_nodig: keuzeNodig,
           user_id: userId,
           toegewezen_aan: userId,
         };

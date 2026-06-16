@@ -14,6 +14,8 @@ function maakMelding(over: Partial<Melding>): Melding {
     adviseur: null,
     klant_telefoon: null,
     klant_email: null,
+    adres_kandidaten: null,
+    adres_keuze_nodig: false,
     meldingen: [],
     foto_urls: [],
     spraak_tekst: null,

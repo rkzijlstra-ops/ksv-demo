@@ -39,6 +39,7 @@ function parsed(ref: string | null, naam = "Klant"): ParsedPdf {
     leverweek: null,
     keukenzaak: "Keukenstudio Voorschoten",
     meldingen: [],
+    adressen: [],
   };
 }
 

@@ -18,7 +18,9 @@ import { vernieuwOfflineCache } from "@/lib/sw-cache";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { HydratieKlaar } from "@/components/HydratieKlaar";
 import { SpraakOpname } from "@/components/SpraakOpname";
-import type { ParsedPdf } from "@/lib/parser-schema";
+import { AdresKeuze } from "@/components/AdresKeuze";
+import { adresKeuzeNodig, uniekeAdressen } from "@/lib/adres-keuze";
+import type { ParsedPdf, AdresKandidaat } from "@/lib/parser-schema";
 
 type Status = "idle" | "parsing" | "saving" | "success" | "error";
 
@@ -50,6 +52,8 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
 
   const [files, setFiles] = useState<File[]>([]);
   const [geparsed, setGeparsed] = useState(false);
+  // Adres-keuze: vond de parser meerdere adressen, dan kiest de monteur er hier bewust één.
+  const [adresKandidaten, setAdresKandidaten] = useState<AdresKandidaat[]>([]);
 
   const [naam, setNaam] = useState("");
   const [adres, setAdres] = useState("");
@@ -72,6 +76,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   function reset() {
     setFiles([]);
     setGeparsed(false);
+    setAdresKandidaten([]);
     setNaam("");
     setAdres("");
     setRef("");
@@ -96,7 +101,6 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       return;
     }
     setNaam((v) => v || p.klant_naam || "");
-    setAdres((v) => v || p.klant_adres || "");
     setRef((v) => v || p.referentienummer || "");
     setTelefoon((v) => v || p.klant_telefoon || "");
     setEmail((v) => v || p.klant_email || "");
@@ -105,7 +109,18 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setLeverweek(p.leverweek || "");
     setAdviseur(p.adviseur || "");
     setMeldingenJson(Array.isArray(p.meldingen) && p.meldingen.length ? JSON.stringify(p.meldingen) : "");
-    setParseInfo("Gegevens uit het document gelezen. Controleer en vul aan wat je weet.");
+    // Adres: bij meerdere adressen niets invullen, maar de keuze tonen (de monteur kiest bewust).
+    const adressen = Array.isArray(p.adressen) ? p.adressen : [];
+    if (adresKeuzeNodig(adressen)) {
+      setAdresKandidaten(uniekeAdressen(adressen));
+      setParseInfo(
+        "Gegevens gelezen. Let op: er staan meerdere adressen op de order. Kies hieronder de montagelocatie.",
+      );
+    } else {
+      setAdresKandidaten([]);
+      setAdres((v) => v || p.klant_adres || "");
+      setParseInfo("Gegevens uit het document gelezen. Controleer en vul aan wat je weet.");
+    }
   }
 
   async function parseDocument(doc: File) {
@@ -159,6 +174,12 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       setMessage("Voeg een document toe of vul minstens één veld in.");
       return;
     }
+    // Adres-keuze verplicht: bij meerdere adressen mag je niet opslaan zonder de montagelocatie te kiezen.
+    if (adresKandidaten.length > 0 && !adres.trim()) {
+      setStatus("error");
+      setMessage("Kies eerst de montagelocatie; er staan meerdere adressen op de order.");
+      return;
+    }
     bezigRef.current = true;
     setStatus("saving");
     setMessage("");
@@ -167,6 +188,9 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       files.forEach((f) => fd.append("files", f));
       fd.append("klant_naam", naam);
       fd.append("klant_adres", adres);
+      if (adresKandidaten.length > 0) {
+        fd.append("adres_kandidaten", JSON.stringify(adresKandidaten));
+      }
       fd.append("referentienummer", ref);
       fd.append("klant_telefoon", telefoon);
       fd.append("klant_email", email);
@@ -327,10 +351,14 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
               Klantnaam
               <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder="Bijv. Mevrouw Veering" />
             </label>
-            <label className={labelKlasse}>
-              Adres
-              <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder="Straat, postcode, plaats" />
-            </label>
+            {adresKandidaten.length > 0 ? (
+              <AdresKeuze kandidaten={adresKandidaten} waarde={adres} onKies={setAdres} />
+            ) : (
+              <label className={labelKlasse}>
+                Adres
+                <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder="Straat, postcode, plaats" />
+              </label>
+            )}
 
             <div className="flex gap-3">
               <label className={`${labelKlasse} flex-1`}>

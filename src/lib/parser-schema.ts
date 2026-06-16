@@ -12,6 +12,15 @@ export const DocumenttypeSchema = z.enum([
   "onbekend",
 ]);
 
+/** Soort adres op de order: waar de keuken geplaatst wordt (montage/aflever), het bedrijf dat de
+ *  opdracht geeft (bouwbedrijf/keukenzaak), het factuuradres, of onduidelijk. */
+export const AdresSoortSchema = z.enum(["montage", "opdrachtgever", "factuur", "onbekend"]);
+
+export const AdresKandidaatSchema = z.object({
+  adres: z.string().min(1),
+  soort: AdresSoortSchema,
+});
+
 export const ParsedPdfSchema = z.object({
   klant_naam: z.string().nullable(),
   klant_adres: z.string().nullable(),
@@ -23,9 +32,14 @@ export const ParsedPdfSchema = z.object({
   leverweek: z.string().nullable(),
   keukenzaak: z.string().nullable(),
   meldingen: z.array(MeldingItemSchema),
+  // Alle adressen op de PDF, elk met een soort-label. Default [] zodat oudere/onvolledige
+  // tool-output blijft valideren; bij 2+ unieke adressen kiest een mens (zie adres-keuze.ts).
+  adressen: z.array(AdresKandidaatSchema).default([]),
 });
 
 export type MeldingItem = z.infer<typeof MeldingItemSchema>;
+export type AdresSoort = z.infer<typeof AdresSoortSchema>;
+export type AdresKandidaat = z.infer<typeof AdresKandidaatSchema>;
 export type ParsedPdf = z.infer<typeof ParsedPdfSchema>;
 
 /**
@@ -104,6 +118,28 @@ export const ParsedPdfJsonSchema = {
           },
         },
         required: ["keller_code", "omschrijving", "melding_tekst"],
+        additionalProperties: false,
+      },
+    },
+    adressen: {
+      type: "array",
+      description:
+        "ALLE adressen die op het document staan, elk met een soort-label. Een order heeft soms meerdere adressen: het MONTAGE-/afleveradres (waar de keuken geplaatst wordt, waar de monteur heen moet), het OPDRACHTGEVER-adres (bouwbedrijf of keukenzaak) en/of een FACTUUR-adres. Geef ze allemaal terug. Staat er maar één adres, geef dan dat ene. Lege array als er geen adres vindbaar is.",
+      items: {
+        type: "object",
+        properties: {
+          adres: {
+            type: "string",
+            description: "Het volledige adres als één string (straat, postcode, plaats).",
+          },
+          soort: {
+            type: "string",
+            enum: ["montage", "opdrachtgever", "factuur", "onbekend"],
+            description:
+              "'montage' = waar de keuken geplaatst/afgeleverd wordt (montagelocatie, afleveradres). 'opdrachtgever' = het bedrijf dat de opdracht geeft (bouwbedrijf, aannemer, keukenzaak). 'factuur' = factuuradres. 'onbekend' als niet te bepalen.",
+          },
+        },
+        required: ["adres", "soort"],
         additionalProperties: false,
       },
     },
