@@ -150,6 +150,21 @@ describe("POST /api/inbound", () => {
     expect(mockCreateOpdracht).toHaveBeenCalledTimes(2);
   });
 
+  it("order zonder ref + leidingadvies mét ref: ÉÉN klus, beide PDF's, geen lege splitsing", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    // Eerste PDF (de 'B.A.'-order) parseert leeg; tweede (leidingadvies) heeft ref + klantdata.
+    mockParse
+      .mockResolvedValueOnce({ ...parsed(null), klant_naam: null, klant_adres: null })
+      .mockResolvedValueOnce(parsed("192813"));
+
+    await POST(webhook([pdf("a1"), pdf("a2")]));
+
+    expect(mockCreateOpdracht).toHaveBeenCalledOnce(); // geen tweede, lege klus
+    const kop = mockCreateOpdracht.mock.calls[0][0];
+    expect(kop.referentienummer).toBe("192813"); // meest complete kop wint
+    expect(mockAddDocument).toHaveBeenCalledTimes(2); // beide PDF's aan dezelfde klus
+  });
+
   it("geen PDF: één voorstel met onderwerp als naam en mailtekst in het werk-veld", async () => {
     mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
 

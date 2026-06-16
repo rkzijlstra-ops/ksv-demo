@@ -6,7 +6,7 @@ import { parseOrderWithClaude } from "@/lib/claude-client";
 import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { tokenUitAdressen } from "@/lib/inbound";
 import { verifyResendSignature } from "@/lib/webhook-handtekening";
-import { groepeerOpRef } from "@/lib/inschiet-groep";
+import { groepeerInboundOrder } from "@/lib/inbound-groep";
 import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
 export const runtime = "nodejs";
@@ -228,10 +228,13 @@ export async function POST(req: Request) {
         koppen.push(maakKop(basis));
       }
 
-      const groepen = groepeerOpRef(koppen.map((k) => ({ referentienummer: k.referentienummer })));
+      // Eén mail = één keuken (tenzij echt meerdere refs). Zo ontstaat er geen kale, lege klus uit
+      // een tweede PDF (bijv. een leidingadvies of een leeg-geparste order). De meest complete kop
+      // wordt de kop van de klus.
+      const groepen = groepeerInboundOrder(koppen);
       for (let g = 0; g < groepen.length; g++) {
         const groep = groepen[g];
-        const kop = koppen[groep.indexen[0]];
+        const kop = koppen[groep.kopIndex];
         const { id: opdrachtId } = await adm.createOpdracht(kop);
         voorstellen.push(opdrachtId);
         for (const idx of groep.indexen) {
@@ -239,7 +242,7 @@ export async function POST(req: Request) {
           if (bytes) {
             await bewaarBijlage(
               adm, opdrachtId, pdfs[idx], bytes, userId, kop.referentienummer ?? null,
-              idx === groep.indexen[0],
+              idx === groep.kopIndex,
             );
           }
         }
