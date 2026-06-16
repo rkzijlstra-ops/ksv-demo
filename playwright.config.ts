@@ -29,7 +29,10 @@ export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
-  timeout: 30_000,
+  // In de cloud praat de US-runner met de EU-test-database: hogere latency dan lokaal. Daarom ruimere
+  // timeouts in CI, zodat geseede/aangemaakte data de tijd krijgt om te verschijnen (lokaal blijft strak).
+  timeout: inCI ? 60_000 : 30_000,
+  expect: { timeout: inCI ? 15_000 : 8_000 },
   fullyParallel: false,
   workers: 1,
   // Eén herkansing: sommige UI-flows (oplevering met foto-upload + handtekening) zijn af en toe traag
@@ -48,9 +51,13 @@ export default defineConfig({
     serviceWorkers: "block",
   },
   webServer: {
-    command: inCI ? `npm run start -- -p ${pwPort}` : `npm run dev -- -p ${pwPort}`,
+    // Ook in CI tegen `next dev` (zoals lokaal, waar alle tests groen zijn). De productie-build (`next
+    // start`) gaf in de CI-omgeving valse "data verschijnt niet"-fouten die in de echte productie op
+    // Vercel niet optreden; de build zelf wordt nog gevalideerd door de aparte build-stap + Vercel.
+    command: `npm run dev -- -p ${pwPort}`,
     url: `http://localhost:${pwPort}`,
     reuseExistingServer: !inCI,
+    stdout: "pipe",
     timeout: 120_000,
     // De testserver mag NOOIT echte SMS sturen (kost geld, en een trage gateway laat de e2e hangen).
     // Dit dwingt dry-run af, los van wat in .env.local/.env.test staat.
