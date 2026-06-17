@@ -169,6 +169,7 @@ export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -191,6 +192,7 @@ export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -213,6 +215,7 @@ export async function verstuurAfmelding(input: AfmeldingMailInput): Promise<void
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -240,6 +243,7 @@ export async function verstuurAnnulering(input: AnnuleringMailInput): Promise<vo
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -267,6 +271,7 @@ export async function verstuurOntplanning(input: OntplanningMailInput): Promise<
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -294,6 +299,7 @@ export async function verstuurNieuwDocument(input: NieuwDocumentMailInput): Prom
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -316,6 +322,7 @@ export async function verstuurHerinnering(input: HerinneringMailInput): Promise<
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -345,6 +352,7 @@ export async function verstuurTerugmelding(input: TerugmeldingMailInput): Promis
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -385,6 +393,7 @@ export async function verstuurAfgerondMelding(opts: AfgerondMeldingMailInput): P
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    html: htmlVanTekst(text),
   });
   if (error) {
     const msg =
@@ -411,12 +420,15 @@ export async function verstuurSpoedMelding(input: SpoedMailInput): Promise<void>
       : "";
   const tekst = input.melding.ruwe_tekst?.trim() || "(geen tekst)";
 
+  const spoedTekst = `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\n${input.opdracht.keukenzaak?.trim() || "Het planning-team"}`;
+
   const { error } = await resend.emails.send({
     from,
     to: input.naar,
     ...(replyTo ? { replyTo } : {}),
     subject: `SPOED - ${klant}${ref}`,
-    text: `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\n${input.opdracht.keukenzaak?.trim() || "Het planning-team"}`,
+    text: spoedTekst,
+    html: htmlVanTekst(spoedTekst),
   });
 
   if (error) {
