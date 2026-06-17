@@ -3,9 +3,11 @@
 Doel: de gaten zichtbaar maken die ontstaan in de OVERGANGEN tussen statussen en tussen ROLLEN, niet
 in losse features. Per overgang vier kolommen invullen. Een lege of onvolledige cel is een gat. Tests
 leiden we hieruit af: elke cel die gedrag beschrijft krijgt een test, cross-rol-overgangen een e2e die
-beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laatst bijgewerkt: 2026-06-10
-(mail/SMS-keten gat-vrij gemaakt: mail voor document + herinnering, verzet-toon bij datum-wijziging, en
-bericht aan de oude monteur bij een wissel; zie 07_logboek/2026-06-10_mail-sms-keten-gaten-dicht.md).
+beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laatst bijgewerkt: 2026-06-16
+(volledige levenscyclus-keten + verzet/wissel nu e2e gedekt; cron-herinnering route-getest; zie
+07_logboek/2026-06-16_keten-e2e-levenscyclus.md). Eerder 2026-06-10: mail/SMS-keten gat-vrij gemaakt
+(mail voor document + herinnering, verzet-toon, bericht aan oude monteur bij wissel;
+07_logboek/2026-06-10_mail-sms-keten-gaten-dicht.md).
 
 ## Statussen van een opdracht (`dashboard_status`)
 
@@ -60,11 +62,19 @@ brainstorm-document. Gedekt: db.test, opdrachten/route.test, werkomschrijving/ro
    monteur, dan houdt de oorspronkelijke (verzonden) monteur hem in zijn werkpool tot opnieuw
    verstuurd; de nieuwe monteur ziet hem pas na versturen. Werkpool-query filtert op de effectieve
    monteur, plus uitgebreide RLS (schema-compleet-7). Gedekt: werkpool-zichtbaarheid.spec (gat 5).
-6. **Test-gat: de opnieuw-versturen-keten (S11) is nog niet als volledige e2e gedekt.**
+6. **✅ OPGELOST (2026-06-16). De opnieuw-versturen-keten (S11) én de volledige happy-path zijn nu e2e
+   gedekt.** `levenscyclus.spec` draait de hele keten in één doorloop over beide rollen (inschieten →
+   plannen → versturen → bevestigen → opleveren → dashboard-opleverblok), met een status-controle bij
+   elke overgang. `verzet-wissel.spec` dekt de monteur-UI na verzet (nieuwe datum → herbevestigen) en
+   na wissel (klus verdwijnt uit de werkpool van de eerste monteur). De cron-herinnering-wiring is nu
+   route-getest (cron/bevestig-herinneringen/route.test). De mail/SMS-acties in de keten lopen in de
+   gewone e2e via de db-laag (geen echte verzending in CI); de toon/inhoud blijft unit-gedekt en de
+   echte verzending zit in de M-laag (E2E_MAIL).
 7. **✅ OPGELOST (2026-06-10). Mail/SMS-keten had gaten.** (a) Nieuw-document en bevestig-herinnering
    stuurden wel SMS maar de mail was een lege stub; nu echte mail via de dispatcher. (b) Opnieuw versturen
    na een datum-wijziging meldde "nieuwe klus" i.p.v. een verzetting; nu een verzet-toon in mail + SMS.
    (c) Bij een monteur-wissel kreeg de oude monteur niets; nu de annulering-melding "is geannuleerd"
    (mail + SMS, zonder reden/overname, want dat gaat hem niet aan en kan interne wrijving geven).
    Beide verstuur-paden (bulk-knop én envelopje) lopen via één gedeelde melder (`meldVerstuurd`), zodat ze
-   niet meer kunnen uiteenlopen. Gedekt met unit-tests; e2e van de volledige keten volgt met Rein.
+   niet meer kunnen uiteenlopen. Gedekt met unit-tests; de volledige keten is sinds 2026-06-16 ook
+   e2e gedekt (levenscyclus.spec, verzet-wissel.spec).

@@ -2,7 +2,7 @@
 
 Per feature/flow welke testlagen en welk(e) testbestand(en) hem dekken. Werk dit bij in dezelfde
 commit als elke nieuwe feature of wijziging (afrond-check uit de skill projectstart-discipline).
-Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-14.
+Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-16.
 
 Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = browser-e2e (Playwright),
 **M** = e2e-mail (echt versturen achter `E2E_MAIL=1`).
@@ -11,6 +11,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 
 | Feature / flow | Lagen | Testbestand(en) | Status |
 |---|---|---|---|
+| **Volledige levenscyclus-keten** (inschieten→plannen→versturen→bevestigen→opleveren→dashboard), cross-rol, één doorloop, status-check per overgang | E | levenscyclus.spec | groen |
 | Inschieten PDF, parsing, groepering op referentie | U, E | parser-schema.test, claude-client.test, opdrachtgever.spec | groen |
 | Dashboard + "Te doen"-overzicht + statusfilter | U | te-doen.test, dashboard-scope.test, dashboard-lijst | groen |
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
@@ -18,9 +19,9 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
 | Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |
 | Versturen naar monteurs (verstuur-poort, gebundeld) | U, M | monteur-mail.test, mail-opdracht.spec | groen |
-| Verstuur-keten: nieuw / verzet (zelfde monteur, andere datum) / wissel (oude monteur → annulering) | U, M | opdracht-status.test (klassificeerVerzending), verstuur-notificatie.test (meldVerstuurd), monteur-mail.test + sms-teksten.test (verzet-toon), versturen/route.test, mail-monteur/route.test, mail-flows.spec (verzet/wissel) | U groen; M handmatig (E2E_MAIL) |
+| Verstuur-keten: nieuw / verzet (zelfde monteur, andere datum) / wissel (oude monteur → annulering) | U, M | opdracht-status.test (klassificeerVerzending), verstuur-notificatie.test (meldVerstuurd), monteur-mail.test + sms-teksten.test (verzet-toon), versturen/route.test, mail-monteur/route.test, mail-flows.spec (verzet/wissel), verzet-wissel.spec (monteur-UI na opnieuw versturen) | U+E groen; M handmatig (E2E_MAIL) |
 | Nieuw document → mail + SMS naar monteur (bij verstuurd) | U | document-mail.test, notificaties.test (mail+SMS), documenten/route.test | U groen; M nog handmatig |
-| Bevestig-herinnering → mail + SMS (cron, gebundeld, idempotent) | U, I | herinnering-mail.test, notificaties.test (mail+SMS), herinnering.int.test (selectie/idempotentie) | groen; M nog handmatig |
+| Bevestig-herinnering → mail + SMS (cron, gebundeld, idempotent) | U, I | herinnering-mail.test, notificaties.test (mail+SMS), herinnering.int.test (selectie/idempotentie), cron/bevestig-herinneringen/route.test (auth + bundeling + markeren) | groen; M nog handmatig |
 | Annuleren + mail naar monteur bij verstuurd | U, E, M | annuleren/route.test, annuleren.spec, mail-flows.spec | groen |
 | Gebruikersbeheer, rollen, uitnodigen/afmelden | U, M | mail-flows.spec (uitnodiging/afmelding) | grotendeels |
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
@@ -82,13 +83,14 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 
 ## Bekende gaten (eerlijk, nog te dekken)
 
-- **E2e voor de nieuwe verzend-flow (klant/zaak) staat nog open.** De backend is unit-gedekt
-  (rapport/route.test, oplever-mail.test, rapport.test) en de mail-e2e is bijgewerkt naar de
-  "Stuur naar zaak"-knop. Nog te doen (door Rein, e2e): (1) klant-verzending zet de status NIET op
-  opgeleverd; (2) zaak-verzending zet 'm wél; (3) het kantoor-dashboard toont de oplevering pas na de
-  zaak-versie (privacy); (4) interne notitie verschijnt wel in de zaak-PDF, niet in de klant-PDF.
-- **Werkpool-geheugensteun "rapport naar zaak nog versturen"** (privé voor de monteur) is nog niet
-  gebouwd; de twee verzendkaarten tonen de status al per kant op het oplever-scherm zelf.
+- **✅ Verzend-flow (klant/zaak) e2e: gedekt sinds 2026-06-16.** `verzending.spec` dekt (1) klant-
+  verzending laat de status met rust, (2) zaak-verzending zet 'm op opgeleverd, (3) het kantoor-dashboard
+  toont de oplevering pas na de zaak-versie (privacy). (4) interne notitie wel in de zaak-, niet in de
+  klant-PDF is unit-gedekt (rapport.test). De volledige keten t/m het dashboard-opleverblok loopt nu in
+  `levenscyclus.spec`.
+- **❌ NOG OPEN: werkpool-geheugensteun "rapport naar zaak nog versturen"** (privé voor de monteur) is nog
+  niet gebouwd. Dit is een nieuwe UI-feature met ontwerpkeuzes, geen test; bewust niet 's nachts gebouwd.
+  De twee verzendkaarten tonen de status al per kant op het oplever-scherm zelf. Aanbevolen volgende stap.
 - Component-test-laag (jsdom/RTL) bestaat niet; UI-gedrag hoort daarom in de Playwright-e2e.
 
 ## Hoe draaien
