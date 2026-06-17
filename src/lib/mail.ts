@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import type { Melding, Rol } from "./db";
 import type { RapportAfzender } from "./afzender";
+import { htmlVanTekst } from "./mail-html";
 import { opleverMailTekst, afzenderHeader } from "./oplever-mail";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 import { uitnodigingTekst } from "./uitnodig-mail";
@@ -139,6 +140,9 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
     ...(replyTo ? { replyTo } : {}),
     subject,
     text,
+    // Ook een HTML-versie meesturen: een mail met alleen platte tekst + PDF-bijlage scoort hoog op
+    // spam (en gaf een lege preview). Multipart (text + html) haalt dat patroon weg.
+    html: htmlVanTekst(text),
     attachments: [{ filename: input.bestandsnaam, content: Buffer.from(input.pdf) }],
   });
 
