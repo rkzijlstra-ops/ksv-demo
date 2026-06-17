@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PencilLine, Loader2, Check, AlertCircle, X } from "lucide-react";
+import { KLUS_VELD } from "@/lib/klus-velden";
 
 type Documenttype = "orderbevestiging" | "werkbon_service" | "tekst" | "onbekend";
 
@@ -158,20 +159,20 @@ export function OpdrachtBewerken(props: {
       </div>
 
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
-        Klantnaam
+        {KLUS_VELD.klant_naam.label}
         <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veld} />
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
-        Adres
+        {KLUS_VELD.klant_adres.label}
         <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veld} />
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-ink">
-          Referentie
+          {KLUS_VELD.referentienummer.label}
           <input value={ref} onChange={(e) => setRef(e.target.value)} className={veld} />
         </label>
         <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-ink">
-          Telefoon
+          {KLUS_VELD.klant_telefoon.label}
           <input value={tel} onChange={(e) => setTel(e.target.value)} inputMode="tel" className={veld} />
         </label>
       </div>
@@ -180,21 +181,21 @@ export function OpdrachtBewerken(props: {
         <input value={zaak} onChange={(e) => setZaak(e.target.value)} className={veld} />
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
-        E-mail
+        {KLUS_VELD.klant_email.label}
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veld} />
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-ink">
-          Adviseur
+          {KLUS_VELD.adviseur.label}
           <input value={adviseur} onChange={(e) => setAdviseur(e.target.value)} className={veld} />
         </label>
         <label className="flex w-32 flex-col gap-1 text-sm font-semibold text-ink">
-          Leverweek
-          <input value={leverweek} onChange={(e) => setLeverweek(e.target.value)} className={veld} placeholder="22/2026" />
+          {KLUS_VELD.leverweek.label}
+          <input value={leverweek} onChange={(e) => setLeverweek(e.target.value)} className={veld} placeholder={KLUS_VELD.leverweek.placeholder} />
         </label>
       </div>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
-        Wat moet er gebeuren?
+        {KLUS_VELD.werkomschrijving.label}
         <textarea
           value={werk}
           onChange={(e) => setWerk(e.target.value)}
