@@ -34,14 +34,17 @@ export function OpdrachtCard({
   const bevestig = opgeleverd ? null : bevestigBadgeConfig(melding.dashboard_status);
   const afStat = afrondStatus(melding);
 
-  // Kleur-staat: gekleurde linker strip (8px) per staat (rood=spoed, oranje=open, groen=opgeleverd)
+  // Kleur-staat: gekleurde linker strip (8px) per staat. Rood=spoed, geel=rapport nog naar de zaak
+  // versturen (opvallend van een afstand, los van de badge), oranje=open meldingen, groen=opgeleverd.
   const stripKleur = opgeleverd
     ? "border-l-success"
     : telling?.heeftSpoed
       ? "border-l-urgent-rood"
-      : aantalOpen > 0
-        ? "border-l-accent"
-        : "border-l-ink";
+      : rapportNietVerzonden
+        ? "border-l-urgent-geel"
+        : aantalOpen > 0
+          ? "border-l-accent"
+          : "border-l-ink";
 
   return (
     <Link

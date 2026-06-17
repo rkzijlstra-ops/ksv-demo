@@ -186,11 +186,17 @@ test.describe("werkpool-marker: rapport niet verzonden", () => {
     const kaart = page.locator("a", { hasText: klantNaam });
     await expect(kaart).toBeVisible();
     await expect(kaart.getByText("Rapport niet verzonden")).toBeVisible();
+    // (a) De linker kleurstrip van de kaart is geel (van een afstand zichtbaar, los van de badge).
+    await expect(kaart).toHaveClass(/border-l-urgent-geel/);
+    // (b) Bovenaan de werkpool staat een teller die eraan herinnert.
+    await expect(page.getByText(/rapport nog naar de zaak versturen/i)).toBeVisible();
 
     // Na de zaak-verzending is de klus opgeleverd: hij zakt naar history en de marker is weg uit actief.
     await db.registreerZaakRapport(id, `https://x/${id}.pdf`);
     await page.reload();
     await expect(page.locator("a", { hasText: klantNaam }).getByText("Rapport niet verzonden")).toHaveCount(0);
+    // De teller is ook weg zodra er niets meer te versturen is.
+    await expect(page.getByText(/rapport nog naar de zaak versturen/i)).toHaveCount(0);
   });
 });
 
