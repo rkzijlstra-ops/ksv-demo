@@ -65,8 +65,8 @@ describe("opleverMailTekst", () => {
       afzender: null,
       heeftVideo: false,
     });
-    expect(afzenderNaam).toBe("Keukenmontage");
-    expect(text.trimEnd().endsWith("Keukenmontage")).toBe(true);
+    expect(afzenderNaam).toBe("Kluslus");
+    expect(text.trimEnd().endsWith("Kluslus")).toBe(true);
   });
 
   it("noemt de video alleen als er een video is", () => {

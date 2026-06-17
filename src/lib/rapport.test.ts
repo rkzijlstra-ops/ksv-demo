@@ -22,7 +22,7 @@ describe("rapportAfzenderWeergave", () => {
 
   it("valt terug op een neutrale kop en lege voet zonder enige gegevens", () => {
     const r = rapportAfzenderWeergave(null);
-    expect(r.kop).toBe("Keukenmontage");
+    expect(r.kop).toBe("Kluslus");
     expect(r.voet).toBe("");
   });
 });

@@ -39,7 +39,7 @@ export function opleverMailTekst(opts: {
   // opgebouwd, zodat in elke toestand (bedrijf+naam, alleen bedrijf, alleen naam, leeg) niets dubbelt.
   const naam = opts.afzender?.naam?.trim() || null;
   const bedrijf = opts.afzender?.bedrijfsnaam?.trim() || null;
-  const persoonsregel = naam || bedrijf || "Keukenmontage";
+  const persoonsregel = naam || bedrijf || "Kluslus";
   const contactDelen = [
     bedrijf && bedrijf !== persoonsregel ? bedrijf : null,
     opts.afzender?.telefoon?.trim() || null,

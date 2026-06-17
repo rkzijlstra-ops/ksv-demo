@@ -76,13 +76,13 @@ describe("verstuurOpleverRapport", () => {
 
   it("valt voor de From-naam terug op een neutrale naam zonder profiel", async () => {
     await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
-    expect(mockSend.mock.calls[0][0].from).toBe("Keukenmontage <onboarding@resend.dev>");
+    expect(mockSend.mock.calls[0][0].from).toBe("Kluslus <onboarding@resend.dev>");
   });
 
   it("zet reply-to wanneer RESEND_REPLY_TO ingevuld is", async () => {
-    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
     await verstuurOpleverRapport({ ...basis, opdracht: opdracht() });
-    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 
   it("laat reply-to weg wanneer RESEND_REPLY_TO leeg is", async () => {
@@ -126,9 +126,9 @@ describe("verstuurSpoedMelding", () => {
   });
 
   it("zet reply-to ook op de spoed-mail wanneer RESEND_REPLY_TO ingevuld is", async () => {
-    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
     await verstuurSpoedMelding({ naar: "rein@example.com", opdracht: opdracht(), melding });
-    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 
   it("gooit een error als RESEND_API_KEY ontbreekt", async () => {
@@ -155,8 +155,8 @@ describe("verstuurAfmelding", () => {
   });
 
   it("zet reply-to ook op de afmeld-mail", async () => {
-    process.env.RESEND_REPLY_TO = "bkmkeukenmontage+kluslus@gmail.com";
+    process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
     await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
-    expect(mockSend.mock.calls[0][0].replyTo).toBe("bkmkeukenmontage+kluslus@gmail.com");
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 });
