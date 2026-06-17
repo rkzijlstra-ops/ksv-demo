@@ -39,7 +39,10 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Klus afsluiten</p>
         <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Op welke manier sluit je af?</h1>
         <p className="mt-1 text-sm text-ink-muted">Kies wat bij deze klus past.</p>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
+        <span
+          aria-hidden
+          className={`absolute inset-x-0 bottom-0 h-1.5 ${opdracht.opdracht_status === "opgeleverd" ? "bg-success" : "bg-accent"}`}
+        />
       </header>
 
       <div className="flex flex-col gap-3">

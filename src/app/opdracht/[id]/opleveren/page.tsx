@@ -43,7 +43,10 @@ export default async function OpleverenPage({
         <h1 className="mt-1 font-mono text-2xl font-extrabold tracking-tight">
           {opdracht.klant_naam ?? "Onbekende klant"}
         </h1>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
+        <span
+          aria-hidden
+          className={`absolute inset-x-0 bottom-0 h-1.5 ${opdracht.opdracht_status === "opgeleverd" ? "bg-success" : "bg-accent"}`}
+        />
       </header>
 
       {meldingen.length > 0 && (
