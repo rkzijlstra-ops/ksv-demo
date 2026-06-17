@@ -29,7 +29,10 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
       <header className="relative border-2 border-b-0 border-line bg-white px-5 py-5">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Snel afsluiten</p>
         <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Klus afsluiten</h1>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
+        <span
+          aria-hidden
+          className={`absolute inset-x-0 bottom-0 h-1.5 ${opdracht.opdracht_status === "opgeleverd" ? "bg-success" : "bg-accent"}`}
+        />
       </header>
       <AfgerondMeldenScherm opdrachtId={id} klantNaam={klantNaam} />
     </main>
