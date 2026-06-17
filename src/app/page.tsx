@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Inbox, ChevronRight } from "lucide-react";
+import { Inbox, ChevronRight, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
 import { groepeerMeldingen } from "@/lib/werkpool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
@@ -75,6 +75,15 @@ export default async function WerkpoolPage({
           </span>
           <ChevronRight size={20} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
         </Link>
+      )}
+
+      {nietVerzonden.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 border-2 border-urgent-geel bg-urgent-geel/20 px-4 py-3 text-ink">
+          <AlertTriangle size={20} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+          <span className="flex-1 text-sm font-extrabold">
+            {nietVerzonden.size} {nietVerzonden.size === 1 ? "klus" : "klussen"}: rapport nog naar de zaak versturen
+          </span>
+        </div>
       )}
 
       <div className="mb-4">
