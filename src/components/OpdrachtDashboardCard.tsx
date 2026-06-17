@@ -27,7 +27,10 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
   const afStat = afrondStatus(melding);
   const gepland = status === "concept_gepland" || status === "gepland" || status === "bevestigd";
   const geenRef = isActief(status) && !melding.referentienummer;
-  const nogTeVersturen = status === "concept_gepland" || melding.gewijzigd_te_versturen;
+  // "Te versturen"-oranje alleen voor ACTIEVE klussen. Een opgeleverde/geannuleerde klus is klaar en
+  // houdt z'n eigen kleur (opgeleverd = groen), ook al stond de gewijzigd-markering er nog op.
+  const nogTeVersturen =
+    isActief(status) && (status === "concept_gepland" || melding.gewijzigd_te_versturen);
 
   const cardRand = nogTeVersturen ? "border-accent" : "border-ink";
   const stripClass = nogTeVersturen ? "bg-accent" : STRIP[status];
@@ -78,7 +81,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
               Geen ref
             </span>
           )}
-          {melding.gewijzigd_te_versturen && status !== "concept_gepland" && (
+          {isActief(status) && melding.gewijzigd_te_versturen && status !== "concept_gepland" && (
             <span className="inline-flex items-center border-[1.5px] border-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-accent">
               Gewijzigd
             </span>

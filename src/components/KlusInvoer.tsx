@@ -298,21 +298,21 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  disabled={saving}
-                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Camera size={18} strokeWidth={2.5} aria-hidden="true" />
-                  Order fotograferen
-                </button>
-                <button
-                  type="button"
                   onClick={() => inputRef.current?.click()}
                   disabled={saving}
                   className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Paperclip size={18} strokeWidth={2.5} aria-hidden="true" />
                   Bestand kiezen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={saving}
+                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Camera size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Order fotograferen
                 </button>
               </div>
             )}
@@ -349,7 +349,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
 
             <label className={labelKlasse}>
               Klantnaam
-              <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder="Bijv. Mevrouw Veering" />
+              <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder="Naam van de klant" />
             </label>
             {adresKandidaten.length > 0 ? (
               <AdresKeuze kandidaten={adresKandidaten} waarde={adres} onKies={setAdres} />

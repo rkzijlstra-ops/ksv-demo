@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
 import { verdeelLanes, type PlanbordPlaatsing, type MonteurOptie } from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
+import { isActief } from "@/lib/opdracht-status";
 import { MailMonteurKnop } from "./MailMonteurKnop";
 
 const DOW = ["ma", "di", "wo", "do", "vr"];
@@ -37,7 +38,10 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
   });
   // Concept én "gewijzigd na versturen" krijgen oranje (ononderbroken) + envelop; de gele status zelf
   // markeert "nog niet bevestigd", dus geen kartelrand meer.
-  const nogTeVersturen = o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen;
+  // Alleen voor ACTIEVE klussen; een opgeleverde/geannuleerde klus is klaar en houdt z'n eigen
+  // omlijsting (opgeleverd = groen), ook al stond de gewijzigd-markering er nog op.
+  const nogTeVersturen =
+    isActief(o.dashboard_status) && (o.dashboard_status === "concept_gepland" || o.gewijzigd_te_versturen);
   // Teruggemeld door de monteur: kantoor moet hier iets mee (herplannen/bellen/afsluiten).
   const teruggemeld = !!o.teruggemeld_at;
   // Dikke gekleurde omlijsting rondom; een dubbele boeking krijgt voorrang met rood.
@@ -48,8 +52,13 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
       : nogTeVersturen
         ? "border-accent"
         : RAND[o.dashboard_status];
-  const versturenLabel =
-    o.dashboard_status === "concept_gepland" ? "te versturen" : o.gewijzigd_te_versturen ? "gewijzigd" : null;
+  const versturenLabel = !isActief(o.dashboard_status)
+    ? null
+    : o.dashboard_status === "concept_gepland"
+      ? "te versturen"
+      : o.gewijzigd_te_versturen
+        ? "gewijzigd"
+        : null;
   return (
     <Link
       ref={setNodeRef}
