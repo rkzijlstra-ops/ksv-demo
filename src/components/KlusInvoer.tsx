@@ -20,6 +20,7 @@ import { HydratieKlaar } from "@/components/HydratieKlaar";
 import { SpraakOpname } from "@/components/SpraakOpname";
 import { AdresKeuze } from "@/components/AdresKeuze";
 import { adresKeuzeNodig, uniekeAdressen } from "@/lib/adres-keuze";
+import { KLUS_VELD } from "@/lib/klus-velden";
 import type { ParsedPdf, AdresKandidaat } from "@/lib/parser-schema";
 
 type Status = "idle" | "parsing" | "saving" | "success" | "error";
@@ -348,15 +349,15 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
             )}
 
             <label className={labelKlasse}>
-              Klantnaam
-              <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder="Naam van de klant" />
+              {KLUS_VELD.klant_naam.label}
+              <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_naam.placeholder} />
             </label>
             {adresKandidaten.length > 0 ? (
               <AdresKeuze kandidaten={adresKandidaten} waarde={adres} onKies={setAdres} />
             ) : (
               <label className={labelKlasse}>
-                Adres
-                <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder="Straat, postcode, plaats" />
+                {KLUS_VELD.klant_adres.label}
+                <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_adres.placeholder} />
               </label>
             )}
 
@@ -373,18 +374,18 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
 
             <div className="flex gap-3">
               <label className={`${labelKlasse} flex-1`}>
-                Referentie
-                <input value={ref} onChange={(e) => setRef(e.target.value)} className={veldKlasse} placeholder="7407" />
+                {KLUS_VELD.referentienummer.label}
+                <input value={ref} onChange={(e) => setRef(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.referentienummer.placeholder} />
               </label>
               <label className={`${labelKlasse} flex-1`}>
-                Telefoon
-                <input value={telefoon} onChange={(e) => setTelefoon(e.target.value)} inputMode="tel" className={veldKlasse} placeholder="06-12345678" />
+                {KLUS_VELD.klant_telefoon.label}
+                <input value={telefoon} onChange={(e) => setTelefoon(e.target.value)} inputMode="tel" className={veldKlasse} placeholder={KLUS_VELD.klant_telefoon.placeholder} />
               </label>
             </div>
 
             <label className={labelKlasse}>
-              E-mail
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veldKlasse} placeholder="klant@voorbeeld.nl" />
+              {KLUS_VELD.klant_email.label}
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veldKlasse} placeholder={KLUS_VELD.klant_email.placeholder} />
             </label>
             <label className={labelKlasse}>
               Keukenzaak / opdrachtgever
@@ -392,12 +393,12 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
             </label>
 
             <div className={labelKlasse}>
-              Wat moet er gebeuren?
+              {KLUS_VELD.werkomschrijving.label}
               <textarea
                 value={werkomschrijving}
                 onChange={(e) => setWerkomschrijving(e.target.value)}
                 rows={3}
-                placeholder="Bijv. kasten nastellen. Typ of spreek in."
+                placeholder={KLUS_VELD.werkomschrijving.placeholder}
                 className="min-h-[72px] w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent"
               />
               <span className="mt-1 block text-xs font-normal text-ink-muted">
