@@ -15,7 +15,7 @@ export interface RapportAfzender {
 export function rapportAfzenderWeergave(a: RapportAfzender | null): { kop: string; voet: string } {
   const bedrijf = a?.bedrijfsnaam?.trim() || null;
   const naam = a?.naam?.trim() || null;
-  const kop = bedrijf || naam || "Keukenmontage";
+  const kop = bedrijf || naam || "Kluslus";
   const voetDelen = [bedrijf || naam, a?.telefoon?.trim() || null, a?.email?.trim() || null].filter(Boolean);
   return { kop, voet: voetDelen.join("  ·  ") };
 }
