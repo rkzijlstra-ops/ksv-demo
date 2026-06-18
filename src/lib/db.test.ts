@@ -718,12 +718,12 @@ describe("getOpdrachtenVoorDashboard", () => {
     expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
   });
 
-  it("past de 14-dagen-scoping toe: actief blijft, oud opgeleverd valt af", async () => {
+  it("past de archief-scoping toe: actief blijft, oud opgeleverd valt af", async () => {
     h.setResult({
       data: [
         { id: "actief", dashboard_status: "gepland", opgeleverd_at: null, created_at: dagenGeleden(400) },
         { id: "recent", dashboard_status: "opgeleverd", opgeleverd_at: dagenGeleden(3), created_at: dagenGeleden(3) },
-        { id: "oud", dashboard_status: "opgeleverd", opgeleverd_at: dagenGeleden(20), created_at: dagenGeleden(20) },
+        { id: "oud", dashboard_status: "opgeleverd", opgeleverd_at: dagenGeleden(60), created_at: dagenGeleden(60) },
       ],
       error: null,
     });

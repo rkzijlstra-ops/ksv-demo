@@ -15,6 +15,8 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Inschieten PDF, parsing, groepering op referentie | U, E | parser-schema.test, claude-client.test, opdrachtgever.spec | groen |
 | Dashboard + "Te doen"-overzicht + statusfilter | U | te-doen.test, dashboard-scope.test, dashboard-lijst | groen |
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
+| Opgeleverde klus blijft groen op zijn dag op het planbord (geplaatst, niet als dubbele boeking, niet sleepbaar) | U | planbord.test (plaats + vindDubbeleBoekingen opgeleverd) | groen |
+| Archief-venster dashboard/planbord = 30 dagen (ARCHIEF_DAGEN, één bron) | U | dashboard-scope.test, db.test (getOpdrachtenVoorDashboard) | groen |
 | Planbord drag-drop: plannen, verplaatsen, week schuiven | E | planbord.spec, planbord-extra.spec | groen |
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
 | Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |

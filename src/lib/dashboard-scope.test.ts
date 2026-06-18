@@ -38,13 +38,13 @@ describe("scopeVoorDashboard", () => {
   it("houdt opgeleverd binnen het archief-venster, dropt erbuiten (op opgeleverd_at)", () => {
     const lijst = [
       opdr("recent", "opgeleverd", { opgeleverd_at: dagenGeleden(3) }),
-      opdr("oud", "opgeleverd", { opgeleverd_at: dagenGeleden(20) }),
+      opdr("oud", "opgeleverd", { opgeleverd_at: dagenGeleden(ARCHIEF_DAGEN + 10) }),
     ];
     const res = scopeVoorDashboard(lijst, PEIL).map((o) => o.id);
     expect(res).toEqual(["recent"]);
   });
 
-  it("dropt opgeleverd precies op de grens niet (randwaarde 14 dagen telt mee)", () => {
+  it("dropt opgeleverd precies op de grens niet (randwaarde ARCHIEF_DAGEN telt mee)", () => {
     const lijst = [opdr("grens", "opgeleverd", { opgeleverd_at: dagenGeleden(ARCHIEF_DAGEN) })];
     expect(scopeVoorDashboard(lijst, PEIL)).toHaveLength(1);
   });
@@ -52,7 +52,7 @@ describe("scopeVoorDashboard", () => {
   it("gebruikt created_at voor geannuleerd (geen opgeleverd_at)", () => {
     const lijst = [
       opdr("recent", "geannuleerd", { created_at: dagenGeleden(5) }),
-      opdr("oud", "geannuleerd", { created_at: dagenGeleden(30) }),
+      opdr("oud", "geannuleerd", { created_at: dagenGeleden(ARCHIEF_DAGEN + 10) }),
     ];
     const res = scopeVoorDashboard(lijst, PEIL).map((o) => o.id);
     expect(res).toEqual(["recent"]);

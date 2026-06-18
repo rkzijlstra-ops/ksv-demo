@@ -1,7 +1,23 @@
 import type { DashboardStatus } from "./db";
 
-/** Statussen die op het planbord verschijnen (de rest staat in de pool of het archief). */
+/**
+ * Statussen die op het planbord verschijnen (de rest staat in de pool of het archief). Opgeleverd hoort
+ * erbij: een afgeronde klus blijft op zijn dag staan (groen gemarkeerd) zodat het bord een
+ * waarheidsgetrouwe agenda blijft i.p.v. een gat te tonen. Hij valt vanzelf weg zodra hij buiten het
+ * archief-venster (ARCHIEF_DAGEN) valt.
+ */
 const OP_BORD: ReadonlySet<DashboardStatus> = new Set<DashboardStatus>([
+  "concept_gepland",
+  "gepland",
+  "bevestigd",
+  "opgeleverd",
+]);
+
+/**
+ * Statussen die meetellen voor een dubbele-boeking-conflict: alleen nog te doen werk. Een opgeleverde
+ * klus is klaar en mag een nieuwe klus op dezelfde dag/tijd niet als "dubbel" laten oplichten.
+ */
+const BOEKBAAR: ReadonlySet<DashboardStatus> = new Set<DashboardStatus>([
   "concept_gepland",
   "gepland",
   "bevestigd",
@@ -165,7 +181,7 @@ function bezetteDagen(o: BoekbaarOpdracht): string[] {
  */
 export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string> {
   const actief = opdrachten.filter(
-    (o) => o.toegewezen_aan && o.startdatum && OP_BORD.has(o.dashboard_status),
+    (o) => o.toegewezen_aan && o.startdatum && BOEKBAAR.has(o.dashboard_status),
   );
   const perMonteur = new Map<string, BoekbaarOpdracht[]>();
   for (const o of actief) {

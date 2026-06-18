@@ -1,8 +1,9 @@
 import { isActief } from "./opdracht-status";
 import type { DashboardStatus } from "./db";
 
-/** Afgeronde opdrachten (opgeleverd/geannuleerd) blijven dit aantal dagen in beeld, daarna archief. */
-export const ARCHIEF_DAGEN = 14;
+/** Afgeronde opdrachten (opgeleverd/geannuleerd) blijven dit aantal dagen in beeld, daarna archief.
+ *  Eén centrale instelling: bepaalt het venster op zowel het dashboard als het planbord. */
+export const ARCHIEF_DAGEN = 30;
 
 /** Minimale velden die de scoping nodig heeft (een Melding voldoet hieraan). */
 export interface ScopebareOpdracht {

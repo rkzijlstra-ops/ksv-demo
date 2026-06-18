@@ -189,7 +189,7 @@ export function DashboardLijst({
       )}
 
       <p className="mt-4 border-t border-dashed border-line pt-3 text-[12.5px] text-ink-muted">
-        Opgeleverd en geannuleerd: alleen de laatste 14 dagen worden getoond. Ouder opzoeken? Tik het
+        Opgeleverd en geannuleerd: alleen de laatste maand wordt getoond. Ouder opzoeken? Tik het
         referentienummer in de zoekbalk.
       </p>
     </div>

@@ -32,9 +32,12 @@ type GeplaatstOpBord = PlanbordPlaatsing<Melding> & { gridRow: number };
 /** Uniforme, sleepbare kaart/balk; montage rekt uit over meerdere dagen, service is één dag. */
 function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; maandag: string }) {
   const o = p.opdracht;
+  // Een opgeleverde klus staat er alleen nog als afgerond overzicht; niet meer verslepen/herplannen.
+  const opgeleverd = o.dashboard_status === "opgeleverd";
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `kaart-${o.id}`,
     data: { soort: "kaart", opdracht: o },
+    disabled: opgeleverd,
   });
   // Concept én "gewijzigd na versturen" krijgen oranje (ononderbroken) + envelop; de gele status zelf
   // markeert "nog niet bevestigd", dus geen kartelrand meer.
@@ -110,6 +113,7 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
         )}
         {versturenLabel && <span className="shrink-0 font-bold text-accent">{versturenLabel}</span>}
         {teruggemeld && <span className="shrink-0 font-bold text-ink">teruggemeld</span>}
+        {opgeleverd && <span className="shrink-0 font-bold text-success">opgeleverd</span>}
         {dubbel && (
           <span className="inline-flex shrink-0 items-center gap-0.5 font-bold text-urgent-rood">
             <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" /> dubbel

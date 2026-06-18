@@ -145,16 +145,18 @@ describe("plaatsOpdrachten", () => {
     expect(p).toEqual([]);
   });
 
-  it("laat niet-geplande statussen (binnen, opgeleverd, geannuleerd) weg", () => {
+  it("laat pool (binnen) en geannuleerd weg, maar toont opgeleverd (afgerond overzicht)", () => {
     const p = plaatsOpdrachten(
       [
         opdr({ id: "b", dashboard_status: "binnen" }),
+        opdr({ id: "x", dashboard_status: "geannuleerd" }),
         opdr({ id: "o", dashboard_status: "opgeleverd" }),
         opdr({ id: "g", dashboard_status: "gepland" }),
       ],
       WEEK,
     );
-    expect(p.map((x) => x.opdracht.id)).toEqual(["g"]);
+    // Opgeleverd blijft op zijn dag staan (groen); binnen/geannuleerd niet.
+    expect(p.map((x) => x.opdracht.id).sort()).toEqual(["g", "o"]);
   });
 });
 
@@ -325,6 +327,15 @@ describe("vindDubbeleBoekingen", () => {
       b({ id: "a" }),
       b({ id: "c", dashboard_status: "geannuleerd" }),
     ]);
+    expect(set.size).toBe(0);
+  });
+
+  it("opgeleverde klus telt niet mee (afgerond werk blokkeert geen nieuwe boeking)", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "a", dashboard_status: "opgeleverd" }),
+      b({ id: "c", dashboard_status: "gepland" }),
+    ]);
+    // Geen vals alarm: de nieuwe (geplande) klus mag op de dag van een al opgeleverde klus.
     expect(set.size).toBe(0);
   });
 });
