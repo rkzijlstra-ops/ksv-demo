@@ -17,6 +17,8 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
 | Opgeleverde klus blijft groen op zijn dag op het planbord (geplaatst, niet als dubbele boeking, niet sleepbaar) | U | planbord.test (plaats + vindDubbeleBoekingen opgeleverd) | groen |
 | Archief-venster dashboard/planbord = 30 dagen (ARCHIEF_DAGEN, één bron) | U | dashboard-scope.test, db.test (getOpdrachtenVoorDashboard) | groen |
+| Heropenen opgeleverde klus → open + te plannen, instructie → werkomschrijving, "Heropend"-markering; opnieuw opleveren wist hem | U | db.test (heropenen + registreerZaakRapport), heropenen/route (instructie) | U groen; E door Rein |
+| Vervolg-bezoek: "Eerder op deze referentie" op monteur- én kantoor-detailpagina + "meerdere bezoeken"-hint in de werkpool | E | (visueel/RLS; nog door Rein e2e te dekken) | grotendeels |
 | Planbord drag-drop: plannen, verplaatsen, week schuiven | E | planbord.spec, planbord-extra.spec | groen |
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
 | Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |

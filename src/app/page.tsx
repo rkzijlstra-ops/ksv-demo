@@ -56,6 +56,14 @@ export default async function WerkpoolPage({
     await dbi.getOpdrachtenRapportNietVerzonden(actief.map((m) => m.id)),
   );
 
+  // Referentienummers die op meer dan één van mijn klussen voorkomen: vervolg-bezoeken aan dezelfde
+  // keuken. Die kaarten krijgen een "meerdere bezoeken"-hint (de historie staat op de detailpagina).
+  const refTelling = new Map<string, number>();
+  for (const m of meldingen) {
+    if (m.referentienummer) refTelling.set(m.referentienummer, (refTelling.get(m.referentienummer) ?? 0) + 1);
+  }
+  const heeftVervolg = (ref: string | null) => !!ref && (refTelling.get(ref) ?? 0) > 1;
+
   const prefetchIds = [...actief.map((m) => m.id), ...history.map((m) => m.id)];
 
   return (
@@ -117,6 +125,7 @@ export default async function WerkpoolPage({
                 profiel.rol === "monteur" && m.user_id !== profiel.id && m.toegewezen_aan === profiel.id
               }
               rapportNietVerzonden={nietVerzonden.has(m.id)}
+              vervolg={heeftVervolg(m.referentienummer)}
             />
           ))}
         </div>

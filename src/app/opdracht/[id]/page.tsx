@@ -46,6 +46,14 @@ export default async function OpdrachtDetailPage({
   if (!opdracht) notFound();
   const opgeleverd = opdracht.opdracht_status === "opgeleverd";
 
+  // Eerdere klussen op dezelfde referentie (vervolg-bezoeken aan dezelfde keuken), zodat de historie
+  // meereist. RLS toont de monteur alleen zijn eigen klussen; voor KSV (één monteur) is dat zijn eerdere
+  // bezoeken. Niet-blokkerend: bij geen referentie of geen treffers gewoon leeg.
+  const historieRuw = opdracht.referentienummer
+    ? await dbi.zoekOpReferentie(opdracht.referentienummer)
+    : [];
+  const referentieHistorie = historieRuw.filter((h) => h.id !== opdracht.id);
+
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-28">
       <header className="relative border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
@@ -131,6 +139,37 @@ export default async function OpdrachtDetailPage({
       )}
 
       <WerkomschrijvingBlok opdrachtId={id} initieel={opdracht.werkomschrijving} />
+
+      {referentieHistorie.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
+            Eerder op deze referentie ({referentieHistorie.length})
+          </h2>
+          <p className="mb-2 text-sm text-ink-muted">Eerdere bezoeken aan deze keuken.</p>
+          <ul className="flex flex-col gap-2">
+            {referentieHistorie.map((h) => (
+              <li key={h.id}>
+                <Link
+                  href={`/opdracht/${h.id}`}
+                  className="flex items-center gap-3 border border-line bg-white p-3 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                >
+                  <span className="w-20 shrink-0 font-mono text-xs font-bold text-ink-muted">
+                    {formatDatumKort(h.opgeleverd_at ?? h.startdatum ?? h.created_at)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+                    {h.opdracht_status === "opgeleverd"
+                      ? "Opgeleverd"
+                      : h.teruggemeld_at
+                        ? "Teruggemeld"
+                        : "Bezoek"}
+                  </span>
+                  <ChevronRight size={18} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between gap-2">

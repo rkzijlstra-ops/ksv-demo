@@ -18,6 +18,7 @@ export function OpdrachtCard({
   magVerwijderen = true,
   magTerugmelden = false,
   rapportNietVerzonden = false,
+  vervolg = false,
 }: {
   melding: Melding;
   telling?: { aantal: number; heeftSpoed: boolean };
@@ -27,6 +28,8 @@ export function OpdrachtCard({
   magTerugmelden?: boolean;
   /** Oplevering vastgelegd maar nog niet naar de zaak verstuurd: toon "rapport niet verzonden". */
   rapportNietVerzonden?: boolean;
+  /** Er zijn meer klussen op dezelfde referentie (vervolg-bezoek aan dezelfde keuken). */
+  vervolg?: boolean;
 }) {
   const titel = melding.klant_naam ?? "Onbekende klant";
   const opgeleverd = melding.opdracht_status === "opgeleverd";
@@ -91,6 +94,11 @@ export function OpdrachtCard({
           {melding.referentienummer && (
             <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold text-ink">
               {melding.referentienummer}
+            </span>
+          )}
+          {vervolg && (
+            <span className="inline-flex items-center border-[1.5px] border-ink-muted px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.04em] text-ink-muted">
+              meerdere bezoeken
             </span>
           )}
           {!opgeleverd && aantalOpen > 0 && (
