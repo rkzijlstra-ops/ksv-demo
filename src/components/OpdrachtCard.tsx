@@ -72,6 +72,11 @@ export function OpdrachtCard({
               Teruggemeld
             </span>
           )}
+          {melding.heropend_at && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-accent bg-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Heropend
+            </span>
+          )}
           {afStat && (
             <span
               className={`inline-flex items-center gap-1.5 border-[1.5px] px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white ${

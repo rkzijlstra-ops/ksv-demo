@@ -69,6 +69,9 @@ export interface Melding {
   teruggemeld_at: string | null;
   teruggemeld_reden: string | null;
   teruggemeld_toelichting: string | null;
+  // blok 23: een al opgeleverde klus die kantoor terughaalt naar de planning (klant belt, toch nog iets).
+  // Markering voor de "Heropend"-badge; gewist zodra de klus opnieuw is opgeleverd.
+  heropend_at: string | null;
   // Klus afronden (plan 1): monteur meldt snel afgerond, los van de volledige oplevering
   afgerond_door_monteur_at: string | null;
   afgerond_toelichting: string | null;
@@ -459,7 +462,7 @@ export interface Db {
     id: string,
     input: { toelichting: string | null; vervolgNodig: boolean; fotoUrls: string[]; videoUrl: string | null },
   ): Promise<void>;
-  heropenen(id: string): Promise<void>;
+  heropenen(id: string, instructie?: string | null): Promise<void>;
   akkoordAfgerond(id: string): Promise<void>;
   // blok 6: accounts/rollen
   getProfiel(userId: string): Promise<Profiel | null>;
@@ -885,6 +888,8 @@ function createDbFromClient(client: SupabaseClient): Db {
           teruggemeld_at: null,
           teruggemeld_reden: null,
           teruggemeld_toelichting: null,
+          // Opnieuw opgeleverd: niet meer "heropend".
+          heropend_at: null,
         })
         .eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
@@ -1198,36 +1203,41 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (error) throw new Error(`DB afronden mislukt: ${error.message}`);
     },
 
-    async heropenen(id) {
-      // Terug naar "te plannen" (zelfde reset als ontplannen) + de voltooid-velden wissen.
-      // De blijvende historie (meldingen, oplevering, terugmeld_pogingen) blijft bewaard; de TRANSIENTE
-      // terugmeld-vlag (teruggemeld_*) wordt wél gewist, net als bij ontplannen/opnieuw versturen, anders
-      // zou een heropende klus ten onrechte als "teruggemeld" in de pool blijven staan.
-      const { error } = await client
-        .from("meldingen")
-        .update({
-          afgerond_door_monteur_at: null,
-          afgerond_toelichting: null,
-          afgerond_vervolg_nodig: false,
-          afgerond_foto_urls: [],
-          afgerond_video_url: null,
-          afgerond_akkoord_at: null,
-          dashboard_status: "binnen",
-          toegewezen_aan: null,
-          monteur_naam: null,
-          startdatum: null,
-          starttijd: null,
-          uitvoerdatum: null,
-          gewijzigd_te_versturen: false,
-          verzonden_monteur: null,
-          verzonden_toegewezen_aan: null,
-          verzonden_startdatum: null,
-          verzonden_starttijd: null,
-          teruggemeld_at: null,
-          teruggemeld_reden: null,
-          teruggemeld_toelichting: null,
-        })
-        .eq("id", id);
+    async heropenen(id, instructie) {
+      // Volledig terug naar "te plannen", ook vanuit een al OPGELEVERDE klus (klant belt, toch nog iets):
+      // opdracht_status weer "open", oplever-tijdstip/rapport-kopie op de melding gewist. De blijvende
+      // historie (oplevering-record, terugmeld_pogingen, rapport_verzendingen) blijft bewaard. De
+      // transiënte terugmeld-vlag eraf (zoals bij ontplannen). heropend_at markeert de terugkomer voor
+      // de "Heropend"-badge. Optioneel een instructie meegeven -> werkomschrijving (geheugensteun monteur).
+      const patch: Record<string, unknown> = {
+        afgerond_door_monteur_at: null,
+        afgerond_toelichting: null,
+        afgerond_vervolg_nodig: false,
+        afgerond_foto_urls: [],
+        afgerond_video_url: null,
+        afgerond_akkoord_at: null,
+        opdracht_status: "open",
+        opgeleverd_at: null,
+        rapport_url: null,
+        dashboard_status: "binnen",
+        toegewezen_aan: null,
+        monteur_naam: null,
+        startdatum: null,
+        starttijd: null,
+        uitvoerdatum: null,
+        gewijzigd_te_versturen: false,
+        verzonden_monteur: null,
+        verzonden_toegewezen_aan: null,
+        verzonden_startdatum: null,
+        verzonden_starttijd: null,
+        teruggemeld_at: null,
+        teruggemeld_reden: null,
+        teruggemeld_toelichting: null,
+        heropend_at: new Date().toISOString(),
+      };
+      // Alleen overschrijven als er echt een instructie is meegegeven (anders bestaande tekst met rust laten).
+      if (typeof instructie === "string" && instructie.trim()) patch.werkomschrijving = instructie.trim();
+      const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB heropenen mislukt: ${error.message}`);
     },
 

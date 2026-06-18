@@ -86,6 +86,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     teruggemeld_at: null,
     teruggemeld_reden: null,
     teruggemeld_toelichting: null,
+    heropend_at: null,
     afgerond_door_monteur_at: null,
     afgerond_toelichting: null,
     afgerond_vervolg_nodig: false,

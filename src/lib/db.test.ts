@@ -697,6 +697,8 @@ describe("registreerZaakRapport", () => {
     // Cruciaal: ook de dashboard-status mee naar opgeleverd, zodat lijst/badge/planbord groen worden en
     // de klus uit het actieve bord valt (en een teruggemelde klus uit de te-plannen-pool).
     expect(patch.dashboard_status).toBe("opgeleverd");
+    // Opnieuw opgeleverd na heropenen: niet meer "heropend".
+    expect(patch.heropend_at).toBeNull();
   });
 });
 
@@ -991,17 +993,30 @@ describe("getTerugmeldPogingenVoor", () => {
 });
 
 describe("heropenen", () => {
-  it("zet terug naar 'binnen', wist voltooid-velden EN de transiënte terugmeld-vlag", async () => {
+  it("zet een opgeleverde klus volledig terug naar 'open + te plannen' en markeert heropend", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).heropenen("opdr-1");
 
     const patch = h.fns.update.mock.calls[0][0];
     expect(patch.dashboard_status).toBe("binnen");
     expect(patch.afgerond_door_monteur_at).toBeNull();
-    // Cruciaal: een heropende klus mag niet als "teruggemeld" in de pool blijven staan.
+    // Volledige terugkeer: ook de oplever-status van de melding terug naar open.
+    expect(patch.opdracht_status).toBe("open");
+    expect(patch.opgeleverd_at).toBeNull();
+    expect(patch.rapport_url).toBeNull();
+    // Markering voor de "Heropend"-badge.
+    expect(patch.heropend_at).toBeTypeOf("string");
+    // Een heropende klus mag niet als "teruggemeld" in de pool blijven staan.
     expect(patch.teruggemeld_at).toBeNull();
-    expect(patch.teruggemeld_reden).toBeNull();
-    expect(patch.teruggemeld_toelichting).toBeNull();
+    // Geen instructie meegegeven: werkomschrijving niet aangeraakt.
+    expect("werkomschrijving" in patch).toBe(false);
+  });
+
+  it("zet de meegegeven instructie als werkomschrijving", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).heropenen("opdr-1", "  Lade loopt stroef, geleider afstellen ");
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.werkomschrijving).toBe("Lade loopt stroef, geleider afstellen");
   });
 });
 

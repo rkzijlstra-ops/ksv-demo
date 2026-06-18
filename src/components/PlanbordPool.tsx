@@ -52,6 +52,11 @@ export function PlanbordPool({
                         Teruggemeld
                       </span>
                     )}
+                    {o.heropend_at && (
+                      <span className="inline-flex items-center border-[1.5px] border-accent bg-accent px-1.5 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.04em] text-white">
+                        Heropend
+                      </span>
+                    )}
                     {o.referentienummer ? (
                       <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold">
                         {o.referentienummer}
@@ -65,6 +70,11 @@ export function PlanbordPool({
                     <p className="mt-1 text-xs text-ink">
                       Reden: <span className="font-semibold">{redenLabel(o.teruggemeld_reden)}</span>
                       {o.teruggemeld_toelichting ? ` — ${o.teruggemeld_toelichting}` : ""}
+                    </p>
+                  )}
+                  {o.heropend_at && o.werkomschrijving && (
+                    <p className="mt-1 text-xs text-ink">
+                      Instructie: <span className="font-semibold">{o.werkomschrijving}</span>
                     </p>
                   )}
                 </div>

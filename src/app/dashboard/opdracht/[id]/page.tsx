@@ -25,6 +25,7 @@ import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
 import { afrondStatus } from "@/lib/afrond-status";
 import { AfgerondKeuren } from "@/components/AfgerondKeuren";
+import { HeropenKnop } from "@/components/HeropenKnop";
 
 export const dynamic = "force-dynamic";
 
@@ -300,6 +301,9 @@ export default async function OpdrachtgeverDetailPage({
           </ul>
         </section>
       )}
+
+      {/* Een al opgeleverde klus kan toch terug moeten naar de planning (klant belt). */}
+      {opdracht.opdracht_status === "opgeleverd" && <HeropenKnop opdrachtId={opdracht.id} />}
 
       {/* Keukenhistorie: eerdere klussen op dezelfde keuken (zelfde referentienummer) */}
       {historie.length > 0 && (

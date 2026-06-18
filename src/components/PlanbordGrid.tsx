@@ -113,6 +113,7 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
         )}
         {versturenLabel && <span className="shrink-0 font-bold text-accent">{versturenLabel}</span>}
         {teruggemeld && <span className="shrink-0 font-bold text-ink">teruggemeld</span>}
+        {o.heropend_at && <span className="shrink-0 font-bold text-accent">heropend</span>}
         {opgeleverd && <span className="shrink-0 font-bold text-success">opgeleverd</span>}
         {dubbel && (
           <span className="inline-flex shrink-0 items-center gap-0.5 font-bold text-urgent-rood">

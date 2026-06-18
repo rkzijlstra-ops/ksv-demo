@@ -67,6 +67,11 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
               Teruggemeld
             </span>
           )}
+          {melding.heropend_at && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-accent bg-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Heropend
+            </span>
+          )}
           {afStat && (
             <span
               className={`inline-flex items-center gap-1.5 border-[1.5px] px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white ${
@@ -94,6 +99,12 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
           <p className="mt-2 text-sm text-ink">
             Teruggemeld: <span className="font-semibold">{redenLabel(melding.teruggemeld_reden)}</span>
             {melding.teruggemeld_toelichting ? ` — ${melding.teruggemeld_toelichting}` : ""}
+          </p>
+        )}
+
+        {melding.heropend_at && melding.werkomschrijving && (
+          <p className="mt-2 text-sm text-ink">
+            Instructie: <span className="font-semibold">{melding.werkomschrijving}</span>
           </p>
         )}
 
