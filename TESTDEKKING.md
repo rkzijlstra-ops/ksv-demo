@@ -29,6 +29,12 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |
 | Verwijderen met eigendom-slot (monteur alleen eigen ingeschoten klus) | U | opdrachten/[id]/route.test | groen |
 | Terugmelden aan kantoor (reden + toelichting, uit pool naar history, mail, logboek) | U, E | terugmeld-mail.test, terugmelden/route.test, werkpool.test, terugmelden.spec | groen |
+| Terugmelden zet de klus terug naar "te plannen" (status binnen + planning leeg) + blijvende poging-historie (blok 22, snapshot) | U, E | db.test (markeerTeruggemeld), terugmelden/route.test (snapshot), terugmelden.spec (status binnen + poging) | groen |
+| Kantoor ziet de terugmelding: filter-tab "Teruggemeld" + reden op kaart en in de planbord-pool | U, E | dashboard-lijst.test (pseudo-filter), terugmelden.spec (filter-chip + reden) | groen |
+| Herkansing-keten: opnieuw uitsturen wist de terugmeld-vlag → klus weer actief bij de ontvangende monteur | U, E | db.test (markeerVerzonden reset), terugmelden.spec (datalaag) | groen |
+| Opleveren na terugmelden: vlag opgeruimd + klus uit de te-plannen-pool (geen dubbel-inplan) | U, E | db.test (registreerZaakRapport), terugmelden.spec (datalaag) | groen |
+| Monteur-geschiedenis: teruggemelde klus blijft zichtbaar ook na herplannen naar een ander (read-only poging) | E | terugmelden.spec (poging-historie) | groen |
+| Terugmeld-venster los van de klikbare kaart (portal, geen flits-navigatie) + bevestiging na terugmelden | E | terugmelden.spec (flits-fix + bevestiging) | groen |
 | Logboek (audit-trail): wie deed wat, weergave op detailpagina | U, E | opdrachten/[id]/route.test (log bij verwijderen), terugmelden.spec | groen |
 | Geannuleerde opdrachten inklapbaar op het dashboard | E | dashboard-geannuleerd.spec | groen |
 | Terugknop volgt herkomst (planbord vs dashboard) | E | terug-navigatie.spec | groen |

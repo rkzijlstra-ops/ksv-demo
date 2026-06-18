@@ -8,6 +8,7 @@ import { Loader2, GripVertical, CalendarPlus, AlertCircle } from "lucide-react";
 import type { Melding } from "@/lib/db";
 import type { MonteurOptie } from "@/lib/planbord";
 import { tijdOpties } from "@/lib/tijd";
+import { redenLabel } from "@/lib/terugmeld-mail";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 
 export function PlanbordPool({
@@ -46,6 +47,11 @@ export function PlanbordPool({
                   <div className="text-sm font-extrabold">{o.klant_naam ?? "Onbekende klant"}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <DocumenttypeBadge type={o.documenttype} />
+                    {o.teruggemeld_at && (
+                      <span className="inline-flex items-center border-[1.5px] border-ink bg-ink px-1.5 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.04em] text-white">
+                        Teruggemeld
+                      </span>
+                    )}
                     {o.referentienummer ? (
                       <span className="bg-surface px-1.5 py-0.5 font-mono text-xs font-bold">
                         {o.referentienummer}
@@ -55,6 +61,12 @@ export function PlanbordPool({
                     )}
                     {o.klant_adres && <span className="text-xs text-ink-muted">{o.klant_adres}</span>}
                   </div>
+                  {o.teruggemeld_at && o.teruggemeld_reden && (
+                    <p className="mt-1 text-xs text-ink">
+                      Reden: <span className="font-semibold">{redenLabel(o.teruggemeld_reden)}</span>
+                      {o.teruggemeld_toelichting ? ` — ${o.teruggemeld_toelichting}` : ""}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"

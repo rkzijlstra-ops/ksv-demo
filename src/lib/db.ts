@@ -205,6 +205,35 @@ export interface GebeurtenisInput {
   details?: Record<string, unknown> | null;
 }
 
+/**
+ * Eén terugmelding als blijvende, append-only regel (blok 22). Met een snapshot van klant + reden, zodat
+ * de monteur de klus in zijn geschiedenis blijft zien ook nadat kantoor hem aan een andere monteur gaf,
+ * en kantoor alle pogingen los van de huidige toewijzing ziet.
+ */
+export interface TerugmeldPoging {
+  id: string;
+  created_at: string;
+  opdracht_id: string;
+  monteur_id: string | null;
+  monteur_naam: string | null;
+  reden: string;
+  toelichting: string | null;
+  klant_naam: string | null;
+  klant_adres: string | null;
+  referentienummer: string | null;
+}
+
+/** Invoer voor een terugmelding: de reden + toelichting, plus snapshot-gegevens voor de poging-regel. */
+export interface TerugmeldInput {
+  reden: string;
+  toelichting: string | null;
+  monteurId: string | null;
+  monteurNaam: string | null;
+  klantNaam: string | null;
+  klantAdres: string | null;
+  referentienummer: string | null;
+}
+
 /** Input voor een nieuwe opdracht (top-level rij). Dekt zowel uit-PDF als tekst-only. */
 export interface OpdrachtInput {
   documenttype: "orderbevestiging" | "werkbon_service" | "onbekend" | "tekst";
@@ -423,7 +452,9 @@ export interface Db {
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
-  markeerTeruggemeld(id: string, input: { reden: string; toelichting: string | null }): Promise<void>;
+  markeerTeruggemeld(id: string, input: TerugmeldInput): Promise<void>;
+  /** Terugmeld-pogingen van één monteur (blijvende geschiedenis, ook na herplannen). Nieuwste eerst. */
+  getTerugmeldPogingenVoor(userId: string): Promise<TerugmeldPoging[]>;
   markeerAfgerond(
     id: string,
     input: { toelichting: string | null; vervolgNodig: boolean; fotoUrls: string[]; videoUrl: string | null },
@@ -839,11 +870,27 @@ function createDbFromClient(client: SupabaseClient): Db {
         .update({ rapport_url: rapportUrl, zaak_rapport_verzonden_at: nu })
         .eq("opdracht_id", opdrachtId);
       if (opErr) throw new Error(`DB update mislukt: ${opErr.message}`);
-      // Pas nu de opdracht op opgeleverd zetten (het kantoor ziet het oplevermoment nu pas).
-      const { error: mErr } = await client
+      // Was deze klus teruggemeld (lag dus weer op "binnen" in de pool)? Dan moet opleveren hem uit de
+      // te-plannen-pool tillen, anders staat hij tegelijk als te-plannen én opgeleverd (dubbel-inplan).
+      const { data: huidig } = await client
         .from("meldingen")
-        .update({ opdracht_status: "opgeleverd", opgeleverd_at: nu, rapport_url: rapportUrl })
-        .eq("id", opdrachtId);
+        .select("dashboard_status")
+        .eq("id", opdrachtId)
+        .maybeSingle();
+      // Pas nu de opdracht op opgeleverd zetten (het kantoor ziet het oplevermoment nu pas). De
+      // transiënte terugmeld-vlag eraf: een opgeleverde klus ligt niet meer teruggemeld bij kantoor.
+      const patch: Record<string, unknown> = {
+        opdracht_status: "opgeleverd",
+        opgeleverd_at: nu,
+        rapport_url: rapportUrl,
+        teruggemeld_at: null,
+        teruggemeld_reden: null,
+        teruggemeld_toelichting: null,
+      };
+      if ((huidig as { dashboard_status?: string } | null)?.dashboard_status === "binnen") {
+        patch.dashboard_status = "opgeleverd";
+      }
+      const { error: mErr } = await client.from("meldingen").update(patch).eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
     },
 
@@ -997,6 +1044,12 @@ function createDbFromClient(client: SupabaseClient): Db {
           verzonden_starttijd: verzonden.starttijd,
           verzonden_at: new Date().toISOString(),
           herinnering_verzonden_at: null,
+          // (Opnieuw) uitsturen sluit een eventuele terugmelding af: de transiënte vlag eraf, zodat de
+          // klus weer een verse, actieve afspraak wordt bij de ontvangende monteur (anders bleef hij via
+          // teruggemeld_at in diens geschiedenis hangen). De poging-historie blijft bewaard.
+          teruggemeld_at: null,
+          teruggemeld_reden: null,
+          teruggemeld_toelichting: null,
         })
         .eq("id", id);
       if (error) throw new Error(`DB versturen mislukt: ${error.message}`);
@@ -1082,15 +1135,57 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async markeerTeruggemeld(id, input) {
+      const nu = new Date().toISOString();
+      // 1) Blijvende historie: poging-regel met snapshot (append-only). Zo houdt de monteur de klus in
+      //    zijn geschiedenis ook nadat kantoor hem aan een ander gaf, en ziet kantoor alle pogingen.
+      const { error: pErr } = await client.from("terugmeld_pogingen").insert({
+        opdracht_id: id,
+        monteur_id: input.monteurId,
+        monteur_naam: input.monteurNaam,
+        reden: input.reden,
+        toelichting: input.toelichting,
+        klant_naam: input.klantNaam,
+        klant_adres: input.klantAdres,
+        referentienummer: input.referentienummer,
+      });
+      if (pErr) throw new Error(`DB terugmeld-poging mislukt: ${pErr.message}`);
+      // 2) Transiënte vlag (teruggemeld_*) + terug naar de pool "te plannen" (zelfde planning-reset als
+      //    ontplannen). De toewijzing blijft bewust staan: zo houdt de monteur de klus in zijn
+      //    werkpool-geschiedenis tot kantoor hem herplant (de poging-regel dekt de periode daarna).
       const { error } = await client
         .from("meldingen")
         .update({
-          teruggemeld_at: new Date().toISOString(),
+          teruggemeld_at: nu,
           teruggemeld_reden: input.reden,
           teruggemeld_toelichting: input.toelichting,
+          dashboard_status: "binnen",
+          startdatum: null,
+          starttijd: null,
+          uitvoerdatum: null,
+          gewijzigd_te_versturen: false,
+          verzonden_monteur: null,
+          verzonden_toegewezen_aan: null,
+          verzonden_startdatum: null,
+          verzonden_starttijd: null,
         })
         .eq("id", id);
       if (error) throw new Error(`DB terugmelden mislukt: ${error.message}`);
+    },
+
+    async getTerugmeldPogingenVoor(userId: string) {
+      const { data, error } = await client
+        .from("terugmeld_pogingen")
+        .select("*")
+        .eq("monteur_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) {
+        // Tabel bestaat nog niet (DB niet gemigreerd met blok 22): geen historie, maar geen crash.
+        if (error.code === "42P01" || error.code === "PGRST205" || /does not exist|schema cache|find the table/i.test(error.message)) {
+          return [];
+        }
+        throw new Error(`DB lezen mislukt: ${error.message}`);
+      }
+      return (data ?? []) as TerugmeldPoging[];
     },
 
     async markeerAfgerond(id, input) {

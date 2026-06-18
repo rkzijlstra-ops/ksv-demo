@@ -41,7 +41,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    await dbi.markeerTeruggemeld(id, { reden, toelichting });
+    await dbi.markeerTeruggemeld(id, {
+      reden,
+      toelichting,
+      monteurId: userId,
+      monteurNaam: eigen?.naam ?? opdracht.monteur_naam ?? null,
+      klantNaam: opdracht.klant_naam,
+      klantAdres: opdracht.klant_adres,
+      referentienummer: opdracht.referentienummer,
+    });
   } catch (err) {
     return NextResponse.json({ error: `Terugmelden mislukt: ${(err as Error).message}` }, { status: 503 });
   }

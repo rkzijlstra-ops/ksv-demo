@@ -31,12 +31,25 @@ export default async function WerkpoolPage({
   const dbi = await db();
   // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
   // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
-  const [meldingen, tellingen, inbox] = await Promise.all([
+  const [meldingen, tellingen, inbox, pogingen] = await Promise.all([
     dbi.getWerkpoolVoor(profiel.id),
     dbi.getMeldingTellingen(),
     dbi.getInboxVoor(profiel.id),
+    dbi.getTerugmeldPogingenVoor(profiel.id),
   ]);
   const { actief, history } = groepeerMeldingen(meldingen);
+
+  // Blijvende terugmeld-historie (blok 22): klussen die ik terugmeldde maar die kantoor daarna aan een
+  // andere monteur gaf, staan niet meer in mijn werkpool. Toon die pogingen read-only in mijn
+  // geschiedenis, zodat "ik heb deze klus teruggemeld" een feit blijft, los van wie hem nu heeft.
+  // Dedupe: pogingen voor een klus die nog wél in mijn werkpool staat (live kaart toont 'm al) overslaan.
+  const getoondeIds = new Set([...actief, ...history].map((m) => m.id));
+  const gezienePogingen = new Set<string>();
+  const verweesdePogingen = pogingen.filter((p) => {
+    if (getoondeIds.has(p.opdracht_id) || gezienePogingen.has(p.opdracht_id)) return false;
+    gezienePogingen.add(p.opdracht_id);
+    return true;
+  });
 
   // Welke actieve klussen wachten nog op verzending naar de zaak (oplevering vastgelegd, niet verstuurd).
   const nietVerzonden = new Set(
@@ -109,7 +122,7 @@ export default async function WerkpoolPage({
         </div>
       )}
 
-      <HistorySection meldingen={history} />
+      <HistorySection meldingen={history} pogingen={verweesdePogingen} />
     </main>
   );
 }

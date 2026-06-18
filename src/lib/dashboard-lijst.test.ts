@@ -17,6 +17,7 @@ function o(
     monteur_naam: over.monteur_naam ?? null,
     klant_adres: over.klant_adres ?? "Hoofdstraat 12",
     dashboard_status: over.dashboard_status ?? "binnen",
+    teruggemeld_at: over.teruggemeld_at ?? null,
   };
 }
 
@@ -60,6 +61,16 @@ describe("filterOpdrachten", () => {
   it("combineert status en zoekterm", () => {
     expect(filterOpdrachten(lijst, { zoek: "bakker", status: "gepland" })).toHaveLength(0);
     expect(filterOpdrachten(lijst, { zoek: "bakker", status: "binnen" })).toHaveLength(1);
+  });
+
+  it("pseudo-filter 'teruggemeld' toont alleen klussen met teruggemeld_at, los van dashboard_status", () => {
+    const met = [
+      o({ klant_naam: "Teruggemeld", dashboard_status: "binnen", teruggemeld_at: "2026-06-17T10:00:00Z" }),
+      o({ klant_naam: "Gewoon binnen", dashboard_status: "binnen", teruggemeld_at: null }),
+      o({ klant_naam: "Gepland", dashboard_status: "gepland", teruggemeld_at: null }),
+    ];
+    const res = filterOpdrachten(met, { zoek: "", status: "teruggemeld" });
+    expect(res.map((r) => r.klant_naam)).toEqual(["Teruggemeld"]);
   });
 });
 
