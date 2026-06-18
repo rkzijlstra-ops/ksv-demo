@@ -1204,7 +1204,9 @@ function createDbFromClient(client: SupabaseClient): Db {
 
     async heropenen(id) {
       // Terug naar "te plannen" (zelfde reset als ontplannen) + de voltooid-velden wissen.
-      // Historie (meldingen, oplevering, teruggemeld_*) blijft staan.
+      // De blijvende historie (meldingen, oplevering, terugmeld_pogingen) blijft bewaard; de TRANSIENTE
+      // terugmeld-vlag (teruggemeld_*) wordt wél gewist, net als bij ontplannen/opnieuw versturen, anders
+      // zou een heropende klus ten onrechte als "teruggemeld" in de pool blijven staan.
       const { error } = await client
         .from("meldingen")
         .update({
@@ -1225,6 +1227,9 @@ function createDbFromClient(client: SupabaseClient): Db {
           verzonden_toegewezen_aan: null,
           verzonden_startdatum: null,
           verzonden_starttijd: null,
+          teruggemeld_at: null,
+          teruggemeld_reden: null,
+          teruggemeld_toelichting: null,
         })
         .eq("id", id);
       if (error) throw new Error(`DB heropenen mislukt: ${error.message}`);

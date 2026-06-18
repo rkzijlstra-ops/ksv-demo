@@ -1001,6 +1001,21 @@ describe("getTerugmeldPogingenVoor", () => {
   });
 });
 
+describe("heropenen", () => {
+  it("zet terug naar 'binnen', wist voltooid-velden EN de transiënte terugmeld-vlag", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).heropenen("opdr-1");
+
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.dashboard_status).toBe("binnen");
+    expect(patch.afgerond_door_monteur_at).toBeNull();
+    // Cruciaal: een heropende klus mag niet als "teruggemeld" in de pool blijven staan.
+    expect(patch.teruggemeld_at).toBeNull();
+    expect(patch.teruggemeld_reden).toBeNull();
+    expect(patch.teruggemeld_toelichting).toBeNull();
+  });
+});
+
 describe("profielen", () => {
   it("getProfiel haalt het profiel op id op", async () => {
     h.setResult({ data: { id: "u1", rol: "monteur", naam: "Piet" }, error: null });
