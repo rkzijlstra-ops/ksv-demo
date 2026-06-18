@@ -145,7 +145,15 @@ test.beforeAll(async () => {
 
   // Een opdracht met logboek + terugmelding voor de detail-screenshot
   detailId = await maak("Fam. Jansen-teruggemeld", { status: "bevestigd", monteurIdx: 0, dag: 3 });
-  await db.markeerTeruggemeld(detailId, { reden: "klant_niet_thuis", toelichting: "Driemaal aangebeld, niemand thuis. Buurman wist van niets." });
+  await db.markeerTeruggemeld(detailId, {
+    reden: "klant_niet_thuis",
+    toelichting: "Driemaal aangebeld, niemand thuis. Buurman wist van niets.",
+    monteurId: MONTEUR.uid,
+    monteurNaam: "Rein RK",
+    klantNaam: "Fam. Jansen-teruggemeld",
+    klantAdres: null,
+    referentienummer: null,
+  });
   await db.logGebeurtenis({ opdracht_id: detailId, actie: "teruggemeld", door_id: MONTEUR.uid, door_naam: "Rein RK", door_rol: "monteur", details: { reden: "klant_niet_thuis", toelichting: "Driemaal aangebeld, niemand thuis." } });
 });
 

@@ -33,9 +33,11 @@ const CHIP: Record<StatusFilter, { label: string; basis: string; actief: string 
   bevestigd: { label: "Bevestigd", basis: "border-bevestigd", actief: "bg-bevestigd text-white border-bevestigd" },
   opgeleverd: { label: "Opgeleverd", basis: "border-success", actief: "bg-success text-white border-success" },
   geannuleerd: { label: "Geannuleerd", basis: "border-line", actief: "bg-ink-muted text-white border-ink-muted" },
+  teruggemeld: { label: "Teruggemeld", basis: "border-ink", actief: "bg-ink text-white border-ink" },
 };
 
-const CHIP_VOLGORDE: StatusFilter[] = ["alle", ...ALLE_STATUSSEN];
+// "Teruggemeld" als laatste: een dwarsdoorsnede (op de transiënte vlag), naast de levenscyclus-statussen.
+const CHIP_VOLGORDE: StatusFilter[] = ["alle", ...ALLE_STATUSSEN, "teruggemeld"];
 
 export function DashboardLijst({
   opdrachten,
@@ -54,6 +56,8 @@ export function DashboardLijst({
   const tellingPerStatus = useMemo(() => {
     const t: Record<string, number> = { alle: opdrachten.length };
     for (const s of ALLE_STATUSSEN) t[s] = opdrachten.filter((o) => o.dashboard_status === s).length;
+    // 'teruggemeld' telt op de transiënte vlag (dwarsdoorsnede, niet op dashboard_status).
+    t.teruggemeld = opdrachten.filter((o) => o.teruggemeld_at != null).length;
     return t;
   }, [opdrachten]);
 

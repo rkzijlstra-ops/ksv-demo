@@ -8,6 +8,7 @@ import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtStatusBadge } from "./OpdrachtStatusBadge";
 import { MailMonteurKnop } from "./MailMonteurKnop";
 import { afrondStatus, afrondStatusLabel } from "@/lib/afrond-status";
+import { redenLabel } from "@/lib/terugmeld-mail";
 
 /** Kleur van de linker strip (8px) per status. Literal Tailwind-classes (JIT-veilig). */
 const STRIP: Record<DashboardStatus, string> = {
@@ -88,6 +89,13 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
           )}
           {nogTeVersturen && <MailMonteurKnop opdrachtId={melding.id} label />}
         </div>
+
+        {melding.teruggemeld_at && melding.teruggemeld_reden && (
+          <p className="mt-2 text-sm text-ink">
+            Teruggemeld: <span className="font-semibold">{redenLabel(melding.teruggemeld_reden)}</span>
+            {melding.teruggemeld_toelichting ? ` — ${melding.teruggemeld_toelichting}` : ""}
+          </p>
+        )}
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
           {gepland ? (

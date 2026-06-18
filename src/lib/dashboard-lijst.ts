@@ -1,8 +1,11 @@
 import { ALLE_STATUSSEN } from "./opdracht-status";
 import type { DashboardStatus } from "./db";
 
-/** Filter inclusief de pseudo-status 'alle' (toont elke status). */
-export type StatusFilter = DashboardStatus | "alle";
+/**
+ * Filter inclusief de pseudo-statussen 'alle' (toont elke status) en 'teruggemeld' (een dwarsdoorsnede:
+ * elke klus die nu teruggemeld bij kantoor ligt, los van zijn dashboard_status, dat is "binnen").
+ */
+export type StatusFilter = DashboardStatus | "alle" | "teruggemeld";
 
 /** Velden waarop het dashboard zoekt en groepeert (een Melding voldoet hieraan). */
 export interface ZoekbareOpdracht {
@@ -11,6 +14,8 @@ export interface ZoekbareOpdracht {
   monteur_naam: string | null;
   klant_adres: string | null;
   dashboard_status: DashboardStatus;
+  /** Transiënte terugmeld-vlag (blok 22): gezet zolang de klus teruggemeld bij kantoor ligt. */
+  teruggemeld_at: string | null;
 }
 
 /** Matcht een opdracht op een vrije zoekterm (klant, referentie, monteur of adres). */
@@ -26,14 +31,20 @@ export function zoekMatch(opdracht: ZoekbareOpdracht, zoekterm: string): boolean
   return velden.some((v) => v != null && v.toLowerCase().includes(q));
 }
 
+/** Past één statusfilter toe (incl. de pseudo's 'alle' en 'teruggemeld'). */
+function statusMatch(o: ZoekbareOpdracht, status: StatusFilter): boolean {
+  if (status === "alle") return true;
+  // 'teruggemeld' is een dwarsdoorsnede op de transiënte vlag, niet op dashboard_status.
+  if (status === "teruggemeld") return o.teruggemeld_at != null;
+  return o.dashboard_status === status;
+}
+
 /** Filtert op statusfilter en zoekterm samen. */
 export function filterOpdrachten<T extends ZoekbareOpdracht>(
   opdrachten: T[],
   { zoek, status }: { zoek: string; status: StatusFilter },
 ): T[] {
-  return opdrachten.filter(
-    (o) => (status === "alle" || o.dashboard_status === status) && zoekMatch(o, zoek),
-  );
+  return opdrachten.filter((o) => statusMatch(o, status) && zoekMatch(o, zoek));
 }
 
 /**

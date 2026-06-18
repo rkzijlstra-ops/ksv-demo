@@ -682,6 +682,35 @@ describe("finaliseerOplevering", () => {
   });
 });
 
+describe("registreerZaakRapport", () => {
+  it("zet opdracht op opgeleverd en ruimt de transiënte terugmeld-vlag op", async () => {
+    // De select naar de huidige status geeft 'gepland' (geen teruggemelde klus): status blijft ongemoeid.
+    h.setResult({ data: { dashboard_status: "gepland" }, error: null });
+    await createDb(cfg).registreerZaakRapport("opdr-1", "https://x/zaak.pdf");
+
+    // De laatste meldingen-update is het opgeleverd-patch (eerste update is op opleveringen).
+    const patch = h.fns.update.mock.calls[h.fns.update.mock.calls.length - 1][0];
+    expect(patch.opdracht_status).toBe("opgeleverd");
+    expect(patch.rapport_url).toBe("https://x/zaak.pdf");
+    expect(patch.teruggemeld_at).toBeNull();
+    expect(patch.teruggemeld_reden).toBeNull();
+    expect(patch.teruggemeld_toelichting).toBeNull();
+    // Stond niet in de pool (status gepland): dashboard_status niet geforceerd naar opgeleverd.
+    expect(patch.dashboard_status).toBeUndefined();
+  });
+
+  it("tilt een teruggemelde klus uit de te-plannen-pool (status binnen → opgeleverd)", async () => {
+    // De klus was teruggemeld en lag dus weer op 'binnen' in de pool.
+    h.setResult({ data: { dashboard_status: "binnen" }, error: null });
+    await createDb(cfg).registreerZaakRapport("opdr-1", "https://x/zaak.pdf");
+
+    const patch = h.fns.update.mock.calls[h.fns.update.mock.calls.length - 1][0];
+    expect(patch.opdracht_status).toBe("opgeleverd");
+    // Cruciaal: anders staat hij tegelijk als te-plannen én opgeleverd (dubbel-inplan-risico).
+    expect(patch.dashboard_status).toBe("opgeleverd");
+  });
+});
+
 // ---- compleet-systeem blok 0: dashboard/planning ----
 
 const PEIL = new Date("2026-06-03T12:00:00.000Z");
@@ -821,6 +850,11 @@ describe("markeerVerzonden", () => {
     expect(patch.verzonden_monteur).toBe("Rein");
     expect(patch.verzonden_startdatum).toBe("2026-06-10");
     expect(patch.verzonden_starttijd).toBe("10:00");
+    // (Opnieuw) uitsturen sluit een eventuele terugmelding af: de transiënte vlag wordt gewist, zodat
+    // de klus een verse, actieve afspraak wordt bij de ontvangende monteur (herkansing-keten).
+    expect(patch.teruggemeld_at).toBeNull();
+    expect(patch.teruggemeld_reden).toBeNull();
+    expect(patch.teruggemeld_toelichting).toBeNull();
   });
 
   it("gooit Error bij DB-fout", async () => {
@@ -902,6 +936,68 @@ describe("ontplanOpdracht", () => {
     // Ook de toewijzing wissen, anders blijft de klus in de werkpool van de monteur (6d/RLS).
     expect(patch.toegewezen_aan).toBeNull();
     expect(patch.verzonden_toegewezen_aan).toBeNull();
+  });
+});
+
+const TERUGMELD_INPUT = {
+  reden: "klant_niet_thuis",
+  toelichting: "3x aangebeld",
+  monteurId: "monteur-uid",
+  monteurNaam: "Piet",
+  klantNaam: "Fam. Jansen",
+  klantAdres: "Teststraat 1",
+  referentienummer: "REF123",
+};
+
+describe("markeerTeruggemeld", () => {
+  it("legt een blijvende poging-regel vast met snapshot (klant + reden + monteur)", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).markeerTeruggemeld("opdr-1", TERUGMELD_INPUT);
+
+    expect(h.fns.from).toHaveBeenCalledWith("terugmeld_pogingen");
+    const poging = h.fns.insert.mock.calls[0][0];
+    expect(poging.opdracht_id).toBe("opdr-1");
+    expect(poging.monteur_id).toBe("monteur-uid");
+    expect(poging.reden).toBe("klant_niet_thuis");
+    expect(poging.toelichting).toBe("3x aangebeld");
+    expect(poging.klant_naam).toBe("Fam. Jansen");
+    expect(poging.referentienummer).toBe("REF123");
+  });
+
+  it("zet de transiënte vlag én haalt de klus terug naar de pool (status binnen, planning leeg)", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).markeerTeruggemeld("opdr-1", TERUGMELD_INPUT);
+
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.teruggemeld_at).toBeTypeOf("string");
+    expect(patch.teruggemeld_reden).toBe("klant_niet_thuis");
+    // Cruciaal voor de kantoor-kant: de klus springt terug naar "te plannen", niet meer blauw/bevestigd.
+    expect(patch.dashboard_status).toBe("binnen");
+    expect(patch.startdatum).toBeNull();
+    expect(patch.verzonden_toegewezen_aan).toBeNull();
+  });
+
+  it("stopt als de poging-insert faalt (geen halve terugmelding)", async () => {
+    h.setResult({ data: null, error: { message: "poging kapot" } });
+    await expect(createDb(cfg).markeerTeruggemeld("opdr-1", TERUGMELD_INPUT)).rejects.toThrow(/poging kapot/);
+  });
+});
+
+describe("getTerugmeldPogingenVoor", () => {
+  it("haalt de eigen pogingen op (monteur_id), nieuwste eerst", async () => {
+    h.setResult({ data: [{ id: "p1" }], error: null });
+    const rows = await createDb(cfg).getTerugmeldPogingenVoor("monteur-uid");
+
+    expect(h.fns.from).toHaveBeenCalledWith("terugmeld_pogingen");
+    expect(h.fns.eq).toHaveBeenCalledWith("monteur_id", "monteur-uid");
+    expect(h.fns.order).toHaveBeenCalledWith("created_at", { ascending: false });
+    expect(rows).toEqual([{ id: "p1" }]);
+  });
+
+  it("geeft een lege lijst als de tabel nog niet bestaat (niet-gemigreerde DB)", async () => {
+    h.setResult({ data: null, error: { code: "42P01", message: "relation does not exist" } });
+    const rows = await createDb(cfg).getTerugmeldPogingenVoor("monteur-uid");
+    expect(rows).toEqual([]);
   });
 });
 

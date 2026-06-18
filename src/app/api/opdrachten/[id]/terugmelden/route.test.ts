@@ -36,8 +36,8 @@ beforeEach(() => {
   process.env.RAPPORT_EMAIL = "kantoor@kluslus.test";
   mockAuthId.mockResolvedValue("m1");
   mockGetById.mockResolvedValue({
-    id: "opdr-1", klant_naam: "Fam. Bakker", referentienummer: "7588", keukenzaak: "KSV",
-    toegewezen_aan: "m1", monteur_naam: "Rein RK",
+    id: "opdr-1", klant_naam: "Fam. Bakker", klant_adres: "Teststraat 1", referentienummer: "7588",
+    keukenzaak: "KSV", toegewezen_aan: "m1", monteur_naam: "Rein RK",
   });
   mockGetProfiel.mockResolvedValue({ id: "m1", rol: "monteur", naam: "Rein RK" });
   mockTerugmeld.mockResolvedValue(undefined);
@@ -75,7 +75,18 @@ describe("POST /api/opdrachten/[id]/terugmelden", () => {
   it("meldt terug, logt en mailt kantoor, 200", async () => {
     const res = await POST(req({ reden: "klant_niet_thuis", toelichting: "3x aangebeld" }), ctx("opdr-1"));
     expect(res.status).toBe(200);
-    expect(mockTerugmeld).toHaveBeenCalledWith("opdr-1", { reden: "klant_niet_thuis", toelichting: "3x aangebeld" });
+    // Snapshot meegegeven voor de blijvende poging-historie (monteur + klant + reden).
+    expect(mockTerugmeld).toHaveBeenCalledWith(
+      "opdr-1",
+      expect.objectContaining({
+        reden: "klant_niet_thuis",
+        toelichting: "3x aangebeld",
+        monteurId: "m1",
+        klantNaam: "Fam. Bakker",
+        klantAdres: "Teststraat 1",
+        referentienummer: "7588",
+      }),
+    );
     expect(mockLog).toHaveBeenCalledWith(
       expect.objectContaining({ opdracht_id: "opdr-1", actie: "teruggemeld" }),
     );
