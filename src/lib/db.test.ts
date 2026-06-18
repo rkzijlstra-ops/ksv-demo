@@ -683,9 +683,8 @@ describe("finaliseerOplevering", () => {
 });
 
 describe("registreerZaakRapport", () => {
-  it("zet opdracht op opgeleverd en ruimt de transiënte terugmeld-vlag op", async () => {
-    // De select naar de huidige status geeft 'gepland' (geen teruggemelde klus): status blijft ongemoeid.
-    h.setResult({ data: { dashboard_status: "gepland" }, error: null });
+  it("zet opdracht én dashboard_status op opgeleverd en ruimt de transiënte terugmeld-vlag op", async () => {
+    h.setResult({ data: null, error: null });
     await createDb(cfg).registreerZaakRapport("opdr-1", "https://x/zaak.pdf");
 
     // De laatste meldingen-update is het opgeleverd-patch (eerste update is op opleveringen).
@@ -695,18 +694,8 @@ describe("registreerZaakRapport", () => {
     expect(patch.teruggemeld_at).toBeNull();
     expect(patch.teruggemeld_reden).toBeNull();
     expect(patch.teruggemeld_toelichting).toBeNull();
-    // Stond niet in de pool (status gepland): dashboard_status niet geforceerd naar opgeleverd.
-    expect(patch.dashboard_status).toBeUndefined();
-  });
-
-  it("tilt een teruggemelde klus uit de te-plannen-pool (status binnen → opgeleverd)", async () => {
-    // De klus was teruggemeld en lag dus weer op 'binnen' in de pool.
-    h.setResult({ data: { dashboard_status: "binnen" }, error: null });
-    await createDb(cfg).registreerZaakRapport("opdr-1", "https://x/zaak.pdf");
-
-    const patch = h.fns.update.mock.calls[h.fns.update.mock.calls.length - 1][0];
-    expect(patch.opdracht_status).toBe("opgeleverd");
-    // Cruciaal: anders staat hij tegelijk als te-plannen én opgeleverd (dubbel-inplan-risico).
+    // Cruciaal: ook de dashboard-status mee naar opgeleverd, zodat lijst/badge/planbord groen worden en
+    // de klus uit het actieve bord valt (en een teruggemelde klus uit de te-plannen-pool).
     expect(patch.dashboard_status).toBe("opgeleverd");
   });
 });

@@ -870,27 +870,23 @@ function createDbFromClient(client: SupabaseClient): Db {
         .update({ rapport_url: rapportUrl, zaak_rapport_verzonden_at: nu })
         .eq("opdracht_id", opdrachtId);
       if (opErr) throw new Error(`DB update mislukt: ${opErr.message}`);
-      // Was deze klus teruggemeld (lag dus weer op "binnen" in de pool)? Dan moet opleveren hem uit de
-      // te-plannen-pool tillen, anders staat hij tegelijk als te-plannen én opgeleverd (dubbel-inplan).
-      const { data: huidig } = await client
+      // Pas nu de opdracht op opgeleverd zetten (het kantoor ziet het oplevermoment nu pas). Ook de
+      // dashboard_status gaat naar "opgeleverd": zo schuift de klus op de lijst, badge en het planbord
+      // mee naar groen/"Opgeleverd" (i.p.v. blauw "Bevestigd" te blijven) en valt hij uit het actieve
+      // planbord. En de transiënte terugmeld-vlag eraf: een opgeleverde klus ligt niet meer teruggemeld
+      // bij kantoor (dekt ook de teruggemeld→alsnog-opgeleverd-case: weg uit de te-plannen-pool).
+      const { error: mErr } = await client
         .from("meldingen")
-        .select("dashboard_status")
-        .eq("id", opdrachtId)
-        .maybeSingle();
-      // Pas nu de opdracht op opgeleverd zetten (het kantoor ziet het oplevermoment nu pas). De
-      // transiënte terugmeld-vlag eraf: een opgeleverde klus ligt niet meer teruggemeld bij kantoor.
-      const patch: Record<string, unknown> = {
-        opdracht_status: "opgeleverd",
-        opgeleverd_at: nu,
-        rapport_url: rapportUrl,
-        teruggemeld_at: null,
-        teruggemeld_reden: null,
-        teruggemeld_toelichting: null,
-      };
-      if ((huidig as { dashboard_status?: string } | null)?.dashboard_status === "binnen") {
-        patch.dashboard_status = "opgeleverd";
-      }
-      const { error: mErr } = await client.from("meldingen").update(patch).eq("id", opdrachtId);
+        .update({
+          opdracht_status: "opgeleverd",
+          dashboard_status: "opgeleverd",
+          opgeleverd_at: nu,
+          rapport_url: rapportUrl,
+          teruggemeld_at: null,
+          teruggemeld_reden: null,
+          teruggemeld_toelichting: null,
+        })
+        .eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
     },
 

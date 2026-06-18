@@ -37,7 +37,7 @@ beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laa
 | bevestiging blijft uit (na HERINNERING_NA_UUR) | herinnering_verzonden_at gezet (idempotent) | "niet bevestigd"-teller in Te-doen | herinnering binnen | **mail + SMS (overig)** via cron ✓ (mail was een lege stub, nu echt) |
 | oplevering vastleggen (tussenopslag) | oplevering-record (foto/handtekening/opmerking/interne notitie) | **niets zichtbaar** (privacy-fix) ⚠️E | flow met ingevulde velden | geen |
 | versturen naar klant (schone versie) | klant-PDF, klant_rapport_verzonden_at/_email/_url | niets | "klant: verzonden ✓" | mail naar klant, zonder interne notitie (U) |
-| versturen naar zaak → opgeleverd | zaak-PDF, zaak_rapport_verzonden_at, rapport_url, opdracht → opgeleverd | nu pas oplever-blok + groen | "zaak: verzonden ✓", naar history | mail naar zaak, mét interne notitie; meldt of klant het ook kreeg (U) |
+| versturen naar zaak → opgeleverd | zaak-PDF, zaak_rapport_verzonden_at, rapport_url, opdracht_status én **dashboard_status → opgeleverd** (was eerder alleen opdracht_status; lijst/badge/planbord bleven "Bevestigd" — gat gedicht 2026-06-18) | oplever-blok + groen op de detailpagina ÉN op de lijst/het planbord (vak "Opgeleverd"), valt uit het actieve bord ✓ | "zaak: verzonden ✓", naar history | mail naar zaak, mét interne notitie; meldt of klant het ook kreeg (U) |
 | afgerond, zaak nog niet verstuurd | oplevering vastgelegd, zaak_rapport_verzonden_at null | **niets** (geen tijdstip) | werkpool-geheugensteun ❌ (nog te bouwen) | geen |
 | verwijderen (prullenbak) | verwijderd_at gezet | uit lijst, in prullenbak | verdwijnt uit werkpool ✓ | geen |
 
