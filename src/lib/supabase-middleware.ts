@@ -9,9 +9,9 @@ import { NextResponse, type NextRequest } from "next/server";
  * /api/* routes worden NIET via middleware geforceerd; daar handelen de routes zelf
  * de auth-check af zodat 401-fouten netjes als JSON terugkomen i.p.v. een redirect.
  */
-// /demo/login mag publiek zijn: die route logt zélf het vaste demo-account in (en is gegrendeld op
-// DEMO_MODE; in productie stuurt hij gewoon naar home). Zonder dit zou de middleware 'm naar /login sturen.
-const PUBLIEK = ["/login", "/auth/", "/mockups", "/demo/login"];
+// /demo/* mag publiek zijn: die routes loggen zélf in / melden zelf aan (en zijn gegrendeld op
+// DEMO_MODE; in productie redirecten ze naar home). Zonder dit zou de middleware ze naar /login sturen.
+const PUBLIEK = ["/login", "/auth/", "/mockups", "/demo/"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
