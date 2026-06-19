@@ -1,3 +1,5 @@
+import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+
 /** Productie-gateway van CM.com. De trial gebruikt een andere URL; stel die in via CM_GW_URL. */
 const CM_GW_DEFAULT = "https://gw.cm.com/v1.0/message";
 
@@ -29,12 +31,10 @@ export async function verstuurSms(input: SmsInput): Promise<void> {
     return;
   }
 
-  const allowlist = (process.env.SMS_ALLOWLIST ?? "")
-    .split(",")
-    .map((n) => n.trim())
-    .filter(Boolean);
-  if (allowlist.length > 0 && !allowlist.includes(input.naar)) {
-    console.log(`[SMS allowlist] ${input.naar} staat niet op de lijst, overgeslagen.`);
+  const allowlist = leesAllowlist(process.env.SMS_ALLOWLIST);
+  const check = ontvangerToegestaan(input.naar, allowlist, isDemoMode());
+  if (!check.toegestaan) {
+    console.log(`[SMS overgeslagen] ${input.naar}: ${check.reden}`);
     return;
   }
 

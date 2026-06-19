@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
 import type { Melding, Rol } from "./db";
 import type { RapportAfzender } from "./afzender";
 import { htmlVanTekst } from "./mail-html";
@@ -117,6 +118,45 @@ function mailConfig() {
   return { apiKey, from, replyTo };
 }
 
+type MailPayload = {
+  from: string;
+  to: string;
+  replyTo?: string;
+  subject: string;
+  text: string;
+  html?: string;
+  attachments?: { filename: string; content: Buffer }[];
+};
+
+/**
+ * Eén doorvoer voor ALLE uitgaande mail: past de allowlist/fail-safe toe (demo-veiligheid) en stuurt
+ * dan pas via Resend. Een geweigerde ontvanger wordt overgeslagen en gelogd; blijft er niemand over,
+ * dan gaat er niets uit. Hier loopt later ook de demo-notificatielog langs.
+ */
+async function verzendMail(resend: Resend, payload: MailPayload, foutLabel: string): Promise<void> {
+  const check = ontvangerToegestaan(payload.to, leesAllowlist(process.env.MAIL_ALLOWLIST), isDemoMode());
+  if (!check.toegestaan) {
+    console.log(`[mail overgeslagen] ${payload.to}: ${check.reden}`);
+    return;
+  }
+  const { error } = await resend.emails.send({
+    from: payload.from,
+    to: payload.to,
+    ...(payload.replyTo ? { replyTo: payload.replyTo } : {}),
+    subject: payload.subject,
+    text: payload.text,
+    ...(payload.html ? { html: payload.html } : {}),
+    ...(payload.attachments ? { attachments: payload.attachments } : {}),
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" && error && "message" in error
+        ? (error as { message: string }).message
+        : JSON.stringify(error);
+    throw new Error(`${foutLabel}: ${msg}`);
+  }
+}
+
 /**
  * Verstuurt het opleverrapport-PDF als e-mailbijlage via Resend.
  * Resend zit hier expres achter één functie zodat een latere provider-wissel alleen dit bestand raakt.
@@ -134,24 +174,21 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
     klantOok: input.klantOok ?? null,
   });
 
-  const { error } = await resend.emails.send({
-    from: afzenderHeader(from, afzenderNaam),
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    // Ook een HTML-versie meesturen: een mail met alleen platte tekst + PDF-bijlage scoort hoog op
-    // spam (en gaf een lege preview). Multipart (text + html) haalt dat patroon weg.
-    html: htmlVanTekst(text),
-    attachments: [{ filename: input.bestandsnaam, content: Buffer.from(input.pdf) }],
-  });
-
-  if (error) {
-    const msg = typeof error === "object" && error && "message" in error
-      ? (error as { message: string }).message
-      : JSON.stringify(error);
-    throw new Error(`Mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    {
+      from: afzenderHeader(from, afzenderNaam),
+      to: input.naar,
+      replyTo,
+      subject,
+      text,
+      // Ook een HTML-versie meesturen: een mail met alleen platte tekst + PDF-bijlage scoort hoog op
+      // spam (en gaf een lege preview). Multipart (text + html) haalt dat patroon weg.
+      html: htmlVanTekst(text),
+      attachments: [{ filename: input.bestandsnaam, content: Buffer.from(input.pdf) }],
+    },
+    "Mail versturen mislukt",
+  );
 }
 
 /**
@@ -163,21 +200,11 @@ export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void
   const resend = new Resend(apiKey);
   const { subject, text } = monteurMailTekst(input.monteurNaam, input.opdrachten, input.zaaknaam);
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Monteur-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Monteur-mail versturen mislukt",
+  );
 }
 
 /** Verstuurt een uitnodiging aan een nieuwe gebruiker (monteur/opdrachtgever) via Resend. */
@@ -186,21 +213,11 @@ export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<
   const resend = new Resend(apiKey);
   const { subject, text } = uitnodigingTekst(input.naam, input.rol, input.appUrl, input.organisatie);
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Uitnodiging versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Uitnodiging versturen mislukt",
+  );
 }
 
 /** Meldt een gebruiker netjes af: hij is uit de planning-app verwijderd. */
@@ -209,21 +226,11 @@ export async function verstuurAfmelding(input: AfmeldingMailInput): Promise<void
   const resend = new Resend(apiKey);
   const { subject, text } = afmeldingTekst(input.naam, input.organisatie);
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Afmelding versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Afmelding versturen mislukt",
+  );
 }
 
 /** Meldt de monteur dat zijn toegewezen opdracht is geannuleerd. */
@@ -237,21 +244,11 @@ export async function verstuurAnnulering(input: AnnuleringMailInput): Promise<vo
     input.organisatie,
   );
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Annulering versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Annulering versturen mislukt",
+  );
 }
 
 /** Meldt de monteur dat zijn toegewezen opdracht van de planning is gehaald (terug naar de pool). */
@@ -265,21 +262,11 @@ export async function verstuurOntplanning(input: OntplanningMailInput): Promise<
     input.organisatie,
   );
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Ontplan-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Ontplan-mail versturen mislukt",
+  );
 }
 
 /** Meldt de monteur dat er een nieuw document bij zijn al verstuurde opdracht is gezet (geen herbevestiging). */
@@ -293,21 +280,11 @@ export async function verstuurNieuwDocument(input: NieuwDocumentMailInput): Prom
     input.organisatie,
   );
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Document-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Document-mail versturen mislukt",
+  );
 }
 
 /** Stuurt de monteur een bevestig-herinnering voor zijn nog niet bevestigde klussen (gebundeld). */
@@ -316,21 +293,11 @@ export async function verstuurHerinnering(input: HerinneringMailInput): Promise<
   const resend = new Resend(apiKey);
   const { subject, text } = herinneringTekst(input.monteurNaam, input.klantNamen, input.organisatie);
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Herinnering-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Herinnering-mail versturen mislukt",
+  );
 }
 
 /** Meldt kantoor dat de monteur een klus heeft teruggemeld (niet doorgegaan, met reden). */
@@ -346,21 +313,11 @@ export async function verstuurTerugmelding(input: TerugmeldingMailInput): Promis
     input.organisatie,
   );
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Terugmeld-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Terugmeld-mail versturen mislukt",
+  );
 }
 
 export interface AfgerondMeldingMailInput {
@@ -387,21 +344,11 @@ export async function verstuurAfgerondMelding(opts: AfgerondMeldingMailInput): P
     opts.organisatie ?? "",
   );
 
-  const { error } = await resend.emails.send({
-    from,
-    to: opts.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject,
-    text,
-    html: htmlVanTekst(text),
-  });
-  if (error) {
-    const msg =
-      typeof error === "object" && error && "message" in error
-        ? (error as { message: string }).message
-        : JSON.stringify(error);
-    throw new Error(`Afgerond-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: opts.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    "Afgerond-mail versturen mislukt",
+  );
 }
 
 /**
@@ -422,19 +369,9 @@ export async function verstuurSpoedMelding(input: SpoedMailInput): Promise<void>
 
   const spoedTekst = `SPOED-melding voor ${klant}${ref}.\n\n${tekst}${fotoRegels}\n\nDeze melding is als spoed verstuurd, los van de oplevering.\n\n${input.opdracht.keukenzaak?.trim() || "Het planning-team"}`;
 
-  const { error } = await resend.emails.send({
-    from,
-    to: input.naar,
-    ...(replyTo ? { replyTo } : {}),
-    subject: `SPOED - ${klant}${ref}`,
-    text: spoedTekst,
-    html: htmlVanTekst(spoedTekst),
-  });
-
-  if (error) {
-    const msg = typeof error === "object" && error && "message" in error
-      ? (error as { message: string }).message
-      : JSON.stringify(error);
-    throw new Error(`Spoed-mail versturen mislukt: ${msg}`);
-  }
+  await verzendMail(
+    resend,
+    { from, to: input.naar, replyTo, subject: `SPOED - ${klant}${ref}`, text: spoedTekst, html: htmlVanTekst(spoedTekst) },
+    "Spoed-mail versturen mislukt",
+  );
 }
