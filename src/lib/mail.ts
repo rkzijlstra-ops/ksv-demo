@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+import { logDemoBericht } from "./demo-log";
 import type { Melding, Rol } from "./db";
 import type { RapportAfzender } from "./afzender";
 import { htmlVanTekst } from "./mail-html";
@@ -137,8 +138,10 @@ async function verzendMail(resend: Resend, payload: MailPayload, foutLabel: stri
   const check = ontvangerToegestaan(payload.to, leesAllowlist(process.env.MAIL_ALLOWLIST), isDemoMode());
   if (!check.toegestaan) {
     console.log(`[mail overgeslagen] ${payload.to}: ${check.reden}`);
+    await logDemoBericht({ kanaal: "mail", naar: payload.to, samenvatting: payload.subject, verstuurd: false, reden: check.reden });
     return;
   }
+  await logDemoBericht({ kanaal: "mail", naar: payload.to, samenvatting: payload.subject, verstuurd: true });
   const { error } = await resend.emails.send({
     from: payload.from,
     to: payload.to,

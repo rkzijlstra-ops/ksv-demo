@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { PaginaNavKnop } from "@/components/PaginaNavKnop";
 import { DemoAutoRefresh } from "@/components/DemoAutoRefresh";
 import { DemoStartblok } from "@/components/DemoStartblok";
+import { DemoBerichten } from "@/components/DemoBerichten";
 import { vereisRol } from "@/lib/toegang";
 import { isDemoMode } from "@/lib/demo";
 
@@ -51,6 +52,8 @@ export default async function DashboardPage() {
       <div className="mb-4">
         <InschietZone />
       </div>
+
+      {isDemoMode() && <DemoBerichten />}
 
       <DashboardLijst opdrachten={opdrachten} telling={telling} />
 

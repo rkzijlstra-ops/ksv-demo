@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import QRCode from "qrcode";
+import { DemoMijnKlusKnop } from "./DemoMijnKlusKnop";
 
 /**
  * Startblok op het kantoor-dashboard in de DEMO: een korte "zo werkt het" (F4) plus een QR-code die de
@@ -32,6 +33,17 @@ export async function DemoStartblok() {
         <p className="mt-2 text-xs text-ink-muted">
           Je kunt niets kapotmaken. Met &quot;Speel opnieuw&quot; bovenin staat alles zo weer fris.
         </p>
+        <p className="mt-2 text-sm text-ink">
+          Wil je zien hoe een order automatisch wordt ingelezen?{" "}
+          <a href="/api/demo/voorbeeld-pdf" className="font-bold text-accent underline">
+            Download een voorbeeld-order (PDF)
+          </a>{" "}
+          en upload hem hieronder; de AI leest hem en het referentienummer verschijnt in de lijst.
+          (In productie komt dit automatisch via mail binnen.)
+        </p>
+        <div className="mt-3">
+          <DemoMijnKlusKnop />
+        </div>
       </div>
       {qr && (
         <div className="flex shrink-0 flex-col items-center gap-1">

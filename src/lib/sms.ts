@@ -1,4 +1,5 @@
 import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+import { logDemoBericht } from "./demo-log";
 
 /** Productie-gateway van CM.com. De trial gebruikt een andere URL; stel die in via CM_GW_URL. */
 const CM_GW_DEFAULT = "https://gw.cm.com/v1.0/message";
@@ -35,8 +36,10 @@ export async function verstuurSms(input: SmsInput): Promise<void> {
   const check = ontvangerToegestaan(input.naar, allowlist, isDemoMode());
   if (!check.toegestaan) {
     console.log(`[SMS overgeslagen] ${input.naar}: ${check.reden}`);
+    await logDemoBericht({ kanaal: "sms", naar: input.naar, samenvatting: input.tekst.slice(0, 80), verstuurd: false, reden: check.reden });
     return;
   }
+  await logDemoBericht({ kanaal: "sms", naar: input.naar, samenvatting: input.tekst.slice(0, 80), verstuurd: true });
 
   const url = process.env.CM_GW_URL?.trim() || CM_GW_DEFAULT;
   let res: Response;
