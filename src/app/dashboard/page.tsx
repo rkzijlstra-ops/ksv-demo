@@ -6,6 +6,7 @@ import { KlusInvoer } from "@/components/KlusInvoer";
 import { UserMenu } from "@/components/UserMenu";
 import { PaginaNavKnop } from "@/components/PaginaNavKnop";
 import { DemoAutoRefresh } from "@/components/DemoAutoRefresh";
+import { DemoStartblok } from "@/components/DemoStartblok";
 import { vereisRol } from "@/lib/toegang";
 import { isDemoMode } from "@/lib/demo";
 
@@ -36,6 +37,8 @@ export default async function DashboardPage() {
           {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>
       </header>
+
+      {isDemoMode() && <DemoStartblok />}
 
       <div className="mb-4">
         <PaginaNavKnop href="/planbord" label="Naar het planbord" icon="agenda" />

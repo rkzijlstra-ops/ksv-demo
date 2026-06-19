@@ -12,6 +12,16 @@ export function isDemoMode(): boolean {
   return process.env.DEMO_MODE?.trim() === "1";
 }
 
+/** Vast wachtwoord voor de demo-accounts (sandbox; alleen demo-DB). */
+export const DEMO_WACHTWOORD = "Demo-Kluslus-2026!";
+
+/** De vaste demo-accounts. De seed maakt ze aan; de QR-login logt als deze accounts in. */
+export const DEMO_ACCOUNTS = {
+  kantoor: { email: "demo-kantoor@voorbeeld.kluslus.test", naam: "Ed (demo)", rol: "beheerder" as const },
+  monteur: { email: "demo-monteur@voorbeeld.kluslus.test", naam: "Mees Monteur (demo)", rol: "monteur" as const },
+  monteur2: { email: "demo-monteur2@voorbeeld.kluslus.test", naam: "Tim Tegel (demo)", rol: "monteur" as const },
+};
+
 /** Komma-lijst uit een env-var naar een schone lijst trimmen (lege waarden eruit). */
 export function leesAllowlist(waarde: string | undefined): string[] {
   return (waarde ?? "")

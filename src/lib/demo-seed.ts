@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEMO_ACCOUNTS, DEMO_WACHTWOORD } from "./demo";
 
 /**
  * Vult een DEMO-database met een schone, gevulde, altijd-actuele staat: nep-monteurs + klussen over alle
@@ -10,15 +11,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * als dubbele bodem naast de SMS/mail-allowlist. Self-contained: geen @/-imports, zodat zowel de
  * reset-route (Next) als een CLI-script ('m kan aanroepen.
  */
-
-const DEMO_WACHTWOORD = "Demo-Kluslus-2026!";
-
-/** Vaste demo-accounts. De QR-login (F2) logt als deze accounts in; de seed maakt ze aan. */
-export const DEMO_ACCOUNTS = {
-  kantoor: { email: "demo-kantoor@voorbeeld.kluslus.test", naam: "Ed (demo)", rol: "beheerder" as const },
-  monteur: { email: "demo-monteur@voorbeeld.kluslus.test", naam: "Mees Monteur (demo)", rol: "monteur" as const },
-  monteur2: { email: "demo-monteur2@voorbeeld.kluslus.test", naam: "Tim Tegel (demo)", rol: "monteur" as const },
-};
 
 // ---- datum-helpers (UTC, relatief aan vandaag; weekend wordt overgeslagen) ----
 
