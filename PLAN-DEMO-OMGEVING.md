@@ -114,3 +114,21 @@ live-meebeweeg-flow waar zinvol (Rein draait de browser-e2e).
 
 Veel hiervan bouw en test ik lokaal + tegen de demo-DB zodra jij stap 1-2 (Supabase + Vercel) hebt
 gedaan. F1 (live meebewegen) zoek ik sowieso eerst goed uit, want dat raakt de kern.
+
+## Status 2026-06-19: alle code gebouwd (T1-T7 + F1-F7)
+
+Alle 14 onderdelen zijn gebouwd, getest (689 unit groen, build + lint schoon) en gecommit op master
+(lokaal). Alles gegrendeld op DEMO_MODE; productie-gedrag ongewijzigd.
+
+**Wat nog moet (zodra jij het demo-project hebt aangemaakt):**
+1. Jij: demo-Supabase + demo-Vercel aanmaken (DEMO-SETUP-STAPPEN.md), en mij de pooler-connectiestring +
+   demo-URL + service-key geven (in .env.local als SUPABASE_DEMO_DB_URL, SUPABASE_DEMO_URL,
+   SUPABASE_DEMO_SECRET_KEY), plus je 06/mail voor de allowlist.
+2. Ik: schema-bootstrap + alle migratieblokken (t/m 24) tegen de demo-DB draaien, dan `npm run seed:demo`.
+3. Jij: env-vars in de demo-Vercel zetten (DEMO_MODE=1 etc.) en deployen.
+4. Push van master naar productie kan apart wanneer je wilt; de demo-code is daar inert (DEMO_MODE uit).
+   Migratie blok 24 (demo_berichten) hoeft niet op productie (niets queryt het daar), mag wel voor
+   schema-gelijkheid.
+
+**Niet gedaan (bewust fase 2):** inbound mail-naar-app op de demo; eigen domein demo.kluslus.nl;
+zelf-registratie van de allowlist; nachtelijke auto-reset.
