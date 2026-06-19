@@ -62,9 +62,13 @@ async function vuurAf(
 ): Promise<NotificatieResultaat> {
   const r: NotificatieResultaat = { gemaild: false, mailFout: null, gesmst: false, smsFout: null };
 
+  // Contact uit ÉÉN bron: het profiel. Mail gaat naar het door de gebruiker ingevulde profiel-adres,
+  // met terugval op het account-adres en dan RAPPORT_EMAIL. Zo komen SMS én mail uit hetzelfde profiel.
+  const profiel = toegewezenAan ? await dbAdmin().getProfiel(toegewezenAan) : null;
   const email =
-    (toegewezenAan ? await getGebruikerEmail(toegewezenAan) : null) ??
-    process.env.RAPPORT_EMAIL?.trim() ??
+    profiel?.contact_email?.trim() ||
+    (toegewezenAan ? await getGebruikerEmail(toegewezenAan) : null) ||
+    process.env.RAPPORT_EMAIL?.trim() ||
     null;
   if (email) {
     try {
@@ -76,7 +80,6 @@ async function vuurAf(
   }
 
   if (toegewezenAan) {
-    const profiel = await dbAdmin().getProfiel(toegewezenAan);
     const nummer = smsBestemming(profiel, categorie);
     if (nummer) {
       try {

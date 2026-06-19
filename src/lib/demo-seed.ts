@@ -82,7 +82,37 @@ async function maakAccount(
   return id;
 }
 
-export async function seedDemo(admin: SupabaseClient): Promise<SeedResultaat> {
+/** Zoekt het user-id bij een e-mailadres (auth.users). */
+async function vindUserId(admin: SupabaseClient, email: string): Promise<string | null> {
+  for (let page = 1; page <= 30; page++) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 100 });
+    const found = data?.users?.find((u) => u.email === email);
+    if (found) return found.id;
+    if (!data?.users?.length) break;
+  }
+  return null;
+}
+
+/** Verwijdert alle ZELF-aangemelde (niet-vaste) demo-accounts + profielen, zodat een reset schoon is. */
+async function ruimZelfAangemeldOp(admin: SupabaseClient): Promise<void> {
+  const vast = new Set([DEMO_ACCOUNTS.kantoor.email, DEMO_ACCOUNTS.monteur.email, DEMO_ACCOUNTS.monteur2.email]);
+  const teVerwijderen: string[] = [];
+  for (let page = 1; page <= 30; page++) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 100 });
+    const users = data?.users ?? [];
+    for (const u of users) if (u.email && !vast.has(u.email)) teVerwijderen.push(u.id);
+    if (users.length < 100) break;
+  }
+  for (const id of teVerwijderen) {
+    await admin.from("profielen").delete().eq("id", id);
+    await admin.auth.admin.deleteUser(id);
+  }
+}
+
+export async function seedDemo(
+  admin: SupabaseClient,
+  opts?: { behoudKantoorContact?: boolean },
+): Promise<SeedResultaat> {
   // 1) Zaak (opdrachtgever) ophalen of aanmaken.
   let opdrachtgeverId: string | null = null;
   const { data: zaak } = await admin.from("opdrachtgevers").select("id").limit(1).maybeSingle();
@@ -98,15 +128,34 @@ export async function seedDemo(admin: SupabaseClient): Promise<SeedResultaat> {
     opdrachtgeverId = (nieuw?.id as string) ?? null;
   }
 
-  // 2) Accounts. Nog GEEN contact: de tester registreert zelf zijn 06/mail (demo-registratie), dan komen
-  // de berichten op zíjn toestel. Tot die tijd staat er geen nummer, dus er gaat niets per ongeluk uit.
-  const geenContact = { telefoon: null, mail: null };
-  const kantoorId = await maakAccount(admin, DEMO_ACCOUNTS.kantoor, opdrachtgeverId, geenContact);
-  const monteurId = await maakAccount(admin, DEMO_ACCOUNTS.monteur, opdrachtgeverId, geenContact);
-  const monteur2Id = await maakAccount(admin, DEMO_ACCOUNTS.monteur2, opdrachtgeverId, geenContact);
+  // 2) Het beheerder-contact bewaren bij een gewone reset, zodat de demo-draaier zich niet opnieuw hoeft
+  // te melden. Bij een volledige reset (behoudKantoorContact=false) start de beheerder weer leeg.
+  let kantoorContact: { telefoon: string | null; mail: string | null } = { telefoon: null, mail: null };
+  let kantoorNaam = DEMO_ACCOUNTS.kantoor.naam;
+  if (opts?.behoudKantoorContact) {
+    const kId = await vindUserId(admin, DEMO_ACCOUNTS.kantoor.email);
+    if (kId) {
+      const { data: p } = await admin
+        .from("profielen")
+        .select("naam, telefoon, contact_email")
+        .eq("id", kId)
+        .maybeSingle();
+      if (p) {
+        kantoorContact = { telefoon: (p.telefoon as string) ?? null, mail: (p.contact_email as string) ?? null };
+        if (p.naam) kantoorNaam = p.naam as string;
+      }
+    }
+  }
 
-  // 3) Bestaande demo-klussen wissen (idempotent; ALLEEN deze demo-DB). Opleveringen hangen via cascade.
+  // 3) Zelf-aangemelde monteurs opruimen + klussen wissen (alleen deze demo-DB).
+  await ruimZelfAangemeldOp(admin);
   await admin.from("meldingen").delete().not("id", "is", null);
+
+  // 4) Vaste accounts. Kantoor = de beheerder (houdt zijn contact bij een gewone reset). De voorbeeld-
+  // monteurs krijgen hetzelfde contact, zodat een klus aan hen bij de demo-draaier (beheerder) binnenkomt.
+  const kantoorId = await maakAccount(admin, { ...DEMO_ACCOUNTS.kantoor, naam: kantoorNaam }, opdrachtgeverId, kantoorContact);
+  const monteurId = await maakAccount(admin, DEMO_ACCOUNTS.monteur, opdrachtgeverId, kantoorContact);
+  const monteur2Id = await maakAccount(admin, DEMO_ACCOUNTS.monteur2, opdrachtgeverId, kantoorContact);
 
   // 4) Klussen over alle statussen, datums relatief aan deze week. Alle contactgegevens NEP.
   const maandag = maandagVanWeek(new Date());

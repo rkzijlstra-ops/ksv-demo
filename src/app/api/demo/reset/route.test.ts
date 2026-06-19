@@ -25,17 +25,30 @@ afterEach(() => {
 });
 
 describe("POST /api/demo/reset", () => {
+  const req = (body?: unknown) =>
+    new Request("http://localhost/api/demo/reset", {
+      method: "POST",
+      ...(body === undefined ? {} : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+    });
+
   it("403 buiten demo-modus (geen seed)", async () => {
     delete process.env.DEMO_MODE;
-    const res = await POST();
+    const res = await POST(req());
     expect(res.status).toBe(403);
     expect(mockSeed).not.toHaveBeenCalled();
   });
 
-  it("seedt en geeft 200 in demo-modus", async () => {
+  it("seedt en geeft 200 in demo-modus (gewone reset = beheerder behouden)", async () => {
     process.env.DEMO_MODE = "1";
-    const res = await POST();
+    const res = await POST(req({ volledig: false }));
     expect(res.status).toBe(200);
-    expect(mockSeed).toHaveBeenCalledTimes(1);
+    expect(mockSeed).toHaveBeenCalledWith(expect.anything(), { behoudKantoorContact: true });
+  });
+
+  it("volledige reset geeft behoudKantoorContact=false", async () => {
+    process.env.DEMO_MODE = "1";
+    const res = await POST(req({ volledig: true }));
+    expect(res.status).toBe(200);
+    expect(mockSeed).toHaveBeenCalledWith(expect.anything(), { behoudKantoorContact: false });
   });
 });
