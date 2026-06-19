@@ -37,8 +37,16 @@ rechtstreeks van Supabase naar Vercel. Alleen de database-connectiestring (d) ge
 2. Klik "Add New..." -> "Project".
 3. Importeer dezelfde repository als je live-app (ksv-demo). Klik "Import".
 4. Geef het project een naam, bijv. `kluslus-demo`. NOG NIET op Deploy klikken; eerst de instellingen.
-5. Open "Environment Variables" en voeg deze toe (kopieer de meeste van je LIVE-project; je vindt die
-   in je live Vercel-project onder Settings -> Environment Variables):
+5. Open "Environment Variables". SNELSTE WEG: in de projectmap staat een kant-en-klaar bestand
+   `.env.demo-vercel` (gitignored). Daarin staan de hergebruikte sleutels al met hun echte waarden, plus
+   de demo-regels. Werkwijze:
+   - Open `.env.demo-vercel`, vul de regels met `PLAK_...` in: je 06-nummer (SMS_ALLOWLIST), je e-mail
+     (MAIL_ALLOWLIST), en de demo-Supabase-waarden uit Deel A (de twee URL-regels, de twee anon-regels,
+     de service-role-regel). APP_URL mag eerst blijven staan; die zet je na de eerste deploy.
+   - Plak het HELE blok in één keer in het Environment-Variables-veld van Vercel; Vercel splitst een
+     geplakte `KEY=waarde`-lijst automatisch in losse variabelen. Geen één-voor-één gedoe.
+
+   (Voor wie het liever handmatig doet, hieronder de losse lijst.) Voeg deze toe:
 
    Wissel deze drie naar je NIEUWE demo-Supabase (uit Deel A):
    - `NEXT_PUBLIC_SUPABASE_URL` = de demo Project URL (4a)
