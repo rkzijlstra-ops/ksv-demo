@@ -31,19 +31,15 @@ export function leesAllowlist(waarde: string | undefined): string[] {
 }
 
 /**
- * Mag een (bedoeld) bericht naar deze ontvanger echt de deur uit? Eén regel voor zowel SMS als mail.
- * - demo + lege allowlist  -> nee (fail-safe: nooit ongelimiteerd vanuit een demo).
- * - allowlist gevuld        -> alleen als de ontvanger erop staat.
- * - geen demo + lege allowlist -> ja (normale productie).
+ * Mag een (bedoeld) bericht naar deze ontvanger de deur uit? Eén regel voor SMS en mail, identiek in
+ * demo en productie: een gevulde allowlist beperkt tot die ontvangers; een LEGE allowlist betekent geen
+ * beperking (verstuur echt). De demo stuurt dus net als productie; de demo gebruikt een eigen, eigen
+ * 06/mail via de registratie-stap zodat de tester de berichten op zijn eigen toestel ontvangt.
  */
 export function ontvangerToegestaan(
   naar: string,
   allowlist: string[],
-  demo: boolean,
 ): { toegestaan: boolean; reden?: string } {
-  if (demo && allowlist.length === 0) {
-    return { toegestaan: false, reden: "demo zonder allowlist (fail-safe): niets verstuurd" };
-  }
   if (allowlist.length > 0 && !allowlist.includes(naar)) {
     return { toegestaan: false, reden: "staat niet op de allowlist" };
   }

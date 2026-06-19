@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import QRCode from "qrcode";
-import { DemoMijnKlusKnop } from "./DemoMijnKlusKnop";
+import { DemoRegistratie } from "./DemoRegistratie";
 
 /**
  * Startblok op het kantoor-dashboard in de DEMO: een korte "zo werkt het" (F4) plus een QR-code die de
@@ -42,7 +42,7 @@ export async function DemoStartblok() {
           (In productie komt dit automatisch via mail binnen.)
         </p>
         <div className="mt-3">
-          <DemoMijnKlusKnop />
+          <DemoRegistratie />
         </div>
       </div>
       {qr && (

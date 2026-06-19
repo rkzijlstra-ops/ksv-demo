@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+import { leesAllowlist, ontvangerToegestaan } from "./demo";
 import { logDemoBericht } from "./demo-log";
 import type { Melding, Rol } from "./db";
 import type { RapportAfzender } from "./afzender";
@@ -135,7 +135,7 @@ type MailPayload = {
  * dan gaat er niets uit. Hier loopt later ook de demo-notificatielog langs.
  */
 async function verzendMail(resend: Resend, payload: MailPayload, foutLabel: string): Promise<void> {
-  const check = ontvangerToegestaan(payload.to, leesAllowlist(process.env.MAIL_ALLOWLIST), isDemoMode());
+  const check = ontvangerToegestaan(payload.to, leesAllowlist(process.env.MAIL_ALLOWLIST));
   if (!check.toegestaan) {
     console.log(`[mail overgeslagen] ${payload.to}: ${check.reden}`);
     await logDemoBericht({ kanaal: "mail", naar: payload.to, samenvatting: payload.subject, verstuurd: false, reden: check.reden });

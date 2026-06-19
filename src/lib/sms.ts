@@ -1,4 +1,4 @@
-import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+import { leesAllowlist, ontvangerToegestaan } from "./demo";
 import { logDemoBericht } from "./demo-log";
 
 /** Productie-gateway van CM.com. De trial gebruikt een andere URL; stel die in via CM_GW_URL. */
@@ -33,7 +33,7 @@ export async function verstuurSms(input: SmsInput): Promise<void> {
   }
 
   const allowlist = leesAllowlist(process.env.SMS_ALLOWLIST);
-  const check = ontvangerToegestaan(input.naar, allowlist, isDemoMode());
+  const check = ontvangerToegestaan(input.naar, allowlist);
   if (!check.toegestaan) {
     console.log(`[SMS overgeslagen] ${input.naar}: ${check.reden}`);
     await logDemoBericht({ kanaal: "sms", naar: input.naar, samenvatting: input.tekst.slice(0, 80), verstuurd: false, reden: check.reden });

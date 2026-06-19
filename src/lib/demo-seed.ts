@@ -39,11 +39,14 @@ interface SeedResultaat {
   aantalKlussen: number;
 }
 
-/** Maakt een demo-account aan (of vindt het bestaande) en zet het profiel. Geeft het user-id terug. */
+/** Maakt een demo-account aan (of vindt het bestaande) en zet het profiel. Geeft het user-id terug.
+ *  Het contact (telefoon/mail) wordt op het TEST-contact gezet, zodat notificaties vanzelf bij de tester
+ *  binnenkomen (de monteur-SMS gaat naar het profiel-telefoonnummer). */
 async function maakAccount(
   admin: SupabaseClient,
   account: { email: string; naam: string; rol: "beheerder" | "monteur" },
   opdrachtgeverId: string | null,
+  testContact: { telefoon: string | null; mail: string | null },
 ): Promise<string> {
   const gemaakt = await admin.auth.admin.createUser({
     email: account.email,
@@ -61,9 +64,20 @@ async function maakAccount(
     }
   }
   if (!id) throw new Error(`Kon demo-account ${account.email} niet aanmaken of vinden`);
-  const { error } = await admin
-    .from("profielen")
-    .upsert({ id, rol: account.rol, naam: account.naam, opdrachtgever_id: opdrachtgeverId }, { onConflict: "id" });
+  const { error } = await admin.from("profielen").upsert(
+    {
+      id,
+      rol: account.rol,
+      naam: account.naam,
+      opdrachtgever_id: opdrachtgeverId,
+      // Koppel het profiel aan het testcontact zodat SMS/mail vanzelf bij de tester binnenkomen.
+      telefoon: testContact.telefoon,
+      contact_email: testContact.mail,
+      sms_werk_kritiek: true,
+      sms_overig: true,
+    },
+    { onConflict: "id" },
+  );
   if (error) throw new Error(`Demo-profiel ${account.email} mislukt: ${error.message}`);
   return id;
 }
@@ -84,10 +98,12 @@ export async function seedDemo(admin: SupabaseClient): Promise<SeedResultaat> {
     opdrachtgeverId = (nieuw?.id as string) ?? null;
   }
 
-  // 2) Accounts.
-  const kantoorId = await maakAccount(admin, DEMO_ACCOUNTS.kantoor, opdrachtgeverId);
-  const monteurId = await maakAccount(admin, DEMO_ACCOUNTS.monteur, opdrachtgeverId);
-  const monteur2Id = await maakAccount(admin, DEMO_ACCOUNTS.monteur2, opdrachtgeverId);
+  // 2) Accounts. Nog GEEN contact: de tester registreert zelf zijn 06/mail (demo-registratie), dan komen
+  // de berichten op zíjn toestel. Tot die tijd staat er geen nummer, dus er gaat niets per ongeluk uit.
+  const geenContact = { telefoon: null, mail: null };
+  const kantoorId = await maakAccount(admin, DEMO_ACCOUNTS.kantoor, opdrachtgeverId, geenContact);
+  const monteurId = await maakAccount(admin, DEMO_ACCOUNTS.monteur, opdrachtgeverId, geenContact);
+  const monteur2Id = await maakAccount(admin, DEMO_ACCOUNTS.monteur2, opdrachtgeverId, geenContact);
 
   // 3) Bestaande demo-klussen wissen (idempotent; ALLEEN deze demo-DB). Opleveringen hangen via cascade.
   await admin.from("meldingen").delete().not("id", "is", null);

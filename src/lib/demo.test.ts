@@ -27,18 +27,12 @@ describe("leesAllowlist", () => {
 });
 
 describe("ontvangerToegestaan", () => {
-  it("demo + lege allowlist => NIETS (fail-safe)", () => {
-    expect(ontvangerToegestaan("+31611", [], true).toegestaan).toBe(false);
-  });
-
-  it("geen demo + lege allowlist => wel (normale productie)", () => {
-    expect(ontvangerToegestaan("+31611", [], false).toegestaan).toBe(true);
+  it("lege allowlist => geen beperking (verstuur echt, zoals productie)", () => {
+    expect(ontvangerToegestaan("+31611", []).toegestaan).toBe(true);
   });
 
   it("gevulde allowlist => alleen wie erop staat", () => {
-    expect(ontvangerToegestaan("+31611", ["+31611"], true).toegestaan).toBe(true);
-    expect(ontvangerToegestaan("+31699", ["+31611"], true).toegestaan).toBe(false);
-    // ook buiten demo beperkt een gevulde allowlist (bestaand gedrag).
-    expect(ontvangerToegestaan("+31699", ["+31611"], false).toegestaan).toBe(false);
+    expect(ontvangerToegestaan("+31611", ["+31611"]).toegestaan).toBe(true);
+    expect(ontvangerToegestaan("+31699", ["+31611"]).toegestaan).toBe(false);
   });
 });
