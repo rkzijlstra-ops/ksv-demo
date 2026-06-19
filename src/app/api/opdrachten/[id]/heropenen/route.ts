@@ -19,6 +19,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!magZaak && !magMonteur) {
     return NextResponse.json({ error: "Geen rechten om te heropenen" }, { status: 403 });
   }
+  // Heropenen mag alleen op een "afgeronde" klus: snel-afgerond gemeld (afgerond_door_monteur_at) of
+  // volledig opgeleverd (opdracht_status). Een nog actieve klus (gepland/bevestigd) heropenen slaat
+  // nergens op; de UI schermt dit al af, dit is het slot op de route zelf (defense in depth).
+  const magHeropenen =
+    opdracht.opdracht_status === "opgeleverd" || opdracht.afgerond_door_monteur_at != null;
+  if (!magHeropenen) {
+    return NextResponse.json(
+      { error: "Alleen een afgeronde of opgeleverde klus kan heropend worden" },
+      { status: 400 },
+    );
+  }
   // Optionele instructie (vrije body); ontbrekend/ongeldig = geen instructie.
   let instructie: string | null = null;
   try {
