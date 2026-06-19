@@ -19,6 +19,21 @@ prod; demo-DB doe ik.
   mee naar de huidige week.
 - **Reset-knop:** alleen in de demo, met bevestiging; ververst meteen de datums naar deze week.
 
+## Harde regels (veiligheid + architectuur) — niet schenden
+
+1. **Allowlist is fail-closed in de verzendcode**, niet alleen env. `ontvangerToegestaan()` (lib/demo.ts)
+   wordt aangeroepen in sms.ts én in de centrale verzendMail() in mail.ts; geen match = overslaan; demo +
+   lege allowlist = niets versturen. (Gebouwd, getest.)
+2. **Seed-data bevat UITSLUITEND nep-contactgegevens** (voorbeelddomein-mailadressen, fictieve 06-nummers).
+   Nooit een echt klantnummer/-mail in de vuldata, als dubbele bodem naast de allowlist.
+3. **Alle demo-gedrag via `isDemoMode()` (env DEMO_MODE), geen aparte codepaden.** Demo en productie
+   deployen dezelfde code van master; het enige verschil is de env. Elk demo-onderdeel zit achter
+   isDemoMode(). De demo_berichten-tabel staat in beide DB's (schema gelijk, geen drift) maar krijgt
+   alleen in demo-modus schrijfacties.
+4. **PDF-verwerking in het Ed-scenario** wordt in de demo getoond via de UPLOAD-route (F7), niet via
+   inbound-mail. Bewuste keuze (zie F7); inbound-via-mail blijft fase 2. Niet stilletjes laten wegvallen:
+   in het verhaal benoemen dat het in productie automatisch via mail binnenkomt.
+
 ## Architectuur
 
 - Demo-deploy draait `master` (altijd de live versie) met demo-instellingen en demo-data.
