@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:int": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
     "screenshots:handleiding": "playwright test --config playwright.handleiding.config.ts",
     "test:mail": "cross-env E2E_MAIL=1 playwright test e2e/mail.spec.ts e2e/mail-opdracht.spec.ts e2e/mail-flows.spec.ts",
     "test:all": "npm test && npm run test:int && npm run test:e2e",

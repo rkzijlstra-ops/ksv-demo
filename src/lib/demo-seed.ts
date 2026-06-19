@@ -93,14 +93,20 @@ async function vindUserId(admin: SupabaseClient, email: string): Promise<string 
   return null;
 }
 
-/** Verwijdert alle ZELF-aangemelde (niet-vaste) demo-accounts + profielen, zodat een reset schoon is. */
+// Alle demo-accounts leven in deze namespace. Het opruimen blijft daarbinnen, zodat het NOOIT andere
+// accounts raakt (bv. de e2e-accounts als de demo tegen de gedeelde test-DB draait).
+const DEMO_DOMEIN = "@voorbeeld.kluslus.test";
+
+/** Verwijdert de ZELF-aangemelde demo-monteurs (binnen de demo-namespace, niet de vaste accounts). */
 async function ruimZelfAangemeldOp(admin: SupabaseClient): Promise<void> {
   const vast = new Set([DEMO_ACCOUNTS.kantoor.email, DEMO_ACCOUNTS.monteur.email, DEMO_ACCOUNTS.monteur2.email]);
   const teVerwijderen: string[] = [];
   for (let page = 1; page <= 30; page++) {
     const { data } = await admin.auth.admin.listUsers({ page, perPage: 100 });
     const users = data?.users ?? [];
-    for (const u of users) if (u.email && !vast.has(u.email)) teVerwijderen.push(u.id);
+    for (const u of users) {
+      if (u.email && u.email.endsWith(DEMO_DOMEIN) && !vast.has(u.email)) teVerwijderen.push(u.id);
+    }
     if (users.length < 100) break;
   }
   for (const id of teVerwijderen) {
@@ -113,9 +119,15 @@ export async function seedDemo(
   admin: SupabaseClient,
   opts?: { behoudKantoorContact?: boolean },
 ): Promise<SeedResultaat> {
-  // 1) Zaak (opdrachtgever) ophalen of aanmaken.
+  // 1) De demo-zaak ophalen of aanmaken, OP NAAM. Zo heeft de demo een eigen opdrachtgever en raakt hij
+  // andere data in dezelfde DB niet (belangrijk als de demo tegen de gedeelde test-DB draait).
   let opdrachtgeverId: string | null = null;
-  const { data: zaak } = await admin.from("opdrachtgevers").select("id").limit(1).maybeSingle();
+  const { data: zaak } = await admin
+    .from("opdrachtgevers")
+    .select("id")
+    .eq("naam", "Demo Keukenstudio")
+    .limit(1)
+    .maybeSingle();
   if (zaak?.id) {
     opdrachtgeverId = zaak.id as string;
   } else {
@@ -147,9 +159,10 @@ export async function seedDemo(
     }
   }
 
-  // 3) Zelf-aangemelde monteurs opruimen + klussen wissen (alleen deze demo-DB).
+  // 3) Zelf-aangemelde monteurs opruimen + de klussen van DEZE demo-zaak wissen (alleen de demo-tenant,
+  // zodat andere data in dezelfde DB ongemoeid blijft).
   await ruimZelfAangemeldOp(admin);
-  await admin.from("meldingen").delete().not("id", "is", null);
+  await admin.from("meldingen").delete().eq("opdrachtgever_id", opdrachtgeverId);
 
   // 4) Vaste accounts. Kantoor = de beheerder (houdt zijn contact bij een gewone reset). De voorbeeld-
   // monteurs krijgen hetzelfde contact, zodat een klus aan hen bij de demo-draaier (beheerder) binnenkomt.

@@ -66,6 +66,9 @@ jobs:
       - name: Browser-e2e (tegen de productie-build)
         run: npm run test:e2e
 
+      - name: Demo-e2e (uitstalraam, eigen DEMO_MODE-server + eigen demo-zaak)
+        run: npm run test:e2e:demo
+
       - name: Test-resultaten bewaren bij een fout (trace + snapshots)
         if: failure()
         uses: actions/upload-artifact@v5
