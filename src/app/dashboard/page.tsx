@@ -5,7 +5,9 @@ import { InschietZone } from "@/components/InschietZone";
 import { KlusInvoer } from "@/components/KlusInvoer";
 import { UserMenu } from "@/components/UserMenu";
 import { PaginaNavKnop } from "@/components/PaginaNavKnop";
+import { DemoAutoRefresh } from "@/components/DemoAutoRefresh";
 import { vereisRol } from "@/lib/toegang";
+import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl p-4 pb-24">
+      {isDemoMode() && <DemoAutoRefresh />}
       <header className="mb-4 border-2 border-line bg-white px-5 py-5 text-ink">
         <div className="flex items-start justify-between gap-3">
           <div>

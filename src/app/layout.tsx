@@ -5,6 +5,9 @@ import { SwRegistrar } from "@/components/SwRegistrar";
 import { SyncBoot } from "@/components/SyncBoot";
 import { OfflineStrip } from "@/components/OfflineStrip";
 import { QuotaBanner } from "@/components/QuotaBanner";
+import { DemoBanner } from "@/components/DemoBanner";
+import { BuildLabel } from "@/components/BuildLabel";
+import { isDemoMode } from "@/lib/demo";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -39,11 +42,13 @@ export default function RootLayout({
   return (
     <html lang="nl" className={`${lexend.variable} ${sourceSans.variable}`}>
       <body>
+        {isDemoMode() && <DemoBanner />}
         <SwRegistrar />
         <SyncBoot />
         <OfflineStrip />
         <QuotaBanner />
         {children}
+        <BuildLabel />
       </body>
     </html>
   );
