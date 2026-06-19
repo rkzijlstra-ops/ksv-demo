@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DEMO_ACCOUNTS, DEMO_WACHTWOORD } from "./demo";
+import { DEMO_ACCOUNTS, DEMO_WACHTWOORD } from "./demo.ts";
 
 /**
  * Vult een DEMO-database met een schone, gevulde, altijd-actuele staat: nep-monteurs + klussen over alle
