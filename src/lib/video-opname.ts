@@ -18,8 +18,13 @@ export const VIDEO_OPNAME_CONSTRAINTS: MediaStreamConstraints = {
 /** Doelbitrate: ~5 Mbps geeft 1080p van ruwweg 37 MB per minuut. */
 export const VIDEO_BITS_PER_SECOND = 5_000_000;
 
-/** Boven deze grootte waarschuwen we bij een uit de galerij gekozen bestand. */
-export const GROOT_BESTAND_BYTES = 200 * 1024 * 1024;
+/**
+ * Boven deze grootte waarschuwen we bij een uit de galerij gekozen bestand. 100 MB ligt rond de plek
+ * waar de upload op een gemiddelde mobiele verbinding boven de minuut komt; daaronder loont een
+ * waarschuwing niet. Galerij-video's worden (anders dan de in-app opname) niet verkleind, dus een
+ * 4K-bestand kan hier ruim overheen gaan.
+ */
+export const GROOT_BESTAND_BYTES = 100 * 1024 * 1024;
 
 /** Voorkeursvolgorde van opname-formaten: mp4 eerst (breedst afspeelbaar), dan webm. */
 const MIME_VOORKEUR = [

@@ -97,7 +97,7 @@ export function VideoMaken({
     if (!file) return;
     setTip(
       isGrootBestand(file.size)
-        ? `Groot bestand (~${bytesNaarMB(file.size)} MB), uploaden kan even duren. Tip: opnemen in de app gaat sneller.`
+        ? `Grote video (~${bytesNaarMB(file.size)} MB). Uploaden kan op een trage verbinding minuten duren of mislukken. Tip: neem 'm op met de Opnemen-knop, dan blijft de video automatisch klein.`
         : "",
     );
     startOfWacht(file);
