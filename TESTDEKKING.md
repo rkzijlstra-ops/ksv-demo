@@ -23,6 +23,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
 | Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |
 | Versturen naar monteurs (verstuur-poort, gebundeld) | U, M | monteur-mail.test, mail-opdracht.spec | groen |
+| Verzend-grendel mail: MAIL_DRY_RUN (=1 → niets versturen) + MAIL_ALLOWLIST (gevuld = beperkt; leeg = geen beperking), symmetrisch met SMS_DRY_RUN/SMS_ALLOWLIST | U | mail.test (MAIL_DRY_RUN + MAIL_ALLOWLIST), sms.test, demo.test (ontvangerToegestaan) | groen |
 | Verstuur-keten: nieuw / verzet (zelfde monteur, andere datum) / wissel (oude monteur → annulering) | U, M | opdracht-status.test (klassificeerVerzending), verstuur-notificatie.test (meldVerstuurd), monteur-mail.test + sms-teksten.test (verzet-toon), versturen/route.test, mail-monteur/route.test, mail-flows.spec (verzet/wissel), verzet-wissel.spec (monteur-UI na opnieuw versturen) | U+E groen; M handmatig (E2E_MAIL) |
 | Nieuw document → mail + SMS naar monteur (bij verstuurd) | U | document-mail.test, notificaties.test (mail+SMS), documenten/route.test | U groen; M nog handmatig |
 | Bevestig-herinnering → mail + SMS (cron, gebundeld, idempotent) | U, I | herinnering-mail.test, notificaties.test (mail+SMS), herinnering.int.test (selectie/idempotentie), cron/bevestig-herinneringen/route.test (auth + bundeling + markeren) | groen; M nog handmatig |

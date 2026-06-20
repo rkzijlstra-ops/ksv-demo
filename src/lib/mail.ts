@@ -130,11 +130,18 @@ type MailPayload = {
 };
 
 /**
- * Eén doorvoer voor ALLE uitgaande mail: past de allowlist/fail-safe toe (demo-veiligheid) en stuurt
- * dan pas via Resend. Een geweigerde ontvanger wordt overgeslagen en gelogd; blijft er niemand over,
- * dan gaat er niets uit. Hier loopt later ook de demo-notificatielog langs.
+ * Eén doorvoer voor ALLE uitgaande mail: eerst de aan/uit-knop MAIL_DRY_RUN, dan de allowlist, en stuurt
+ * dan pas via Resend. Een geweigerde ontvanger wordt overgeslagen en gelogd. Hier loopt ook de
+ * demo-notificatielog langs. Symmetrisch met sms.ts (SMS_DRY_RUN + SMS_ALLOWLIST).
  */
 async function verzendMail(resend: Resend, payload: MailPayload, foutLabel: string): Promise<void> {
+  // Aan/uit-knop, symmetrisch met SMS_DRY_RUN: "1" logt in plaats van echt te versturen. Staat vóór de
+  // allowlist-check zodat een dry-run nooit iets de deur uit laat gaan, ongeacht de allowlist.
+  if (process.env.MAIL_DRY_RUN?.trim() === "1") {
+    console.log(`[mail dry-run] naar ${payload.to}: ${payload.subject}`);
+    return;
+  }
+
   const check = ontvangerToegestaan(payload.to, leesAllowlist(process.env.MAIL_ALLOWLIST));
   if (!check.toegestaan) {
     console.log(`[mail overgeslagen] ${payload.to}: ${check.reden}`);

@@ -160,3 +160,43 @@ describe("verstuurAfmelding", () => {
     expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 });
+
+describe("MAIL_DRY_RUN (symmetrisch met SMS_DRY_RUN)", () => {
+  it("verstuurt niets als MAIL_DRY_RUN=1 (alleen loggen)", async () => {
+    process.env.MAIL_DRY_RUN = "1";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("verstuurt wel als MAIL_DRY_RUN=0", async () => {
+    process.env.MAIL_DRY_RUN = "0";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).toHaveBeenCalledOnce();
+  });
+
+  it("verstuurt wel als MAIL_DRY_RUN niet gezet is", async () => {
+    delete process.env.MAIL_DRY_RUN;
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).toHaveBeenCalledOnce();
+  });
+});
+
+describe("MAIL_ALLOWLIST (grendel, gelijk aan SMS_ALLOWLIST)", () => {
+  it("slaat een ontvanger over die niet op de allowlist staat", async () => {
+    process.env.MAIL_ALLOWLIST = "alleen-deze@kluslus.nl";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("verstuurt naar een ontvanger die wel op de allowlist staat", async () => {
+    process.env.MAIL_ALLOWLIST = "piet@example.com";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).toHaveBeenCalledOnce();
+  });
+
+  it("lege allowlist = geen beperking (verstuurt echt)", async () => {
+    process.env.MAIL_ALLOWLIST = "";
+    await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
+    expect(mockSend).toHaveBeenCalledOnce();
+  });
+});

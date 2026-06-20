@@ -1,10 +1,13 @@
 /**
  * Demo-omgeving: helpers voor de afgeschermde sandbox-deploy (DEMO_MODE=1).
  *
- * De demo hergebruikt de echte SMS/mail-providers, dus de ENIGE grendel die echte berichten naar
- * vreemden tegenhoudt is de allowlist. Daarom een harde fail-safe: in demo-modus met een LEGE allowlist
- * gaat er NIETS uit (nooit "naar iedereen"). Buiten demo-modus geldt het bestaande gedrag: een lege
- * allowlist = geen beperking (normale productie verstuurt naar echte ontvangers).
+ * De demo/test-omgeving hergebruikt de echte SMS/mail-providers. De grendel die berichten naar vreemden
+ * tegenhoudt is de ALLOWLIST (SMS_ALLOWLIST / MAIL_ALLOWLIST): een gevulde lijst beperkt tot precies die
+ * ontvangers. LET OP: een LEGE allowlist betekent GEEN beperking (verstuurt naar de echte ontvanger),
+ * ook in demo-modus. Er is bewust GEEN "lege lijst = niets versturen"-fail-safe in de code (dat stond hier
+ * eerder beschreven maar is nooit zo gebouwd). In een afgeschermde omgeving vul je dus altijd de allowlist
+ * met je eigen 06/mail. Wil je een kanaal helemaal stilzetten, gebruik dan de aan/uit-knop
+ * SMS_DRY_RUN / MAIL_DRY_RUN (=1 → niets versturen, alleen loggen).
  */
 
 /** Draait deze deploy als afgeschermde demo? Gestuurd door de env-vlag DEMO_MODE=1. */
