@@ -62,6 +62,9 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   // Alle reeds-geüploade documenten (opslagverwijzingen) van deze invoer.
   const [geupload, setGeupload] = useState<GeUploadDocument[]>([]);
 
+  // Upload-voortgang (zoals bij de oplever-video): hoeveel bestanden van het totaal al geüpload zijn.
+  const [uploadVoortgang, setUploadVoortgang] = useState<{ gedaan: number; totaal: number } | null>(null);
+
   // Meer-klussen-modus: gevonden groepen + per bestand (op pad) de gekozen groep-index (-1 = niet aanmaken).
   const [groepen, setGroepen] = useState<KlusGroep[] | null>(null);
   const [toewijzing, setToewijzing] = useState<Record<string, number>>({});
@@ -88,6 +91,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
 
   function reset() {
     setGeupload([]);
+    setUploadVoortgang(null);
     setGroepen(null);
     setToewijzing({});
     setAdresKandidaten([]);
@@ -141,8 +145,12 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setStatus("parsing");
     setMessage("");
     setParseInfo("");
+    setUploadVoortgang({ gedaan: 0, totaal: nieuweFiles.length });
     try {
-      const nieuwGeupload = await uploadDocumenten(nieuweFiles);
+      const nieuwGeupload = await uploadDocumenten(nieuweFiles, (gedaan, totaal) =>
+        setUploadVoortgang({ gedaan, totaal }),
+      );
+      setUploadVoortgang(null);
       const alle = [...geupload, ...nieuwGeupload];
       setGeupload(alle);
 
@@ -179,6 +187,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       setParseInfo(`Kon de documenten niet verwerken: ${(e as Error).message}`);
     } finally {
       setStatus("idle");
+      setUploadVoortgang(null);
     }
   }
 
@@ -348,7 +357,9 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
             {parsing ? (
               <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary">
                 <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                Bestanden uploaden en inlezen…
+                {uploadVoortgang && uploadVoortgang.gedaan < uploadVoortgang.totaal
+                  ? `Uploaden: bestand ${uploadVoortgang.gedaan + 1} van ${uploadVoortgang.totaal}…`
+                  : "Documenten inlezen…"}
               </div>
             ) : !online ? (
               <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-ink-muted">
