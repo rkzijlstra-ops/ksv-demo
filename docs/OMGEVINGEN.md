@@ -15,6 +15,27 @@ Er zijn DRIE losse Supabase-databases. Haal ze nooit door elkaar.
 - Demo-Vercel: `https://kluslus-demo.vercel.app`.
 - Repo: `github.com/rkzijlstra-ops/ksv-demo`. **Beide** Vercel-projecten deployen van dezelfde `master`; het enige verschil is de env (de demo zet `DEMO_MODE=1` + eigen demo-database). Alle demo-gedrag is gegrendeld op `DEMO_MODE`, dus in productie inert.
 
+## Werken met meerdere terminals (git worktrees)
+
+Meerdere terminals in DEZELFDE map botsen: wissel je in de ene van branch, dan wisselt de andere mee, en build-caches lopen door elkaar. Daarom: **één map per terminal/branch** via een git worktree (een tweede map van hetzelfde project, met een eigen branch, die wel dezelfde git-geschiedenis deelt).
+
+Opzet (vast):
+- **Hoofdmap = thuis = master:** `C:\Users\rkzij\Mainframe\01_projecten\keukenstudio-voorschoten-demo`. Open hier een terminal voor master/algemeen werk en docs.
+- **Eén worktree-map per branch** onder `C:\Users\rkzij\ksv-worktrees\<branch>`. Open je tweede terminal DAAR voor dat werk.
+- Overzicht van alle mappen/branches: `git worktree list`.
+
+Een nieuwe worktree maken (voorgekauwd, of vraag Claude "maak een worktree voor branch X"):
+```
+git worktree add C:/Users/rkzij/ksv-worktrees/<branch> <branch>     # of: ... -b <nieuwe-branch>
+cp .env.local .env.test .env.demo-vercel C:/Users/rkzij/ksv-worktrees/<branch>/
+cd C:/Users/rkzij/ksv-worktrees/<branch> && npm ci
+```
+Let op:
+- De `.env.*`-bestanden zitten NIET in git; vandaar de `cp`. Elke worktree heeft zijn eigen `node_modules` (vandaar `npm ci`).
+- Worktrees staan BUITEN de Mainframe-map, dus ze zitten niet in de backup. Je werk is veilig via git: **commit en push vaak**.
+- Een branch kan maar in één map tegelijk uitgecheckt staan; daarom staat master in de hoofdmap en elke feature in zijn eigen worktree.
+- Klaar met een branch? `git worktree remove C:/Users/rkzij/ksv-worktrees/<branch>`.
+
 ## Welke database raak ik nu? (de belangrijkste valkuil)
 
 - **Lokale `npm run dev` / `next build` draait op de PRODUCTIE-database** (`.env.local`). Bouw je lokaal iets en schrijf je data weg, dan zit dat in productie. Wil je lokaal veilig tegen het test-zijspoor, draai dan via de e2e (die laadt `.env.test`), of laad expliciet `.env.test`.
