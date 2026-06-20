@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Video, Image as ImageIcon, AlertCircle, CheckCircle2, Play, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Video, Image as ImageIcon, AlertCircle, CheckCircle2, Play, Trash2, Clock } from "lucide-react";
 import { uploadOpleverVideo } from "@/lib/oplever-upload";
 import { isGrootBestand, bytesNaarMB } from "@/lib/video-opname";
 import { VideoOpnemen } from "@/components/VideoOpnemen";
 import { Voortgang } from "@/components/Voortgang";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
+import { zetVideoBezig, leesUploadStatus, useOpleverUpload } from "@/lib/oplever-upload-status";
 
 /**
  * Opnemen/kiezen van één oplever-video. Upload rechtstreeks naar Supabase Storage.
@@ -25,21 +26,69 @@ export function VideoMaken({
   const [speel, setSpeel] = useState(false);
   const [opnemen, setOpnemen] = useState(false);
   const [tip, setTip] = useState("");
+  // Serialisatie: een gekozen video wacht tot de foto's klaar zijn (foto en video niet tegelijk uploaden).
+  const [wachtend, setWachtend] = useState<File | null>(null);
+  // Synchrone spiegels van wachtend/bezig (state is async; refs voorkomen een dubbele start).
+  const wachtendRef = useRef<File | null>(null);
+  const bezigRef = useRef(false);
+  // Reactieve foto-status: zo re-rendert dit component en vuurt de start-effect betrouwbaar zodra de
+  // foto's klaar zijn (een store-abonnement miste dat moment door her-abonneren bij elke render).
+  const { fotoBezig } = useOpleverUpload();
 
-  useVerlaatWaarschuwing(bezig);
+  // Een wachtende of lopende video wil je niet kwijtraken bij weg-navigeren/verversen.
+  useVerlaatWaarschuwing(bezig || wachtend !== null);
 
-  async function verwerkBestand(file: File) {
-    setBezig(true);
-    setPct(0);
-    setFout("");
-    try {
-      const { url: nieuweUrl } = await uploadOpleverVideo(file, setPct);
-      onChange(nieuweUrl);
-    } catch (err) {
-      setFout((err as Error).message);
-    } finally {
-      setBezig(false);
+  // Bezig-status delen met de foto-kant. Alleen een ECHTE upload telt als videoBezig; een wachtende
+  // video niet, anders zouden foto en video op elkaar kunnen blijven wachten (deadlock).
+  useEffect(() => {
+    zetVideoBezig(bezig);
+  }, [bezig]);
+  useEffect(() => () => zetVideoBezig(false), []);
+
+  const verwerkBestand = useCallback(
+    async (file: File) => {
+      bezigRef.current = true;
+      setBezig(true);
+      setPct(0);
+      setFout("");
+      try {
+        const { url: nieuweUrl } = await uploadOpleverVideo(file, setPct);
+        onChange(nieuweUrl);
+      } catch (err) {
+        setFout((err as Error).message);
+      } finally {
+        bezigRef.current = false;
+        setBezig(false);
+      }
+    },
+    [onChange],
+  );
+
+  // Zodra de foto's klaar zijn, start de wachtende video automatisch. De refs voorkomen dat dezelfde
+  // video twee keer start. Dit is een bewuste synchronisatie met de externe foto-status.
+  useEffect(() => {
+    if (!fotoBezig && wachtendRef.current && !bezigRef.current) {
+      const f = wachtendRef.current;
+      wachtendRef.current = null;
+      setWachtend(null);
+      void verwerkBestand(f);
     }
+  }, [fotoBezig, verwerkBestand]);
+
+  /** Start de upload, of laat hem wachten als de foto's nog uploaden. */
+  function startOfWacht(file: File) {
+    if (leesUploadStatus().fotoBezig) {
+      wachtendRef.current = file;
+      setWachtend(file);
+    } else {
+      void verwerkBestand(file);
+    }
+  }
+
+  /** Een wachtende video alsnog annuleren. */
+  function annuleerWachten() {
+    wachtendRef.current = null;
+    setWachtend(null);
   }
 
   function handleGalerij(e: React.ChangeEvent<HTMLInputElement>) {
@@ -51,13 +100,13 @@ export function VideoMaken({
         ? `Groot bestand (~${bytesNaarMB(file.size)} MB), uploaden kan even duren. Tip: opnemen in de app gaat sneller.`
         : "",
     );
-    void verwerkBestand(file);
+    startOfWacht(file);
   }
 
   function handleOpname(file: File) {
     setOpnemen(false);
     setTip("");
-    void verwerkBestand(file);
+    startOfWacht(file);
   }
 
   if (url) {
@@ -107,6 +156,18 @@ export function VideoMaken({
       {bezig ? (
         <div className="rounded-none border border-line bg-surface px-3 py-3">
           <Voortgang label="Video uploaden…" percent={pct} />
+        </div>
+      ) : wachtend ? (
+        <div className="flex items-center gap-2 rounded-none border border-line bg-surface px-3 py-3 text-sm font-semibold text-ink">
+          <Clock size={18} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
+          <span className="flex-1">Video wacht tot de foto&apos;s klaar zijn…</span>
+          <button
+            type="button"
+            onClick={annuleerWachten}
+            className="shrink-0 cursor-pointer border border-ink px-2 py-1 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-line/40"
+          >
+            Annuleren
+          </button>
         </div>
       ) : opnemen ? (
         <VideoOpnemen onCapture={handleOpname} onAnnuleer={() => setOpnemen(false)} />

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
-import { FotoMaken } from "@/components/FotoMaken";
+import { useOpleverUpload } from "@/lib/oplever-upload-status";
+import { OpleverFotos } from "@/components/OpleverFotos";
 import { VideoMaken } from "@/components/VideoMaken";
 import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
@@ -32,6 +33,7 @@ export function OpleverFlow({
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
+  const { ietsBezig: uploadBezig } = useOpleverUpload();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   // Versturen: eerst kiezen naar wie, dan pas het bijbehorende blok tonen (minder rommel).
@@ -69,9 +71,32 @@ export function OpleverFlow({
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
 
-  useVerlaatWaarschuwing(klantBezig || zaakBezig);
+  useVerlaatWaarschuwing(uploadBezig || klantBezig || zaakBezig);
+
+  // Een verwijderde/vervangen foto of video ook uit storage opruimen (geen weesbestand). Best-effort:
+  // de server weigert netjes als er al een rapport verstuurd is (dan blijft het bestand bewaard).
+  function ruimOpleverBestandOp(url: string) {
+    void fetch(`/api/opdrachten/${opdrachtId}/oplever-bestand`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).catch(() => {});
+  }
+
+  // Bevestiging vóór in-app weg-navigeren terwijl er nog een upload loopt. De al klaar-geüploade foto's
+  // staan veilig in het concept; alleen de lopende upload stopt. Geeft de monteur de keuze.
+  function bevestigVerlaten(): boolean {
+    if (!uploadBezig) return true;
+    return window.confirm(
+      "Er wordt nog iets geüpload. Wat al klaar is blijft bewaard, maar de lopende upload stopt als je weggaat. Toch doorgaan?",
+    );
+  }
 
   const geladenRef = useRef(false);
+  // Heeft de monteur al iets gewijzigd vóórdat het concept geladen was? Dan mag de (latere) load zijn
+  // verse invoer niet overschrijven, en moet de overgeslagen opslag alsnog gebeuren (zie load-effect).
+  const vuilRef = useRef(false);
+  const [flushNaLoad, setFlushNaLoad] = useState(0);
   // Concept-saves serialiseren: elke opslag wacht op de vorige. Zonder dit zijn de saves
   // fire-and-forget en kan een eerdere (met verouderde state, bv. nog lege opmerking) een latere
   // overschrijven door out-of-order aankomst bij de server. Nu wint altijd de laatst getriggerde.
@@ -87,7 +112,11 @@ export function OpleverFlow({
         if (res.ok && actief) {
           const { oplevering, verzendingen: vz } = await res.json();
           setVerzendingen(Array.isArray(vz) ? vz : []);
-          if (oplevering) {
+          // Was de monteur sneller dan de load (vuilRef), dan zijn verse invoer NIET overschrijven met
+          // de serverstand; de overgeslagen opslag wordt na de load alsnog geflusht (finally).
+          if (vuilRef.current) {
+            // niets toepassen
+          } else if (oplevering) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
             setHandtekeningUrl(oplevering.handtekening_url ?? null);
@@ -110,12 +139,21 @@ export function OpleverFlow({
         }
       } finally {
         geladenRef.current = true;
+        // Heeft de monteur al iets gewijzigd terwijl de load liep, dan die overgeslagen opslag nu alsnog
+        // uitvoeren (flush-effect hieronder draait met verse state).
+        if (actief && vuilRef.current) setFlushNaLoad((n) => n + 1);
       }
     })();
     return () => {
       actief = false;
     };
   }, [opdrachtId, klantEmailVoorstel]);
+
+  // Flush van de opslag die werd overgeslagen omdat het concept nog niet geladen was.
+  useEffect(() => {
+    if (flushNaLoad > 0) bewaarConcept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flushNaLoad]);
 
   // Adresboek van de monteur laden (vaste ontvangers).
   useEffect(() => {
@@ -215,7 +253,12 @@ export function OpleverFlow({
   }
 
   function bewaarConcept(emailOverride?: string) {
-    if (!geladenRef.current) return;
+    // Vóórdat het concept geladen is niet opslaan (zou een bestaand concept met lege mount-state kunnen
+    // overschrijven), maar wél onthouden dat er iets te bewaren is, zodat het na de load alsnog gebeurt.
+    if (!geladenRef.current) {
+      vuilRef.current = true;
+      return;
+    }
     const rapport_email =
       emailOverride !== undefined ? emailOverride.trim() || null : rapportEmail.trim() || null;
     const body = JSON.stringify({
@@ -242,7 +285,14 @@ export function OpleverFlow({
   }
 
   // Foto's/video/handtekening meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
+  // De allereerste run is de mount met lege state; die overslaan, anders zou hij de laad-gate als
+  // "gewijzigd" markeren en het laden van een bestaand (heropend) concept saboteren.
+  const opslagEffectGestart = useRef(false);
   useEffect(() => {
+    if (!opslagEffectGestart.current) {
+      opslagEffectGestart.current = true;
+      return;
+    }
     bewaarConcept();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fotoUrls, videoUrl, handtekeningUrl, controleAkkoord]);
@@ -384,9 +434,24 @@ export function OpleverFlow({
         <p className="mb-3 text-sm text-ink-muted">
           Maak foto&apos;s van de keuken, het blad en de apparatuur. Een korte video mag erbij.
         </p>
-        <FotoMaken urls={fotoUrls} onChange={setFotoUrls} />
+        <OpleverFotos
+          urls={fotoUrls}
+          onFotoKlaar={(url) => setFotoUrls((prev) => [...prev, url])}
+          onFotoVerwijder={(url) => {
+            setFotoUrls((prev) => prev.filter((u) => u !== url));
+            ruimOpleverBestandOp(url);
+          }}
+        />
         <div className="mt-3">
-          <VideoMaken url={videoUrl} onChange={setVideoUrl} />
+          <VideoMaken
+            url={videoUrl}
+            onChange={(nieuwe) => {
+              const oud = videoUrl;
+              setVideoUrl(nieuwe);
+              // Bij verwijderen (nieuwe = null) of vervangen de oude video opruimen.
+              if (oud && oud !== nieuwe) ruimOpleverBestandOp(oud);
+            }}
+          />
         </div>
       </section>
 
@@ -851,6 +916,9 @@ export function OpleverFlow({
         <div className="mx-auto flex w-full max-w-2xl">
           <Link
             href={`/opdracht/${opdrachtId}/rapport`}
+            onClick={(e) => {
+              if (!bevestigVerlaten()) e.preventDefault();
+            }}
             className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
             <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
