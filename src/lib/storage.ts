@@ -18,6 +18,14 @@ export interface Storage {
     bestandsnaam: string,
     contentType: string,
   ): Promise<{ pad: string; publieke_url: string }>;
+  /** Maakt een signed upload-URL zodat de browser het document rechtstreeks naar storage stuurt (buiten de
+   *  Vercel-functie-grens om). Geeft pad + token + publieke URL terug. */
+  signDocumentUpload(
+    bestandsnaam: string,
+    contentType: string,
+  ): Promise<{ pad: string; token: string; publieke_url: string }>;
+  /** Haalt een eerder geüpload document server-side op (voor het inlezen). */
+  downloadDocument(pad: string): Promise<Buffer>;
   /** Verwijder een opdracht-document uit storage (best-effort opruiming na het wissen van de rij). */
   verwijderOpdrachtDocument(pad: string): Promise<void>;
   /** Verwijder een oplever-foto uit storage (bucket meldingen-fotos). */
@@ -65,6 +73,27 @@ export function createStorage(config: StorageConfig): Storage {
       if (error) throw new Error(`Document-upload mislukt: ${error.message}`);
       const { data: pub } = client.storage.from(DOCUMENTEN_BUCKET).getPublicUrl(pad);
       return { pad, publieke_url: pub.publicUrl };
+    },
+
+    async signDocumentUpload(bestandsnaam: string, contentType: string) {
+      const ext = bepaalExtensie(bestandsnaam, contentType);
+      const pad = `${crypto.randomUUID()}.${ext}`;
+      const { data, error } = await client.storage
+        .from(DOCUMENTEN_BUCKET)
+        .createSignedUploadUrl(pad);
+      if (error || !data) {
+        throw new Error(`Upload-URL maken mislukt: ${error?.message ?? "geen data"}`);
+      }
+      const { data: pub } = client.storage.from(DOCUMENTEN_BUCKET).getPublicUrl(pad);
+      return { pad, token: data.token, publieke_url: pub.publicUrl };
+    },
+
+    async downloadDocument(pad: string) {
+      const { data, error } = await client.storage.from(DOCUMENTEN_BUCKET).download(pad);
+      if (error || !data) {
+        throw new Error(`Document downloaden mislukt: ${error?.message ?? "geen data"}`);
+      }
+      return Buffer.from(await data.arrayBuffer());
     },
 
     async verwijderOpdrachtDocument(pad: string) {
