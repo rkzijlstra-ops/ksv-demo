@@ -1,5 +1,11 @@
 @AGENTS.md
 
+## Omgevingen, databases en deploys (lees dit vóór je test, migreert of deployt)
+
+Er zijn DRIE losse Supabase-databases (productie / test-CI / demo) en twee Vercel-deploys van dezelfde `master`. Welke aan wat hangt, hoe je veilig test/migreert/deployt, en de valkuilen (o.a. lokale `next dev` draait op de PRODUCTIE-database) staan in de naslag hieronder. Haal de omgevingen nooit door elkaar.
+
+@docs/OMGEVINGEN.md
+
 ## Opleverlat: ga alles na vóór je "klaar" of "werkt" zegt
 
 Kluslus is een af product, geen demo. Het moet vanaf de eerste klant naadloos draaien; een haperende eerste ervaring breekt direct het vertrouwen. Deze lat is niet onderhandelbaar en geldt voor elke wijziging:
