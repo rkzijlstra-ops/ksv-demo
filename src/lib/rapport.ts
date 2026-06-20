@@ -177,6 +177,7 @@ export async function genereerRapportPdf(
     samenvatting.videoUrl ? ACCENT : MUTED,
   );
   leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
+  leaderRegel("Meldingen", String(meldingen.length), INK);
   // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
   if (controle.length > 0) {
     leaderRegel(
@@ -554,8 +555,10 @@ export async function genereerRapportPdf(
   }
 
   async function tekenHandtekening(url: string) {
-    const boxW = 240;
-    const boxH = 64;
+    // Even groot als één foto-tegel (zie fotoGrid: 2 kolommen, gap 10, hoogte 0.7x de breedte).
+    const gap = 10;
+    const boxW = (CONTENT - gap) / 2;
+    const boxH = boxW * 0.7;
     ruimte(boxH + 8);
     const top = y;
     page.drawRectangle({ x: MARGE, y: top - boxH, width: boxW, height: boxH, borderColor: LINE, borderWidth: 0.8 });
@@ -565,8 +568,7 @@ export async function genereerRapportPdf(
         const bytes = new Uint8Array(await res.arrayBuffer());
         const isPng = bytes[0] === 0x89 && bytes[1] === 0x50;
         const img = isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
-        const h = 44;
-        const schaal = Math.min((boxW - 20) / img.width, h / img.height, 1);
+        const schaal = Math.min((boxW - 20) / img.width, (boxH - 20) / img.height, 1);
         const iw = img.width * schaal;
         const ih = img.height * schaal;
         page.drawImage(img, { x: MARGE + 10, y: top - boxH + (boxH - ih) / 2, width: iw, height: ih });
