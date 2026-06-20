@@ -18,6 +18,25 @@ export function isDemoMode(): boolean {
 /** Vast wachtwoord voor de demo-accounts (sandbox; alleen demo-DB). */
 export const DEMO_WACHTWOORD = "Demo-Kluslus-2026!";
 
+/**
+ * Mag de test-wachtwoordlogin verschijnen? Alleen buiten productie (branch-previews + lokaal), nooit op de
+ * prod- of demo-deploy (die draaien als Vercel-productie). Zo kan Reinier in een preview inloggen zonder
+ * Google/magic-link, maar bestaat de route in productie niet.
+ */
+export function isTestLoginActief(): boolean {
+  return process.env.VERCEL_ENV !== "production";
+}
+
+/**
+ * Vaste test-accounts op de TEST-DB voor de test-wachtwoordlogin (alleen niet-productie). Dezelfde accounts
+ * die `npm run setup:test` aanmaakt. De wachtwoorden mogen in de code: het zijn wegwerp-accounts op de
+ * test-DB zonder echte data, net als DEMO_WACHTWOORD.
+ */
+export const TEST_LOGIN_ACCOUNTS = {
+  kantoor: { email: "test-beheerder@kluslus.test", wachtwoord: "Testbeheerder1!" },
+  monteur: { email: "test-monteur@kluslus.test", wachtwoord: "Testmonteur1!" },
+} as const;
+
 /** De vaste demo-accounts. De seed maakt ze aan; de QR-login logt als deze accounts in. */
 export const DEMO_ACCOUNTS = {
   kantoor: { email: "demo-kantoor@voorbeeld.kluslus.test", naam: "Ed (demo)", rol: "beheerder" as const },
