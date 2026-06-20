@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup v5 — betekenis-kleuren op de oplever-pagina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{--bg:#FFFFFF;--surface:#F1F5F9;--ink:#0F172A;--ink-muted:#475569;--line:#CBD5E1;--primary:#27272A;--accent:#F97316;--rood:#DC2626;--geel:#FBBF24;--success:#16A34A;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e2e8f0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);padding:24px 12px 64px;}
+  .stage{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start;}
+  .col{width:420px;max-width:100%;}
+  .coltitle{font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:700;color:#334155;margin:0 0 8px;text-align:center;}
+  .phone{background:var(--bg);border:2px solid var(--ink);}
+  .pad{padding:16px;}
+  h2{font-family:"Space Mono",monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;}
+  .sectie{border-top:1px solid var(--line);padding-top:16px;margin-top:16px;}
+  i[data-lucide]{width:18px;height:18px;}
+  .gray{color:var(--ink-muted);}
+  .secthead{font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin:4px 0 8px;font-weight:700;}
+  .acc{display:flex;align-items:stretch;border:2px solid var(--line);cursor:pointer;background:#fff;margin-bottom:10px;}
+  .acc .strip{width:6px;flex:none;background:var(--c,var(--ink-muted));}
+  .acc .body{padding:13px;display:flex;align-items:center;gap:12px;flex:1;}
+  .acc .circle{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in srgb,var(--c,var(--ink-muted)) 14%,#fff);color:var(--c,var(--ink-muted));}
+  .acc .titel{font-weight:700;font-size:16px;font-family:"Space Mono",monospace;}
+  .acc .sub{font-size:12.5px;color:var(--ink-muted);margin-top:2px;display:flex;align-items:center;gap:5px;}
+  .acc .sub.col{color:var(--c);}
+  .obtn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border:2px solid var(--primary);background:#fff;color:var(--primary);font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.04em;font-weight:700;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;}
+  .note{font-size:13px;color:#334155;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- VARIANT A: alles accent-kaart, kleur = status/belang -->
+  <div class="col">
+    <div class="coltitle">Variant A · kleur = status (kaarten blijven)</div>
+    <div class="phone"><div class="pad">
+      <div class="secthead">… foto's, opmerking, akkoord hierboven …</div>
+
+      <section>
+        <h2>3. Handtekening (optioneel)</h2>
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="pen-line" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Handtekening klant</div><div class="sub">Optioneel · tik om te laten tekenen</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </section>
+
+      <section class="sectie">
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="eye" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Rapport voorvertonen</div><div class="sub">Bekijk hoe het rapport eruitziet</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </section>
+
+      <section class="sectie">
+        <h2>4. Versturen</h2>
+        <div class="acc" style="--c:var(--success)">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="check" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Opdrachtgever</div><div class="sub col">Verzonden · vandaag 14:32</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc" style="--c:var(--accent)">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="send" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Klant</div><div class="sub col">Nog te versturen</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </section>
+    </div></div>
+    <div class="note"><b>A:</b> handtekening en voorvertonen blijven neutraal grijs (optioneel/secundair). De versturen-kaarten dragen de status in kleur: <span style="color:var(--accent);font-weight:700">oranje = nog te versturen</span>, <span style="color:var(--success);font-weight:700">groen = verzonden</span>.</div>
+  </div>
+
+  <!-- VARIANT B: rustiger, handtekening + voorvertonen als gewone knoppen -->
+  <div class="col">
+    <div class="coltitle">Variant B · rustiger (minder kaarten)</div>
+    <div class="phone"><div class="pad">
+      <div class="secthead">… foto's, opmerking, akkoord hierboven …</div>
+
+      <section>
+        <h2>3. Handtekening (optioneel)</h2>
+        <div class="obtn"><i data-lucide="pen-line"></i> Klant laten tekenen</div>
+      </section>
+
+      <section class="sectie">
+        <div class="obtn"><i data-lucide="eye"></i> Rapport voorvertonen</div>
+      </section>
+
+      <section class="sectie">
+        <h2>4. Versturen</h2>
+        <div class="acc" style="--c:var(--success)">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="check" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Opdrachtgever</div><div class="sub col">Verzonden · vandaag 14:32</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc" style="--c:var(--accent)">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="send" style="width:21px;height:21px"></i></div>
+            <div style="flex:1"><div class="titel">Klant</div><div class="sub col">Nog te versturen</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </section>
+    </div></div>
+    <div class="note"><b>B:</b> handtekening en voorvertonen blijven sobere outline-knoppen (zoals nu), alleen de versturen-kaarten zijn gekleurde status-kaarten. Minder kaarten, de aandacht gaat naar het versturen (de echte eindactie).</div>
+  </div>
+
+</div>
+
+<div style="max-width:430px;margin:18px auto 0" class="note">
+  <b>Beide</b> dragen de kleur-taal die ook op de afsluit-pagina geldt: oranje = actie nodig, groen = klaar, grijs = neutraal/optioneel, rood = negatief. Zeg A of B (of een mix), dan leg ik de hele opzet vast en bouw ik oplever- én afsluit-pagina in één keer om.
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

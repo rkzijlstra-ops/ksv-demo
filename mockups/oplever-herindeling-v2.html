@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup v2 — handtekening + visuele varianten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{--bg:#FFFFFF;--surface:#F1F5F9;--ink:#0F172A;--ink-muted:#475569;--line:#CBD5E1;--primary:#27272A;--accent:#F97316;--rood:#DC2626;--geel:#FBBF24;--success:#16A34A;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e2e8f0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);padding:24px 0 64px;}
+  .wrap{max-width:430px;margin:0 auto 20px;}
+  .phone{background:var(--bg);border:2px solid var(--ink);}
+  .pad{padding:16px;}
+  .mono{font-family:"Space Mono",ui-monospace,monospace;}
+  h2{font-family:"Space Mono",ui-monospace,monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;}
+  .muted{color:var(--ink-muted);font-size:14px;}
+  .sectie{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border:2px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer;width:100%;font-size:15px;}
+  .btn-dash{border-style:dashed;}
+  .btn-outline{background:#fff;border:2px solid var(--primary);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;font-family:"Space Mono",monospace;}
+  .row{display:flex;gap:8px;}
+  i[data-lucide]{width:18px;height:18px;}
+  .secthead{font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin:22px auto 8px;max-width:430px;font-weight:700;}
+  .card{background:#fff;border:2px solid var(--line);}
+
+  /* handtekening-varianten */
+  .h-btn{}
+  .h-vlak{border:2px dashed var(--line);background:repeating-linear-gradient(0deg,transparent,transparent 30px,#eef2f7 30px,#eef2f7 31px);min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--ink-muted);cursor:pointer;}
+  .h-accent{display:flex;align-items:stretch;border:2px solid var(--line);cursor:pointer;}
+  .h-accent .strip{width:6px;background:var(--accent);flex:none;}
+  .h-accent .body{padding:14px;display:flex;align-items:center;gap:12px;flex:1;}
+  .h-accent .circle{width:42px;height:42px;border-radius:50%;background:rgba(249,115,22,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;}
+  .h-gezet{display:flex;align-items:center;gap:10px;border:2px solid var(--success);background:rgba(22,163,74,.08);padding:10px;}
+  .h-gezet .sig{width:80px;height:40px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-family:"Space Mono";color:#94a3b8;font-size:11px;}
+
+  /* sectiekop-stijlen */
+  .kopA{font-family:"Space Mono",monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .kopB{display:flex;align-items:center;gap:10px;}
+  .kopB .num{width:28px;height:28px;background:var(--primary);color:#fff;font-family:"Space Mono";font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+  .kopB .t{font-family:"Space Mono",monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .kopC{display:flex;align-items:center;gap:10px;}
+  .kopC .bar{width:5px;height:22px;background:var(--accent);flex:none;}
+  .kopC .t{font-family:"Space Mono",monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .note{max-width:430px;margin:6px auto;font-size:13px;color:#334155;}
+</style>
+</head>
+<body>
+
+<!-- 1. Gecorrigeerde sectie 1: video GESPLITST zoals foto -->
+<div class="secthead">Correctie — video gesplitst (Opnemen / Galerij), net als foto</div>
+<div class="wrap"><div class="phone"><div class="pad">
+  <h2>1. Eindresultaat vastleggen</h2>
+  <p class="muted" style="margin-top:0">Foto's van de keuken, het blad en de apparatuur. Een korte video mag erbij.</p>
+  <div class="row"><div class="btn btn-dash"><i data-lucide="camera"></i> Camera</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+  <div class="row" style="margin-top:10px"><div class="btn btn-dash"><i data-lucide="video"></i> Opnemen</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+</div></div></div>
+
+<!-- 2. HANDTEKENING varianten -->
+<div class="secthead">Blok 3 "Handtekening" — varianten (van sober naar aantrekkelijker)</div>
+<div class="wrap"><div class="phone"><div class="pad">
+
+  <div style="margin-bottom:18px">
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">H1 · huidig (sober)</div>
+    <div class="btn btn-outline"><i data-lucide="pen-line"></i> Klant laten tekenen</div>
+  </div>
+
+  <div style="margin-bottom:18px">
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">H2 · tekenvlak-hint (laat zien dát er getekend wordt)</div>
+    <div class="h-vlak">
+      <i data-lucide="pen-line" style="width:26px;height:26px"></i>
+      <div style="font-weight:700">Tik om te tekenen</div>
+      <div style="font-size:12px">Laat de klant hier zijn handtekening zetten</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:18px">
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">H3 · accent-kaart</div>
+    <div class="h-accent">
+      <div class="strip"></div>
+      <div class="body">
+        <div class="circle"><i data-lucide="pen-line" style="width:22px;height:22px"></i></div>
+        <div style="flex:1">
+          <div style="font-weight:700">Handtekening klant</div>
+          <div class="muted" style="font-size:13px">Optioneel · tik om te laten tekenen</div>
+        </div>
+        <i data-lucide="chevron-right" style="color:var(--ink-muted)"></i>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">Gezet-staat (na tekenen, geldt voor elke variant)</div>
+    <div class="h-gezet">
+      <i data-lucide="check-circle-2" style="color:var(--success)"></i>
+      <div class="sig">handtekening</div>
+      <span style="font-weight:700;color:var(--success);font-size:14px">Gezet</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <span class="mono" style="border:1px solid var(--ink);padding:4px 8px;font-size:11px;text-transform:uppercase">Opnieuw</span>
+        <span class="mono" style="border:1px solid var(--rood);color:var(--rood);padding:4px 8px;font-size:11px">Wis</span>
+      </div>
+    </div>
+  </div>
+
+</div></div></div>
+
+<!-- 3. SECTIEKOP-stijlen -->
+<div class="secthead">Sectiekoppen — stijlen (maakt de hele pagina rustiger of levendiger)</div>
+<div class="wrap"><div class="phone"><div class="pad">
+  <div style="margin-bottom:16px">
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">Kop A · huidig (puur mono-label)</div>
+    <div class="kopA">2. Controle bij oplevering</div>
+  </div>
+  <div style="margin-bottom:16px">
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">Kop B · genummerd blokje (meer structuur/voortgang)</div>
+    <div class="kopB"><div class="num">2</div><div class="t">Controle bij oplevering</div></div>
+  </div>
+  <div>
+    <div class="muted mono" style="font-size:11px;margin-bottom:6px">Kop C · oranje accent-streep (subtiel levendiger)</div>
+    <div class="kopC"><div class="bar"></div><div class="t">Controle bij oplevering</div></div>
+  </div>
+</div></div></div>
+
+<div class="note"><b>Zeg wat je aanspreekt:</b> handtekening H1 / H2 / H3, en sectiekop A / B / C. Combineren mag (bijv. H2 + kop B). Of "hou het maar sober" — dan blijft het zoals nu, alleen de indeling herschikt.</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

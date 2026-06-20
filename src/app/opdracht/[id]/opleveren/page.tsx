@@ -25,7 +25,7 @@ export default async function OpleverenPage({
   const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 pb-40">
+    <main className="mx-auto w-full max-w-2xl p-4 pb-24">
       <div className="mb-4">
         <OpleverTerugLink href={`/opdracht/${id}/afronden`} />
       </div>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Undo2 } from "lucide-react";
 import { TERUGMELD_REDENEN } from "@/lib/terugmeld-mail";
+import { ActieKaart } from "@/components/ActieKaart";
 
 /**
  * De "Niet doorgegaan"-keuze op het voltooien-keuzescherm: opent een venster met een reden en
@@ -45,19 +46,13 @@ export function NietDoorgegaanKnop({ opdrachtId, klantNaam }: { opdrachtId: stri
 
   return (
     <>
-      <button
-        type="button"
+      <ActieKaart
+        accent="negatief"
+        icoon={<Undo2 size={22} strokeWidth={2.5} aria-hidden="true" />}
+        titel="Niet doorgegaan"
+        sub="Klant niet thuis of werk niet af te ronden. Meld terug aan kantoor met een reden."
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-between border-2 border-line bg-white p-5 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-      >
-        <span>
-          <span className="block font-mono text-xl font-extrabold text-ink">Niet doorgegaan</span>
-          <span className="block text-base text-ink-muted">
-            Klant niet thuis of werk niet af te ronden. Meld terug aan kantoor met een reden.
-          </span>
-        </span>
-        <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
-      </button>
+      />
 
       {open && (
         <div

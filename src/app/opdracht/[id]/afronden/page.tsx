@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Zap, ClipboardCheck } from "lucide-react";
 import { db, dbAdmin } from "@/lib/db";
 import { vereisRol } from "@/lib/toegang";
 import { NietDoorgegaanKnop } from "@/components/NietDoorgegaanKnop";
+import { ActieKaart } from "@/components/ActieKaart";
 import { KlusActiviteit } from "@/components/KlusActiviteit";
 
 export const dynamic = "force-dynamic";
@@ -46,27 +47,21 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
       </header>
 
       <div className="flex flex-col gap-3">
-        <Link
+        <ActieKaart
           href={`/opdracht/${id}/afronden/snel`}
-          className="flex items-center justify-between border-2 border-line bg-white p-5 hover:bg-surface"
-        >
-          <span>
-            <span className="block font-mono text-xl font-extrabold text-ink">Snel afsluiten</span>
-            <span className="block text-base text-ink-muted">Voor service of een kleine klus. Optioneel foto, video of een notitie. De opdrachtgever ziet dat het klaar is.</span>
-          </span>
-          <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
-        </Link>
+          accent="neutraal"
+          icoon={<Zap size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Snel afsluiten"
+          sub="Voor service of een kleine klus. Optioneel foto, video of een notitie. De opdrachtgever ziet dat het klaar is."
+        />
 
-        <Link
+        <ActieKaart
           href={`/opdracht/${id}/opleveren`}
-          className="flex items-center justify-between border-2 border-line bg-white p-5 hover:bg-surface"
-        >
-          <span>
-            <span className="block font-mono text-xl font-extrabold text-ink">Afsluiten + rapport</span>
-            <span className="block text-base text-ink-muted">Volledige oplevering, optioneel met foto, video en handtekening.</span>
-          </span>
-          <ChevronRight size={20} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
-        </Link>
+          accent="actie"
+          icoon={<ClipboardCheck size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Afsluiten + rapport"
+          sub="Volledige oplevering, optioneel met foto, video en handtekening."
+        />
 
         <NietDoorgegaanKnop opdrachtId={id} klantNaam={klantNaam} />
       </div>

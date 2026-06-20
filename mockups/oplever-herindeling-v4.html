@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup v4 — H3 op rapport-knop + afsluit-pagina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{--bg:#FFFFFF;--surface:#F1F5F9;--ink:#0F172A;--ink-muted:#475569;--line:#CBD5E1;--primary:#27272A;--accent:#F97316;--rood:#DC2626;--geel:#FBBF24;--success:#16A34A;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e2e8f0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);padding:24px 12px 64px;}
+  .stage{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start;}
+  .col{width:420px;max-width:100%;}
+  .coltitle{font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:700;color:#334155;margin:0 0 8px;text-align:center;}
+  .phone{background:var(--bg);border:2px solid var(--ink);}
+  .pad{padding:16px;}
+  .mono{font-family:"Space Mono",ui-monospace,monospace;}
+  .label{font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--ink-muted);font-weight:700;}
+  h1{font-family:"Space Mono",monospace;font-size:22px;font-weight:700;margin:2px 0 0;}
+  h2{font-family:"Space Mono",monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;}
+  .muted{color:var(--ink-muted);font-size:14px;}
+  .sectie{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
+  .header{position:relative;border:2px solid var(--line);border-bottom:none;padding:16px;}
+  .header .bar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--accent);}
+  i[data-lucide]{width:18px;height:18px;}
+  .vk{display:flex;align-items:center;gap:12px;min-height:64px;border:2px solid var(--line);background:#fff;padding:0 14px;cursor:pointer;margin-bottom:8px;}
+  .vk .titel{font-family:"Space Mono",monospace;font-weight:700;font-size:16px;}
+  .vk .sub{font-size:12.5px;}
+  .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink-muted);flex:none;}
+  .green{color:var(--success);} .gray{color:var(--ink-muted);}
+  /* H3 accent-kaart, herbruikbaar met --c kleurvariabele */
+  .acc{display:flex;align-items:stretch;border:2px solid var(--line);cursor:pointer;background:#fff;margin-bottom:10px;}
+  .acc .strip{width:6px;flex:none;background:var(--c,var(--accent));}
+  .acc .body{padding:14px;display:flex;align-items:center;gap:12px;flex:1;}
+  .acc .circle{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in srgb,var(--c,var(--accent)) 14%,#fff);color:var(--c,var(--accent));}
+  .acc .titel{font-weight:700;font-size:16px;font-family:"Space Mono",monospace;}
+  .acc .sub{font-size:13px;color:var(--ink-muted);margin-top:2px;line-height:1.25;}
+  .secthead{font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin:4px 0 10px;font-weight:700;}
+  .note{font-size:13px;color:#334155;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- KOLOM 1: OPLEVER-PAGINA (handtekening + rapport voorvertonen in H3) -->
+  <div class="col">
+    <div class="coltitle">Oplever-pagina · handtekening + rapport-knop in H3</div>
+    <div class="phone">
+      <div class="header"><div class="label">Keukenstudio Voorschoten / Oplevering</div><h1>Familie de Vries</h1><div class="bar"></div></div>
+      <div class="pad">
+        <div class="secthead">… (foto's, opmerking, akkoord hierboven)</div>
+
+        <section>
+          <h2>3. Handtekening (optioneel)</h2>
+          <div class="acc">
+            <div class="strip"></div>
+            <div class="body"><div class="circle"><i data-lucide="pen-line" style="width:22px;height:22px"></i></div>
+              <div style="flex:1"><div class="titel">Handtekening klant</div><div class="sub">Optioneel · tik om te laten tekenen</div></div>
+              <i data-lucide="chevron-right" class="gray"></i></div>
+          </div>
+        </section>
+
+        <section class="sectie">
+          <div class="acc">
+            <div class="strip"></div>
+            <div class="body"><div class="circle"><i data-lucide="eye" style="width:22px;height:22px"></i></div>
+              <div style="flex:1"><div class="titel">Rapport voorvertonen</div><div class="sub">Bekijk hoe het rapport eruitziet</div></div>
+              <i data-lucide="chevron-right" class="gray"></i></div>
+          </div>
+        </section>
+
+        <section class="sectie">
+          <h2>4. Versturen</h2>
+          <div class="vk"><div style="flex:1"><div class="titel">Opdrachtgever</div><div class="sub green" style="display:flex;align-items:center;gap:5px"><i data-lucide="check" style="width:14px;height:14px"></i> Verzonden · vandaag 14:32</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+          <div class="vk"><div style="flex:1"><div class="titel">Klant</div><div class="sub gray" style="display:flex;align-items:center;gap:5px"><span class="dot"></span> Nog te versturen</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- KOLOM 2: AFSLUIT-PAGINA -->
+  <div class="col">
+    <div class="coltitle">Klus afsluiten · 3 knoppen in H3</div>
+
+    <!-- variant: alles oranje (zoals gevraagd) -->
+    <div class="secthead">Optie 1 — alle drie oranje (uniform)</div>
+    <div class="phone">
+      <div class="header"><div class="label">Klus afsluiten</div><h1>Op welke manier sluit je af?</h1><div class="bar"></div></div>
+      <div class="pad">
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="zap" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Snel afsluiten</div><div class="sub">Voor service of een kleine klus. Optioneel foto, video of notitie.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="clipboard-check" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Afsluiten + rapport</div><div class="sub">Volledige oplevering, optioneel met foto, video en handtekening.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="undo-2" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Niet doorgegaan</div><div class="sub">Klant niet thuis of werk niet af te ronden. Meld terug aan kantoor.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- variant: betekenis-kleuren (suggestie) -->
+    <div class="secthead" style="margin-top:22px">Optie 2 — kleur met betekenis (suggestie)</div>
+    <div class="phone">
+      <div class="header"><div class="label">Klus afsluiten</div><h1>Op welke manier sluit je af?</h1><div class="bar"></div></div>
+      <div class="pad">
+        <div class="acc" style="--c:#475569">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="zap" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Snel afsluiten</div><div class="sub">Voor service of een kleine klus.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="clipboard-check" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Afsluiten + rapport</div><div class="sub">Volledige oplevering met foto, video en handtekening.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+        <div class="acc" style="--c:#DC2626">
+          <div class="strip"></div>
+          <div class="body"><div class="circle"><i data-lucide="undo-2" style="width:22px;height:22px"></i></div>
+            <div style="flex:1"><div class="titel">Niet doorgegaan</div><div class="sub">Klant niet thuis of werk niet af te ronden.</div></div>
+            <i data-lucide="chevron-right" class="gray"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><b>Overweging:</b> de hoofdactie is "Afsluiten + rapport". In optie 2 houdt die het oranje accent, krijgt "Snel afsluiten" een neutrale grijze streep en "Niet doorgegaan" rood (het is een afwijkende, negatieve keuze). Zo blijft de oranje accent iets betekenen in plaats van overal hetzelfde.</div>
+  </div>
+
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup v3 — volledige indeling met H2 vs H3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{--bg:#FFFFFF;--surface:#F1F5F9;--ink:#0F172A;--ink-muted:#475569;--line:#CBD5E1;--primary:#27272A;--accent:#F97316;--rood:#DC2626;--geel:#FBBF24;--success:#16A34A;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e2e8f0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);padding:24px 12px 64px;}
+  .stage{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start;}
+  .col{width:420px;max-width:100%;}
+  .coltitle{font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:700;color:#334155;margin:0 0 8px;text-align:center;}
+  .phone{background:var(--bg);border:2px solid var(--ink);}
+  .pad{padding:16px;}
+  .mono{font-family:"Space Mono",ui-monospace,monospace;}
+  .label{font-family:"Space Mono",ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--ink-muted);font-weight:700;}
+  h1{font-family:"Space Mono",ui-monospace,monospace;font-size:22px;font-weight:700;margin:2px 0 0;}
+  h2{font-family:"Space Mono",ui-monospace,monospace;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;}
+  .muted{color:var(--ink-muted);font-size:14px;}
+  .sectie{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
+  .header{position:relative;border:2px solid var(--line);border-bottom:none;padding:16px;}
+  .header .bar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--accent);}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border:2px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer;width:100%;font-size:15px;}
+  .btn-dash{border-style:dashed;}
+  .btn-outline{background:#fff;border:2px solid var(--primary);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;font-family:"Space Mono",monospace;}
+  .row{display:flex;gap:8px;}
+  textarea{width:100%;border:1px solid var(--line);padding:12px;font-size:16px;font-family:inherit;border-radius:0;}
+  .intern{border:2px solid var(--geel);background:rgba(251,191,36,.10);}
+  .box{border:2px solid var(--line);background:var(--bg);}
+  .surface{background:var(--surface);}
+  .akk{display:flex;gap:8px;}
+  .akk button{flex:1;min-height:48px;border:2px solid;font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.04em;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:#fff;}
+  .akk .ja{border-color:var(--success);color:var(--success);} .akk .ja.on{background:var(--success);color:#fff;}
+  .akk .nee{border-color:var(--rood);color:var(--rood);}
+  i[data-lucide]{width:18px;height:18px;}
+  .thumb{aspect-ratio:1;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-muted);}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .vk{display:flex;align-items:center;gap:12px;min-height:64px;border:2px solid var(--line);background:#fff;padding:0 14px;cursor:pointer;margin-bottom:8px;}
+  .vk .titel{font-family:"Space Mono",monospace;font-weight:700;font-size:16px;}
+  .vk .sub{font-size:12.5px;}
+  .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink-muted);flex:none;}
+  .green{color:var(--success);} .gray{color:var(--ink-muted);}
+  /* handtekening */
+  .h-vlak{border:2px dashed var(--line);background:repeating-linear-gradient(0deg,transparent,transparent 30px,#eef2f7 30px,#eef2f7 31px);min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--ink-muted);cursor:pointer;}
+  .h-accent{display:flex;align-items:stretch;border:2px solid var(--line);cursor:pointer;}
+  .h-accent .strip{width:6px;background:var(--accent);flex:none;}
+  .h-accent .body{padding:14px;display:flex;align-items:center;gap:12px;flex:1;}
+  .h-accent .circle{width:42px;height:42px;border-radius:50%;background:rgba(249,115,22,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ===== KOLOM 1: H2 ===== -->
+  <div class="col">
+    <div class="coltitle">Variant met H2 · tekenvlak</div>
+    <div class="phone">
+      <div class="header"><div class="label">Keukenstudio Voorschoten / Oplevering</div><h1>Familie de Vries</h1><div class="bar"></div></div>
+      <div class="pad">
+        <section>
+          <h2>1. Eindresultaat vastleggen</h2>
+          <p class="muted" style="margin-top:0">Foto's van de keuken, het blad en de apparatuur. Een korte video mag erbij.</p>
+          <div class="row"><div class="btn btn-dash"><i data-lucide="camera"></i> Camera</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+          <div class="grid3" style="margin-top:10px"><div class="thumb"><i data-lucide="image"></i></div><div class="thumb"><i data-lucide="image"></i></div><div class="thumb"><i data-lucide="image"></i></div></div>
+          <div class="row" style="margin-top:10px"><div class="btn btn-dash"><i data-lucide="video"></i> Opnemen</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+        </section>
+        <section class="sectie">
+          <h2>2. Controle bij oplevering</h2>
+          <div class="intern"><div style="display:flex;align-items:center;gap:8px;padding:12px"><i data-lucide="lock"></i><div style="line-height:1.2"><div style="font-weight:700;font-size:14px">Interne notitie</div><div class="label" style="font-size:11px">Alleen voor de opdrachtgever</div></div><span style="margin-left:auto;font-weight:800;color:var(--ink-muted)">+</span></div></div>
+          <div style="margin-top:16px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Opmerking <span class="muted" style="font-weight:400">· zichtbaar voor iedereen</span></div><textarea rows="3" placeholder="Bijv. klant belt nog voor smetplinten…"></textarea><div class="muted" style="display:flex;align-items:center;gap:6px;margin-top:8px"><i data-lucide="mic"></i> Of spreek het in</div></div>
+          <div class="box surface" style="margin-top:16px;padding:12px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">Buiten de meldingen geen beschadigingen aan keuken, blad, vloer, plafond en muren.</div><div class="akk"><button class="ja on"><i data-lucide="check-circle-2"></i> Akkoord</button><button class="nee"><i data-lucide="alert-circle"></i> Niet akkoord</button></div></div>
+        </section>
+        <section class="sectie">
+          <h2>3. Handtekening (optioneel)</h2>
+          <div class="h-vlak"><i data-lucide="pen-line" style="width:26px;height:26px"></i><div style="font-weight:700">Tik om te tekenen</div><div style="font-size:12px">Laat de klant hier zijn handtekening zetten</div></div>
+        </section>
+        <section class="sectie"><div class="btn btn-outline"><i data-lucide="eye"></i> Rapport voorvertonen</div></section>
+        <section class="sectie">
+          <h2>4. Versturen</h2>
+          <div class="vk"><div style="flex:1"><div class="titel">Opdrachtgever</div><div class="sub green" style="display:flex;align-items:center;gap:5px"><i data-lucide="check" style="width:14px;height:14px"></i> Verzonden · vandaag 14:32</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+          <div class="vk"><div style="flex:1"><div class="titel">Klant</div><div class="sub gray" style="display:flex;align-items:center;gap:5px"><span class="dot"></span> Nog te versturen</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KOLOM 2: H3 ===== -->
+  <div class="col">
+    <div class="coltitle">Variant met H3 · accent-kaart</div>
+    <div class="phone">
+      <div class="header"><div class="label">Keukenstudio Voorschoten / Oplevering</div><h1>Familie de Vries</h1><div class="bar"></div></div>
+      <div class="pad">
+        <section>
+          <h2>1. Eindresultaat vastleggen</h2>
+          <p class="muted" style="margin-top:0">Foto's van de keuken, het blad en de apparatuur. Een korte video mag erbij.</p>
+          <div class="row"><div class="btn btn-dash"><i data-lucide="camera"></i> Camera</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+          <div class="grid3" style="margin-top:10px"><div class="thumb"><i data-lucide="image"></i></div><div class="thumb"><i data-lucide="image"></i></div><div class="thumb"><i data-lucide="image"></i></div></div>
+          <div class="row" style="margin-top:10px"><div class="btn btn-dash"><i data-lucide="video"></i> Opnemen</div><div class="btn btn-dash"><i data-lucide="image"></i> Galerij</div></div>
+        </section>
+        <section class="sectie">
+          <h2>2. Controle bij oplevering</h2>
+          <div class="intern"><div style="display:flex;align-items:center;gap:8px;padding:12px"><i data-lucide="lock"></i><div style="line-height:1.2"><div style="font-weight:700;font-size:14px">Interne notitie</div><div class="label" style="font-size:11px">Alleen voor de opdrachtgever</div></div><span style="margin-left:auto;font-weight:800;color:var(--ink-muted)">+</span></div></div>
+          <div style="margin-top:16px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Opmerking <span class="muted" style="font-weight:400">· zichtbaar voor iedereen</span></div><textarea rows="3" placeholder="Bijv. klant belt nog voor smetplinten…"></textarea><div class="muted" style="display:flex;align-items:center;gap:6px;margin-top:8px"><i data-lucide="mic"></i> Of spreek het in</div></div>
+          <div class="box surface" style="margin-top:16px;padding:12px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">Buiten de meldingen geen beschadigingen aan keuken, blad, vloer, plafond en muren.</div><div class="akk"><button class="ja on"><i data-lucide="check-circle-2"></i> Akkoord</button><button class="nee"><i data-lucide="alert-circle"></i> Niet akkoord</button></div></div>
+        </section>
+        <section class="sectie">
+          <h2>3. Handtekening (optioneel)</h2>
+          <div class="h-accent"><div class="strip"></div><div class="body"><div class="circle"><i data-lucide="pen-line" style="width:22px;height:22px"></i></div><div style="flex:1"><div style="font-weight:700">Handtekening klant</div><div class="muted" style="font-size:13px">Optioneel · tik om te laten tekenen</div></div><i data-lucide="chevron-right" style="color:var(--ink-muted)"></i></div></div>
+        </section>
+        <section class="sectie"><div class="btn btn-outline"><i data-lucide="eye"></i> Rapport voorvertonen</div></section>
+        <section class="sectie">
+          <h2>4. Versturen</h2>
+          <div class="vk"><div style="flex:1"><div class="titel">Opdrachtgever</div><div class="sub green" style="display:flex;align-items:center;gap:5px"><i data-lucide="check" style="width:14px;height:14px"></i> Verzonden · vandaag 14:32</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+          <div class="vk"><div style="flex:1"><div class="titel">Klant</div><div class="sub gray" style="display:flex;align-items:center;gap:5px"><span class="dot"></span> Nog te versturen</div></div><i data-lucide="chevron-right" class="gray"></i></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>
