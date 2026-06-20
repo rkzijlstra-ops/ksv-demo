@@ -146,6 +146,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
           kleur={data.videoUrl ? "text-[#335775]" : "text-ink-muted"}
         />
         <LeaderRegel label="Eindstaat-foto's" waarde={String(data.fotos.length)} kleur="text-ink" />
+        <LeaderRegel label="Meldingen" waarde={String(data.meldingen.length)} kleur="text-ink" />
         {heeftControle && (
           <LeaderRegel
             label="Controle bij oplevering"
