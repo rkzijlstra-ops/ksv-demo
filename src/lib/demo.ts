@@ -19,11 +19,14 @@ export function isDemoMode(): boolean {
 export const DEMO_WACHTWOORD = "Demo-Kluslus-2026!";
 
 /**
- * Mag de test-wachtwoordlogin verschijnen? Alleen buiten productie (branch-previews + lokaal), nooit op de
- * prod- of demo-deploy (die draaien als Vercel-productie). Zo kan Reinier in een preview inloggen zonder
- * Google/magic-link, maar bestaat de route in productie niet.
+ * Mag de test-wachtwoordlogin verschijnen? Aan als:
+ *  - TEST_LOGIN=1 expliciet gezet is (een eigen test-/staging-Vercel-project, dat als "productie" draait), of
+ *  - de deploy geen Vercel-productie is (branch-previews + lokaal).
+ * Op de ECHTE prod- en demo-deploy staat TEST_LOGIN niet en is VERCEL_ENV "production", dus daar is hij uit.
+ * Zo kan Reinier op de test-omgeving inloggen zonder Google/magic-link, zonder dat het in productie lekt.
  */
 export function isTestLoginActief(): boolean {
+  if (process.env.TEST_LOGIN?.trim() === "1") return true;
   return process.env.VERCEL_ENV !== "production";
 }
 
