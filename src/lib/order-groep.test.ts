@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { refKern, naamKern, eersteNietLeeg, groepeerDocumenten, voegOrderSamen } from "./order-groep";
+import { refKern, naamKern, bestandsnaamRefs, eersteNietLeeg, groepeerDocumenten, voegOrderSamen } from "./order-groep";
 import type { ParsedPdf } from "./parser-schema";
 
 describe("refKern", () => {
@@ -17,15 +17,29 @@ describe("refKern", () => {
 });
 
 describe("naamKern", () => {
-  it("normaliseert titels en initialen weg", () => {
-    expect(naamKern("T van der Velde")).toBe("vandervelde");
-    expect(naamKern("Mevrouw T van der Velde")).toBe("vandervelde");
+  it("normaliseert titels, initialen en tussenvoegsels weg (achternaam-kern)", () => {
+    expect(naamKern("T van der Velde")).toBe("velde");
+    expect(naamKern("Mevrouw T van der Velde")).toBe("velde");
     expect(naamKern("Fam Bavel")).toBe("bavel");
+    expect(naamKern("T van Bavel")).toBe("bavel");
+    expect(naamKern("De familie T van Bavel")).toBe("bavel");
   });
   it("null bij leeg of te kort", () => {
     expect(naamKern(null)).toBeNull();
     expect(naamKern("")).toBeNull();
     expect(naamKern("A.")).toBeNull();
+  });
+});
+
+describe("bestandsnaamRefs", () => {
+  it("haalt referentie-achtige getallen uit de bestandsnaam", () => {
+    expect(bestandsnaamRefs("Definitief Bovenaanzicht Comm Bavel 172.pdf")).toEqual(["172"]);
+    expect(bestandsnaamRefs("Definitieve orderbon Comm Velde 166.pdf")).toEqual(["166"]);
+    expect(bestandsnaamRefs("klmont-6203 (1).pdf")).toEqual(["6203"]); // losse 1-cijfer (1) telt niet
+  });
+  it("leeg bij geen bruikbaar getal", () => {
+    expect(bestandsnaamRefs("tekening.pdf")).toEqual([]);
+    expect(bestandsnaamRefs(undefined)).toEqual([]);
   });
 });
 
@@ -62,6 +76,18 @@ describe("groepeerDocumenten", () => {
     ]);
     expect(groepen).toEqual([[0]]);
     expect(ongegroepeerd).toEqual([]);
+  });
+
+  it("brugt via de bestandsnaam-referentie als de inhoud verkeerd is gelezen (Bavel 172)", () => {
+    // De leidingschema werd fout geparst (ref 8.11, naam Bakel), maar alle 3 heten 'Comm Bavel 172'.
+    const { groepen, ongegroepeerd } = groepeerDocumenten([
+      { index: 0, referentienummer: null, klant_naam: "T van Bavel", bestandsnaam: "Definitief Bovenaanzicht Comm Bavel 172.pdf" },
+      { index: 1, referentienummer: "8.11", klant_naam: "Bakel", bestandsnaam: "Definitief Leidingschema Comm Bavel 172.pdf" },
+      { index: 2, referentienummer: "172", klant_naam: "De familie T van Bavel", bestandsnaam: "Definitieve orderbon Comm Bavel 172.pdf" },
+    ]);
+    expect(ongegroepeerd).toEqual([]);
+    expect(groepen).toHaveLength(1);
+    expect([...groepen[0]].sort()).toEqual([0, 1, 2]);
   });
 });
 

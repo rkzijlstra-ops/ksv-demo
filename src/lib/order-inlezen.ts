@@ -56,6 +56,7 @@ export async function leesEnGroepeer(
       index,
       referentienummer: p?.referentienummer ?? null,
       klant_naam: p?.klant_naam ?? null,
+      bestandsnaam: bestanden[index]?.naam,
     })),
   );
 

@@ -7,14 +7,26 @@ export function refKern(ref: string | null | undefined): string | null {
 }
 
 const TITELS = /\b(mevrouw|mevr|mw|de heer|dhr|heer|hr|familie|fam)\b/gi;
+// Nederlandse tussenvoegsels: laat alleen de achternaam-kern over, zodat "T van Bavel" en
+// "De familie T van Bavel" dezelfde kern krijgen.
+const PARTIKELS = new Set([
+  "van", "de", "der", "den", "het", "te", "ten", "ter", "op", "aan", "in", "'t", "vande", "vander",
+]);
 
-/** Normaliseert een klantnaam tot een vergelijk-kern (titels + losse initialen + leestekens eruit). */
+/** Normaliseert een klantnaam tot een vergelijk-kern (titels, initialen en tussenvoegsels eruit). */
 export function naamKern(naam: string | null | undefined): string | null {
   if (!naam) return null;
   let s = naam.toLowerCase().replace(TITELS, " ");
   s = s.replace(/\b[a-z]\.?\b/g, " "); // losse initialen (één letter)
-  s = s.replace(/[^a-z]/g, "");
-  return s.length >= 3 ? s : null;
+  const woorden = s.split(/[^a-z']+/).filter((w) => w.length > 0 && !PARTIKELS.has(w));
+  const kern = woorden.join("");
+  return kern.length >= 3 ? kern : null;
+}
+
+/** Referentie-achtige getallen (2-6 cijfers) uit een bestandsnaam, bv. 'Comm Bavel 172.pdf' → ['172']. */
+export function bestandsnaamRefs(bestandsnaam: string | null | undefined): string[] {
+  const matches = (bestandsnaam ?? "").match(/\d{2,6}/g) ?? [];
+  return [...new Set(matches)];
 }
 
 /** Eerste niet-lege (niet-null/undefined, geen lege/witruimte-string) waarde uit een reeks. */
@@ -31,6 +43,9 @@ export interface DocVoorGroep {
   index: number;
   referentienummer: string | null;
   klant_naam: string | null;
+  /** Bestandsnaam; het referentie-getal erin (bv. 'Comm Bavel 172') brugt documenten ook als de
+   *  inhoud verkeerd is gelezen. */
+  bestandsnaam?: string;
 }
 
 /**
@@ -49,6 +64,8 @@ export function groepeerDocumenten(docs: DocVoorGroep[]): {
     const kernels: string[] = [];
     const r = refKern(d.referentienummer);
     if (r) kernels.push("r:" + r);
+    // Referentie-getallen uit de bestandsnaam tellen als dezelfde soort kern (vangnet bij fout parsen).
+    for (const fr of bestandsnaamRefs(d.bestandsnaam)) kernels.push("r:" + fr);
     const n = naamKern(d.klant_naam);
     if (n) kernels.push("n:" + n);
     if (kernels.length === 0) ongegroepeerd.push(d.index);
