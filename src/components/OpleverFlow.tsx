@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock, Send, Check } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
-import { FotoMaken } from "@/components/FotoMaken";
+import { useOpleverUpload } from "@/lib/oplever-upload-status";
+import { OpleverFotos } from "@/components/OpleverFotos";
+import { ActieKaart } from "@/components/ActieKaart";
 import { VideoMaken } from "@/components/VideoMaken";
 import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
@@ -32,6 +33,7 @@ export function OpleverFlow({
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
+  const { ietsBezig: uploadBezig } = useOpleverUpload();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   // Versturen: eerst kiezen naar wie, dan pas het bijbehorende blok tonen (minder rommel).
@@ -69,9 +71,32 @@ export function OpleverFlow({
   const [klaar, setKlaar] = useState(false);
   const [fout, setFout] = useState("");
 
-  useVerlaatWaarschuwing(klantBezig || zaakBezig);
+  useVerlaatWaarschuwing(uploadBezig || klantBezig || zaakBezig);
+
+  // Een verwijderde/vervangen foto of video ook uit storage opruimen (geen weesbestand). Best-effort:
+  // de server weigert netjes als er al een rapport verstuurd is (dan blijft het bestand bewaard).
+  function ruimOpleverBestandOp(url: string) {
+    void fetch(`/api/opdrachten/${opdrachtId}/oplever-bestand`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).catch(() => {});
+  }
+
+  // Bevestiging vóór in-app weg-navigeren terwijl er nog een upload loopt. De al klaar-geüploade foto's
+  // staan veilig in het concept; alleen de lopende upload stopt. Geeft de monteur de keuze.
+  function bevestigVerlaten(): boolean {
+    if (!uploadBezig) return true;
+    return window.confirm(
+      "Er wordt nog iets geüpload. Wat al klaar is blijft bewaard, maar de lopende upload stopt als je weggaat. Toch doorgaan?",
+    );
+  }
 
   const geladenRef = useRef(false);
+  // Heeft de monteur al iets gewijzigd vóórdat het concept geladen was? Dan mag de (latere) load zijn
+  // verse invoer niet overschrijven, en moet de overgeslagen opslag alsnog gebeuren (zie load-effect).
+  const vuilRef = useRef(false);
+  const [flushNaLoad, setFlushNaLoad] = useState(0);
   // Concept-saves serialiseren: elke opslag wacht op de vorige. Zonder dit zijn de saves
   // fire-and-forget en kan een eerdere (met verouderde state, bv. nog lege opmerking) een latere
   // overschrijven door out-of-order aankomst bij de server. Nu wint altijd de laatst getriggerde.
@@ -87,7 +112,11 @@ export function OpleverFlow({
         if (res.ok && actief) {
           const { oplevering, verzendingen: vz } = await res.json();
           setVerzendingen(Array.isArray(vz) ? vz : []);
-          if (oplevering) {
+          // Was de monteur sneller dan de load (vuilRef), dan zijn verse invoer NIET overschrijven met
+          // de serverstand; de overgeslagen opslag wordt na de load alsnog geflusht (finally).
+          if (vuilRef.current) {
+            // niets toepassen
+          } else if (oplevering) {
             setFotoUrls(oplevering.eindstaat_foto_urls ?? []);
             setVideoUrl(oplevering.video_url ?? null);
             setHandtekeningUrl(oplevering.handtekening_url ?? null);
@@ -110,12 +139,21 @@ export function OpleverFlow({
         }
       } finally {
         geladenRef.current = true;
+        // Heeft de monteur al iets gewijzigd terwijl de load liep, dan die overgeslagen opslag nu alsnog
+        // uitvoeren (flush-effect hieronder draait met verse state).
+        if (actief && vuilRef.current) setFlushNaLoad((n) => n + 1);
       }
     })();
     return () => {
       actief = false;
     };
   }, [opdrachtId, klantEmailVoorstel]);
+
+  // Flush van de opslag die werd overgeslagen omdat het concept nog niet geladen was.
+  useEffect(() => {
+    if (flushNaLoad > 0) bewaarConcept();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flushNaLoad]);
 
   // Adresboek van de monteur laden (vaste ontvangers).
   useEffect(() => {
@@ -215,7 +253,12 @@ export function OpleverFlow({
   }
 
   function bewaarConcept(emailOverride?: string) {
-    if (!geladenRef.current) return;
+    // Vóórdat het concept geladen is niet opslaan (zou een bestaand concept met lege mount-state kunnen
+    // overschrijven), maar wél onthouden dat er iets te bewaren is, zodat het na de load alsnog gebeurt.
+    if (!geladenRef.current) {
+      vuilRef.current = true;
+      return;
+    }
     const rapport_email =
       emailOverride !== undefined ? emailOverride.trim() || null : rapportEmail.trim() || null;
     const body = JSON.stringify({
@@ -242,7 +285,14 @@ export function OpleverFlow({
   }
 
   // Foto's/video/handtekening meteen bewaren als ze wijzigen (de dure uploads niet kwijtraken).
+  // De allereerste run is de mount met lege state; die overslaan, anders zou hij de laad-gate als
+  // "gewijzigd" markeren en het laden van een bestaand (heropend) concept saboteren.
+  const opslagEffectGestart = useRef(false);
   useEffect(() => {
+    if (!opslagEffectGestart.current) {
+      opslagEffectGestart.current = true;
+      return;
+    }
     bewaarConcept();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fotoUrls, videoUrl, handtekeningUrl, controleAkkoord]);
@@ -384,9 +434,24 @@ export function OpleverFlow({
         <p className="mb-3 text-sm text-ink-muted">
           Maak foto&apos;s van de keuken, het blad en de apparatuur. Een korte video mag erbij.
         </p>
-        <FotoMaken urls={fotoUrls} onChange={setFotoUrls} />
+        <OpleverFotos
+          urls={fotoUrls}
+          onFotoKlaar={(url) => setFotoUrls((prev) => [...prev, url])}
+          onFotoVerwijder={(url) => {
+            setFotoUrls((prev) => prev.filter((u) => u !== url));
+            ruimOpleverBestandOp(url);
+          }}
+        />
         <div className="mt-3">
-          <VideoMaken url={videoUrl} onChange={setVideoUrl} />
+          <VideoMaken
+            url={videoUrl}
+            onChange={(nieuwe) => {
+              const oud = videoUrl;
+              setVideoUrl(nieuwe);
+              // Bij verwijderen (nieuwe = null) of vervangen de oude video opruimen.
+              if (oud && oud !== nieuwe) ruimOpleverBestandOp(oud);
+            }}
+          />
         </div>
       </section>
 
@@ -395,65 +460,11 @@ export function OpleverFlow({
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           2. Controle bij oplevering
         </h2>
-        <p className="mb-3 text-sm text-ink-muted">Loop dit samen met de klant na vóór de handtekening.</p>
-
-        <div className="border border-line bg-surface p-3">
-          <p className="mb-2 text-sm font-semibold text-ink">{CONTROLE_PUNTEN[0]}</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setControleAkkoord(true)}
-              aria-pressed={controleAkkoord === true}
-              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
-                controleAkkoord === true
-                  ? "border-success bg-success text-white"
-                  : "border-success bg-white text-success hover:bg-success/10"
-              }`}
-            >
-              <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
-              Akkoord
-            </button>
-            <button
-              type="button"
-              onClick={() => setControleAkkoord(false)}
-              aria-pressed={controleAkkoord === false}
-              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
-                controleAkkoord === false
-                  ? "border-urgent-rood bg-urgent-rood text-white"
-                  : "border-urgent-rood bg-white text-urgent-rood hover:bg-urgent-rood/10"
-              }`}
-            >
-              <AlertCircle size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
-              Niet akkoord
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <p className="mb-1 text-sm font-semibold text-ink">
-            Opmerking <span className="font-normal text-ink-muted">· zichtbaar voor iedereen</span>
-          </p>
-          <textarea
-            value={opmerking}
-            onChange={(e) => setOpmerking(e.target.value)}
-            onBlur={() => bewaarConcept()}
-            rows={3}
-            aria-label="Opmerking bij de oplevering"
-            placeholder="Bijv. klant belt nog voor smetplinten, of een opmerking van de klant…"
-            className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
-          />
-          <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
-            <Mic size={16} aria-hidden="true" />
-            Of spreek het in:
-          </div>
-          <div className="mt-1">
-            <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
-          </div>
-        </div>
+        <p className="mb-3 text-sm text-ink-muted">Leg vast wat er bij de oplevering is besproken.</p>
 
         {/* Interne notitie: alleen voor de zaak, dichtgeklapt achter een knop. Komt nooit in de
             klant-versie van het rapport. Amber + slotje, bewust anders dan de openbare opmerking. */}
-        <div className="mt-4 border-2 border-urgent-geel bg-urgent-geel/10">
+        <div className="border-2 border-urgent-geel bg-urgent-geel/10">
           <button
             type="button"
             onClick={() => setInternOpen((o) => !o)}
@@ -490,6 +501,60 @@ export function OpleverFlow({
             </div>
           )}
         </div>
+
+        <div className="mt-4">
+          <p className="mb-1 text-sm font-semibold text-ink">
+            Opmerking <span className="font-normal text-ink-muted">· zichtbaar voor iedereen</span>
+          </p>
+          <textarea
+            value={opmerking}
+            onChange={(e) => setOpmerking(e.target.value)}
+            onBlur={() => bewaarConcept()}
+            rows={3}
+            aria-label="Opmerking bij de oplevering"
+            placeholder="Bijv. klant belt nog voor smetplinten, of een opmerking van de klant…"
+            className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+          />
+          <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+            <Mic size={16} aria-hidden="true" />
+            Of spreek het in:
+          </div>
+          <div className="mt-1">
+            <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+          </div>
+        </div>
+
+        <div className="mt-4 border border-line bg-surface p-3">
+          <p className="mb-2 text-sm font-semibold text-ink">{CONTROLE_PUNTEN[0]}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setControleAkkoord(true)}
+              aria-pressed={controleAkkoord === true}
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+                controleAkkoord === true
+                  ? "border-success bg-success text-white"
+                  : "border-success bg-white text-success hover:bg-success/10"
+              }`}
+            >
+              <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+              Akkoord
+            </button>
+            <button
+              type="button"
+              onClick={() => setControleAkkoord(false)}
+              aria-pressed={controleAkkoord === false}
+              className={`inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-2 px-3 text-sm font-extrabold uppercase tracking-[0.04em] focus-visible:outline-3 focus-visible:outline-accent ${
+                controleAkkoord === false
+                  ? "border-urgent-rood bg-urgent-rood text-white"
+                  : "border-urgent-rood bg-white text-urgent-rood hover:bg-urgent-rood/10"
+              }`}
+            >
+              <AlertCircle size={18} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+              Niet akkoord
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Stap 2: handtekening (overslaanbaar) */}
@@ -502,42 +567,71 @@ export function OpleverFlow({
             <Voortgang label="Handtekening opslaan…" />
           </div>
         ) : !handtekeningUrl ? (
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-white px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-          >
-            <PenLine size={20} strokeWidth={2.5} aria-hidden="true" />
-            Klant laten tekenen
-          </button>
+          <ActieKaart
+            accent="neutraal"
+            icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
+            titel="Klant laten tekenen"
+            sub="Optioneel"
+            onClick={() => {
+              // De klant tekent voor de oplevering; leg eerst de controle-uitkomst vast. Zacht: niet blokkeren.
+              if (
+                controleAkkoord === null &&
+                !window.confirm(
+                  "Je hebt 'akkoord' of 'niet akkoord' nog niet aangevinkt. De klant tekent voor de oplevering. Toch laten tekenen?",
+                )
+              ) {
+                return;
+              }
+              setModalOpen(true);
+            }}
+          />
         ) : (
-          <div className="flex items-center gap-2 rounded-none border border-success bg-success/10 p-2">
-            <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden="true" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={handtekeningUrl}
-              alt="Handtekening klant"
-              className="h-10 w-20 shrink-0 border border-line bg-white object-contain"
-            />
-            <span className="text-sm font-semibold text-success">Gezet</span>
-            <div className="ml-auto flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-ink px-2 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-              >
-                Opnieuw
-              </button>
-              <button
-                type="button"
-                onClick={() => setHandtekeningUrl(null)}
-                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
-              >
-                Wis
-              </button>
+          <div className="flex items-stretch border-2 border-line bg-white">
+            <span aria-hidden className="w-1.5 shrink-0 bg-success" />
+            <div className="flex flex-1 items-center gap-3 px-3 py-2.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                <Check size={22} strokeWidth={2.5} aria-hidden="true" />
+              </span>
+              <span className="flex-1 font-mono text-base font-extrabold text-ink">Handtekening gezet</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={handtekeningUrl}
+                alt="Handtekening klant"
+                className="h-9 w-[70px] shrink-0 border border-line bg-white object-contain"
+              />
+              <div className="flex shrink-0 flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex min-h-[32px] cursor-pointer items-center justify-center border border-ink px-2 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                >
+                  Opnieuw
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHandtekeningUrl(null)}
+                  className="inline-flex min-h-[32px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
+                >
+                  Wis
+                </button>
+              </div>
             </div>
           </div>
         )}
+      </section>
+
+      {/* Rapport voorvertonen: in de flow, vóór versturen (was de vaste onderbalk). */}
+      <section className="border-t border-line pt-6">
+        <ActieKaart
+          href={`/opdracht/${opdrachtId}/rapport`}
+          accent="neutraal"
+          icoon={<Eye size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Rapport voorvertonen"
+          sub="Bekijk hoe het rapport eruitziet"
+          onClick={(e) => {
+            if (!bevestigVerlaten()) e.preventDefault();
+          }}
+        />
       </section>
 
       {/* 4. Versturen: twee losse kaarten (klant / zaak), los in tijd. */}
@@ -548,26 +642,34 @@ export function OpleverFlow({
 
         {verstuurKeuze === null && (
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setVerstuurKeuze("klant")}
-              className="flex items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-            >
-              <span className="font-mono text-base font-extrabold text-ink">Naar de klant</span>
-              <span className={`text-sm font-semibold ${klantVerzondenAt ? "text-success" : "text-ink-muted"}`}>
-                {klantVerzondenAt ? "Verzonden" : "nog niet"}
-              </span>
-            </button>
-            <button
-              type="button"
+            <ActieKaart
+              accent={zaakVerzondenAt ? "klaar" : "actie"}
+              subAccent
+              icoon={
+                zaakVerzondenAt ? (
+                  <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden="true" />
+                ) : (
+                  <Send size={20} strokeWidth={2.5} aria-hidden="true" />
+                )
+              }
+              titel="Naar de opdrachtgever"
+              sub={zaakVerzondenAt ? `Verzonden · ${formatDatumKort(zaakVerzondenAt)}` : "Nog te versturen"}
               onClick={() => setVerstuurKeuze("zaak")}
-              className="flex items-center justify-between border-2 border-line bg-white p-4 text-left hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-            >
-              <span className="font-mono text-base font-extrabold text-ink">Naar de opdrachtgever</span>
-              <span className={`text-sm font-semibold ${zaakVerzondenAt ? "text-success" : "text-ink-muted"}`}>
-                {zaakVerzondenAt ? "Verzonden" : "nog niet"}
-              </span>
-            </button>
+            />
+            <ActieKaart
+              accent={klantVerzondenAt ? "klaar" : "actie"}
+              subAccent
+              icoon={
+                klantVerzondenAt ? (
+                  <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden="true" />
+                ) : (
+                  <Send size={20} strokeWidth={2.5} aria-hidden="true" />
+                )
+              }
+              titel="Naar de klant"
+              sub={klantVerzondenAt ? `Verzonden · ${formatDatumKort(klantVerzondenAt)}` : "Nog te versturen"}
+              onClick={() => setVerstuurKeuze("klant")}
+            />
           </div>
         )}
 
@@ -844,20 +946,6 @@ export function OpleverFlow({
           </p>
         )}
       </section>
-
-      {/* Vaste onderbalk: rapport voorvertonen. Terug gaat via de knop bovenaan; de meldingen staan al
-          als lijstje op dit scherm. Versturen gebeurt per kaart hierboven. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex w-full max-w-2xl">
-          <Link
-            href={`/opdracht/${opdrachtId}/rapport`}
-            className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-          >
-            <Eye size={18} strokeWidth={2.5} aria-hidden="true" />
-            Rapport voorvertonen
-          </Link>
-        </div>
-      </div>
 
       {modalOpen && (
         <HandtekeningModal

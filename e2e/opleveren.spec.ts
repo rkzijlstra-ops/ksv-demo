@@ -100,6 +100,9 @@ test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (
   });
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toBeVisible({ timeout: 20_000 });
 
+  // Tekenen vóór de akkoord-keuze toont een bevestiging; die accepteren we (monteur tekent toch).
+  page.on("dialog", (d) => d.accept());
+
   // Handtekening op het canvas zetten.
   await page.getByRole("button", { name: "Klant laten tekenen" }).click();
   const canvas = page.locator("canvas");

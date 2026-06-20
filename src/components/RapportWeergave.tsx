@@ -146,6 +146,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
           kleur={data.videoUrl ? "text-[#335775]" : "text-ink-muted"}
         />
         <LeaderRegel label="Eindstaat-foto's" waarde={String(data.fotos.length)} kleur="text-ink" />
+        <LeaderRegel label="Meldingen" waarde={String(data.meldingen.length)} kleur="text-ink" />
         {heeftControle && (
           <LeaderRegel
             label="Controle bij oplevering"
@@ -278,7 +279,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
           <img
             src={data.handtekeningUrl}
             alt="Handtekening klant"
-            className="h-20 w-44 border border-line bg-white object-contain p-1"
+            className="h-32 w-full max-w-xs border border-line bg-white object-contain p-2"
           />
         </div>
       )}

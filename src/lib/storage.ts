@@ -3,6 +3,7 @@ import { env } from "./env";
 
 const BUCKET = "meldingen-fotos";
 const DOCUMENTEN_BUCKET = "opdracht-documenten";
+const OPLEVER_VIDEO_BUCKET = "oplever-videos";
 
 export interface StorageConfig {
   url: string;
@@ -19,6 +20,10 @@ export interface Storage {
   ): Promise<{ pad: string; publieke_url: string }>;
   /** Verwijder een opdracht-document uit storage (best-effort opruiming na het wissen van de rij). */
   verwijderOpdrachtDocument(pad: string): Promise<void>;
+  /** Verwijder een oplever-foto uit storage (bucket meldingen-fotos). */
+  verwijderOpleverFoto(pad: string): Promise<void>;
+  /** Verwijder een oplever-video uit storage (bucket oplever-videos). */
+  verwijderOpleverVideo(pad: string): Promise<void>;
 }
 
 /** Extensie afleiden uit bestandsnaam, met content-type als fallback. */
@@ -65,6 +70,16 @@ export function createStorage(config: StorageConfig): Storage {
     async verwijderOpdrachtDocument(pad: string) {
       const { error } = await client.storage.from(DOCUMENTEN_BUCKET).remove([pad]);
       if (error) throw new Error(`Document-verwijderen uit storage mislukt: ${error.message}`);
+    },
+
+    async verwijderOpleverFoto(pad: string) {
+      const { error } = await client.storage.from(BUCKET).remove([pad]);
+      if (error) throw new Error(`Oplever-foto verwijderen uit storage mislukt: ${error.message}`);
+    },
+
+    async verwijderOpleverVideo(pad: string) {
+      const { error } = await client.storage.from(OPLEVER_VIDEO_BUCKET).remove([pad]);
+      if (error) throw new Error(`Oplever-video verwijderen uit storage mislukt: ${error.message}`);
     },
   };
 }

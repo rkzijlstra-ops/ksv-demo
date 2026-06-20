@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — handtekening "gezet" varianten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{--bg:#FFFFFF;--surface:#F1F5F9;--ink:#0F172A;--ink-muted:#475569;--line:#CBD5E1;--primary:#27272A;--accent:#F97316;--rood:#DC2626;--success:#16A34A;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#e2e8f0;font-family:Lexend,system-ui,sans-serif;color:var(--ink);padding:24px 12px 64px;}
+  .wrap{max-width:430px;margin:0 auto;}
+  .phone{background:var(--bg);border:2px solid var(--ink);padding:16px;margin-bottom:18px;}
+  h2{font-family:"Space Mono",monospace;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px;}
+  .vlabel{font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin:0 0 8px;font-weight:700;}
+  i[data-lucide]{width:18px;height:18px;}
+  .mono{font-family:"Space Mono",monospace;}
+  .sig{display:block;}
+  .miniact{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--ink);padding:4px 8px;font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;cursor:pointer;background:#fff;}
+  .miniact.wis{border-color:var(--rood);color:var(--rood);}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-family:"Space Mono",monospace;text-transform:uppercase;letter-spacing:.04em;font-size:11px;font-weight:700;padding:3px 8px;color:var(--success);background:rgba(22,163,74,.10);border:1px solid var(--success);}
+
+  /* G1 huidig */
+  .g1{display:flex;align-items:center;gap:8px;border:1px solid var(--success);background:rgba(22,163,74,.10);padding:8px;}
+  .g1 .thumb{height:40px;width:80px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;}
+
+  /* G2 wit kader + label */
+  .g2{border:2px solid var(--line);background:#fff;}
+  .g2 .top{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--line);}
+  .g2 .canvas{height:90px;display:flex;align-items:center;justify-content:center;}
+
+  /* G3 ActieKaart klaar-stijl */
+  .g3{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;}
+  .g3 .strip{width:6px;background:var(--success);flex:none;}
+  .g3 .body{display:flex;align-items:center;gap:12px;padding:10px 12px;flex:1;}
+  .g3 .circle{width:40px;height:40px;border-radius:50%;background:rgba(22,163,74,.15);color:var(--success);display:flex;align-items:center;justify-content:center;flex:none;}
+  .g3 .thumb{height:38px;width:70px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="vlabel">G1 · huidig (groen blokje) — wat je nu hebt</div>
+  <div class="phone">
+    <h2>3. Handtekening</h2>
+    <div class="g1">
+      <i data-lucide="check-circle-2" style="color:var(--success)"></i>
+      <div class="thumb"><svg width="76" height="34" viewBox="0 0 120 50"><path d="M5 38 q12 -34 24 -2 t22 -2 q14 -26 30 6 t30 -16" stroke="#0F172A" fill="none" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+      <span class="mono" style="color:var(--success);font-weight:700;font-size:13px">Gezet</span>
+      <div style="margin-left:auto;display:flex;gap:6px"><span class="miniact">Opnieuw</span><span class="miniact wis">Wis</span></div>
+    </div>
+  </div>
+
+  <div class="vlabel">G2 · wit kader, handtekening groot, status als label rechtsboven</div>
+  <div class="phone">
+    <h2>3. Handtekening</h2>
+    <div class="g2">
+      <div class="top">
+        <span class="pill"><i data-lucide="check" style="width:13px;height:13px"></i> Gezet</span>
+        <div style="display:flex;gap:6px"><span class="miniact">Opnieuw</span><span class="miniact wis">Wis</span></div>
+      </div>
+      <div class="canvas"><svg width="220" height="70" viewBox="0 0 220 70"><path d="M10 52 q24 -48 48 -4 t44 -4 q28 -36 60 8 t48 -22" stroke="#0F172A" fill="none" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+    </div>
+  </div>
+
+  <div class="vlabel">G3 · accent-kaart (klaar = groen), past bij de rest van de pagina</div>
+  <div class="phone">
+    <h2>3. Handtekening</h2>
+    <div class="g3">
+      <div class="strip"></div>
+      <div class="body">
+        <div class="circle"><i data-lucide="check" style="width:22px;height:22px"></i></div>
+        <div style="flex:1"><div class="mono" style="font-weight:700;font-size:15px">Handtekening gezet</div></div>
+        <div class="thumb"><svg width="64" height="32" viewBox="0 0 120 50"><path d="M5 38 q12 -34 24 -2 t22 -2 q14 -26 30 6 t30 -16" stroke="#0F172A" fill="none" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><span class="miniact" style="justify-content:center">Opnieuw</span><span class="miniact wis" style="justify-content:center">Wis</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size:13px;color:#334155;margin-top:6px">
+    <b>G2</b> toont de handtekening groot in een rustig wit kader (geen groene vlek), met de status als klein label. <b>G3</b> sluit aan bij de accent-kaarten elders op de pagina (groen = klaar). Zeg G2, G3, of een mix, dan bouw ik 'm.
+  </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>
