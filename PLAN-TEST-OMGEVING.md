@@ -39,35 +39,48 @@ omdat jij een nette aan/uit-knop wilde (eis 3), niet omdat er een lek was.
 - **`demo.ts`-uitleg rechtgetrokken**: de comment beschreef een "lege allowlist = niets versturen"-fail-safe
   die nooit gebouwd is. Nu klopt de tekst met de code (de allowlist is de grendel; leeg = geen beperking;
   stilzetten doe je met de DRY_RUN-knop).
+- **Test-login** (`/test-login` + `/api/test-login`): inloggen op de preview als vast test-account op de
+  test-DB, gegrendeld op niet-productie (`VERCEL_ENV`). Test-first (route- + unit-test). Zie de inlog-sectie.
+- **Vaste flow in `CLAUDE.md`** + **`docs/OMGEVINGEN.md`** (preview-opzet, open punt dicht). **Branch-protection**
+  op master aangezet (mergt alleen bij groene CI).
 - **`.env.example`** documenteert `MAIL_DRY_RUN` + `MAIL_ALLOWLIST`.
 - **`TESTDEKKING.md`** bijgewerkt.
-- Verificatie: 727 unit-tests + 19 mail-tests groen, `tsc --noEmit` schoon.
+- Verificatie: 732 unit-tests groen, `tsc --noEmit` schoon, `next build` schoon.
 
 Nog NIET gepusht: een push triggert een preview, en die moet eerst veilig naar de test-DB wijzen (jouw
 Vercel-stap hieronder). Anders bouwt de preview mogelijk nog tegen prod.
 
-## Jouw stappen in Vercel (eenmalig, ~10 min, volledig voorgekauwd)
+## Jouw stappen in Vercel (eenmalig, voorgekauwd)
 
-Ik heb een kant-en-klaar bestand klaargezet: **`.env.preview`** in de projectmap (naast `.env.demo-vercel`).
-Daarin staan alle waarden al ingevuld (test-DB + jouw allowlist + de hergebruikte sleutels).
+Het kant-en-klare blok staat in **`.env.preview`** in de projectmap. **Let op (jouw terechte observatie):**
+je live-app heeft de meeste keys al, en die staan vaak op Production én Preview tegelijk. Je kunt er dan
+niet zomaar een tweede Preview-waarde naast zetten ("already exists for production,preview"). Eén schone
+bulk-paste werkt dus niet; dit is de echte volgorde:
 
-1. Ga naar https://vercel.com en open het project **`keukenstudio-voorschoten-demo`** (je live-app, niet
-   het demo-project).
-2. Klik bovenin **Settings** → links **Environment Variables**.
-3. Klik op het knopje om meerdere tegelijk te plakken (de "..."-knop of het tekstvak voor bulk-invoer).
-4. Open `.env.preview` in de projectmap, **kopieer het hele blok** en plak het in dat veld.
-5. BELANGRIJK: zet bij Environment **alleen "Preview"** aan (haal "Production" en "Development" eraf).
-   Hierdoor raakt dit je live-app NIET; het geldt alleen voor branch-previews.
-6. Klik **Save**.
+1. Vercel → project **`keukenstudio-voorschoten-demo`** (je live-app, niet het demo-project) → **Settings**
+   → **Environment Variables**.
+2. **Zeven variabelen** moeten een eigen Preview-waarde krijgen (de rest mag gedeeld blijven):
+   - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
+   - `MAIL_ALLOWLIST`, `SMS_ALLOWLIST`
 
-Dat is alles. Vanaf de volgende push naar een branch krijg je een preview-URL die tegen de test-DB draait
-en alleen naar jou stuurt.
+   De vijf Supabase-keys zijn **kritiek**: zonder eigen Preview-waarde draait je preview tegen PRODUCTIE.
+3. Voor ELK van die zeven: zoek de bestaande variabele, klik **Edit**, **haal het vinkje "Preview" eraf**
+   (laat "Production" staan), **Save**. Nu is "Preview" vrij voor die sleutel.
+4. Voeg daarna diezelfde zeven opnieuw toe met de waarde uit `.env.preview`, Environment **alleen "Preview"**.
+5. De overige regels uit `.env.preview` (Resend/CM/AI/CRON/DEMO_MODE/DRY_RUN): zegt Vercel dat ze al
+   bestaan, **sla ze over** (de bestaande waarde werkt prima in preview). Bestaan ze nog niet, voeg ze toe
+   met Environment "Preview".
+
+Vanaf de volgende push naar een branch krijg je een preview-URL tegen de test-DB die alleen naar jou stuurt.
+`APP_URL` zit bewust NIET in het blok: de login gebruikt het adres van de preview zelf (window-origin), en
+APP_URL telt alleen voor de link-tekst in SMS'jes (cosmetisch in een preview).
 
 ### Optioneel (niet nodig nu)
 - Het losse **demo-project** bouwt misschien ook previews. Onschadelijk (die draaien tegen de demo-DB,
   niet prod). Alleen als de dubbele preview-URL verwarrend is, kun je in dat project previews uitzetten.
-- **GitHub branch-protection**: master alleen laten mergen als CI groen is. Eén instelling, maakt de flow
-  waterdicht. Aanrader, maar geen blokkade om te beginnen.
+- **GitHub branch-protection**: ✅ al aangezet (master mergt alleen bij groene CI-check `test`).
 
 ## De robuuste werkwijze die vanzelf loopt (jouw grote wens)
 
@@ -83,24 +96,31 @@ Het meeste bestaat al; we zetten het aan en leggen het vast, zodat jij alleen ho
 | Merge naar master | prod + demo deployen automatisch | ja |
 | Docs/gaten | `TESTDEKKING.md` + `TOESTANDEN.md` bijgewerkt in dezelfde commit; afrond-check vóór "klaar" | ja (discipline) |
 
-Toevoeging om het écht "vanzelf" te maken: ik leg deze vaste flow vast in de **project-`CLAUDE.md`**, zodat
-elke toekomstige sessie hem automatisch volgt (branch → preview → akkoord → merge; test-first; registers
-bij; afrond-check). Dat doe ik pas na jouw akkoord op dit plan, zodat we niet te ver vooruit lopen.
+Dit is nu vastgelegd in de **project-`CLAUDE.md`** (sectie "Vaste werkwijze"), zodat elke toekomstige sessie
+hem automatisch volgt (branch → preview → akkoord → merge; test-first; registers bij; afrond-check).
 
-## Praktisch: inloggen op de preview
+## Inloggen op de preview: de test-login (gebouwd)
 
-Om in de preview echt rond te klikken heb je een account op de **test-DB** nodig. De e2e gebruikt
-programmatische sessies (geen wachtwoord), dus dat werkt niet voor handmatig inloggen. Bij het opleveren
-zet ik daarom één bekend test-account klaar (beheerder + monteur, met wachtwoord) op de test-DB, en geef ik
-je de inloggegevens. Dan kun je in de preview inloggen als kantoor én als monteur. Kleine klus, doe ik op
-"ga".
+`/login` biedt alleen Google + magic-link (geen wachtwoord), en die vragen extra Supabase-config per
+preview-URL. Daarom is er nu een **test-login** die alleen buiten productie bestaat:
 
-## Open beslissingen voor jou (klein)
+- Ga naar **`<preview-url>/test-login`** en kies **Inloggen als kantoor** of **Inloggen als monteur**.
+- Je logt in als een vast test-account op de test-DB, zonder Google/magic-link.
+- Op productie en de demo bestaat deze pagina niet (404), dus hij lekt nergens.
+- Twee browservensters = beide rollen tegelijk (kantoor op de laptop, monteur op de telefoon).
 
-1. **`DEMO_MODE` in de preview: uit (aanrader) of aan?** Uit = je test het echte product tegen testdata
-   (geen demo-banner). Ik heb `.env.preview` op `DEMO_MODE=0` gezet. Wil je liever de demo-beleving in de
-   preview, dan zet ik 'm op 1.
-2. **Branch-protection nu aanzetten of later?** (zie optioneel hierboven).
-3. **Mag ik de vaste flow in de project-CLAUDE.md vastleggen?** (de "vanzelf"-stap).
+Gebouwd en getest deze sessie (`/test-login` + `/api/test-login`, gegrendeld op `VERCEL_ENV`). Zie de
+commits op de branch.
 
-Zeg "ga" + je keuzes, dan push ik de branch, werk ik de CLAUDE.md/OMGEVINGEN.md bij en lever ik het af.
+## Beslissingen (gemaakt 2026-06-20)
+
+1. **`DEMO_MODE` in de preview: uit.** Je test het echte product tegen testdata. `.env.preview` staat op `DEMO_MODE=0`.
+2. **Branch-protection: aan.** Gedaan (master mergt alleen bij groene CI-check `test`).
+3. **Vaste flow in CLAUDE.md: ja.** Vastgelegd.
+4. **Preview-login: een test-wachtwoordlogin.** Gebouwd (zie inlog-sectie).
+
+## Wat er nog moet (na jouw Vercel-stap)
+
+1. Jij: de Vercel Preview-scope zetten (sectie "Jouw stappen in Vercel").
+2. Ik (op jouw seintje): de branch pushen → CI + eerste preview. Daarna controleren dat de preview echt
+   tegen de test-DB draait (niet prod), en je de preview-URL + `/test-login` geven.
