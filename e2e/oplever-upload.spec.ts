@@ -243,14 +243,23 @@ test("een verwijderde foto verdwijnt uit het concept en roept de opruim-route aa
 });
 
 test("een mislukte foto isoleert zich en kan opnieuw, de rest blijft staan", async ({ page }) => {
-  // Laat alleen de tweede upload-poging falen; de andere gaan door. Telt per request.
+  // Alleen de tweede upload-poging faalt (500); de andere fulfillen we met een nep-success-URL. Zo is de
+  // fout-isolatie deterministisch en hangt hij niet van de echte storage af (die is in de CI-build
+  // timing-gevoelig; de echte upload is al gedekt door de eerste test).
   let n = 0;
   await page.route("**/api/upload-foto", async (route) => {
     n += 1;
     if (n === 2) {
       await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "boem" }) });
     } else {
-      await route.continue();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        // Echte test-Supabase-host (zodat next/image de url accepteert); het object hoeft niet te bestaan.
+        body: JSON.stringify({
+          url: `${SUPABASE_URL}/storage/v1/object/public/meldingen-fotos/nep-${n}.jpg`,
+        }),
+      });
     }
   });
 
@@ -266,10 +275,9 @@ test("een mislukte foto isoleert zich en kan opnieuw, de rest blijft staan", asy
   // Twee foto's lukken (twee verwijder-knoppen) en één mislukt (één "opnieuw"-knop).
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toHaveCount(2, { timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Foto opnieuw uploaden" })).toHaveCount(1, { timeout: 10_000 });
-  expect((await fotoUrlsVan(opdrachtId)).length).toBe(2);
+  await expect.poll(async () => (await fotoUrlsVan(opdrachtId)).length, { timeout: 15_000 }).toBe(2);
 
-  // Hef de fout op en probeer de mislukte foto opnieuw: nu lukken alle drie.
-  await page.unroute("**/api/upload-foto");
+  // Probeer de mislukte foto opnieuw: dat is poging n=4, dus geen 500 meer en alle drie zijn klaar.
   await page.getByRole("button", { name: "Foto opnieuw uploaden" }).click();
 
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toHaveCount(3, { timeout: 30_000 });
