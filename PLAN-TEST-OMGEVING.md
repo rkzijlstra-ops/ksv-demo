@@ -66,9 +66,12 @@ bulk-paste werkt dus niet; dit is de echte volgorde:
    - `MAIL_ALLOWLIST`, `SMS_ALLOWLIST`
 
    De vijf Supabase-keys zijn **kritiek**: zonder eigen Preview-waarde draait je preview tegen PRODUCTIE.
-3. Voor ELK van die zeven: zoek de bestaande variabele, klik **Edit**, **haal het vinkje "Preview" eraf**
-   (laat "Production" staan), **Save**. Nu is "Preview" vrij voor die sleutel.
-4. Voeg daarna diezelfde zeven opnieuw toe met de waarde uit `.env.preview`, Environment **alleen "Preview"**.
+3. Per variabele hangt het ervan af of hij al bestaat:
+   - **Bestaat al** (de 5 Supabase-keys; en `SMS_ALLOWLIST` waarschijnlijk als vangnet): klik **Edit**,
+     **haal het vinkje "Preview" eraf** (laat "Production" staan), **Save**. Nu is "Preview" vrij.
+   - **Bestaat nog niet** (zoals `MAIL_ALLOWLIST`, die staat niet in prod want productie mailt naar echte
+     ontvangers): niets uitvinken, je voegt hem zo gewoon nieuw toe.
+4. Voeg daarna de zeven toe met de waarde uit `.env.preview`, Environment **alleen "Preview"**.
 5. De overige regels uit `.env.preview` (Resend/CM/AI/CRON/DEMO_MODE/DRY_RUN): zegt Vercel dat ze al
    bestaan, **sla ze over** (de bestaande waarde werkt prima in preview). Bestaan ze nog niet, voeg ze toe
    met Environment "Preview".
