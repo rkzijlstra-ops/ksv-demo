@@ -68,6 +68,8 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   // Meer-klussen-modus: gevonden groepen + per bestand (op pad) de gekozen groep-index (-1 = niet aanmaken).
   const [groepen, setGroepen] = useState<KlusGroep[] | null>(null);
   const [toewijzing, setToewijzing] = useState<Record<string, number>>({});
+  // Per groep (index) de zelf in te vullen datum/tijd/omschrijving voor het aanmaken.
+  const [groepExtra, setGroepExtra] = useState<Record<number, { datum?: string; tijd?: string; werk?: string }>>({});
 
   // Adres-keuze (alleen in één-klus-modus).
   const [adresKandidaten, setAdresKandidaten] = useState<AdresKandidaat[]>([]);
@@ -94,6 +96,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setUploadVoortgang(null);
     setGroepen(null);
     setToewijzing({});
+    setGroepExtra({});
     setAdresKandidaten([]);
     setNaam("");
     setAdres("");
@@ -253,10 +256,18 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     // Meer-klussen-modus: bouw één klus per groep met ten minste één toegewezen bestand.
     if (groepen) {
       const klussen = groepen
-        .map((g, gi) => ({
-          velden: g.velden,
-          documenten: geupload.filter((d) => toewijzing[d.pad] === gi),
-        }))
+        .map((g, gi) => {
+          const extra = groepExtra[gi] ?? {};
+          return {
+            velden: {
+              ...g.velden,
+              startdatum: extra.datum || null,
+              starttijd: extra.tijd || null,
+              werkomschrijving: extra.werk || null,
+            },
+            documenten: geupload.filter((d) => toewijzing[d.pad] === gi),
+          };
+        })
         .filter((k) => k.documenten.length > 0);
       if (klussen.length === 0) {
         setStatus("error");
@@ -388,7 +399,11 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
                 groepen={groepen}
                 docs={geupload}
                 toewijzing={toewijzing}
+                extra={groepExtra}
                 onWijzig={(pad, gi) => setToewijzing((t) => ({ ...t, [pad]: gi }))}
+                onExtra={(gi, veld, waarde) =>
+                  setGroepExtra((e) => ({ ...e, [gi]: { ...e[gi], [veld]: waarde } }))
+                }
               />
             ) : (
               <>
@@ -495,18 +510,24 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   );
 }
 
-/** Keuze-paneel: toont de voorgestelde klussen en laat de invoerder elk bestand toewijzen. */
+/** Keuze-paneel: toont de voorgestelde klussen, laat per klus datum/tijd/omschrijving invullen en
+ *  laat de invoerder elk bestand aan de juiste klus toewijzen. */
 function MeerKlussen({
   groepen,
   docs,
   toewijzing,
+  extra,
   onWijzig,
+  onExtra,
 }: {
   groepen: KlusGroep[];
   docs: GeUploadDocument[];
   toewijzing: Record<string, number>;
+  extra: Record<number, { datum?: string; tijd?: string; werk?: string }>;
   onWijzig: (pad: string, groepIndex: number) => void;
+  onExtra: (groepIndex: number, veld: "datum" | "tijd" | "werk", waarde: string) => void;
 }) {
+  const klein = "min-h-[40px] w-full rounded-none border border-line bg-white px-2 text-sm text-ink focus-visible:border-ink focus-visible:outline-2 focus-visible:outline-accent";
   return (
     <div className="flex flex-col gap-2">
       {groepen.map((g, gi) => (
@@ -514,6 +535,22 @@ function MeerKlussen({
           <p className="bg-surface px-3 py-1.5 font-mono text-sm font-bold text-ink">
             {groepLabel(g.velden, gi)}
           </p>
+          <div className="flex flex-col gap-2 p-2">
+            <div className="flex gap-2">
+              <label className="flex flex-1 flex-col gap-0.5 text-xs font-semibold text-ink-muted">
+                Datum
+                <input type="date" value={extra[gi]?.datum ?? ""} onChange={(e) => onExtra(gi, "datum", e.target.value)} className={klein} />
+              </label>
+              <label className="flex w-24 flex-col gap-0.5 text-xs font-semibold text-ink-muted">
+                Tijd
+                <input type="time" value={extra[gi]?.tijd ?? ""} onChange={(e) => onExtra(gi, "tijd", e.target.value)} className={klein} />
+              </label>
+            </div>
+            <label className="flex flex-col gap-0.5 text-xs font-semibold text-ink-muted">
+              Omschrijving (optioneel)
+              <input type="text" value={extra[gi]?.werk ?? ""} onChange={(e) => onExtra(gi, "werk", e.target.value)} placeholder="Bijv. kasten nastellen" className={klein} />
+            </label>
+          </div>
         </div>
       ))}
       <p className="text-xs font-semibold text-ink-muted">Welk bestand hoort bij welke klus?</p>
