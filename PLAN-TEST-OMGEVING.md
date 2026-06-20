@@ -3,6 +3,14 @@
 Datum: 2026-06-20. Branch: `omgeving-test`. Volgt op `DEMO-OMGEVING-VOORSTEL.md` en het open punt
 onderaan `docs/OMGEVINGEN.md` (previews wijzen nog nergens veilig heen).
 
+> **STATUS (definitieve aanpak, 2026-06-20).** Tijdens het opzetten bleek de Preview-scope van het
+> prod-project te conflicteren (bestaande variabelen claimen Production én Preview tegelijk). Daarom is
+> de uiteindelijke oplossing een **eigen Vercel-project `kluslus-test`** dat tegen de test-DB draait: je
+> plakt het hele `.env.preview`-blok in één keer (geen scope-gepuzzel), inloggen via `/test-login`,
+> beveiligd met Vercel Authentication. Live en werkend. De secties hieronder over de "Preview-scope" zijn
+> de eerste denkrichting en achterhaald; de actuele opzet staat in `docs/OMGEVINGEN.md` (sectie
+> "Test-omgeving (kluslus-test)").
+
 ## Doel (jouw 5 eisen, kort)
 
 1. Veilig bouwen/testen in de browser tegen de **TEST-DB** (`mydwcsaalahtidzyefsq`), nooit prod/demo.
