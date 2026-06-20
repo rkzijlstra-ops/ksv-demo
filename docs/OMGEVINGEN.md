@@ -59,9 +59,16 @@ Let op:
 - Monteurs: QR op het dashboard, of `/demo/word-monteur`.
 - Fallback-login: `demo-kantoor@voorbeeld.kluslus.test` / `Demo-Kluslus-2026!` via `/login`.
 
+## Branch-previews (staging tegen de test-DB)
+
+Een Vercel-preview van een feature-branch draait tegen de **TEST-DB** via de **Preview-scope** van het prod-project (`keukenstudio-voorschoten-demo`). Dat is de vaste "eerst testen, dan productie"-weg: push een branch → preview-URL tegen de test-DB → keuren in de browser → mergen naar master.
+
+- De Preview-scope zet: de test-Supabase-keys, `MAIL_ALLOWLIST` + `SMS_ALLOWLIST` = Reiniers eigen mail/06 (zodat mail/sms alleen naar hem gaan), `MAIL_DRY_RUN=0` + `SMS_DRY_RUN=0`, en `DEMO_MODE=0` (echt product, geen demo-banner). Het kant-en-klare blok staat in `.env.preview` (gitignored) in de projectroot; opzet en stappen in `PLAN-TEST-OMGEVING.md`.
+- **Production**-scope blijft de prod-DB; het losse demo-project houdt zijn eigen DEMO-scope. Mergen naar master deployt beide ongewijzigd.
+- Verzend-grendel: de allowlist beperkt tot Reinier; een LEGE allowlist = geen beperking (zie `src/lib/demo.ts`). Helemaal stilzetten kan met `MAIL_DRY_RUN`/`SMS_DRY_RUN=1`.
+
 ## Openstaand / let op
 
 - `APP_URL` in `.env.demo-vercel` staat nog op de placeholder `PLAK_DEMO_VERCEL_URL`. In de Vercel demo-env hoort dit `https://kluslus-demo.vercel.app` te zijn (de QR werkt sowieso via de request-host; APP_URL telt voor links in demo-mails).
-- Nog geen aparte database voor branch-preview-deploys. Een Vercel-preview van een branch pakt de env van zijn Vercel-project; wil je "eerst testen, dan productie", richt dan previews bewust op de demo-/test-DB in (nu niet gedaan).
 
 Detail van de demo-opzet zelf: zie `07_logboek/2026-06-19_demo-omgeving-aanmelding-isolatie-e2e.md`.

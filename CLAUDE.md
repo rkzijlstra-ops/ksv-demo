@@ -17,6 +17,18 @@ Kluslus is een af product, geen demo. Het moet vanaf de eerste klant naadloos dr
 
 Kort: niet "het zou moeten werken", maar "ik heb de hele keten nagelopen en gezien dat het werkt".
 
+## Vaste werkwijze: branch → preview → akkoord → merge
+
+Elke wijziging loopt deze weg; nooit direct op master bouwen. Veiligheid zit in de infrastructuur, niet in onthouden.
+
+1. Werk op een feature-branch in een eigen worktree (zie `docs/OMGEVINGEN.md`). Bouw test-first.
+2. Werk in dezelfde commit `TESTDEKKING.md` en `TOESTANDEN.md` bij; loop de afrond-check (skill projectstart-discipline) langs vóór je iets "klaar" noemt.
+3. Push. De pre-push hook draait unit + typecheck (blokkeert bij rood). Daarna draait CI in de cloud de volle suite; master is branch-protected, dus mergen kan alleen als de CI-check `test` groen is.
+4. Vercel bouwt automatisch een preview tegen de TEST-DB (de Preview-scope van het prod-project), met allowlist zodat mail/sms alleen naar Reinier gaan. Reinier keurt in de browser, beide rollen.
+5. Akkoord? Merge de branch naar master. Prod-Vercel én demo-Vercel deployen automatisch dezelfde code.
+
+De poorten: pre-push + branch-protected CI, Preview-scope op de test-DB, en de verzend-grendel (allowlist + `MAIL_DRY_RUN`/`SMS_DRY_RUN`). Zie `docs/OMGEVINGEN.md` voor de Preview-scope en `PLAN-TEST-OMGEVING.md` voor de opzet.
+
 ## Logboek
 
 Het logboek van dit project staat in `07_logboek/` in deze projectmap, niet in het Mainframe-logboek. Schrijf hier alle verslagen over de bouw, het ontwerp en de beslissingen van dit project (`YYYY-MM-DD_korte-beschrijving.md`, projectnaam niet nodig in de bestandsnaam). Alleen Mainframe-brede zaken (skills, MCP, backup, omgeving, overkoepelende strategie) gaan naar het Mainframe-`07_logboek/`. Zie de Mainframe-CLAUDE.md, sectie "Logboek-structuur".
