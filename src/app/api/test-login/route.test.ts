@@ -1,24 +1,33 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockSignIn, mockCreate } = vi.hoisted(() => ({
+const { mockSignIn, mockCreate, mockUpdateUser } = vi.hoisted(() => ({
   mockSignIn: vi.fn(),
   mockCreate: vi.fn(),
+  mockUpdateUser: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase-server", () => ({ createSupabaseServerClient: mockCreate }));
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({ auth: { admin: { updateUserById: mockUpdateUser } } }),
+}));
 
 import { GET } from "./route";
 
-const origEnv = process.env.VERCEL_ENV;
+const orig = { env: process.env.VERCEL_ENV, url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SECRET_KEY };
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockSignIn.mockResolvedValue({ error: null });
+  mockUpdateUser.mockResolvedValue({ error: null });
   mockCreate.mockResolvedValue({ auth: { signInWithPassword: mockSignIn } });
+  process.env.SUPABASE_URL = "https://test.supabase.co";
+  process.env.SUPABASE_SECRET_KEY = "sb_secret_test";
 });
 afterEach(() => {
-  if (origEnv === undefined) delete process.env.VERCEL_ENV;
-  else process.env.VERCEL_ENV = origEnv;
+  for (const [k, v] of Object.entries({ VERCEL_ENV: orig.env, SUPABASE_URL: orig.url, SUPABASE_SECRET_KEY: orig.key })) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
 });
 
 const req = (rol?: string) =>
@@ -32,9 +41,13 @@ describe("GET /api/test-login", () => {
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it("logt in als kantoor en stuurt naar /dashboard (preview)", async () => {
+  it("zet eerst het wachtwoord terug (zelfherstel) en logt dan in als kantoor -> /dashboard", async () => {
     process.env.VERCEL_ENV = "preview";
     const res = await GET(req("kantoor"));
+    expect(mockUpdateUser).toHaveBeenCalledWith(
+      "7ce8949f-3ade-4989-8d6d-7fcce31c165b",
+      { password: "Testbeheerder1!", email_confirm: true },
+    );
     expect(mockSignIn).toHaveBeenCalledWith({
       email: "test-beheerder@kluslus.test",
       password: "Testbeheerder1!",

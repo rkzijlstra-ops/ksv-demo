@@ -32,12 +32,21 @@ export function isTestLoginActief(): boolean {
 
 /**
  * Vaste test-accounts op de TEST-DB voor de test-wachtwoordlogin (alleen niet-productie). Dezelfde accounts
- * die `npm run setup:test` aanmaakt. De wachtwoorden mogen in de code: het zijn wegwerp-accounts op de
- * test-DB zonder echte data, net als DEMO_WACHTWOORD.
+ * (en uids) die `npm run setup:test` en de e2e-global-setup gebruiken. De wachtwoorden mogen in de code:
+ * het zijn wegwerp-accounts op de test-DB zonder echte data, net als DEMO_WACHTWOORD. De uid staat erbij
+ * zodat de test-login het wachtwoord via de service-role kan terugzetten (de e2e reset het telkens).
  */
 export const TEST_LOGIN_ACCOUNTS = {
-  kantoor: { email: "test-beheerder@kluslus.test", wachtwoord: "Testbeheerder1!" },
-  monteur: { email: "test-monteur@kluslus.test", wachtwoord: "Testmonteur1!" },
+  kantoor: {
+    uid: "7ce8949f-3ade-4989-8d6d-7fcce31c165b",
+    email: "test-beheerder@kluslus.test",
+    wachtwoord: "Testbeheerder1!",
+  },
+  monteur: {
+    uid: "535c32c3-b428-4537-b05f-57be5e57e1e8",
+    email: "test-monteur@kluslus.test",
+    wachtwoord: "Testmonteur1!",
+  },
 } as const;
 
 /** De vaste demo-accounts. De seed maakt ze aan; de QR-login logt als deze accounts in. */
