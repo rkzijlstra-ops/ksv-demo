@@ -21,23 +21,31 @@ import { SpraakOpname } from "@/components/SpraakOpname";
 import { AdresKeuze } from "@/components/AdresKeuze";
 import { adresKeuzeNodig, uniekeAdressen } from "@/lib/adres-keuze";
 import { KLUS_VELD } from "@/lib/klus-velden";
+import { uploadDocumenten, type GeUploadDocument } from "@/lib/document-upload";
 import type { ParsedPdf, AdresKandidaat } from "@/lib/parser-schema";
 
 type Status = "idle" | "parsing" | "saving" | "success" | "error";
 
-/**
- * Eén gedeeld component om een klus in te voeren (invoer-unificatie part 2). Eén motor, twee gezichten:
- * - context "monteur": de monteur schiet zelf een order in (eigen werkpool, ad-hoc). Werk-veld is intern.
- * - context "kantoor": Ed maakt een klus voor zijn zaak; die landt in "te plannen". Werk-veld = wat de
- *   monteur moet doen (de monteur ziet het op zijn klus).
- * De bestemming (werkpool vs te plannen, toewijzing, zaak) bepaalt de server rol-bewust; dit component
- * stuurt alleen de velden. Document (PDF/foto) is optioneel: een PDF/foto van de order wordt uitgelezen
- * en vult de velden voor.
- */
+interface KlusGroep {
+  velden: ParsedPdf;
+  bestanden: GeUploadDocument[];
+}
+
 const veldKlasse =
   "min-h-[48px] w-full rounded-none border border-line bg-white px-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent";
 const labelKlasse = "flex flex-col gap-1 text-sm font-semibold text-ink";
 
+function groepLabel(velden: ParsedPdf, i: number): string {
+  const delen = [velden.referentienummer, velden.klant_naam].filter(Boolean);
+  return delen.length ? delen.join(" - ") : `Klus ${i + 1}`;
+}
+
+/**
+ * Eén gedeeld component om een klus in te voeren. Bestanden gaan rechtstreeks naar de opslag (geen 413),
+ * worden samen ingelezen en per klus gegroepeerd. Zit er één klus in, dan vult de app de velden voor;
+ * zitten er meerdere in (per ongeluk twee orders samen), dan toont de app de groepen en wijst de invoerder
+ * elk bestand toe.
+ */
 export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kantoor" }) {
   const kantoor = context === "kantoor";
   const router = useRouter();
@@ -51,9 +59,14 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   const [message, setMessage] = useState("");
   const [parseInfo, setParseInfo] = useState("");
 
-  const [files, setFiles] = useState<File[]>([]);
-  const [geparsed, setGeparsed] = useState(false);
-  // Adres-keuze: vond de parser meerdere adressen, dan kiest de monteur er hier bewust één.
+  // Alle reeds-geüploade documenten (opslagverwijzingen) van deze invoer.
+  const [geupload, setGeupload] = useState<GeUploadDocument[]>([]);
+
+  // Meer-klussen-modus: gevonden groepen + per bestand (op pad) de gekozen groep-index (-1 = niet aanmaken).
+  const [groepen, setGroepen] = useState<KlusGroep[] | null>(null);
+  const [toewijzing, setToewijzing] = useState<Record<string, number>>({});
+
+  // Adres-keuze (alleen in één-klus-modus).
   const [adresKandidaten, setAdresKandidaten] = useState<AdresKandidaat[]>([]);
 
   const [naam, setNaam] = useState("");
@@ -65,8 +78,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   const [werkomschrijving, setWerkomschrijving] = useState("");
   const [datum, setDatum] = useState("");
   const [tijd, setTijd] = useState("");
-  // Parser-passthrough: niet getoond maar wel meegestuurd zodat niets verloren gaat.
-  const [documenttype, setDocumenttype] = useState("");
+  const [documenttype, setDocumenttype] = useState<ParsedPdf["documenttype"] | "">("");
   const [leverweek, setLeverweek] = useState("");
   const [adviseur, setAdviseur] = useState("");
   const [meldingenJson, setMeldingenJson] = useState("");
@@ -75,8 +87,9 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   const saving = status === "saving";
 
   function reset() {
-    setFiles([]);
-    setGeparsed(false);
+    setGeupload([]);
+    setGroepen(null);
+    setToewijzing({});
     setAdresKandidaten([]);
     setNaam("");
     setAdres("");
@@ -110,7 +123,6 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setLeverweek(p.leverweek || "");
     setAdviseur(p.adviseur || "");
     setMeldingenJson(Array.isArray(p.meldingen) && p.meldingen.length ? JSON.stringify(p.meldingen) : "");
-    // Adres: bij meerdere adressen niets invullen, maar de keuze tonen (de monteur kiest bewust).
     const adressen = Array.isArray(p.adressen) ? p.adressen : [];
     if (adresKeuzeNodig(adressen)) {
       setAdresKandidaten(uniekeAdressen(adressen));
@@ -124,38 +136,58 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     }
   }
 
-  async function parseDocument(doc: File) {
+  /** Uploadt de nieuwe bestanden en leest de hele set opnieuw in (groepering bijwerken). */
+  async function uploadEnLees(nieuweFiles: File[]) {
     setStatus("parsing");
     setMessage("");
     setParseInfo("");
     try {
-      const fd = new FormData();
-      fd.append("actie", "parse");
-      fd.append("files", doc);
-      const res = await fetch("/api/opdrachten", { method: "POST", body: fd });
+      const nieuwGeupload = await uploadDocumenten(nieuweFiles);
+      const alle = [...geupload, ...nieuwGeupload];
+      setGeupload(alle);
+
+      const res = await fetch("/api/opdrachten/inlezen", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ paden: alle.map((d) => ({ naam: d.naam, type: d.type, pad: d.pad })) }),
+      });
       const body = await res.json().catch(() => ({}));
-      vulUitParse((body.parsed as ParsedPdf | null) ?? null);
-    } catch {
-      setParseInfo("Kon het document niet lezen. Vul de gegevens hieronder zelf in.");
+      if (!res.ok) {
+        setParseInfo(body.error ?? "Kon de documenten niet inlezen. Vul de gegevens zelf in.");
+        return;
+      }
+      const gevonden = (body.groepen ?? []) as KlusGroep[];
+      const fout = (body.foutPerDocument ?? []).find((f: string | null) => f) as string | undefined;
+
+      if (gevonden.length >= 2) {
+        // Meer-klussen-modus: koppel server-bestanden (op pad) terug aan onze upload-objecten.
+        const padNaarGroep: Record<string, number> = {};
+        gevonden.forEach((g, gi) => g.bestanden.forEach((b) => (padNaarGroep[b.pad] = gi)));
+        const tw: Record<string, number> = {};
+        for (const d of alle) tw[d.pad] = padNaarGroep[d.pad] ?? -1;
+        setGroepen(gevonden);
+        setToewijzing(tw);
+        setParseInfo(
+          `Er lijken ${gevonden.length} klussen in te zitten. Controleer de indeling en pas aan waar nodig.`,
+        );
+      } else {
+        setGroepen(null);
+        vulUitParse(gevonden[0]?.velden ?? null);
+        if (!gevonden.length && fout) setParseInfo(`Inlezen mislukt: ${fout}. Vul de gegevens zelf in.`);
+      }
+    } catch (e) {
+      setParseInfo(`Kon de documenten niet verwerken: ${(e as Error).message}`);
     } finally {
       setStatus("idle");
-      setGeparsed(true);
     }
   }
 
   function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const gekozen = Array.from(e.target.files ?? []);
     if (inputRef.current) inputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (gekozen.length === 0) return;
-    const nieuw = [...files, ...gekozen];
-    setFiles(nieuw);
-    // Eerste PDF of foto erbij? Lees 'm eenmalig uit om de velden voor te vullen (order = PDF of foto).
-    const order = nieuw.find((f) => f.type === "application/pdf" || f.type.startsWith("image/"));
-    if (order && !geparsed) parseDocument(order);
-  }
-
-  function verwijderFile(i: number) {
-    setFiles((fs) => fs.filter((_, idx) => idx !== i));
+    void uploadEnLees(gekozen);
   }
 
   function sluit() {
@@ -164,18 +196,96 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setStatus("idle");
   }
 
+  function veldenUitFormulier(): KlusGroep["velden"] & {
+    klant_adres: string | null;
+    werkomschrijving: string | null;
+    startdatum: string | null;
+    starttijd: string | null;
+  } {
+    let meldingen: ParsedPdf["meldingen"] = [];
+    try {
+      meldingen = meldingenJson ? JSON.parse(meldingenJson) : [];
+    } catch {
+      meldingen = [];
+    }
+    return {
+      klant_naam: naam || null,
+      klant_adres: adres || null,
+      referentienummer: ref || null,
+      adviseur: adviseur || null,
+      klant_telefoon: telefoon || null,
+      klant_email: email || null,
+      documenttype: (documenttype || "onbekend") as ParsedPdf["documenttype"],
+      leverweek: leverweek || null,
+      keukenzaak: keukenzaak || null,
+      meldingen,
+      adressen: adresKandidaten,
+      werkomschrijving: werkomschrijving || null,
+      startdatum: datum || null,
+      starttijd: tijd || null,
+    };
+  }
+
+  async function maakAan(klussen: Array<{ velden: unknown; documenten: GeUploadDocument[] }>) {
+    const res = await fetch("/api/opdrachten/aanmaken", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ klussen }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error ?? `Aanmaken mislukt (${res.status})`);
+    return body.aangemaakt as Array<{ id: string; klant_naam: string | null }>;
+  }
+
   async function opslaan(e: React.FormEvent) {
     e.preventDefault();
     if (bezigRef.current) return;
+
+    // Meer-klussen-modus: bouw één klus per groep met ten minste één toegewezen bestand.
+    if (groepen) {
+      const klussen = groepen
+        .map((g, gi) => ({
+          velden: g.velden,
+          documenten: geupload.filter((d) => toewijzing[d.pad] === gi),
+        }))
+        .filter((k) => k.documenten.length > 0);
+      if (klussen.length === 0) {
+        setStatus("error");
+        setMessage("Wijs minstens één bestand aan een klus toe.");
+        return;
+      }
+      bezigRef.current = true;
+      setStatus("saving");
+      setMessage("");
+      try {
+        const aangemaakt = await maakAan(klussen);
+        reset();
+        setOpen(false);
+        setStatus("success");
+        setMessage(`${aangemaakt.length} klussen toegevoegd`);
+        router.refresh();
+        vernieuwOfflineCache();
+        setTimeout(() => setStatus("idle"), 4000);
+      } catch (err) {
+        setStatus("error");
+        setMessage((err as Error).message);
+      } finally {
+        bezigRef.current = false;
+      }
+      return;
+    }
+
+    // Eén-klus-modus.
+    const velden = veldenUitFormulier();
     const heeftIets =
-      Boolean(naam || adres || ref || telefoon || email || keukenzaak || werkomschrijving || datum) ||
-      files.length > 0;
+      Boolean(velden.klant_naam || velden.klant_adres || velden.referentienummer || velden.klant_telefoon ||
+        velden.klant_email || velden.keukenzaak || velden.werkomschrijving || velden.startdatum) ||
+      geupload.length > 0;
     if (!heeftIets) {
       setStatus("error");
       setMessage("Voeg een document toe of vul minstens één veld in.");
       return;
     }
-    // Adres-keuze verplicht: bij meerdere adressen mag je niet opslaan zonder de montagelocatie te kiezen.
     if (adresKandidaten.length > 0 && !adres.trim()) {
       setStatus("error");
       setMessage("Kies eerst de montagelocatie; er staan meerdere adressen op de order.");
@@ -185,33 +295,8 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     setStatus("saving");
     setMessage("");
     try {
-      const fd = new FormData();
-      files.forEach((f) => fd.append("files", f));
-      fd.append("klant_naam", naam);
-      fd.append("klant_adres", adres);
-      if (adresKandidaten.length > 0) {
-        fd.append("adres_kandidaten", JSON.stringify(adresKandidaten));
-      }
-      fd.append("referentienummer", ref);
-      fd.append("klant_telefoon", telefoon);
-      fd.append("klant_email", email);
-      fd.append("keukenzaak", keukenzaak);
-      fd.append("werkomschrijving", werkomschrijving);
-      fd.append("startdatum", datum);
-      fd.append("starttijd", tijd);
-      if (documenttype) fd.append("documenttype", documenttype);
-      if (leverweek) fd.append("leverweek", leverweek);
-      if (adviseur) fd.append("adviseur", adviseur);
-      if (meldingenJson) fd.append("meldingen", meldingenJson);
-
-      const res = await fetch("/api/opdrachten", { method: "POST", body: fd });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setStatus("error");
-        setMessage(body.error ?? `Opslaan mislukt (${res.status})`);
-        return;
-      }
-      const naamDeel = body.klant_naam ? `: ${body.klant_naam}` : naam ? `: ${naam}` : "";
+      const aangemaakt = await maakAan([{ velden, documenten: geupload }]);
+      const naamDeel = aangemaakt[0]?.klant_naam ? `: ${aangemaakt[0].klant_naam}` : naam ? `: ${naam}` : "";
       reset();
       setOpen(false);
       setStatus("success");
@@ -219,9 +304,9 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       router.refresh();
       vernieuwOfflineCache();
       setTimeout(() => setStatus("idle"), 4000);
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Netwerkfout, probeer opnieuw");
+      setMessage((err as Error).message);
     } finally {
       bezigRef.current = false;
     }
@@ -232,26 +317,8 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
   return (
     <div className="flex flex-col gap-2">
       <HydratieKlaar />
-      <input
-        ref={inputRef}
-        type="file"
-        accept="application/pdf,image/*"
-        multiple
-        hidden
-        onChange={handleFiles}
-        disabled={parsing || saving}
-      />
-      {/* Aparte camera-invoer: op de telefoon opent dit direct de camera om een papieren order te
-          fotograferen (de app leest 'm uit). Op desktop valt het terug op een afbeelding kiezen. */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={handleFiles}
-        disabled={parsing || saving}
-      />
+      <input ref={inputRef} type="file" accept="application/pdf,image/*" multiple hidden onChange={handleFiles} disabled={parsing || saving} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={handleFiles} disabled={parsing || saving} />
 
       {!open ? (
         <button
@@ -267,28 +334,21 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
           <div className="flex items-center gap-2 bg-ink px-4 py-3">
             <Plus size={18} strokeWidth={2.75} className="shrink-0 text-accent" aria-hidden="true" />
             <h2 className="font-mono text-lg font-extrabold tracking-tight text-white">{titel}</h2>
-            <button
-              type="button"
-              onClick={sluit}
-              aria-label="Sluiten"
-              className="ml-auto flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-3 focus-visible:outline-accent"
-            >
+            <button type="button" onClick={sluit} aria-label="Sluiten" className="ml-auto flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-3 focus-visible:outline-accent">
               <X size={18} strokeWidth={2.5} aria-hidden="true" />
             </button>
           </div>
 
           <div className="flex flex-col gap-3 px-4 py-4">
             <p className="text-sm text-ink-muted">
-              Voeg een PDF of foto van de order toe, dan vult de app de meeste velden vanzelf in. Niets is
-              verplicht, je kunt alles aanpassen.
+              Voeg een PDF of foto van de order toe (meerdere mag, ook grote tekeningen), dan vult de app de
+              velden vanzelf in. Niets is verplicht, je kunt alles aanpassen.
             </p>
 
-            {/* Order toevoegen: een PDF/foto wordt uitgelezen en vult de velden alvast voor. Op de
-                telefoon kun je ook direct de order fotograferen. */}
             {parsing ? (
               <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary">
                 <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                Order inlezen…
+                Bestanden uploaden en inlezen…
               </div>
             ) : !online ? (
               <div className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-ink-muted">
@@ -297,125 +357,103 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
               </div>
             ) : (
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => inputRef.current?.click()}
-                  disabled={saving}
-                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                <button type="button" onClick={() => inputRef.current?.click()} disabled={saving} className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60">
                   <Paperclip size={18} strokeWidth={2.5} aria-hidden="true" />
                   Bestand kiezen
                 </button>
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  disabled={saving}
-                  className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={saving} className="inline-flex min-h-[48px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-line bg-surface px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-line/40 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60">
                   <Camera size={18} strokeWidth={2.5} aria-hidden="true" />
                   Order fotograferen
                 </button>
               </div>
             )}
 
-            {files.length > 0 && (
-              <ul className="flex flex-col gap-1">
-                {files.map((f, i) => (
-                  <li
-                    key={`${f.name}-${i}`}
-                    className="flex items-center gap-2 border border-line bg-surface px-2 py-1.5 text-sm text-ink"
-                  >
-                    {f.type === "application/pdf" ? (
-                      <FileText size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                    ) : (
-                      <ImageIcon size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                    )}
-                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => verwijderFile(i)}
-                      aria-label={`${f.name} verwijderen`}
-                      className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center text-ink-muted hover:bg-line/50 hover:text-ink focus-visible:outline-3 focus-visible:outline-primary"
-                    >
-                      <X size={15} strokeWidth={2.5} aria-hidden="true" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
             {parseInfo && (
               <p className="border-l-2 border-accent bg-surface px-3 py-2 text-sm text-ink">{parseInfo}</p>
             )}
 
-            <label className={labelKlasse}>
-              {KLUS_VELD.klant_naam.label}
-              <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_naam.placeholder} />
-            </label>
-            {adresKandidaten.length > 0 ? (
-              <AdresKeuze kandidaten={adresKandidaten} waarde={adres} onKies={setAdres} />
+            {groepen ? (
+              <MeerKlussen
+                groepen={groepen}
+                docs={geupload}
+                toewijzing={toewijzing}
+                onWijzig={(pad, gi) => setToewijzing((t) => ({ ...t, [pad]: gi }))}
+              />
             ) : (
-              <label className={labelKlasse}>
-                {KLUS_VELD.klant_adres.label}
-                <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_adres.placeholder} />
-              </label>
+              <>
+                {geupload.length > 0 && (
+                  <ul className="flex flex-col gap-1">
+                    {geupload.map((f) => (
+                      <li key={f.pad} className="flex items-center gap-2 border border-line bg-surface px-2 py-1.5 text-sm text-ink">
+                        {f.type === "application/pdf" ? (
+                          <FileText size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                        ) : (
+                          <ImageIcon size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{f.naam}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <label className={labelKlasse}>
+                  {KLUS_VELD.klant_naam.label}
+                  <input value={naam} onChange={(e) => setNaam(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_naam.placeholder} />
+                </label>
+                {adresKandidaten.length > 0 ? (
+                  <AdresKeuze kandidaten={adresKandidaten} waarde={adres} onKies={setAdres} />
+                ) : (
+                  <label className={labelKlasse}>
+                    {KLUS_VELD.klant_adres.label}
+                    <input value={adres} onChange={(e) => setAdres(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.klant_adres.placeholder} />
+                  </label>
+                )}
+
+                <div className="flex gap-3">
+                  <label className={`${labelKlasse} flex-1`}>
+                    Datum
+                    <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} className={veldKlasse} />
+                  </label>
+                  <label className={`${labelKlasse} w-32`}>
+                    Tijd
+                    <input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} className={veldKlasse} />
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <label className={`${labelKlasse} flex-1`}>
+                    {KLUS_VELD.referentienummer.label}
+                    <input value={ref} onChange={(e) => setRef(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.referentienummer.placeholder} />
+                  </label>
+                  <label className={`${labelKlasse} flex-1`}>
+                    {KLUS_VELD.klant_telefoon.label}
+                    <input value={telefoon} onChange={(e) => setTelefoon(e.target.value)} inputMode="tel" className={veldKlasse} placeholder={KLUS_VELD.klant_telefoon.placeholder} />
+                  </label>
+                </div>
+
+                <label className={labelKlasse}>
+                  {KLUS_VELD.klant_email.label}
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veldKlasse} placeholder={KLUS_VELD.klant_email.placeholder} />
+                </label>
+                <label className={labelKlasse}>
+                  Keukenzaak / opdrachtgever
+                  <input value={keukenzaak} onChange={(e) => setKeukenzaak(e.target.value)} className={veldKlasse} placeholder="Bijv. Keukenstudio Voorschoten" />
+                </label>
+
+                <div className={labelKlasse}>
+                  {KLUS_VELD.werkomschrijving.label}
+                  <textarea value={werkomschrijving} onChange={(e) => setWerkomschrijving(e.target.value)} rows={3} placeholder={KLUS_VELD.werkomschrijving.placeholder} className="min-h-[72px] w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent" />
+                  <span className="mt-1 block text-xs font-normal text-ink-muted">
+                    {kantoor ? "Wat de monteur moet doen op locatie. Hij ziet dit bij de klus." : "Alleen voor jezelf, komt niet in het opleverrapport."}
+                  </span>
+                  <div className="mt-1">
+                    <SpraakOpname onTekst={(t) => setWerkomschrijving((prev) => (prev ? `${prev} ${t}` : t))} />
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="flex gap-3">
-              <label className={`${labelKlasse} flex-1`}>
-                Datum
-                <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} className={veldKlasse} />
-              </label>
-              <label className={`${labelKlasse} w-32`}>
-                Tijd
-                <input type="time" value={tijd} onChange={(e) => setTijd(e.target.value)} className={veldKlasse} />
-              </label>
-            </div>
-
-            <div className="flex gap-3">
-              <label className={`${labelKlasse} flex-1`}>
-                {KLUS_VELD.referentienummer.label}
-                <input value={ref} onChange={(e) => setRef(e.target.value)} className={veldKlasse} placeholder={KLUS_VELD.referentienummer.placeholder} />
-              </label>
-              <label className={`${labelKlasse} flex-1`}>
-                {KLUS_VELD.klant_telefoon.label}
-                <input value={telefoon} onChange={(e) => setTelefoon(e.target.value)} inputMode="tel" className={veldKlasse} placeholder={KLUS_VELD.klant_telefoon.placeholder} />
-              </label>
-            </div>
-
-            <label className={labelKlasse}>
-              {KLUS_VELD.klant_email.label}
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" className={veldKlasse} placeholder={KLUS_VELD.klant_email.placeholder} />
-            </label>
-            <label className={labelKlasse}>
-              Keukenzaak / opdrachtgever
-              <input value={keukenzaak} onChange={(e) => setKeukenzaak(e.target.value)} className={veldKlasse} placeholder="Bijv. Keukenstudio Voorschoten" />
-            </label>
-
-            <div className={labelKlasse}>
-              {KLUS_VELD.werkomschrijving.label}
-              <textarea
-                value={werkomschrijving}
-                onChange={(e) => setWerkomschrijving(e.target.value)}
-                rows={3}
-                placeholder={KLUS_VELD.werkomschrijving.placeholder}
-                className="min-h-[72px] w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:border-ink focus-visible:outline-3 focus-visible:outline-accent"
-              />
-              <span className="mt-1 block text-xs font-normal text-ink-muted">
-                {kantoor
-                  ? "Wat de monteur moet doen op locatie. Hij ziet dit bij de klus."
-                  : "Alleen voor jezelf, komt niet in het opleverrapport."}
-              </span>
-              <div className="mt-1">
-                <SpraakOpname onTekst={(t) => setWerkomschrijving((prev) => (prev ? `${prev} ${t}` : t))} />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving || parsing || !online}
-              className="mt-1 inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-[filter] duration-150 hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="submit" disabled={saving || parsing || !online} className="mt-1 inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-[filter] duration-150 hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60">
               {saving ? (
                 <>
                   <Loader2 size={20} className="animate-spin" aria-hidden="true" />
@@ -424,7 +462,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
               ) : (
                 <>
                   <Check size={20} strokeWidth={2.75} aria-hidden="true" />
-                  Klus opslaan
+                  {groepen ? "Klussen aanmaken" : "Klus opslaan"}
                 </>
               )}
             </button>
@@ -433,11 +471,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       )}
 
       {message && (
-        <p
-          className={`flex items-start gap-2 text-sm font-semibold ${
-            status === "error" ? "text-urgent-rood" : "text-success"
-          }`}
-        >
+        <p className={`flex items-start gap-2 text-sm font-semibold ${status === "error" ? "text-urgent-rood" : "text-success"}`}>
           {status === "error" ? (
             <AlertCircle size={16} strokeWidth={2.5} className="mt-0.5 shrink-0" aria-hidden="true" />
           ) : (
@@ -446,6 +480,57 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
           {message}
         </p>
       )}
+    </div>
+  );
+}
+
+/** Keuze-paneel: toont de voorgestelde klussen en laat de invoerder elk bestand toewijzen. */
+function MeerKlussen({
+  groepen,
+  docs,
+  toewijzing,
+  onWijzig,
+}: {
+  groepen: KlusGroep[];
+  docs: GeUploadDocument[];
+  toewijzing: Record<string, number>;
+  onWijzig: (pad: string, groepIndex: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {groepen.map((g, gi) => (
+        <div key={gi} className="border-2 border-line">
+          <p className="bg-surface px-3 py-1.5 font-mono text-sm font-bold text-ink">
+            {groepLabel(g.velden, gi)}
+          </p>
+        </div>
+      ))}
+      <p className="text-xs font-semibold text-ink-muted">Welk bestand hoort bij welke klus?</p>
+      <ul className="flex flex-col gap-1">
+        {docs.map((d) => (
+          <li key={d.pad} className="flex items-center gap-2 border border-line bg-surface px-2 py-1.5 text-sm text-ink">
+            {d.type === "application/pdf" ? (
+              <FileText size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
+            ) : (
+              <ImageIcon size={15} className="shrink-0 text-ink-muted" aria-hidden="true" />
+            )}
+            <span className="min-w-0 flex-1 truncate">{d.naam}</span>
+            <select
+              value={toewijzing[d.pad] ?? -1}
+              onChange={(e) => onWijzig(d.pad, Number(e.target.value))}
+              aria-label={`Klus voor ${d.naam}`}
+              className="max-w-[45%] shrink-0 border border-line bg-white px-1 py-1 text-xs text-ink focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              {groepen.map((g, gi) => (
+                <option key={gi} value={gi}>
+                  {groepLabel(g.velden, gi)}
+                </option>
+              ))}
+              <option value={-1}>Niet aanmaken</option>
+            </select>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

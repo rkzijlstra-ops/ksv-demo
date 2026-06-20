@@ -88,6 +88,13 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Gat A: gegevens wijzigen ná versturen zet "gewijzigd, opnieuw versturen"-markering | U | opdrachten/[id]/route.test (gepland=markeren, binnen=niet) | groen |
 | Gat B: opgeleverde/geannuleerde klus niet meer bewerkbaar (409) | U | opdrachten/[id]/route.test | groen |
 | Rol-bewuste create in `/api/opdrachten` (monteur → werkpool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
+| **Robuuste klus-invoer: meerdere/grote PDF's per klus, één orderbon leidend** (ref/telefoon uit de orderbon ook met tekeningen erbij) | U | order-groep.test (refKern 166/SP166, naamKern, union-find, voegOrderSamen), order-inlezen.test (per-bestand eerste pagina + groeperen, orderbon wint) | groen |
+| Client-upload buiten de 413-grens (signed upload-URL) + validatie | U | upload-validatie.test (aantal/type/grootte); storage.signDocumentUpload/downloadDocument | U groen; live door Rein |
+| Inlezen-route (paden → groepen) + aanmaken-route (per groep een klus + documenten, rol-bewust) | U | opdrachten/inlezen/route.test (groep-passthrough), opdrachten/aanmaken/route.test (2 klussen, juiste docs/primair, 401/400) | groen |
+| Twee-klussen-keuze in `KlusInvoer` (voorgegroepeerd, invoerder wijst per bestand toe) | E | (live door Rein: vereist echt parsen, niet in CI met dummy-keys) | open (handmatig pad via zelf-invoer/dashboard-nieuwe-klus groen) |
+| Werkomschrijving uit mail opgeschoond (handtekening/citaat/disclaimer eraf), PDF-order laat 'm leeg | U | mail-schoon.test, inbound/route.test (mailtekst in werk-veld) | groen |
+| Eerste pagina van een PDF (kosten/snelheid bij inlezen), valt terug op origineel | U | pdf-eerste-pagina.test | groen |
+| KlusInvoer handmatige invoer via nieuwe aanmaken-flow (monteur werkpool, kantoor dashboard) | E | zelf-invoer.spec, dashboard-nieuwe-klus.spec (POST /aanmaken, klus verschijnt) | groen (lokaal bevestigd) |
 | Gedeeld `KlusInvoer`-component, monteur-context (vervangt `OpdrachtAanmaken`, zelfde flow) | E | zelf-invoer.spec | groen (CI) |
 | Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
 | Order toevoegen via "Order fotograferen" (camera op mobiel) + "Bestand kiezen" | E | zelf-invoer.spec (knop zichtbaar) | via CI |
