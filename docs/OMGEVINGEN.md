@@ -3,17 +3,20 @@
 Eén waarheid over wat aan welke database/deploy hangt. **Lees dit vóór je iets test, migreert of deployt.**
 Er zijn DRIE losse Supabase-databases. Haal ze nooit door elkaar.
 
-## De drie omgevingen
+## De omgevingen
+
+Drie losse Supabase-databases en drie Vercel-projecten (prod, demo, test). Prod en demo delen de DB-rij niet; het test-project hergebruikt de test-DB (geen vierde database).
 
 | Omgeving | Supabase-project (ref) | Env-bestand | Wie/wat gebruikt het | Deploy |
 |---|---|---|---|---|
 | **Productie** | `qbynjfscdxhwdkzfqjjg` | `.env.local` (`SUPABASE_URL`) | lokale `next dev`/`next build` én de prod-Vercel | `master` → prod-Vercel, `DEMO_MODE` uit |
-| **Test / CI** | `mydwcsaalahtidzyefsq` | `.env.test` | Playwright e2e (lokaal + in CI) | geen deploy |
+| **Test / CI** | `mydwcsaalahtidzyefsq` | `.env.test` | Playwright e2e (lokaal + CI) **én** het test-Vercel-project kluslus-test | de test-branch → kluslus-test-Vercel |
 | **Demo** | `bcaallhweqamkrxtlwvx` | `.env.demo-vercel` | de demo-Vercel | `master` → demo-Vercel, `DEMO_MODE=1` |
 
 - Productie-Vercel: `https://mijn.kluslus.nl` (+ default `keukenstudio-voorschoten-demo.vercel.app`).
 - Demo-Vercel: `https://kluslus-demo.vercel.app`.
-- Repo: `github.com/rkzijlstra-ops/ksv-demo`. **Beide** Vercel-projecten deployen van dezelfde `master`; het enige verschil is de env (de demo zet `DEMO_MODE=1` + eigen demo-database). Alle demo-gedrag is gegrendeld op `DEMO_MODE`, dus in productie inert.
+- Test-Vercel: `https://kluslus-test.vercel.app` (eigen project, draait tegen de TEST-DB met allowlist = alleen Reinier, `DEMO_MODE=0`, `TEST_LOGIN=1`, beveiligd met Vercel Authentication). Inloggen zonder Google/magic-link via `/test-login`. Env-blok: `.env.preview` (gitignored).
+- Repo: `github.com/rkzijlstra-ops/ksv-demo`. Prod en demo deployen van `master` (verschil = env: demo zet `DEMO_MODE=1` + eigen DB). Alle demo-gedrag is gegrendeld op `DEMO_MODE`, dus in productie inert. De test-login is gegrendeld op `TEST_LOGIN`/niet-productie, dus op prod en demo 404.
 
 ## Werken met meerdere terminals (git worktrees)
 
@@ -59,9 +62,18 @@ Let op:
 - Monteurs: QR op het dashboard, of `/demo/word-monteur`.
 - Fallback-login: `demo-kantoor@voorbeeld.kluslus.test` / `Demo-Kluslus-2026!` via `/login`.
 
+## Test-omgeving (kluslus-test): veilig bouwen/testen in de browser
+
+De vaste "eerst testen, dan productie"-weg loopt via een **eigen Vercel-project `kluslus-test`** dat tegen de **TEST-DB** draait. Push een branch → kluslus-test deployt die → keuren in de browser op `/test-login` → mergen naar master (prod + demo volgen).
+
+- **Waarom een apart project en niet de Preview-scope van prod:** de bestaande prod-variabelen claimen Production én Preview tegelijk, dus een tweede Preview-waarde ernaast zetten geeft conflicten. Een vers project heeft die conflicten niet: je plakt het hele `.env.preview`-blok in één keer (alle scopes).
+- Het project zet: de test-Supabase-keys, `MAIL_ALLOWLIST` + `SMS_ALLOWLIST` = Reiniers eigen mail/06 (mail/sms dus alleen naar hem), `MAIL_DRY_RUN=0` + `SMS_DRY_RUN=0`, `DEMO_MODE=0` (echt product) en `TEST_LOGIN=1` (zet `/test-login` aan). Blok: `.env.preview` (gitignored); opzet in `PLAN-TEST-OMGEVING.md`.
+- **Inloggen:** `/login` biedt alleen Google + magic-link; daarom `/test-login` (twee knoppen, vast test-account op de test-DB, gegrendeld op `TEST_LOGIN`/niet-productie). Beveiligd met Vercel Authentication, dus alleen Reinier komt erin.
+- **Prod en demo blijven onaangeroerd.** Mergen naar master deployt beide; de test-login is daar 404 en `MAIL_DRY_RUN` staat default uit (inert).
+- Verzend-grendel: de allowlist beperkt tot Reinier; een LEGE allowlist = geen beperking (zie `src/lib/demo.ts`). Een kanaal helemaal stilzetten kan met `MAIL_DRY_RUN`/`SMS_DRY_RUN=1`.
+
 ## Openstaand / let op
 
 - `APP_URL` in `.env.demo-vercel` staat nog op de placeholder `PLAK_DEMO_VERCEL_URL`. In de Vercel demo-env hoort dit `https://kluslus-demo.vercel.app` te zijn (de QR werkt sowieso via de request-host; APP_URL telt voor links in demo-mails).
-- Nog geen aparte database voor branch-preview-deploys. Een Vercel-preview van een branch pakt de env van zijn Vercel-project; wil je "eerst testen, dan productie", richt dan previews bewust op de demo-/test-DB in (nu niet gedaan).
 
 Detail van de demo-opzet zelf: zie `07_logboek/2026-06-19_demo-omgeving-aanmelding-isolatie-e2e.md`.

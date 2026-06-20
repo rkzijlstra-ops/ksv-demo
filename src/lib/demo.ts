@@ -1,10 +1,13 @@
 /**
  * Demo-omgeving: helpers voor de afgeschermde sandbox-deploy (DEMO_MODE=1).
  *
- * De demo hergebruikt de echte SMS/mail-providers, dus de ENIGE grendel die echte berichten naar
- * vreemden tegenhoudt is de allowlist. Daarom een harde fail-safe: in demo-modus met een LEGE allowlist
- * gaat er NIETS uit (nooit "naar iedereen"). Buiten demo-modus geldt het bestaande gedrag: een lege
- * allowlist = geen beperking (normale productie verstuurt naar echte ontvangers).
+ * De demo/test-omgeving hergebruikt de echte SMS/mail-providers. De grendel die berichten naar vreemden
+ * tegenhoudt is de ALLOWLIST (SMS_ALLOWLIST / MAIL_ALLOWLIST): een gevulde lijst beperkt tot precies die
+ * ontvangers. LET OP: een LEGE allowlist betekent GEEN beperking (verstuurt naar de echte ontvanger),
+ * ook in demo-modus. Er is bewust GEEN "lege lijst = niets versturen"-fail-safe in de code (dat stond hier
+ * eerder beschreven maar is nooit zo gebouwd). In een afgeschermde omgeving vul je dus altijd de allowlist
+ * met je eigen 06/mail. Wil je een kanaal helemaal stilzetten, gebruik dan de aan/uit-knop
+ * SMS_DRY_RUN / MAIL_DRY_RUN (=1 → niets versturen, alleen loggen).
  */
 
 /** Draait deze deploy als afgeschermde demo? Gestuurd door de env-vlag DEMO_MODE=1. */
@@ -14,6 +17,28 @@ export function isDemoMode(): boolean {
 
 /** Vast wachtwoord voor de demo-accounts (sandbox; alleen demo-DB). */
 export const DEMO_WACHTWOORD = "Demo-Kluslus-2026!";
+
+/**
+ * Mag de test-wachtwoordlogin verschijnen? Aan als:
+ *  - TEST_LOGIN=1 expliciet gezet is (een eigen test-/staging-Vercel-project, dat als "productie" draait), of
+ *  - de deploy geen Vercel-productie is (branch-previews + lokaal).
+ * Op de ECHTE prod- en demo-deploy staat TEST_LOGIN niet en is VERCEL_ENV "production", dus daar is hij uit.
+ * Zo kan Reinier op de test-omgeving inloggen zonder Google/magic-link, zonder dat het in productie lekt.
+ */
+export function isTestLoginActief(): boolean {
+  if (process.env.TEST_LOGIN?.trim() === "1") return true;
+  return process.env.VERCEL_ENV !== "production";
+}
+
+/**
+ * Vaste test-accounts op de TEST-DB voor de test-wachtwoordlogin (alleen niet-productie). Dezelfde accounts
+ * die `npm run setup:test` aanmaakt. De wachtwoorden mogen in de code: het zijn wegwerp-accounts op de
+ * test-DB zonder echte data, net als DEMO_WACHTWOORD.
+ */
+export const TEST_LOGIN_ACCOUNTS = {
+  kantoor: { email: "test-beheerder@kluslus.test", wachtwoord: "Testbeheerder1!" },
+  monteur: { email: "test-monteur@kluslus.test", wachtwoord: "Testmonteur1!" },
+} as const;
 
 /** De vaste demo-accounts. De seed maakt ze aan; de QR-login logt als deze accounts in. */
 export const DEMO_ACCOUNTS = {

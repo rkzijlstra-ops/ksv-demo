@@ -1,10 +1,34 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { isDemoMode, leesAllowlist, ontvangerToegestaan } from "./demo";
+import { isDemoMode, isTestLoginActief, leesAllowlist, ontvangerToegestaan } from "./demo";
 
 const origDemo = process.env.DEMO_MODE;
+const origVercelEnv = process.env.VERCEL_ENV;
+const origTestLogin = process.env.TEST_LOGIN;
 afterEach(() => {
   if (origDemo === undefined) delete process.env.DEMO_MODE;
   else process.env.DEMO_MODE = origDemo;
+  if (origVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = origVercelEnv;
+  if (origTestLogin === undefined) delete process.env.TEST_LOGIN;
+  else process.env.TEST_LOGIN = origTestLogin;
+});
+
+describe("isTestLoginActief", () => {
+  it("uit in productie, aan in preview en lokaal (geen VERCEL_ENV)", () => {
+    delete process.env.TEST_LOGIN;
+    process.env.VERCEL_ENV = "production";
+    expect(isTestLoginActief()).toBe(false);
+    process.env.VERCEL_ENV = "preview";
+    expect(isTestLoginActief()).toBe(true);
+    delete process.env.VERCEL_ENV;
+    expect(isTestLoginActief()).toBe(true);
+  });
+
+  it("TEST_LOGIN=1 zet hem aan, ook als de deploy als productie draait (apart test-project)", () => {
+    process.env.VERCEL_ENV = "production";
+    process.env.TEST_LOGIN = "1";
+    expect(isTestLoginActief()).toBe(true);
+  });
 });
 
 describe("isDemoMode", () => {
