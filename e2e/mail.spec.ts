@@ -101,7 +101,7 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
   });
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toBeVisible({ timeout: 20_000 });
 
-  // Handtekening tekenen.
+  // Handtekening tekenen. (De dialog-handler bovenaan accepteert de akkoord-bevestiging.)
   await page.getByRole("button", { name: "Klant laten tekenen" }).click();
   const canvas = page.locator("canvas");
   const box = await canvas.boundingBox();

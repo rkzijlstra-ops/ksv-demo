@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock, Send } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, Eye, CloudOff, Lock, Send, Check } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { useOpleverUpload } from "@/lib/oplever-upload-status";
 import { OpleverFotos } from "@/components/OpleverFotos";
@@ -572,33 +572,49 @@ export function OpleverFlow({
             icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
             titel="Klant laten tekenen"
             sub="Optioneel"
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              // De klant tekent voor de oplevering; leg eerst de controle-uitkomst vast. Zacht: niet blokkeren.
+              if (
+                controleAkkoord === null &&
+                !window.confirm(
+                  "Je hebt 'akkoord' of 'niet akkoord' nog niet aangevinkt. De klant tekent voor de oplevering. Toch laten tekenen?",
+                )
+              ) {
+                return;
+              }
+              setModalOpen(true);
+            }}
           />
         ) : (
-          <div className="flex items-center gap-2 rounded-none border border-success bg-success/10 p-2">
-            <CheckCircle2 size={18} strokeWidth={2.5} className="shrink-0 text-success" aria-hidden="true" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={handtekeningUrl}
-              alt="Handtekening klant"
-              className="h-10 w-20 shrink-0 border border-line bg-white object-contain"
-            />
-            <span className="text-sm font-semibold text-success">Gezet</span>
-            <div className="ml-auto flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-ink px-2 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-              >
-                Opnieuw
-              </button>
-              <button
-                type="button"
-                onClick={() => setHandtekeningUrl(null)}
-                className="inline-flex min-h-[36px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
-              >
-                Wis
-              </button>
+          <div className="flex items-stretch border-2 border-line bg-white">
+            <span aria-hidden className="w-1.5 shrink-0 bg-success" />
+            <div className="flex flex-1 items-center gap-3 px-3 py-2.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                <Check size={22} strokeWidth={2.5} aria-hidden="true" />
+              </span>
+              <span className="flex-1 font-mono text-base font-extrabold text-ink">Handtekening gezet</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={handtekeningUrl}
+                alt="Handtekening klant"
+                className="h-9 w-[70px] shrink-0 border border-line bg-white object-contain"
+              />
+              <div className="flex shrink-0 flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex min-h-[32px] cursor-pointer items-center justify-center border border-ink px-2 text-xs font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                >
+                  Opnieuw
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHandtekeningUrl(null)}
+                  className="inline-flex min-h-[32px] cursor-pointer items-center justify-center border border-urgent-rood px-2 text-xs font-semibold text-urgent-rood hover:bg-urgent-rood/10 focus-visible:outline-3 focus-visible:outline-primary"
+                >
+                  Wis
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -137,6 +137,9 @@ test("monteur legt de oplevering vast: eindstaat-foto en handtekening (concept, 
   });
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toBeVisible({ timeout: 20_000 });
 
+  // Tekenen vóór de akkoord-keuze toont een bevestiging; die accepteren we (monteur tekent toch).
+  page.on("dialog", (d) => d.accept());
+
   // Handtekening: open de modal, teken een streep op het canvas, klik Klaar.
   await page.getByRole("button", { name: "Klant laten tekenen" }).click();
   const canvas = page.locator("canvas");
