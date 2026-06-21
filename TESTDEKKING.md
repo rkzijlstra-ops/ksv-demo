@@ -20,6 +20,9 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Heropenen opgeleverde klus → open + te plannen, instructie → werkomschrijving, "Heropend"-markering; opnieuw opleveren wist hem | U | db.test (heropenen + registreerZaakRapport), heropenen/route (instructie) | U groen; E door Rein |
 | Vervolg-bezoek: "Eerder op deze referentie" op monteur- én kantoor-detailpagina + "meerdere bezoeken"-hint in de werkpool | E | (visueel/RLS; nog door Rein e2e te dekken) | grotendeels |
 | Planbord drag-drop: plannen, verplaatsen, week schuiven | E | planbord.spec, planbord-extra.spec | groen |
+| Planbord koppelt klussen op account-id (toegewezen_aan), nooit onzichtbaar bij naam-mismatch + vangnet-rij; pool-inplanknop kiest geen monteur voor | E | planbord.spec (rendering + inplannen) | groen |
+| Test-login self-provisioning (zoekt account op e-mail, maakt aan met profiel-rol; werkt op elke test-DB) | U | test-login/route.test | groen |
+| E2e ruimt eigen test-klussen + demo-klussen op (gedeelde test-DB schoon) | infra | global-teardown, e2e-demo/global-teardown | n.v.t. |
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |
 | Ontplannen: bevestigingsdialoog op het planbord (drag-naar-pool, Nee/Ja) | E | planbord-ontplannen.spec | groen |
 | Versturen naar monteurs (verstuur-poort, gebundeld) | U, M | monteur-mail.test, mail-opdracht.spec | groen |
