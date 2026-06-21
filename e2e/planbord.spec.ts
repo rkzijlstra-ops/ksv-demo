@@ -67,6 +67,8 @@ test("inplannen via het pool-formulier zet de status op concept_gepland", async 
   const kaart = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
   await expect(kaart).toBeVisible();
   await kaart.getByRole("button", { name: "Inplannen" }).click();
+  // De monteur staat niet meer voorgevuld (geen botsende standaard); kies er bewust een.
+  await kaart.getByLabel("Monteur").selectOption({ index: 1 });
   await kaart.getByRole("button", { name: "Op planbord zetten" }).click();
 
   // Database: status en planning kloppen.
