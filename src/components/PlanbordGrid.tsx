@@ -181,8 +181,10 @@ export function PlanbordGrid({
   }
 
   // Per monteur-account de lanes berekenen; daarna de startrijen als zuivere prefix-som (rij 1 = kop).
+  // Koppelen op ACCOUNT-ID (toegewezen_aan), niet op naam: een naam-mismatch (bv. na hernoemen) mag
+  // een klus nooit buiten alle rijen laten vallen en zo onzichtbaar maken.
   const perMonteur = monteurs.map((a) => {
-    const eigen = plaatsingen.filter((p) => p.opdracht.monteur_naam === a.naam);
+    const eigen = plaatsingen.filter((p) => p.opdracht.toegewezen_aan === a.id);
     const kaarten = verdeelLanes(eigen);
     const laneCount = Math.max(1, ...kaarten.map((k) => k.lane + 1));
     return { account: a, kaarten, laneCount };

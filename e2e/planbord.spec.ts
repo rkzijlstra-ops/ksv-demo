@@ -87,8 +87,10 @@ test("inplannen via het pool-formulier zet de status op concept_gepland", async 
 
 test("inplannen door slepen van de pool naar een cel werkt", async ({ page }) => {
   const monteurs = await db.getMonteurs();
-  test.skip(monteurs.length === 0, "Geen monteur-accounts om naar te slepen");
-  const monteur = monteurs[0];
+  // Kies een echt monteur-account (geen beheerder): die rij is doorgaans leeg, zodat de doelcel niet
+  // verdekt zit achter een al-geplande kaart en de drop betrouwbaar landt.
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts om naar te slepen");
   const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
 
   await page.goto("/planbord");
