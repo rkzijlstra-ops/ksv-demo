@@ -893,6 +893,20 @@ describe("wijzigOpdracht", () => {
     expect(h.fns.update.mock.calls[0][0].gewijzigd_te_versturen).toBe(false);
   });
 
+  it("resize van een verstuurde klus (zelfde plek, andere duur) zet de gewijzigd-marker", async () => {
+    h.setResult({ data: null, error: null });
+    await createDb(cfg).wijzigOpdracht(
+      "opdr-1",
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null, duur_dagen: 3 },
+      "gepland",
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+      1, // stond op 1 dag toen verstuurd; nu 3 -> monteur moet het weten
+    );
+    const patch = h.fns.update.mock.calls[0][0];
+    expect(patch.duur_dagen).toBe(3);
+    expect(patch.gewijzigd_te_versturen).toBe(true);
+  });
+
   it("een nog niet verstuurde opdracht (concept) krijgt geen marker", async () => {
     h.setResult({ data: null, error: null });
     await createDb(cfg).wijzigOpdracht(

@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "./env";
 import { createSupabaseServerClient } from "./supabase-server";
 import { scopeVoorDashboard } from "./dashboard-scope";
-import { moetOpnieuwVersturen, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
+import { moetOpnieuwVersturenNa, opVerzondenPlek, type VerzondenPlek } from "./opdracht-status";
 import type { ParsedPdf, MeldingItem, AdresKandidaat } from "./parser-schema";
 import { adresKeuzeNodig } from "./adres-keuze";
 import { genereerInboundToken } from "./inbound";
@@ -452,6 +452,7 @@ export interface Db {
     planning: PlanningInput,
     huidigeStatus: DashboardStatus,
     verzonden?: VerzondenPlek | null,
+    vorigeDuur?: number,
   ): Promise<void>;
   annuleerOpdracht(id: string): Promise<void>;
   ontplanOpdracht(id: string): Promise<void>;
@@ -1087,10 +1088,17 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (error) throw new Error(`DB bevestigen mislukt: ${error.message}`);
     },
 
-    async wijzigOpdracht(id, planning, huidigeStatus, verzonden) {
+    async wijzigOpdracht(id, planning, huidigeStatus, verzonden, vorigeDuur) {
       // Opnieuw versturen nodig als de opdracht al verstuurd was EN niet exact terug staat op de
-      // verzonden plek. Zo heft terugzetten op de oorspronkelijke plek de markering weer op.
-      const opnieuw = moetOpnieuwVersturen(huidigeStatus) && !opVerzondenPlek(planning, verzonden);
+      // verzonden plek (monteur/dag/tijd) óf de duur is veranderd (resize). Zo heft terugzetten op de
+      // oorspronkelijke plek én duur de markering weer op, maar een langer/korter gemaakte klus gaat
+      // wel opnieuw zodat de monteur de nieuwe duur ziet.
+      const duurGelijk = vorigeDuur === undefined || planning.duur_dagen === vorigeDuur;
+      const opnieuw = moetOpnieuwVersturenNa(
+        huidigeStatus,
+        opVerzondenPlek(planning, verzonden),
+        duurGelijk,
+      );
       const patch: Record<string, unknown> = {
         startdatum: planning.startdatum,
         starttijd: planning.starttijd,

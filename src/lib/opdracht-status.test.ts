@@ -4,6 +4,7 @@ import {
   statusStijl,
   isActief,
   opVerzondenPlek,
+  moetOpnieuwVersturenNa,
   uitvoerdatumVoorMonteur,
   klassificeerVerzending,
   type DashboardStatusStijl,
@@ -148,6 +149,26 @@ describe("opVerzondenPlek", () => {
         { toegewezen_aan: null, monteur_naam: null, startdatum: null, starttijd: null },
       ),
     ).toBe(false);
+  });
+});
+
+describe("moetOpnieuwVersturenNa (resize/verplaatsen: ook een duur-wijziging telt)", () => {
+  it("nog niet verstuurd (concept): nooit opnieuw, ook niet bij duur-wijziging", () => {
+    expect(moetOpnieuwVersturenNa("concept_gepland", false, false)).toBe(false);
+  });
+
+  it("verstuurd, niets veranderd (plek én duur gelijk): niet opnieuw", () => {
+    expect(moetOpnieuwVersturenNa("gepland", true, true)).toBe(false);
+  });
+
+  it("verstuurd, alleen de duur gewijzigd (plek gelijk): wel opnieuw", () => {
+    // De monteur moet weten dat de klus nu langer/korter duurt.
+    expect(moetOpnieuwVersturenNa("gepland", true, false)).toBe(true);
+    expect(moetOpnieuwVersturenNa("bevestigd", true, false)).toBe(true);
+  });
+
+  it("verstuurd, alleen de plek gewijzigd (duur gelijk): wel opnieuw", () => {
+    expect(moetOpnieuwVersturenNa("bevestigd", false, true)).toBe(true);
   });
 });
 

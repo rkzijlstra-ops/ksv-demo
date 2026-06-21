@@ -9,6 +9,7 @@ import {
   plaatsOpdrachten,
   verdeelLanes,
   vindDubbeleBoekingen,
+  nieuweDuurNaResize,
   zoekPlanbord,
   type PlanbaarOpdracht,
   type BoekbaarOpdracht,
@@ -337,5 +338,44 @@ describe("vindDubbeleBoekingen", () => {
     ]);
     // Geen vals alarm: de nieuwe (geplande) klus mag op de dag van een al opgeleverde klus.
     expect(set.size).toBe(0);
+  });
+});
+
+describe("nieuweDuurNaResize", () => {
+  // Het slepen van de rechterrand: elke dagkolom = één werkdag erbij/eraf. De huidige zichtbare span
+  // bepaalt hoe ver je naar links mag (de balk moet minstens één kolom in deze week zichtbaar blijven).
+  it("naar rechts slepen verlengt de duur met het aantal kolommen", () => {
+    // 1-daagse klus, span 1, twee kolommen naar rechts -> 3 dagen.
+    expect(nieuweDuurNaResize(1, 1, 2)).toBe(3);
+  });
+
+  it("naar links slepen verkort de duur", () => {
+    // 3-daagse klus volledig zichtbaar (span 3), één kolom terug -> 2 dagen.
+    expect(nieuweDuurNaResize(3, 3, -1)).toBe(2);
+  });
+
+  it("kan niet korter dan één zichtbare kolom in deze week (balk blijft zichtbaar)", () => {
+    // 3-daagse klus, span 3: max 2 kolommen inkorten houdt 1 kolom over -> duur 1, niet lager.
+    expect(nieuweDuurNaResize(3, 3, -5)).toBe(1);
+  });
+
+  it("klus die uit een vorige week doorloopt: inkorten stopt bij de zichtbare staart", () => {
+    // duur 4, maar deze week maar 2 dagen zichtbaar (span 2, begon vorige week). Eén kolom terug ->
+    // duur 3; verder terug mag niet, anders verdwijnt de balk uit deze week.
+    expect(nieuweDuurNaResize(4, 2, -1)).toBe(3);
+    expect(nieuweDuurNaResize(4, 2, -5)).toBe(3);
+  });
+
+  it("voorbij vrijdag doorslepen verlengt door (loopt in de volgende week door)", () => {
+    // 1-daagse klus op vrijdag (span 1), 3 kolommen naar rechts -> 4 werkdagen (vr + ma/di/wo erna).
+    expect(nieuweDuurNaResize(1, 1, 3)).toBe(4);
+  });
+
+  it("begrenst op een veilig maximum aantal werkdagen", () => {
+    expect(nieuweDuurNaResize(1, 1, 999)).toBe(20);
+  });
+
+  it("delta 0 laat de duur ongemoeid", () => {
+    expect(nieuweDuurNaResize(2, 2, 0)).toBe(2);
   });
 });

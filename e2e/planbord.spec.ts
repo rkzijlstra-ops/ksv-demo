@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createDb, type Db } from "@/lib/db";
-import { maandagVan } from "@/lib/planbord";
+import { maandagVan, verschuifDagen } from "@/lib/planbord";
 import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "./test-env";
 
 /**
@@ -56,10 +56,21 @@ test.afterEach(async () => {
 async function statusVan(id: string) {
   const { data } = await admin
     .from("meldingen")
-    .select("dashboard_status, toegewezen_aan, startdatum")
+    .select("dashboard_status, toegewezen_aan, startdatum, duur_dagen")
     .eq("id", id)
     .single();
   return data;
+}
+
+/** Plant de geseede klus direct in de database op een monteur/dag met een gegeven duur (voor resize). */
+async function planDirect(monteurId: string, monteurNaam: string, dag: string, duur: number) {
+  await db.planOpdracht(seededId, {
+    toegewezen_aan: monteurId,
+    monteur_naam: monteurNaam,
+    startdatum: dag,
+    starttijd: null,
+    duur_dagen: duur,
+  });
 }
 
 test("inplannen via het pool-formulier zet de status op concept_gepland", async ({ page }) => {
@@ -131,4 +142,78 @@ test("inplannen door slepen van de pool naar een cel werkt", async ({ page }) =>
   // Visueel: kaart is weg uit de pool.
   const kaartInPool = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
   await expect(kaartInPool).not.toBeVisible();
+});
+
+test("rechterrand naar rechts slepen verlengt een montage met dagen", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  // Direct geplant op maandag, 1 dag, zodat we de rand kunnen pakken en uitrekken.
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto("/planbord");
+  const kaart = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
+  await expect(kaart).toBeVisible({ timeout: 8_000 });
+
+  // Kolombreedte uit een dagcel halen om twee kolommen ver te slepen.
+  const cel = page.locator(`[data-testid="cel-${monteur.id}-${maandag}"]`).first();
+  const cb = await cel.boundingBox();
+  const grip = page.locator(`[data-testid="resize-${seededId}"]`);
+  const gb = await grip.boundingBox();
+  if (!cb || !gb) throw new Error("Cel of greep niet gevonden");
+
+  await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gb.x + gb.width / 2 + 10, gb.y + gb.height / 2); // 6px-drempel passeren
+  await page.mouse.move(gb.x + gb.width / 2 + 2 * cb.width, gb.y + gb.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: duur is naar 3 werkdagen gegroeid, plek ongewijzigd.
+  await expect
+    .poll(async () => (await statusVan(seededId))?.duur_dagen, { timeout: 12_000, intervals: [500] })
+    .toBe(3);
+  const data = await statusVan(seededId);
+  expect(data?.startdatum).toBe(maandag);
+  expect(data?.toegewezen_aan).toBe(monteur.id);
+
+  // Visueel: de kaart toont nu "3 dagen".
+  await expect(kaart.getByText("3 dagen")).toBeVisible({ timeout: 8_000 });
+});
+
+test("rechterrand voorbij vrijdag slepen laat de klus in de volgende week doorlopen", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdag = verschuifDagen(maandag, 4);
+  // Op vrijdag geplant, 1 dag: rekken we 'm uit, dan loopt hij over de weekgrens in de volgende week.
+  await planDirect(monteur.id, monteur.naam, vrijdag, 1);
+
+  await page.goto("/planbord");
+  const kaart = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
+  await expect(kaart).toBeVisible({ timeout: 8_000 });
+
+  const cel = page.locator(`[data-testid="cel-${monteur.id}-${vrijdag}"]`).first();
+  const cb = await cel.boundingBox();
+  const grip = page.locator(`[data-testid="resize-${seededId}"]`);
+  const gb = await grip.boundingBox();
+  if (!cb || !gb) throw new Error("Cel of greep niet gevonden");
+
+  // Twee kolommen naar rechts, voorbij vrijdag (de balk kapt visueel op vrijdag, de duur telt door).
+  await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gb.x + gb.width / 2 + 10, gb.y + gb.height / 2);
+  await page.mouse.move(gb.x + gb.width / 2 + 2 * cb.width, gb.y + gb.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: 3 werkdagen (vr + ma/di volgende week), startdatum blijft vrijdag.
+  await expect
+    .poll(async () => (await statusVan(seededId))?.duur_dagen, { timeout: 12_000, intervals: [500] })
+    .toBe(3);
+  expect((await statusVan(seededId))?.startdatum).toBe(vrijdag);
+
+  // Visueel: in de VOLGENDE week verschijnt de doorlopende kaart (ma/di).
+  await page.getByRole("button", { name: "Volgende", exact: true }).click();
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
 });

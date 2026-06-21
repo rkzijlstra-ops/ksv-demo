@@ -5,7 +5,12 @@ import { Package, Wrench, AlertTriangle, MapPin } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
-import { verdeelLanes, type PlanbordPlaatsing, type MonteurOptie } from "@/lib/planbord";
+import {
+  verdeelLanes,
+  nieuweDuurNaResize,
+  type PlanbordPlaatsing,
+  type MonteurOptie,
+} from "@/lib/planbord";
 import { duurLabel } from "@/lib/opdracht-weergave";
 import { isActief } from "@/lib/opdracht-status";
 import { MailMonteurKnop } from "./MailMonteurKnop";
@@ -30,7 +35,18 @@ function dagLabel(iso: string): string {
 type GeplaatstOpBord = PlanbordPlaatsing<Melding> & { gridRow: number };
 
 /** Uniforme, sleepbare kaart/balk; montage rekt uit over meerdere dagen, service is één dag. */
-function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; maandag: string }) {
+function Kaart({
+  p,
+  dubbel,
+  maandag,
+  resizeDelta,
+}: {
+  p: GeplaatstOpBord;
+  dubbel: boolean;
+  maandag: string;
+  /** Aantal kolommen dat de rechterrand nú versleept is (live), of null als deze kaart niet wordt geresized. */
+  resizeDelta: number | null;
+}) {
   const o = p.opdracht;
   // Een opgeleverde klus staat er alleen nog als afgerond overzicht; niet meer verslepen/herplannen.
   const opgeleverd = o.dashboard_status === "opgeleverd";
@@ -39,6 +55,25 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
     data: { soort: "kaart", opdracht: o },
     disabled: opgeleverd,
   });
+  // Resize-greep: alleen voor montage (dagblok) die nog niet opgeleverd is. Eigen draggable, zodat het
+  // slepen van de rand losstaat van het verslepen van de hele kaart.
+  const magResizen = !p.isService && !opgeleverd;
+  const {
+    setNodeRef: setResizeRef,
+    listeners: resizeListeners,
+    attributes: resizeAttributes,
+  } = useDraggable({
+    id: `resize-${o.id}`,
+    data: { soort: "resize", opdracht: o, dagIndex: p.dagIndex, span: p.span },
+    disabled: !magResizen,
+  });
+  // Live voorbeeld tijdens het slepen van de rand: balk groeit/krimpt binnen de week (gekapt op vrijdag),
+  // en de dagteller telt door ook als de klus in de volgende week doorloopt.
+  const aanHetResizen = resizeDelta !== null;
+  const effDelta = resizeDelta ?? 0;
+  const previewSpan = Math.min(5 - p.dagIndex, Math.max(1, p.span + effDelta));
+  const previewDuur = nieuweDuurNaResize(o.duur_dagen, p.span, effDelta);
+  const span = aanHetResizen ? previewSpan : p.span;
   // Concept én "gewijzigd na versturen" krijgen oranje (ononderbroken) + envelop; de gele status zelf
   // markeert "nog niet bevestigd", dus geen kartelrand meer.
   // Alleen voor ACTIEVE klussen; een opgeleverde/geannuleerde klus is klaar en houdt z'n eigen
@@ -66,14 +101,16 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
     <Link
       ref={setNodeRef}
       href={`/dashboard/opdracht/${o.id}?from=planbord&week=${maandag}`}
-      className={`m-1 block min-h-[56px] cursor-grab overflow-hidden border-[3px] bg-white px-2 py-1.5 ${randClass}`}
+      className={`relative m-1 block min-h-[56px] cursor-grab border-[3px] bg-white px-2 py-1.5 ${randClass} ${
+        aanHetResizen ? "overflow-visible ring-2 ring-accent" : "overflow-hidden"
+      }`}
       style={{
         gridRow: p.gridRow,
-        gridColumn: `${p.dagIndex + 2} / span ${p.span}`,
+        gridColumn: `${p.dagIndex + 2} / span ${span}`,
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.4 : 1,
         touchAction: "none",
-        zIndex: isDragging ? 10 : 5,
+        zIndex: isDragging || aanHetResizen ? 10 : 5,
       }}
       {...listeners}
       {...attributes}
@@ -101,9 +138,11 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
         {p.isService ? (
           <Wrench size={11} strokeWidth={2.2} className="shrink-0" aria-hidden="true" />
         ) : (
-          <span className="inline-flex shrink-0 items-center gap-1">
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 ${aanHetResizen ? "font-bold text-accent" : ""}`}
+          >
             <Package size={11} strokeWidth={2.2} aria-hidden="true" />
-            {duurLabel(o.duur_dagen)}
+            {duurLabel(aanHetResizen ? previewDuur : o.duur_dagen)}
           </span>
         )}
         {o.referentienummer ? (
@@ -121,6 +160,33 @@ function Kaart({ p, dubbel, maandag }: { p: GeplaatstOpBord; dubbel: boolean; ma
           </span>
         )}
       </span>
+
+      {/* Resize-greep aan de rechterrand (alleen montage). Eigen pointerdown die niet naar de kaart
+          bubbelt, zodat het slepen van de rand niet het verslepen van de hele kaart start; en een klik
+          op de greep navigeert niet naar de detailpagina. */}
+      {magResizen && (
+        <span
+          ref={setResizeRef}
+          data-testid={`resize-${o.id}`}
+          aria-label="Sleep om het aantal dagen te wijzigen"
+          title="Sleep naar rechts voor meer dagen, naar links voor minder"
+          className="absolute bottom-0 right-0 top-1/3 z-20 flex w-3.5 cursor-ew-resize touch-none items-center justify-center"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            resizeListeners?.onPointerDown?.(e);
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          {...resizeAttributes}
+        >
+          <span
+            className={`h-6 w-1 rounded-full ${aanHetResizen ? "bg-accent" : "bg-ink-muted/50"}`}
+            aria-hidden="true"
+          />
+        </span>
+      )}
     </Link>
   );
 }
@@ -164,12 +230,15 @@ export function PlanbordGrid({
   monteurs,
   plaatsingen,
   conflicten,
+  resize,
 }: {
   weekdagen: string[];
   monteurs: MonteurOptie[];
   plaatsingen: PlanbordPlaatsing<Melding>[];
   /** Ids van dubbel geboekte opdrachten (rode waarschuwing op de kaart). */
   conflicten: Set<string>;
+  /** De kaart waarvan de rand nú versleept wordt, met het aantal kolommen (live), of null. */
+  resize: { id: string; deltaKolommen: number } | null;
 }) {
   if (monteurs.length === 0) {
     return (
@@ -244,7 +313,13 @@ export function PlanbordGrid({
 
           {/* Kaarten/balken bovenop de cellen */}
           {geplaatst.map((p) => (
-            <Kaart key={p.opdracht.id} p={p} dubbel={conflicten.has(p.opdracht.id)} maandag={weekdagen[0]} />
+            <Kaart
+              key={p.opdracht.id}
+              p={p}
+              dubbel={conflicten.has(p.opdracht.id)}
+              maandag={weekdagen[0]}
+              resizeDelta={resize?.id === p.opdracht.id ? resize.deltaKolommen : null}
+            />
           ))}
         </div>
       ))}
