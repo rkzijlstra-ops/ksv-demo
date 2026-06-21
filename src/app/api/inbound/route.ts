@@ -7,6 +7,7 @@ import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { tokenUitAdressen } from "@/lib/inbound";
 import { verifyResendSignature } from "@/lib/webhook-handtekening";
 import { groepeerInboundOrder } from "@/lib/inbound-groep";
+import { schoonOmschrijving } from "@/lib/mail-schoon";
 import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
 
 export const runtime = "nodejs";
@@ -190,7 +191,9 @@ export async function POST(req: Request) {
       toegewezen_aan: bestemming.toegewezen_aan,
       opdrachtgever_id: bestemming.opdrachtgever_id,
       te_verwerken: teVerwerken,
-      werkomschrijving: basis.werkomschrijving ?? mailtekst,
+      // De PDF-omschrijving wint; anders de opgeschoonde mailtekst (handtekening/citaat/disclaimer eraf),
+      // zodat het werk-veld de boodschap toont en niet de hele mail-staart.
+      werkomschrijving: basis.werkomschrijving ?? schoonOmschrijving(mailtekst),
     };
   }
 

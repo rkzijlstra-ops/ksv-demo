@@ -114,7 +114,8 @@ function SleepGreep({ opdracht }: { opdracht: Melding }) {
       ref={setNodeRef}
       type="button"
       aria-label="Sleep naar het planbord"
-      className="mt-0.5 shrink-0 cursor-grab touch-none text-ink-muted"
+      title="Sleep deze klus op het planbord"
+      className="mt-0.5 shrink-0 cursor-grab touch-none text-ink-muted hover:text-ink"
       style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
       {...listeners}
       {...attributes}
@@ -137,7 +138,7 @@ function InplanFormulier({
 }) {
   const router = useRouter();
   const tijdenId = useId();
-  const [monteurId, setMonteurId] = useState(monteurs[0]?.id ?? "");
+  const [monteurId, setMonteurId] = useState("");
   const [datum, setDatum] = useState(standaardDatum);
   const [dagen, setDagen] = useState(1);
   const [tijd, setTijd] = useState("");
@@ -186,7 +187,7 @@ function InplanFormulier({
         <label className="flex flex-[2_1_180px] flex-col gap-1 text-[11.5px] font-bold uppercase tracking-[0.04em] text-ink-muted">
           Monteur
           <select value={monteurId} onChange={(e) => setMonteurId(e.target.value)} className={veld}>
-            {monteurs.length === 0 && <option value="">Geen monteurs</option>}
+            <option value="">{monteurs.length === 0 ? "Geen monteurs" : "Kies monteur…"}</option>
             {monteurs.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.naam}

@@ -24,6 +24,7 @@ const pwPort = process.env.PW_DEMO_PORT ?? "3002";
 export default defineConfig({
   testDir: "./e2e-demo",
   globalSetup: "./e2e-demo/global-setup.ts",
+  globalTeardown: "./e2e-demo/global-teardown.ts",
   timeout: inCI ? 60_000 : 30_000,
   expect: { timeout: inCI ? 15_000 : 8_000 },
   fullyParallel: false,

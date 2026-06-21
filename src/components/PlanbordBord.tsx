@@ -120,6 +120,22 @@ export function PlanbordBord({
   const weeknr = weeknummer(maandag);
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const conflicten = vindDubbeleBoekingen(items);
+  // Vangnet: elke ingeplande klus moet een rij krijgen, ook als zijn account niet (meer) in de
+  // monteurlijst staat (bv. hernoemd of verwijderd). Zonder dit zou zo'n klus onzichtbaar van het bord
+  // verdwijnen terwijl hij gewoon in de database staat.
+  const rijMonteurs = (() => {
+    const bekend = new Set(monteurs.map((m) => m.id));
+    const gezien = new Set<string>();
+    const extra: { id: string; naam: string }[] = [];
+    for (const p of plaatsingen) {
+      const id = p.opdracht.toegewezen_aan;
+      if (id && !bekend.has(id) && !gezien.has(id)) {
+        gezien.add(id);
+        extra.push({ id, naam: p.opdracht.monteur_naam ?? "Onbekende monteur" });
+      }
+    }
+    return extra.length ? [...monteurs, ...extra] : monteurs;
+  })();
   const pool = items.filter((o) => o.dashboard_status === "binnen");
   const treffers = zoek.trim() ? zoekPlanbord(items, zoek).slice(0, 8) : [];
 
@@ -373,7 +389,7 @@ export function PlanbordBord({
         <div className="min-w-0 flex-1">
           <PlanbordGrid
             weekdagen={dagen}
-            monteurs={monteurs}
+            monteurs={rijMonteurs}
             plaatsingen={plaatsingen}
             conflicten={conflicten}
           />

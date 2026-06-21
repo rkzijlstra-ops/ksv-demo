@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Loader2, Check, AlertCircle, AlertTriangle } from "lucide-react";
+import { uploadDocumenten, type GeUploadDocument } from "@/lib/document-upload";
+import type { ParsedPdf } from "@/lib/parser-schema";
 
 interface Aangemaakt {
   id: string;
@@ -19,6 +21,17 @@ interface Samenvatting {
 
 type Status = "idle" | "bezig" | "klaar" | "fout";
 
+interface Groep {
+  velden: ParsedPdf;
+  bestanden: { naam: string; type: string; pad: string }[];
+}
+
+/**
+ * Dashboard-inschieten: sleep één of meer PDF's (ook grote tekeningen) tegelijk. De bestanden gaan
+ * rechtstreeks naar de opslag (geen 413), worden samen ingelezen en per klus gegroepeerd (orderbon
+ * leidend; referentie-kern 166/SP166 én klantnaam horen bij elkaar). Per groep ontstaat één klus met
+ * zijn documenten; bestanden zonder herkenbare klus worden een eigen klus met aandacht-markering.
+ */
 export function InschietZone() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,32 +39,86 @@ export function InschietZone() {
   const [status, setStatus] = useState<Status>("idle");
   const [sleept, setSleept] = useState(false);
   const [fout, setFout] = useState("");
+  const [voortgang, setVoortgang] = useState<{ gedaan: number; totaal: number } | null>(null);
   const [samenvatting, setSamenvatting] = useState<Samenvatting | null>(null);
 
   async function verwerk(files: File[]) {
-    if (files.length === 0 || bezigRef.current) return;
+    const bestanden = files.filter(
+      (f) => f.type === "application/pdf" || f.type.startsWith("image/"),
+    );
+    if (bestanden.length === 0 || bezigRef.current) return;
     bezigRef.current = true;
     setStatus("bezig");
     setFout("");
     setSamenvatting(null);
+    setVoortgang({ gedaan: 0, totaal: bestanden.length });
     try {
-      const fd = new FormData();
-      files.forEach((f) => fd.append("files", f));
-      const res = await fetch("/api/dashboard/inschieten", { method: "POST", body: fd });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const geupload = await uploadDocumenten(bestanden, (gedaan, totaal) =>
+        setVoortgang({ gedaan, totaal }),
+      );
+      setVoortgang(null);
+
+      const inlees = await fetch("/api/opdrachten/inlezen", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ paden: geupload.map((d) => ({ naam: d.naam, type: d.type, pad: d.pad })) }),
+      });
+      const inleesBody = await inlees.json().catch(() => ({}));
+      if (!inlees.ok) {
         setStatus("fout");
-        setFout(body.error ?? `Inschieten mislukt (${res.status})`);
+        setFout(inleesBody.error ?? `Inschieten mislukt (${inlees.status})`);
         return;
       }
-      setSamenvatting(body as Samenvatting);
+      const groepen = (inleesBody.groepen ?? []) as Groep[];
+      const ongegroepeerd = (inleesBody.ongegroepeerd ?? []) as { naam: string; type: string; pad: string }[];
+
+      const padNaarUrl = new Map(geupload.map((d) => [d.pad, d.publieke_url]));
+      const maakDocs = (lijst: { naam: string; type: string; pad: string }[]): GeUploadDocument[] =>
+        lijst.map((b) => ({ naam: b.naam, type: b.type, pad: b.pad, publieke_url: padNaarUrl.get(b.pad) ?? "" }));
+
+      // Eén klus per groep; elk ongegroepeerd bestand wordt een eigen klus (aandacht).
+      const klussen = [
+        ...groepen.map((g) => ({ velden: g.velden, documenten: maakDocs(g.bestanden) })),
+        ...ongegroepeerd.map((o) => ({
+          velden: { documenttype: "onbekend" as const },
+          documenten: maakDocs([o]),
+        })),
+      ];
+
+      const aanmaak = await fetch("/api/opdrachten/aanmaken", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ klussen }),
+      });
+      const aanmaakBody = await aanmaak.json().catch(() => ({}));
+      if (!aanmaak.ok) {
+        setStatus("fout");
+        setFout(aanmaakBody.error ?? `Aanmaken mislukt (${aanmaak.status})`);
+        return;
+      }
+      const aangemaakt = (aanmaakBody.aangemaakt ?? []) as { id: string; klant_naam: string | null }[];
+
+      setSamenvatting({
+        aangemaakt: aangemaakt.map((a, i) => ({
+          id: a.id,
+          klant_naam: a.klant_naam,
+          referentienummer: klussen[i]?.velden && "referentienummer" in klussen[i].velden
+            ? ((klussen[i].velden as ParsedPdf).referentienummer ?? null)
+            : null,
+          aantalDocumenten: klussen[i]?.documenten.length ?? 0,
+          aandacht: i >= groepen.length,
+        })),
+        aantalOpdrachten: aangemaakt.length,
+        aantalDocumenten: geupload.length,
+      });
       setStatus("klaar");
       router.refresh();
-    } catch {
+    } catch (e) {
       setStatus("fout");
-      setFout("Netwerkfout, probeer opnieuw");
+      setFout(`Kon niet inschieten: ${(e as Error).message}`);
     } finally {
       bezigRef.current = false;
+      setVoortgang(null);
     }
   }
 
@@ -73,7 +140,7 @@ export function InschietZone() {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf"
+        accept="application/pdf,image/*"
         multiple
         hidden
         onChange={onKies}
@@ -97,7 +164,9 @@ export function InschietZone() {
           <>
             <Loader2 size={26} className="animate-spin text-primary" aria-hidden="true" />
             <span className="text-[15px] font-extrabold uppercase tracking-[0.05em]">
-              Informatie inlezen…
+              {voortgang && voortgang.gedaan < voortgang.totaal
+                ? `Uploaden: bestand ${voortgang.gedaan + 1} van ${voortgang.totaal}…`
+                : "Informatie inlezen…"}
             </span>
           </>
         ) : (
@@ -107,8 +176,8 @@ export function InschietZone() {
               Sleep PDF&apos;s hier om klussen in te schieten
             </span>
             <span className="text-[13.5px] text-ink-muted">
-              Meerdere tegelijk kan. Dezelfde referentie wordt één klus, verschillende
-              referenties worden aparte klussen. Of klik om te kiezen.
+              Meerdere tegelijk kan, ook grote tekeningen. Documenten van dezelfde klus worden samengevoegd
+              (orderbon leidend); andere klussen worden apart. Of klik om te kiezen.
             </span>
           </>
         )}

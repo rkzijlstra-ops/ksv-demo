@@ -10,7 +10,7 @@ Drie losse Supabase-databases en drie Vercel-projecten (prod, demo, test). Prod 
 | Omgeving | Supabase-project (ref) | Env-bestand | Wie/wat gebruikt het | Deploy |
 |---|---|---|---|---|
 | **Productie** | `qbynjfscdxhwdkzfqjjg` | `.env.local` (`SUPABASE_URL`) | lokale `next dev`/`next build` én de prod-Vercel | `master` → prod-Vercel, `DEMO_MODE` uit |
-| **Test / CI** | `mydwcsaalahtidzyefsq` | `.env.test` | Playwright e2e (lokaal + CI) **én** het test-Vercel-project kluslus-test | de test-branch → kluslus-test-Vercel |
+| **Test / CI** | `mslexkwwhhwlxmwbnyff` | `.env.test` | Playwright e2e (lokaal + CI) **én** het test-Vercel-project kluslus-test | de test-branch → kluslus-test-Vercel |
 | **Demo** | `bcaallhweqamkrxtlwvx` | `.env.demo-vercel` | de demo-Vercel | `master` → demo-Vercel, `DEMO_MODE=1` |
 
 - Productie-Vercel: `https://mijn.kluslus.nl` (+ default `keukenstudio-voorschoten-demo.vercel.app`).
