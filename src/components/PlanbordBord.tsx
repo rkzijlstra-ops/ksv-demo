@@ -26,7 +26,8 @@ import {
   plaatsOpdrachten,
   vindDubbeleBoekingen,
   nieuweDuurNaResize,
-  weekschuifNaarMaandag,
+  weekschuifLanding,
+  weekHeeftWeekendKlus,
   zoekPlanbord,
   type MonteurOptie,
 } from "@/lib/planbord";
@@ -174,7 +175,10 @@ export function PlanbordBord({
   }
 
   const maandag = maandagVan(weekAnker);
-  const dagen = weekDagen(maandag, toonWeekend);
+  // Weekend tonen als de knop aan staat, OF als deze week een klus op za/zo heeft (anders zou die
+  // weekend-klus onzichtbaar van het bord vallen, dat mag nooit).
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
+  const dagen = weekDagen(maandag, effectiefWeekend);
   const weeknr = weeknummer(maandag);
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const conflicten = vindDubbeleBoekingen(items);
@@ -282,8 +286,8 @@ export function PlanbordBord({
     if (over.zone === "week-prev" || over.zone === "week-next") {
       if (data.soort !== "kaart" || !o.startdatum) return;
       const richting = over.zone === "week-next" ? 7 : -7;
-      // Land op de maandag van de doelweek (niet op dezelfde weekdag), zodat de klus de week begint.
-      const nieuweDatum = weekschuifNaarMaandag(o.startdatum, over.zone === "week-next" ? 1 : -1);
+      // Volgende week -> maandag (begin); vorige week -> laatste getoonde dag (vr of zo, afh. van weekend).
+      const nieuweDatum = weekschuifLanding(o.startdatum, richting, effectiefWeekend);
       pasLokaalToe(o.id, {
         startdatum: nieuweDatum,
         gewijzigd_te_versturen: gewijzigdNa(o, o.toegewezen_aan, nieuweDatum, o.starttijd),
@@ -487,11 +491,15 @@ export function PlanbordBord({
         <button
           type="button"
           onClick={wisselWeekend}
-          aria-pressed={toonWeekend}
-          title="Zaterdag en zondag tonen of verbergen"
-          className={`${navBtn} ${toonWeekend ? "border-primary text-primary" : "border-line text-ink-muted"}`}
+          aria-pressed={effectiefWeekend}
+          title={
+            effectiefWeekend && !toonWeekend
+              ? "Weekend blijft zichtbaar: er staat een klus in dit weekend"
+              : "Zaterdag en zondag tonen of verbergen"
+          }
+          className={`${navBtn} ${effectiefWeekend ? "border-primary text-primary" : "border-line text-ink-muted"}`}
         >
-          Weekend {toonWeekend ? "aan" : "uit"}
+          Weekend {effectiefWeekend ? "aan" : "uit"}
         </button>
         <span className="flex-1" />
         <VerstuurKnop ids={teVersturen} />

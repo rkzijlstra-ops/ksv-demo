@@ -242,6 +242,81 @@ test("de + knop op een montage maakt de klus een dag langer", async ({ page }) =
   expect((await statusVan(seededId))?.startdatum).toBe(maandag);
 });
 
+test("een klus op zaterdag maakt het weekend zichtbaar, ook als de knop uit staat", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+  await planDirect(monteur.id, monteur.naam, zaterdag, 1);
+
+  await page.goto("/planbord");
+  // Weekend-knop staat standaard uit, maar de za-kolom verschijnt toch (anders zou de klus verdwijnen).
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible();
+  // De klus staat in de DB op zaterdag.
+  expect((await statusVan(seededId))?.startdatum).toBe(zaterdag);
+});
+
+test("een klus naar zaterdag slepen blijft op zaterdag staan (springt niet naar maandag)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: /^Weekend/ }).click(); // weekend aan -> za-kolom bestaat
+  const kaart = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
+  await expect(kaart).toBeVisible();
+  const grip = kaart.getByRole("button", { name: "Sleep naar het planbord" });
+  const cel = page.locator(`[data-testid="cel-${monteur.id}-${zaterdag}"]`).first();
+  await expect(cel).toBeVisible();
+
+  const g = await grip.boundingBox();
+  if (!g) throw new Error("Greep niet gevonden");
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2 + 25, g.y + g.height / 2 + 25, { steps: 6 });
+  const c = await cel.boundingBox();
+  if (!c) throw new Error("Cel niet gevonden");
+  await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: de klus staat op zaterdag (niet op maandag).
+  await expect
+    .poll(async () => (await statusVan(seededId))?.startdatum, { timeout: 12_000, intervals: [500] })
+    .toBe(zaterdag);
+});
+
+test("naar de vorige week slepen landt op vrijdag (weekend uit)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdagVorige = verschuifDagen(maandag, -3); // ma - 3 = vr van vorige week
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto(`/planbord?week=${maandag}`);
+  const kaartOpBord = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
+  await expect(kaartOpBord).toBeVisible({ timeout: 8_000 });
+
+  const randVorige = page.getByRole("button", { name: "Vorige week" });
+  const g = await kaartOpBord.boundingBox();
+  const r = await randVorige.boundingBox();
+  if (!g || !r) throw new Error("Kaart of rand-strook niet gevonden");
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2 - 20, g.y + g.height / 2, { steps: 6 });
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: startdatum is de vrijdag van de vorige week (laatste werkdag, weekend uit).
+  await expect
+    .poll(async () => (await statusVan(seededId))?.startdatum, { timeout: 12_000, intervals: [500] })
+    .toBe(vrijdagVorige);
+});
+
 test("de weekend-knop toont zaterdag en zondag als extra kolommen", async ({ page }) => {
   await page.goto("/planbord");
   // Standaard verborgen: geen za/zo in de koprij.
