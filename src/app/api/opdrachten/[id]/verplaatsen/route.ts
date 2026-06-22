@@ -54,12 +54,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   };
 
   try {
-    await dbi.wijzigOpdracht(id, planning, opdracht.dashboard_status, {
-      toegewezen_aan: opdracht.verzonden_toegewezen_aan,
-      monteur_naam: opdracht.verzonden_monteur,
-      startdatum: opdracht.verzonden_startdatum,
-      starttijd: opdracht.verzonden_starttijd,
-    });
+    await dbi.wijzigOpdracht(
+      id,
+      planning,
+      opdracht.dashboard_status,
+      {
+        toegewezen_aan: opdracht.verzonden_toegewezen_aan,
+        monteur_naam: opdracht.verzonden_monteur,
+        startdatum: opdracht.verzonden_startdatum,
+        starttijd: opdracht.verzonden_starttijd,
+      },
+      opdracht.duur_dagen,
+    );
   } catch (err) {
     return NextResponse.json(
       { error: `Verplaatsen mislukt: ${(err as Error).message}` },

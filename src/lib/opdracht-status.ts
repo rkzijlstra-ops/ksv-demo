@@ -76,6 +76,21 @@ export function moetOpnieuwVersturen(huidigeStatus: DashboardStatus): boolean {
 }
 
 /**
+ * Of een wijziging na versturen opnieuw verstuurd moet worden, rekening houdend met de plek
+ * (monteur/dag/tijd) én de duur. Een al verstuurde klus die langer of korter wordt gemaakt (resize)
+ * verandert wat de monteur moet weten, ook al staat hij nog op dezelfde dag bij dezelfde monteur.
+ * Daarom: opnieuw nodig zodra de klus al verstuurd was en óf de plek óf de duur is veranderd.
+ * Pure functie, los te testen. (`plekGelijk` = opVerzondenPlek, `duurGelijk` = nieuwe duur == oude duur.)
+ */
+export function moetOpnieuwVersturenNa(
+  huidigeStatus: DashboardStatus,
+  plekGelijk: boolean,
+  duurGelijk: boolean,
+): boolean {
+  return moetOpnieuwVersturen(huidigeStatus) && !(plekGelijk && duurGelijk);
+}
+
+/**
  * De plek waarop een opdracht stond toen hij verstuurd werd. Identiteit van de monteur =
  * `toegewezen_aan` (het account), niet de naam: twee monteurs kunnen dezelfde naam hebben.
  * `monteur_naam` blijft erbij voor de weergave (kolom verzonden_monteur).

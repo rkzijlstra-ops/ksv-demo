@@ -212,6 +212,29 @@ export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string
   return conflict;
 }
 
+/** Bovengrens voor een montage-duur, als veiligheidsklep tegen doorschieten bij het slepen. */
+const MAX_DUUR_DAGEN = 20;
+
+/**
+ * Berekent de nieuwe duur (werkdagen) als je de rechterrand van een montage-balk versleept.
+ * Elke dagkolom op het bord is één werkdag (weekends staan er niet, dus die worden vanzelf
+ * overgeslagen): `deltaKolommen` is dus direct het aantal werkdagen dat erbij of eraf gaat.
+ * Doorslepen voorbij vrijdag verlengt gewoon door; de balk loopt dan in de volgende week verder.
+ * Inkorten kan tot er nog één kolom van de balk in deze week zichtbaar is (de balk mag niet uit
+ * het zicht verdwijnen): de ondergrens is `huidigeDuur - (zichtbareSpan - 1)`, en nooit onder 1.
+ * Pure functie, los te testen.
+ */
+export function nieuweDuurNaResize(
+  huidigeDuur: number,
+  zichtbareSpan: number,
+  deltaKolommen: number,
+  maxDuur: number = MAX_DUUR_DAGEN,
+): number {
+  const ondergrens = Math.max(1, huidigeDuur - (Math.max(1, zichtbareSpan) - 1));
+  const gevraagd = huidigeDuur + deltaKolommen;
+  return Math.min(maxDuur, Math.max(ondergrens, gevraagd));
+}
+
 /** Minimale velden om een opdracht op het planbord te kunnen zoeken (een Melding voldoet hieraan). */
 export interface ZoekbaarOpdracht {
   id: string;

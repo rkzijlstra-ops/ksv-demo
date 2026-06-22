@@ -29,6 +29,8 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
     mockGetById.mockResolvedValue({
       id: "opdr-1",
       dashboard_status: "gepland",
+      duur_dagen: 2,
+      verzonden_toegewezen_aan: "rein-uid",
       verzonden_monteur: "Rein",
       verzonden_startdatum: "2026-06-10",
       verzonden_starttijd: null,
@@ -57,7 +59,8 @@ describe("POST /api/opdrachten/[id]/verplaatsen", () => {
         duur_dagen: 1,
       },
       "gepland",
-      { monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+      { toegewezen_aan: "rein-uid", monteur_naam: "Rein", startdatum: "2026-06-10", starttijd: null },
+      2, // de vorige duur uit de opdracht, zodat de server een resize kan herkennen
     );
   });
 

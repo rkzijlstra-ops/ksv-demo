@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
   pointerWithin,
   closestCenter,
   type DragStartEvent,
+  type DragMoveEvent,
   type DragEndEvent,
   type CollisionDetection,
 } from "@dnd-kit/core";
@@ -24,6 +25,7 @@ import {
   verschuifDagen,
   plaatsOpdrachten,
   vindDubbeleBoekingen,
+  nieuweDuurNaResize,
   zoekPlanbord,
   type MonteurOptie,
 } from "@/lib/planbord";
@@ -36,6 +38,23 @@ import { VerstuurKnop } from "./VerstuurKnop";
 interface SleepData {
   soort: "pool" | "kaart";
   opdracht: Melding;
+}
+
+/** Sleepdata van de resize-greep: de opdracht plus zijn huidige plek/breedte op het bord. */
+interface ResizeData {
+  soort: "resize";
+  opdracht: Melding;
+  dagIndex: number;
+  span: number;
+}
+
+type SleepOfResize = SleepData | ResizeData;
+
+/** Lopende resize: welke kaart, zijn zichtbare span, en hoeveel kolommen de rand nu versleept is. */
+interface ResizeActief {
+  opdracht: Melding;
+  span: number;
+  deltaKolommen: number;
 }
 
 /**
@@ -107,7 +126,16 @@ export function PlanbordBord({
   // de SMS-notificatie zou wegvallen (de mail valt terug op het standaardadres, de SMS heeft de koppeling
   // nodig). Voorkomt die race tussen inslepen en versturen.
   const [opslaanBezig, setOpslaanBezig] = useState<ReadonlySet<string>>(new Set<string>());
+  const [resizeActief, setResizeActief] = useState<ResizeActief | null>(null);
+  // Het rasteromhulsel meten we om de kolombreedte te bepalen (104px labelkolom + 5 gelijke dagkolommen),
+  // zodat we een horizontale sleep-afstand in pixels naar een aantal dagkolommen kunnen omrekenen.
+  const gridWrapRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  function kolomBreedte(): number {
+    const w = gridWrapRef.current?.offsetWidth ?? 0;
+    return w > 104 ? (w - 104) / 5 : 0;
+  }
 
   // Na een server-refresh de lokale kopie weer gelijktrekken (render-patroon, geen useEffect).
   if (opdrachten !== vorigeProp) {
@@ -183,16 +211,49 @@ export function PlanbordBord({
   }
 
   function onDragStart(e: DragStartEvent) {
-    const data = e.active.data.current as SleepData | undefined;
+    const data = e.active.data.current as SleepOfResize | undefined;
+    // De resize-greep krijgt geen sleep-overlay (de balk rekt zelf uit); we onthouden alleen de start.
+    if (data?.soort === "resize") {
+      setResizeActief({ opdracht: data.opdracht, span: data.span, deltaKolommen: 0 });
+      return;
+    }
     setActief(data?.opdracht ?? null);
+  }
+
+  function onDragMove(e: DragMoveEvent) {
+    setResizeActief((huidig) => {
+      if (!huidig) return huidig;
+      const cw = kolomBreedte();
+      const delta = cw > 0 ? Math.round(e.delta.x / cw) : 0;
+      return delta === huidig.deltaKolommen ? huidig : { ...huidig, deltaKolommen: delta };
+    });
   }
 
   function onDragEnd(e: DragEndEvent) {
     setActief(null);
+    const data = e.active.data.current as SleepOfResize | undefined;
+
+    // Resize afronden: nieuwe duur berekenen uit het aantal versleepte kolommen en opslaan.
+    if (resizeActief && data?.soort === "resize") {
+      const r = resizeActief;
+      setResizeActief(null);
+      const o = data.opdracht;
+      const nieuweDuur = nieuweDuurNaResize(o.duur_dagen, r.span, r.deltaKolommen);
+      if (nieuweDuur !== o.duur_dagen) {
+        pasLokaalToe(o.id, {
+          duur_dagen: nieuweDuur,
+          gewijzigd_te_versturen:
+            gewijzigdNa(o, o.toegewezen_aan, o.startdatum ?? "", o.starttijd) ||
+            (moetOpnieuwVersturen(o.dashboard_status) && o.startdatum != null),
+        });
+        void verplaatsMetDuur(o, nieuweDuur);
+      }
+      return;
+    }
+
     const over = e.over?.data.current as
       | { toegewezen_aan?: string; monteur_naam?: string; dag?: string; zone?: string }
       | undefined;
-    const data = e.active.data.current as SleepData | undefined;
     if (!over || !data) return;
     const o = data.opdracht;
 
@@ -279,6 +340,26 @@ export function PlanbordBord({
     );
   }
 
+  // Resize opslaan: zelfde plek (monteur/dag/tijd), alleen een andere duur. De route herkent de
+  // duur-wijziging en markeert een al verstuurde klus opnieuw als "te versturen".
+  function verplaatsMetDuur(o: Melding, nieuweDuur: number) {
+    if (!o.startdatum) return Promise.resolve();
+    startOpslag(o.id);
+    return fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        toegewezen_aan: o.toegewezen_aan,
+        monteur_naam: o.monteur_naam,
+        startdatum: o.startdatum,
+        starttijd: o.starttijd,
+        duur_dagen: nieuweDuur,
+      }),
+    })
+      .then(() => router.refresh())
+      .finally(() => eindOpslag(o.id));
+  }
+
   function verplaats(o: Melding, toegewezenAan: string | null, monteurNaam: string | null, dag: string) {
     startOpslag(o.id);
     return fetch(`/api/opdrachten/${o.id}/verplaatsen`, {
@@ -304,6 +385,7 @@ export function PlanbordBord({
       sensors={sensors}
       collisionDetection={collisionDetectie}
       onDragStart={onDragStart}
+      onDragMove={onDragMove}
       onDragEnd={onDragEnd}
     >
       <div className="relative mb-3">
@@ -386,12 +468,17 @@ export function PlanbordBord({
 
       <div className="flex items-stretch gap-1">
         <RandZone zone="week-prev" kant="links" onClick={() => setWeekAnker(verschuifDagen(maandag, -7))} />
-        <div className="min-w-0 flex-1">
+        <div ref={gridWrapRef} className="min-w-0 flex-1">
           <PlanbordGrid
             weekdagen={dagen}
             monteurs={rijMonteurs}
             plaatsingen={plaatsingen}
             conflicten={conflicten}
+            resize={
+              resizeActief
+                ? { id: resizeActief.opdracht.id, deltaKolommen: resizeActief.deltaKolommen }
+                : null
+            }
           />
         </div>
         <RandZone zone="week-next" kant="rechts" onClick={() => setWeekAnker(verschuifDagen(maandag, 7))} />
