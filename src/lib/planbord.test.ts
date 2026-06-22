@@ -13,6 +13,8 @@ import {
   duurNaStap,
   weekschuifLanding,
   weekHeeftWeekendKlus,
+  maandWeken,
+  verschuifMaand,
   zoekPlanbord,
   type PlanbaarOpdracht,
   type BoekbaarOpdracht,
@@ -421,6 +423,35 @@ describe("duurNaStap", () => {
   });
   it("begrenst op het maximum", () => {
     expect(duurNaStap(20, 1, 20)).toBe(20);
+  });
+});
+
+describe("maandWeken", () => {
+  it("geeft de maandag van elke week die de maand raakt", () => {
+    // juni 2026: 1 jun is een maandag, 30 jun een dinsdag -> 5 weken
+    expect(maandWeken("2026-06-15")).toEqual([
+      "2026-06-01",
+      "2026-06-08",
+      "2026-06-15",
+      "2026-06-22",
+      "2026-06-29",
+    ]);
+  });
+  it("begint op de maandag vóór de 1e als de maand niet op maandag start", () => {
+    // juli 2026: 1 jul is een woensdag -> eerste strook begint op ma 29 jun
+    expect(maandWeken("2026-07-10")[0]).toBe("2026-06-29");
+  });
+});
+
+describe("verschuifMaand", () => {
+  it("schuift naar de 1e van de volgende/vorige maand", () => {
+    expect(verschuifMaand("2026-06-15", 1)).toBe("2026-07-01");
+    expect(verschuifMaand("2026-06-15", -1)).toBe("2026-05-01");
+    expect(verschuifMaand("2026-06-15", 0)).toBe("2026-06-01");
+  });
+  it("rolt netjes over het jaar", () => {
+    expect(verschuifMaand("2026-01-15", -1)).toBe("2025-12-01");
+    expect(verschuifMaand("2026-12-15", 1)).toBe("2027-01-01");
   });
 });
 

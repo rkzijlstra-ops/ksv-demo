@@ -317,6 +317,26 @@ test("naar de vorige week slepen landt op vrijdag (weekend uit)", async ({ page 
     .toBe(vrijdagVorige);
 });
 
+test("maandweergave toont de geplande klus en heeft maand-navigatie", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // De klus staat in het maandoverzicht (als link naar de detailpagina).
+  await expect(
+    page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first(),
+  ).toBeVisible({ timeout: 8_000 });
+  // Maand-navigatie aanwezig (een maandlabel met jaartal).
+  await expect(page.getByText(/20\d\d/).first()).toBeVisible();
+  // Terug naar Week werkt.
+  await page.getByRole("button", { name: "Week", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Weekend/ })).toBeVisible({ timeout: 5_000 });
+});
+
 test("de weekend-knop toont zaterdag en zondag als extra kolommen", async ({ page }) => {
   await page.goto("/planbord");
   // Standaard verborgen: geen za/zo in de koprij.

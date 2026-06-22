@@ -34,6 +34,7 @@ import {
 import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
 import { formatDatumKort } from "@/lib/datum";
 import { PlanbordGrid } from "./PlanbordGrid";
+import { PlanbordMaand } from "./PlanbordMaand";
 import { PlanbordPool } from "./PlanbordPool";
 import { VerstuurKnop } from "./VerstuurKnop";
 
@@ -101,6 +102,15 @@ function leesWeekendVoorkeur(): boolean {
   }
 }
 
+/** Leest de week/maand-weergave uit localStorage. Server/SSR levert "week" via getServerSnapshot. */
+function leesWeergave(): "week" | "maand" {
+  try {
+    return localStorage.getItem("planbord-weergave") === "maand" ? "maand" : "week";
+  } catch {
+    return "week";
+  }
+}
+
 /** Eerst kijken wat er direct onder de pointer ligt; pas daarna geometrisch dichtstbijzijnde. */
 const collisionDetectie: CollisionDetection = (args) => {
   const direct = pointerWithin(args);
@@ -145,6 +155,24 @@ export function PlanbordBord({
       /* opslaan mislukt: voorkeur geldt alleen deze sessie */
     }
     window.dispatchEvent(new Event("planbord-weekend-wissel"));
+  }
+  // Week- of maandweergave, onthouden in localStorage (zelfde hydratie-veilige aanpak).
+  const subscribeWeergave = useCallback((herteken: () => void) => {
+    window.addEventListener("storage", herteken);
+    window.addEventListener("planbord-weergave-wissel", herteken);
+    return () => {
+      window.removeEventListener("storage", herteken);
+      window.removeEventListener("planbord-weergave-wissel", herteken);
+    };
+  }, []);
+  const weergave = useSyncExternalStore(subscribeWeergave, leesWeergave, () => "week" as const);
+  function zetWeergave(naar: "week" | "maand") {
+    try {
+      localStorage.setItem("planbord-weergave", naar);
+    } catch {
+      /* opslaan mislukt: geldt alleen deze sessie */
+    }
+    window.dispatchEvent(new Event("planbord-weergave-wissel"));
   }
   const [items, setItems] = useState<Melding[]>(opdrachten);
   const [vorigeProp, setVorigeProp] = useState(opdrachten);
@@ -467,44 +495,70 @@ export function PlanbordBord({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setWeekAnker(verschuifDagen(maandag, -7))}
-          className={`${navBtn} border-line text-ink-muted`}
-        >
-          <ChevronLeft size={16} aria-hidden="true" /> Vorige
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekAnker(vandaag)}
-          className={`${navBtn} border-primary`}
-        >
-          Vandaag
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekAnker(verschuifDagen(maandag, 7))}
-          className={`${navBtn} border-line text-ink-muted`}
-        >
-          Volgende <ChevronRight size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={wisselWeekend}
-          aria-pressed={effectiefWeekend}
-          title={
-            effectiefWeekend && !toonWeekend
-              ? "Weekend blijft zichtbaar: er staat een klus in dit weekend"
-              : "Zaterdag en zondag tonen of verbergen"
-          }
-          className={`${navBtn} ${effectiefWeekend ? "border-primary text-primary" : "border-line text-ink-muted"}`}
-        >
-          Weekend {effectiefWeekend ? "aan" : "uit"}
-        </button>
+        {/* Week- of maandweergave kiezen */}
+        <div className="inline-flex border-[1.5px] border-ink">
+          {(["week", "maand"] as const).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => zetWeergave(w)}
+              aria-pressed={weergave === w}
+              className={`px-3 py-2 text-[13px] font-bold uppercase tracking-[0.03em] ${
+                weergave === w ? "bg-ink text-white" : "bg-white text-ink-muted"
+              }`}
+            >
+              {w === "week" ? "Week" : "Maand"}
+            </button>
+          ))}
+        </div>
+        {weergave === "week" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setWeekAnker(verschuifDagen(maandag, -7))}
+              className={`${navBtn} border-line text-ink-muted`}
+            >
+              <ChevronLeft size={16} aria-hidden="true" /> Vorige
+            </button>
+            <button type="button" onClick={() => setWeekAnker(vandaag)} className={`${navBtn} border-primary`}>
+              Vandaag
+            </button>
+            <button
+              type="button"
+              onClick={() => setWeekAnker(verschuifDagen(maandag, 7))}
+              className={`${navBtn} border-line text-ink-muted`}
+            >
+              Volgende <ChevronRight size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={wisselWeekend}
+              aria-pressed={effectiefWeekend}
+              title={
+                effectiefWeekend && !toonWeekend
+                  ? "Weekend blijft zichtbaar: er staat een klus in dit weekend"
+                  : "Zaterdag en zondag tonen of verbergen"
+              }
+              className={`${navBtn} ${effectiefWeekend ? "border-primary text-primary" : "border-line text-ink-muted"}`}
+            >
+              Weekend {effectiefWeekend ? "aan" : "uit"}
+            </button>
+          </>
+        )}
         <span className="flex-1" />
         <VerstuurKnop ids={teVersturen} />
       </div>
 
+      {weergave === "maand" ? (
+        <PlanbordMaand
+          items={items}
+          monteurs={rijMonteurs}
+          anker={weekAnker}
+          vandaag={vandaag}
+          onAnker={setWeekAnker}
+        />
+      ) : (
+        <>
       <p className="mt-2 text-sm text-ink-muted">
         Week {weeknr} · {formatDatumKort(dagen[0])} – {formatDatumKort(dagen[dagen.length - 1])} ·{" "}
         {monteurs.length} {monteurs.length === 1 ? "monteur" : "monteurs"}
@@ -543,6 +597,8 @@ export function PlanbordBord({
       </p>
 
       <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={maandag} />
+        </>
+      )}
 
       <DragOverlay>
         {actief ? (

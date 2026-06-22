@@ -99,6 +99,32 @@ export function weekDagen(maandagIso: string, metWeekend: boolean = false): stri
   return Array.from({ length: lengte }, (_, i) => verschuifDagen(maandagIso, i));
 }
 
+/** De 1e van de maand `maanden` verder (of terug bij negatief), als YYYY-MM-DD. Voor maand-navigatie. */
+export function verschuifMaand(iso: string, maanden: number): string {
+  const [y, m] = iso.split("T")[0].split("-").map(Number);
+  return format(new Date(Date.UTC(y, m - 1 + maanden, 1)));
+}
+
+/**
+ * De maandag van elke week die de maand van `iso` raakt (voor het maandoverzicht: vijf of zes
+ * week-stroken onder elkaar). De eerste strook begint op de maandag vóór of op de 1e van de maand.
+ */
+export function maandWeken(iso: string): string[] {
+  const eerste = verschuifMaand(iso, 0); // 1e van de maand
+  const [y, m] = eerste.split("-").map(Number);
+  const laatste = format(new Date(Date.UTC(y, m, 0))); // dag 0 van volgende maand = laatste dag van deze
+  const eindMaandag = maandagVan(laatste);
+  const weken: string[] = [];
+  let ma = maandagVan(eerste);
+  let veiligheid = 0;
+  while (ma <= eindMaandag && veiligheid < 8) {
+    weken.push(ma);
+    ma = verschuifDagen(ma, 7);
+    veiligheid++;
+  }
+  return weken;
+}
+
 /** ISO 8601-weeknummer (donderdag-regel). */
 export function weeknummer(iso: string): number {
   const d = parse(iso);
