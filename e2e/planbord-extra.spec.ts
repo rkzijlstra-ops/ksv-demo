@@ -35,21 +35,28 @@ function volgendeMaandag(): string {
 
 const ids: string[] = [];
 
+// Tag waarmee dit bestand AL zijn testklussen merkt. De opruiming hieronder verwijdert ALLEEN klussen
+// met deze tag, nooit "alles van dit account". Cruciaal: de test-DB wordt gedeeld met de handmatige
+// test-omgeving (kluslus-test); een opruiming per account-uid wiste eerder echte testdata van Reinier
+// (klussen die hij net had aangemaakt hangen aan dezelfde test-accounts). Zie het logboek 2026-06-22.
+const PBX = "PBX";
+
 test.beforeAll(async () => {
-  // Verwijder restdata van eerdere (mislukte/afgebroken) testruns voor de test-accounts:
+  // Verwijder ALLEEN restdata van eerdere (mislukte/afgebroken) runs van DIT bestand (PBX-tag):
   // - geplande items veroorzaken valse conflicten in de conflict-detectietest
   // - "binnen"-items verlengen de pool en duwen de pagina buiten de viewport (flakey drag-test)
-  for (const uid of [BEHEERDER.uid, MONTEUR.uid]) {
-    await admin.from("meldingen").delete().eq("toegewezen_aan", uid);
-    await admin.from("meldingen").delete().eq("user_id", uid).is("toegewezen_aan", null);
-  }
+  // Nooit op uid filteren: dat raakt ook handmatig aangemaakte klussen op dezelfde test-accounts.
+  await admin.from("meldingen").delete().like("klant_naam", `${PBX} %`);
 
-  // Verwijder ook orphaned monteur-profielen die zijn achtergebleven door mail-test-runs
-  // (Afmtest..., Invtest...). Alleen de twee standaard test-accounts horen in de test-DB.
+  // Verwijder ook orphaned monteur-profielen van test-runs (namen met "test" of "E2E", bv. Afmtest,
+  // Anntest, Optest, "E2E Monteur"). Een echte monteur die Reinier op kluslus-test aanmaakt heeft zo'n
+  // naam niet en blijft dus staan. Alleen de twee standaard test-accounts horen sowieso te blijven.
   const bekendeProfiel = new Set([BEHEERDER.uid, MONTEUR.uid]);
-  const { data: alleProfielen } = await admin.from("profielen").select("id, rol");
+  const isTestNaam = (naam: string | null) =>
+    !!naam && (/test/i.test(naam) || naam.startsWith("E2E"));
+  const { data: alleProfielen } = await admin.from("profielen").select("id, rol, naam");
   const orphans = (alleProfielen ?? []).filter(
-    (p) => p.rol === "monteur" && !bekendeProfiel.has(p.id),
+    (p) => p.rol === "monteur" && !bekendeProfiel.has(p.id) && isTestNaam(p.naam as string | null),
   );
   for (const p of orphans) {
     await admin.from("profielen").delete().eq("id", p.id);
@@ -62,7 +69,9 @@ async function seedOpdracht(klantNaam: string, opties: { monteur?: boolean } = {
   if (!zaak) throw new Error("Geen opdrachtgever in test-DB");
   const r = await db.createOpdracht({
     documenttype: "orderbevestiging",
-    klant_naam: klantNaam,
+    // PBX-tag vooraan zodat beforeAll precies deze klussen kan opruimen (substring-zoekers op `uniek`
+    // blijven werken, want de naam bevat de oorspronkelijke `klantNaam` nog steeds).
+    klant_naam: `${PBX} ${klantNaam}`,
     klant_adres: "Teststraat 1",
     referentienummer: `R${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     adviseur: null,
