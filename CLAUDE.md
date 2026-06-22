@@ -25,7 +25,8 @@ Elke wijziging loopt deze weg; nooit direct op master bouwen. Veiligheid zit in 
 2. Werk in dezelfde commit `TESTDEKKING.md` en `TOESTANDEN.md` bij; loop de afrond-check (skill projectstart-discipline) langs vóór je iets "klaar" noemt.
 3. Push. De pre-push hook draait unit + typecheck (blokkeert bij rood). Daarna draait CI in de cloud de volle suite; master is branch-protected, dus mergen kan alleen als de CI-check `test` groen is.
 4. Het aparte test-project **kluslus-test** (eigen Vercel-project, tegen de TEST-DB, allowlist = alleen Reinier, beveiligd met Vercel Authentication) bouwt de branch. Inloggen zonder Google/magic-link via `/test-login` (aan door `TEST_LOGIN=1`). Reinier keurt daar in de browser, beide rollen.
-5. Akkoord? Merge de branch naar master. Prod-Vercel én demo-Vercel deployen automatisch dezelfde code.
+5. **STOP-poort (niet aan Claude alleen).** Groene CI is een VOORWAARDE om te mogen mergen, NIET het startsein. Claude mergt NOOIT zelf na groene CI. De volgorde is hard: CI groen → Claude stopt, meldt het en vraagt Reinier om de visuele check op `kluslus-test` → Reinier keurt (beide rollen) → **pas na Reins expliciete "ga maar / merge"** mergt Claude naar master. Bij twijfel: niet mergen, vragen.
+6. Na akkoord: merge de branch naar master. Prod-Vercel (`mijn.kluslus.nl`) én demo-Vercel deployen automatisch dezelfde code.
 
 De poorten: pre-push + branch-protected CI, het losse kluslus-test-project op de test-DB, en de verzend-grendel (allowlist + `MAIL_DRY_RUN`/`SMS_DRY_RUN`). Zie `docs/OMGEVINGEN.md` (sectie test-omgeving) en `PLAN-TEST-OMGEVING.md` voor de opzet.
 
