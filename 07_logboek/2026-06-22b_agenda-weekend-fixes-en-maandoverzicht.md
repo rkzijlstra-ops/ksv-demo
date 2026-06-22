@@ -43,6 +43,22 @@ Elke maand-strook toont nu za/zo als de weekend-knop aan staat OF als die week e
 de maandmodus. Een klus puur op za/zo is dus ook in het maandoverzicht zichtbaar. Unit (hergebruik) + e2e
 ("maandweergave beweegt mee met de weekend-knop", "weekend-klus is ook in de maandweergave zichtbaar").
 
+## Weekend = werkdag bij weekend AAN (bug gefixt)
+Reinier zag: vrijdag-montage van 2 dagen, weekend aan, sprong naar vrijdag+maandag i.p.v.
+vrijdag+zaterdag. Oorzaak: `werkdagenVanaf` sloeg het weekend altijd over. Nu is het weekend-bewust:
+staat het weekend AAN (de knop), dan telt het weekend als werkdag (kalenderdagen), dus vr+2 = vr+za.
+Staat het uit, dan blijft het weekend overgeslagen (vr+ma). Dit is door de hele keten getrokken:
+`werkdagenVanaf(start, aantal, metWeekend)`, en `plaatsOpdrachten`/`vindDubbeleBoekingen`/
+`weekHeeftWeekendKlus` krijgen de vlag (= de KNOP-stand `toonWeekend`, niet de geforceerde weergave:
+een losse weekend-klus forceert wel de weekend-kolommen, maar laat gewone montages nog het weekend
+overslaan). Geldt zowel in de week- als de maandweergave.
+
+Getest (toestandsmatrix, unit + e2e), o.a.: vr+2/vr+3/ma+6 met weekend aan; vr+2 met weekend uit;
+do+5 en zo-start over de weekgrens; klus op za blijft op za; rare duur 0 -> 1. E2e: "vrijdag-montage
+van 2 dagen met weekend aan loopt naar zaterdag, niet naar volgende maandag" (controleert dat hij
+niet op de volgende maandag opduikt). De twee drag-naar-cel-e2e's falen lokaal headless (bekend
+patroon, geen regressie); CI is leidend.
+
 ## Vervolg
 - PWA zichzelf laten bijwerken bij deploys; eigen CI-database los van kluslus-test (laag 2).
 

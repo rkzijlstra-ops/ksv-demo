@@ -55,9 +55,9 @@ function WeekStrook({
 }) {
   // Beweegt mee met de weekend-instelling: weekend tonen als de knop aan staat, of als deze week een
   // klus op za/zo heeft (anders zou die weekend-klus ook in het maandoverzicht onzichtbaar zijn).
-  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag, toonWeekend);
   const dagen = weekDagen(maandag, effectiefWeekend);
-  const plaatsingen = plaatsOpdrachten(items, dagen);
+  const plaatsingen = plaatsOpdrachten(items, dagen, toonWeekend);
   const perMonteur = monteurs.map((a) => {
     const eigen = plaatsingen.filter((p) => p.opdracht.toegewezen_aan === a.id);
     const kaarten = verdeelLanes(eigen);

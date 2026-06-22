@@ -116,6 +116,24 @@ describe("werkdagenVanaf", () => {
     expect(werkdagenVanaf("2026-06-13", 2)).toEqual(["2026-06-13", "2026-06-14"]); // za, zo
     expect(werkdagenVanaf("2026-06-13", 3)).toEqual(["2026-06-13", "2026-06-14", "2026-06-15"]); // za, zo, ma
   });
+  it("met weekend AAN telt het weekend als werkdag mee (kalenderdagen)", () => {
+    // vr 12 jun + 2 dagen, weekend aan -> vr, za (NIET vr, ma)
+    expect(werkdagenVanaf("2026-06-12", 2, true)).toEqual(["2026-06-12", "2026-06-13"]);
+    // vr + 3 -> vr, za, zo
+    expect(werkdagenVanaf("2026-06-12", 3, true)).toEqual(["2026-06-12", "2026-06-13", "2026-06-14"]);
+    // ma + 6 -> ma t/m za
+    expect(werkdagenVanaf("2026-06-08", 6, true)).toEqual([
+      "2026-06-08",
+      "2026-06-09",
+      "2026-06-10",
+      "2026-06-11",
+      "2026-06-12",
+      "2026-06-13",
+    ]);
+  });
+  it("met weekend UIT (expliciet) blijft het weekend overgeslagen", () => {
+    expect(werkdagenVanaf("2026-06-12", 2, false)).toEqual(["2026-06-12", "2026-06-15"]); // vr, ma
+  });
 });
 
 describe("monteurRijen", () => {
@@ -455,6 +473,51 @@ describe("verschuifMaand", () => {
   });
 });
 
+describe("plaatsOpdrachten met weekend", () => {
+  const WEEK7 = weekDagen("2026-06-08", true); // ma 8 t/m zo 14 juni (7 dagen)
+  it("vrijdag 2 dagen, weekend AAN: loopt door naar zaterdag (vr+za, span 2)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2 })], WEEK7, true);
+    expect(p).toHaveLength(1);
+    expect(p[0].dagIndex).toBe(4); // vrijdag
+    expect(p[0].span).toBe(2); // vr + za
+  });
+  it("vrijdag 2 dagen, weekend UIT: alleen vrijdag deze week (rest = maandag volgende week)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2 })], WEEK, false);
+    expect(p[0].dagIndex).toBe(4);
+    expect(p[0].span).toBe(1);
+  });
+  it("vrijdag 3 dagen, weekend aan: vr, za, zo (span 3)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 3 })], WEEK7, true);
+    expect(p[0].dagIndex).toBe(4);
+    expect(p[0].span).toBe(3);
+  });
+  it("maandag 6 dagen, weekend aan: ma t/m za (span 6)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-08", duur_dagen: 6 })], WEEK7, true);
+    expect(p[0].dagIndex).toBe(0);
+    expect(p[0].span).toBe(6);
+  });
+  it("een klus die OP zaterdag staat blijft op zaterdag (kolom 5), ook met weekend-vlag uit", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-13", duur_dagen: 1 })], WEEK7, false);
+    expect(p[0].dagIndex).toBe(5);
+    expect(p[0].span).toBe(1);
+  });
+  // "Onlogische" invoer die toch netjes moet lopen:
+  it("donderdag 5 dagen, weekend aan: do/vr/za/zo deze week (span 4), maandag loopt door", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-11", duur_dagen: 5 })], WEEK7, true);
+    expect(p[0].dagIndex).toBe(3); // donderdag
+    expect(p[0].span).toBe(4); // do, vr, za, zo
+  });
+  it("zondag-start 2 dagen, weekend aan: zondag deze week (span 1), maandag loopt door", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-14", duur_dagen: 2 })], WEEK7, true);
+    expect(p[0].dagIndex).toBe(6); // zondag
+    expect(p[0].span).toBe(1);
+  });
+  it("rare duur (0) wordt minimaal 1 dag", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-10", duur_dagen: 0 })], WEEK7, true);
+    expect(p[0].span).toBe(1);
+  });
+});
+
 describe("weekHeeftWeekendKlus", () => {
   const base = (o: Partial<PlanbaarOpdracht>): PlanbaarOpdracht => ({
     id: "x",
@@ -482,6 +545,16 @@ describe("weekHeeftWeekendKlus", () => {
   });
   it("false zonder monteur of zonder startdatum (wordt toch niet geplaatst)", () => {
     expect(weekHeeftWeekendKlus([base({ startdatum: "2026-06-13", monteur_naam: null })], "2026-06-08")).toBe(false);
+  });
+  it("true: een vrijdag-montage van 2 dagen met weekend aan bezet zaterdag", () => {
+    expect(
+      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2 })], "2026-06-08", true),
+    ).toBe(true);
+  });
+  it("false: dezelfde vrijdag-montage met weekend uit bezet geen weekenddag (vr+ma)", () => {
+    expect(
+      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2 })], "2026-06-08", false),
+    ).toBe(false);
   });
 });
 

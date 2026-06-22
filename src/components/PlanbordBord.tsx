@@ -205,11 +205,14 @@ export function PlanbordBord({
   const maandag = maandagVan(weekAnker);
   // Weekend tonen als de knop aan staat, OF als deze week een klus op za/zo heeft (anders zou die
   // weekend-klus onzichtbaar van het bord vallen, dat mag nooit).
-  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag, toonWeekend);
   const dagen = weekDagen(maandag, effectiefWeekend);
   const weeknr = weeknummer(maandag);
-  const plaatsingen = plaatsOpdrachten(items, dagen);
-  const conflicten = vindDubbeleBoekingen(items);
+  // Plaatsing en conflicten rekenen het weekend mee als de KNOP aan staat (toonWeekend), niet als hij
+  // alleen geforceerd getoond wordt door een losse weekend-klus: een gewone montage springt dan nog
+  // steeds over het weekend, terwijl die ene weekend-klus wel zichtbaar blijft.
+  const plaatsingen = plaatsOpdrachten(items, dagen, toonWeekend);
+  const conflicten = vindDubbeleBoekingen(items, toonWeekend);
   // Vangnet: elke ingeplande klus moet een rij krijgen, ook als zijn account niet (meer) in de
   // monteurlijst staat (bv. hernoemd of verwijderd). Zonder dit zou zo'n klus onzichtbaar van het bord
   // verdwijnen terwijl hij gewoon in de database staat.

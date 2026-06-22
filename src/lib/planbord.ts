@@ -54,22 +54,22 @@ function isWerkdag(iso: string): boolean {
 
 /**
  * De dagen die een opdracht beslaat, vanaf de startdatum:
- *  - Begint de klus op een WERKDAG (ma t/m vr), dan telt hij `aantal` werkdagen en slaat het weekend
- *    over (een meerdaagse montage loopt netjes door op maandag i.p.v. in het weekend).
- *  - Begint de klus bewust IN het weekend (za/zo), dan is het een weekend-klus en loopt hij op
- *    kalenderdagen door (het weekend telt dan mee), zodat hij op die weekenddag blijft staan i.p.v.
- *    naar maandag te springen.
+ *  - Staat het weekend AAN (`metWeekend`, het weekend is dan een werkdag), of begint de klus bewust IN
+ *    het weekend (za/zo), dan loopt hij op KALENDERDAGEN door (het weekend telt mee). Een montage van
+ *    vrijdag, 2 dagen, met weekend aan = vrijdag + zaterdag.
+ *  - Anders (werkdag-start, weekend uit) telt hij `aantal` WERKDAGEN en slaat het weekend over: vrijdag,
+ *    2 dagen = vrijdag + maandag.
  */
-export function werkdagenVanaf(startIso: string, aantal: number): string[] {
+export function werkdagenVanaf(startIso: string, aantal: number, metWeekend: boolean = false): string[] {
   const n = Math.max(1, aantal || 1);
   const dag0 = startIso.split("T")[0];
 
-  // Weekend-klus: kalenderdagen, weekend telt mee.
-  if (!isWerkdag(dag0)) {
+  // Weekend telt mee (knop aan, of de klus begint in het weekend): kalenderdagen.
+  if (metWeekend || !isWerkdag(dag0)) {
     return Array.from({ length: n }, (_, i) => verschuifDagen(dag0, i));
   }
 
-  // Werkdag-klus: weekenden overslaan.
+  // Werkdag-start, weekend uit: weekenden overslaan.
   const dagen: string[] = [];
   let kandidaat = dag0;
   let veiligheid = 0;
@@ -208,19 +208,23 @@ export interface BoekbaarOpdracht {
 }
 
 /** De dagen die een opdracht bezet: montage = de werkdagen over de hele duur, service = alleen de startdag. */
-function bezetteDagen(o: BoekbaarOpdracht): string[] {
+function bezetteDagen(o: BoekbaarOpdracht, metWeekend: boolean): string[] {
   if (!o.startdatum) return [];
   const dag = o.startdatum.split("T")[0];
   if (o.starttijd) return [dag];
-  return werkdagenVanaf(dag, Math.max(1, o.duur_dagen || 1));
+  return werkdagenVanaf(dag, Math.max(1, o.duur_dagen || 1), metWeekend);
 }
 
 /**
  * Vindt opdrachten die dubbel geboekt zijn: zelfde monteur (account) met overlappende dagen.
  * Twee montages of een montage en een service op dezelfde dag = conflict (montage vult de dag).
- * Twee services op dezelfde dag botsen alleen bij dezelfde starttijd. Pure functie.
+ * Twee services op dezelfde dag botsen alleen bij dezelfde starttijd. `metWeekend` bepaalt of een
+ * meerdaagse montage het weekend meetelt (zelfde regel als de plaatsing). Pure functie.
  */
-export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string> {
+export function vindDubbeleBoekingen(
+  opdrachten: BoekbaarOpdracht[],
+  metWeekend: boolean = false,
+): Set<string> {
   const actief = opdrachten.filter(
     (o) => o.toegewezen_aan && o.startdatum && BOEKBAAR.has(o.dashboard_status),
   );
@@ -236,8 +240,8 @@ export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string
       for (let j = i + 1; j < groep.length; j++) {
         const a = groep[i];
         const b = groep[j];
-        const dagenA = bezetteDagen(a);
-        const dagenB = bezetteDagen(b);
+        const dagenA = bezetteDagen(a, metWeekend);
+        const dagenB = bezetteDagen(b, metWeekend);
         if (!dagenA.some((d) => dagenB.includes(d))) continue;
         const beideService = !!a.starttijd && !!b.starttijd;
         const beideMontage = !a.starttijd && !b.starttijd;
@@ -293,13 +297,14 @@ export function duurNaStap(huidigeDuur: number, stap: number, maxDuur: number = 
 export function weekHeeftWeekendKlus<T extends PlanbaarOpdracht>(
   opdrachten: T[],
   maandagIso: string,
+  metWeekend: boolean = false,
 ): boolean {
   const za = verschuifDagen(maandagIso, 5);
   const zo = verschuifDagen(maandagIso, 6);
   return opdrachten.some((o) => {
     if (!OP_BORD.has(o.dashboard_status) || !o.monteur_naam || !o.startdatum) return false;
     const dag = o.startdatum.split("T")[0];
-    const dagen = o.starttijd ? [dag] : werkdagenVanaf(dag, o.duur_dagen);
+    const dagen = o.starttijd ? [dag] : werkdagenVanaf(dag, o.duur_dagen, metWeekend);
     return dagen.includes(za) || dagen.includes(zo);
   });
 }
@@ -377,6 +382,7 @@ export function monteurRijen(opdrachten: PlanbaarOpdracht[]): string[] {
 export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
   opdrachten: T[],
   weekDagenArr: string[],
+  metWeekend: boolean = false,
 ): PlanbordPlaatsing<T>[] {
   const plaatsingen: PlanbordPlaatsing<T>[] = [];
   for (const o of opdrachten) {
@@ -390,8 +396,11 @@ export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
       continue;
     }
 
-    // Montage: de werkdagen die in déze week vallen vormen een aaneengesloten blok (ma..vr).
-    const dagen = werkdagenVanaf(o.startdatum, o.duur_dagen).filter((d) => weekDagenArr.includes(d));
+    // Montage: de (werk)dagen die in déze week vallen vormen een aaneengesloten blok. Met weekend aan
+    // telt het weekend mee (vr+za i.p.v. vr+ma).
+    const dagen = werkdagenVanaf(o.startdatum, o.duur_dagen, metWeekend).filter((d) =>
+      weekDagenArr.includes(d),
+    );
     if (dagen.length === 0) continue;
     const dagIndex = weekDagenArr.indexOf(dagen[0]);
     plaatsingen.push({ opdracht: o, dagIndex, span: dagen.length, isService: false });

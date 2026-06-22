@@ -337,6 +337,25 @@ test("maandweergave toont de geplande klus en heeft maand-navigatie", async ({ p
   await expect(page.getByRole("button", { name: /^Weekend/ })).toBeVisible({ timeout: 5_000 });
 });
 
+test("vrijdag-montage van 2 dagen met weekend aan loopt naar zaterdag, niet naar volgende maandag", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdag = verschuifDagen(maandag, 4);
+  await planDirect(monteur.id, monteur.naam, vrijdag, 2);
+
+  await page.goto(`/planbord?week=${maandag}`);
+  await page.getByRole("button", { name: /^Weekend/ }).click(); // weekend aan
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first()).toBeVisible();
+
+  // Volgende week mag de klus NIET tonen: hij past in vrijdag + zaterdag (de oude bug zette 'm op
+  // vrijdag + maandag, dan zou hij hier wél verschijnen).
+  await page.getByRole("button", { name: "Volgende", exact: true }).click();
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toHaveCount(0);
+});
+
 test("maandweergave beweegt mee met de weekend-knop (za verschijnt)", async ({ page }) => {
   await page.goto("/planbord");
   await page.getByRole("button", { name: "Maand", exact: true }).click();
