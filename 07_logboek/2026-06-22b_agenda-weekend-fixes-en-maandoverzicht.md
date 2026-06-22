@@ -37,10 +37,13 @@ maand met maandlabel. Pure helpers `maandWeken` en `verschuifMaand` (getest). Un
   De drag-naar-zaterdag-cel-test faalt lokaal headless (zelfde patroon als de bestaande pool→cel-drag,
   geen regressie); CI is leidend.
 
-## Bekende beperking / vervolg
-- Maandoverzicht toont (nog) ma-vr per strook; een klus die puur op za/zo staat is in de MAANDweergave
-  niet zichtbaar (wel in de weekweergave, daar wordt het weekend geforceerd). Overweeg later het
-  weekend ook in de maandstroken te tonen als er een weekend-klus is.
+## Maandoverzicht beweegt mee met de weekend-instelling (toegevoegd)
+Elke maand-strook toont nu za/zo als de weekend-knop aan staat OF als die week een weekend-klus heeft
+(`weekHeeftWeekendKlus` per strook, zelfde logica als de weekweergave). De weekend-knop werkt nu ook in
+de maandmodus. Een klus puur op za/zo is dus ook in het maandoverzicht zichtbaar. Unit (hergebruik) + e2e
+("maandweergave beweegt mee met de weekend-knop", "weekend-klus is ook in de maandweergave zichtbaar").
+
+## Vervolg
 - PWA zichzelf laten bijwerken bij deploys; eigen CI-database los van kluslus-test (laag 2).
 
 ## Poort

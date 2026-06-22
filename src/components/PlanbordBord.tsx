@@ -530,21 +530,28 @@ export function PlanbordBord({
             >
               Volgende <ChevronRight size={16} aria-hidden="true" />
             </button>
+          </>
+        )}
+        {(() => {
+          // In maandmodus geldt de knop-stand de voorkeur (toonWeekend); in weekmodus de echte stand
+          // (effectiefWeekend, die ook geforceerd "aan" kan zijn door een weekend-klus deze week).
+          const knopAan = weergave === "maand" ? toonWeekend : effectiefWeekend;
+          return (
             <button
               type="button"
               onClick={wisselWeekend}
-              aria-pressed={effectiefWeekend}
+              aria-pressed={knopAan}
               title={
-                effectiefWeekend && !toonWeekend
+                weergave === "week" && effectiefWeekend && !toonWeekend
                   ? "Weekend blijft zichtbaar: er staat een klus in dit weekend"
                   : "Zaterdag en zondag tonen of verbergen"
               }
-              className={`${navBtn} ${effectiefWeekend ? "border-primary text-primary" : "border-line text-ink-muted"}`}
+              className={`${navBtn} ${knopAan ? "border-primary text-primary" : "border-line text-ink-muted"}`}
             >
-              Weekend {effectiefWeekend ? "aan" : "uit"}
+              Weekend {knopAan ? "aan" : "uit"}
             </button>
-          </>
-        )}
+          );
+        })()}
         <span className="flex-1" />
         <VerstuurKnop ids={teVersturen} />
       </div>
@@ -555,6 +562,7 @@ export function PlanbordBord({
           monteurs={rijMonteurs}
           anker={weekAnker}
           vandaag={vandaag}
+          toonWeekend={toonWeekend}
           onAnker={setWeekAnker}
         />
       ) : (

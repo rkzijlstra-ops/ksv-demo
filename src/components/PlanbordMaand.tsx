@@ -8,12 +8,13 @@ import {
   verschuifMaand,
   weekDagen,
   weeknummer,
+  weekHeeftWeekendKlus,
   plaatsOpdrachten,
   verdeelLanes,
   type MonteurOptie,
 } from "@/lib/planbord";
 
-const DOW = ["ma", "di", "wo", "do", "vr"];
+const DOW = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 const MAANDEN = [
   "januari", "februari", "maart", "april", "mei", "juni",
   "juli", "augustus", "september", "oktober", "november", "december",
@@ -44,13 +45,18 @@ function WeekStrook({
   monteurs,
   items,
   vandaag,
+  toonWeekend,
 }: {
   maandag: string;
   monteurs: MonteurOptie[];
   items: Melding[];
   vandaag: string;
+  toonWeekend: boolean;
 }) {
-  const dagen = weekDagen(maandag);
+  // Beweegt mee met de weekend-instelling: weekend tonen als de knop aan staat, of als deze week een
+  // klus op za/zo heeft (anders zou die weekend-klus ook in het maandoverzicht onzichtbaar zijn).
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
+  const dagen = weekDagen(maandag, effectiefWeekend);
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const perMonteur = monteurs.map((a) => {
     const eigen = plaatsingen.filter((p) => p.opdracht.toegewezen_aan === a.id);
@@ -68,14 +74,14 @@ function WeekStrook({
       <div className="flex items-center gap-2 border-b-2 border-ink bg-surface px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-ink-muted">
         Week {weeknummer(maandag)}
       </div>
-      <div className="grid" style={{ gridTemplateColumns: "84px repeat(5, minmax(0, 1fr))" }}>
+      <div className="grid" style={{ gridTemplateColumns: `84px repeat(${dagen.length}, minmax(0, 1fr))` }}>
         {/* Kop met dagnummers */}
         <div className="border-b border-r border-line bg-surface" style={{ gridRow: 1, gridColumn: 1 }} />
         {dagen.map((d, i) => (
           <div
             key={d}
             className={`border-b border-r border-line px-1.5 py-1 text-center last:border-r-0 ${
-              d === vandaag ? "bg-accent/10" : "bg-surface"
+              d === vandaag ? "bg-accent/10" : i >= 5 ? "bg-surface/60" : "bg-surface"
             }`}
             style={{ gridRow: 1, gridColumn: i + 2 }}
           >
@@ -97,7 +103,7 @@ function WeekStrook({
                 <div
                   key={`c-${account.id}-${lane}-${c}`}
                   className={`min-h-[26px] border-b border-r border-line last:border-r-0 ${
-                    d === vandaag ? "bg-accent/5" : ""
+                    d === vandaag ? "bg-accent/5" : c >= 5 ? "bg-surface/40" : ""
                   }`}
                   style={{ gridRow: startRow + lane, gridColumn: c + 2 }}
                 />
@@ -140,12 +146,14 @@ export function PlanbordMaand({
   monteurs,
   anker,
   vandaag,
+  toonWeekend,
   onAnker,
 }: {
   items: Melding[];
   monteurs: MonteurOptie[];
   anker: string;
   vandaag: string;
+  toonWeekend: boolean;
   onAnker: (iso: string) => void;
 }) {
   const weken = maandWeken(anker);
@@ -173,7 +181,14 @@ export function PlanbordMaand({
       ) : (
         <div className="mt-3 flex flex-col gap-3">
           {weken.map((ma) => (
-            <WeekStrook key={ma} maandag={ma} monteurs={monteurs} items={items} vandaag={vandaag} />
+            <WeekStrook
+              key={ma}
+              maandag={ma}
+              monteurs={monteurs}
+              items={items}
+              vandaag={vandaag}
+              toonWeekend={toonWeekend}
+            />
           ))}
         </div>
       )}

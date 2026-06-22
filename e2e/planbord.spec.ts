@@ -337,6 +337,32 @@ test("maandweergave toont de geplande klus en heeft maand-navigatie", async ({ p
   await expect(page.getByRole("button", { name: /^Weekend/ })).toBeVisible({ timeout: 5_000 });
 });
 
+test("maandweergave beweegt mee met de weekend-knop (za verschijnt)", async ({ page }) => {
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // Met weekend aan tonen de maand-stroken za/zo (de knop werkt ook in maandmodus). (De count vóór
+  // klikken niet asserten: op de gedeelde test-DB kan een andere weekend-klus de za al forceren.)
+  await page.getByRole("button", { name: /^Weekend/ }).click();
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("zo", { exact: true }).first()).toBeVisible();
+});
+
+test("een weekend-klus is ook in de maandweergave zichtbaar (geforceerd weekend)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+  await planDirect(monteur.id, monteur.naam, zaterdag, 1);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // Weekend-knop staat uit, maar de strook met de zaterdag-klus toont 'm toch.
+  await expect(
+    page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first(),
+  ).toBeVisible({ timeout: 8_000 });
+});
+
 test("de weekend-knop toont zaterdag en zondag als extra kolommen", async ({ page }) => {
   await page.goto("/planbord");
   // Standaard verborgen: geen za/zo in de koprij.
