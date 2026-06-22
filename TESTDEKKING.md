@@ -24,6 +24,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Planbord resize: rechterrand van een montage slepen wijzigt de duur (1 kolom = 1 werkdag), kapt visueel op vrijdag, telt door over de weekgrens, ondergrens 1 zichtbare kolom, max 20 | U | planbord.test (nieuweDuurNaResize) | groen |
 | Planbord resize end-to-end: rand naar rechts verlengt (duur 1→3, "3 dagen"); voorbij vrijdag laat de klus in de volgende week doorlopen | E | planbord.spec (resize binnen week + over de weekgrens) | groen |
 | Resize/verplaatsen van een al verstuurde klus met andere duur markeert opnieuw "te versturen" (monteur moet de nieuwe duur weten) | U | opdracht-status.test (moetOpnieuwVersturenNa), db.test (wijzigOpdracht resize) | groen |
+| Planbord -/+ dagknoppen op een montage: één klik = één werkdag erbij/eraf (min 1, max 20), loopt door over de weekgrens (intuïtiever dan de rand-sleep) | U, E | planbord.test (duurNaStap), planbord.spec ("+ knop maakt een dag langer") | groen |
+| Naar volgende/vorige week slepen (rand-strook) landt op de MAANDAG van de doelweek, niet op dezelfde weekdag | U | planbord.test (weekschuifNaarMaandag) | groen |
+| Weekend aan/uit op het planbord (knop): toont/verbergt za+zo als extra kolommen (7 i.p.v. 5), voorkeur onthouden (localStorage, hydratie-veilig via useSyncExternalStore) | U, E | planbord.test (weekDagen metWeekend), planbord.spec ("weekend-knop toont za/zo") | groen |
+| e2e-opruim van planbord-extra ruimt alleen eigen testdata op (PBX-tag), niet alles per account: handmatige testdata op de gedeelde test-DB overleeft een CI-run | E | planbord-extra.spec (groen) + handmatig geverifieerd | groen |
 | Test-login self-provisioning (zoekt account op e-mail, maakt aan met profiel-rol; werkt op elke test-DB) | U | test-login/route.test | groen |
 | E2e ruimt eigen test-klussen + demo-klussen op (gedeelde test-DB schoon) | infra | global-teardown, e2e-demo/global-teardown | n.v.t. |
 | Ontplannen (terug naar pool) + mail bij verstuurd/bevestigd | U, M | ontplannen/route.test, ontplan-mail.test, mail-flows.spec | groen |

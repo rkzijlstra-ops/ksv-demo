@@ -79,9 +79,13 @@ export function maandagVan(iso: string): string {
   return format(d);
 }
 
-/** De vijf werkdagen (ma t/m vr) vanaf een maandag. */
-export function weekDagen(maandagIso: string): string[] {
-  return Array.from({ length: WERKDAGEN }, (_, i) => verschuifDagen(maandagIso, i));
+/**
+ * De dagen vanaf een maandag: standaard de vijf werkdagen (ma t/m vr); met `metWeekend` ook za en zo
+ * (ma t/m zo, zeven dagen) zodat het bord het weekend kan tonen.
+ */
+export function weekDagen(maandagIso: string, metWeekend: boolean = false): string[] {
+  const lengte = metWeekend ? 7 : WERKDAGEN;
+  return Array.from({ length: lengte }, (_, i) => verschuifDagen(maandagIso, i));
 }
 
 /** ISO 8601-weeknummer (donderdag-regel). */
@@ -233,6 +237,25 @@ export function nieuweDuurNaResize(
   const ondergrens = Math.max(1, huidigeDuur - (Math.max(1, zichtbareSpan) - 1));
   const gevraagd = huidigeDuur + deltaKolommen;
   return Math.min(maxDuur, Math.max(ondergrens, gevraagd));
+}
+
+/**
+ * Nieuwe duur na een klik op de -/+ dagknop op een montage-balk: één werkdag erbij of eraf, minimaal 1
+ * en met een veilige bovengrens. Loopt vanzelf door over de weekgrens (de weergave knipt op vrijdag en
+ * toont de rest in de volgende week). Pure functie.
+ */
+export function duurNaStap(huidigeDuur: number, stap: number, maxDuur: number = MAX_DUUR_DAGEN): number {
+  return Math.min(maxDuur, Math.max(1, huidigeDuur + stap));
+}
+
+/**
+ * De startdatum na het een week opschuiven via de rand-strook: land op de MAANDAG van de doelweek,
+ * niet op dezelfde weekdag. Zo begint een klus die je naar de volgende week sleept aan het begin van
+ * die week (maandag) i.p.v. weer op vrijdag. `weken` = +1 (volgende week) of -1 (vorige week).
+ * Pure functie.
+ */
+export function weekschuifNaarMaandag(iso: string, weken: number): string {
+  return maandagVan(verschuifDagen(iso, weken * 7));
 }
 
 /** Minimale velden om een opdracht op het planbord te kunnen zoeken (een Melding voldoet hieraan). */

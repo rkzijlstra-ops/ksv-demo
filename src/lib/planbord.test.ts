@@ -10,6 +10,8 @@ import {
   verdeelLanes,
   vindDubbeleBoekingen,
   nieuweDuurNaResize,
+  duurNaStap,
+  weekschuifNaarMaandag,
   zoekPlanbord,
   type PlanbaarOpdracht,
   type BoekbaarOpdracht,
@@ -37,13 +39,25 @@ describe("maandagVan", () => {
 });
 
 describe("weekDagen", () => {
-  it("geeft ma t/m vr (5 werkdagen)", () => {
+  it("geeft ma t/m vr (5 werkdagen) standaard", () => {
     expect(weekDagen("2026-06-08")).toEqual([
       "2026-06-08",
       "2026-06-09",
       "2026-06-10",
       "2026-06-11",
       "2026-06-12",
+    ]);
+  });
+
+  it("geeft ma t/m zo (7 dagen) als het weekend getoond wordt", () => {
+    expect(weekDagen("2026-06-08", true)).toEqual([
+      "2026-06-08",
+      "2026-06-09",
+      "2026-06-10",
+      "2026-06-11",
+      "2026-06-12",
+      "2026-06-13",
+      "2026-06-14",
     ]);
   });
 });
@@ -377,5 +391,42 @@ describe("nieuweDuurNaResize", () => {
 
   it("delta 0 laat de duur ongemoeid", () => {
     expect(nieuweDuurNaResize(2, 2, 0)).toBe(2);
+  });
+});
+
+describe("duurNaStap", () => {
+  // De -/+ knoppen op een montage-balk: één klik = één werkdag erbij of eraf (loopt vanzelf door over
+  // het weekend heen, want de weergave knipt op vrijdag). Minimaal 1, met een veilige bovengrens.
+  it("plus voegt een dag toe", () => {
+    expect(duurNaStap(2, 1)).toBe(3);
+  });
+  it("min haalt een dag eraf", () => {
+    expect(duurNaStap(3, -1)).toBe(2);
+  });
+  it("kan niet onder 1 dag", () => {
+    expect(duurNaStap(1, -1)).toBe(1);
+  });
+  it("begrenst op het maximum", () => {
+    expect(duurNaStap(20, 1, 20)).toBe(20);
+  });
+});
+
+describe("weekschuifNaarMaandag", () => {
+  // Een klus naar de volgende/vorige week slepen via de rand-strook landt op de MAANDAG van die week,
+  // niet op dezelfde weekdag (anders blijft een vrijdag-klus op vrijdag staan i.p.v. de week te beginnen).
+  it("vrijdag een week vooruit -> maandag van de volgende week", () => {
+    expect(weekschuifNaarMaandag("2026-06-12", 1)).toBe("2026-06-15"); // vr 12 jun -> ma 15 jun
+  });
+
+  it("vrijdag een week terug -> maandag van de vorige week", () => {
+    expect(weekschuifNaarMaandag("2026-06-12", -1)).toBe("2026-06-01"); // vr 12 jun -> ma 1 jun
+  });
+
+  it("ook een woensdag-klus landt op maandag van de doelweek", () => {
+    expect(weekschuifNaarMaandag("2026-06-10", 1)).toBe("2026-06-15"); // wo 10 jun -> ma 15 jun
+  });
+
+  it("een maandag blijft op de maandag van de volgende week", () => {
+    expect(weekschuifNaarMaandag("2026-06-08", 1)).toBe("2026-06-15");
   });
 });
