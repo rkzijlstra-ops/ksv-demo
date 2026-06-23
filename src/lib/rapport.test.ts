@@ -100,6 +100,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     startdatum: null,
     starttijd: null,
     duur_dagen: 1,
+    weekend_telt_mee: false,
     gewijzigd_te_versturen: false,
     bevestigd_at: null,
     verzonden_monteur: null,

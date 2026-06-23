@@ -90,6 +90,10 @@ export interface Melding {
   startdatum: string | null;
   starttijd: string | null;
   duur_dagen: number;
+  // Of het weekend voor déze klus als werkdag meetelt (vr+za i.p.v. vr+ma). Vastgelegd bij plannen/
+  // duur-wijzigen naar de weekend-knop-stand van dat moment, zodat de globale knop een al-geplande
+  // klus nooit verschuift. Standaard false (weekend overslaan).
+  weekend_telt_mee: boolean;
   gewijzigd_te_versturen: boolean;
   bevestigd_at: string | null;
   // de plek waarop de opdracht stond toen hij naar de monteur ging (om gewijzigd weer op te heffen)
@@ -324,6 +328,11 @@ export interface PlanningInput {
   startdatum: string;
   starttijd: string | null;
   duur_dagen: number;
+  /**
+   * Telt het weekend voor deze klus als werkdag mee? Vastgelegd op het moment van plannen/wijzigen.
+   * Optioneel: weggelaten = false (weekend overslaan). De planbord-routes vullen hem altijd expliciet.
+   */
+  weekend_telt_mee?: boolean;
 }
 
 /** Rol van een ingelogde gebruiker (blok 6). */
@@ -1024,6 +1033,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         startdatum: planning.startdatum,
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
+        weekend_telt_mee: planning.weekend_telt_mee ?? false,
         dashboard_status: "concept_gepland",
         monteur_naam: planning.monteur_naam,
         toegewezen_aan: planning.toegewezen_aan,
@@ -1103,6 +1113,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         startdatum: planning.startdatum,
         starttijd: planning.starttijd,
         duur_dagen: planning.duur_dagen,
+        weekend_telt_mee: planning.weekend_telt_mee ?? false,
         monteur_naam: planning.monteur_naam,
         toegewezen_aan: planning.toegewezen_aan,
         uitvoerdatum: planning.startdatum,

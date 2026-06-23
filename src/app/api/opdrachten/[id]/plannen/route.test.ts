@@ -40,7 +40,18 @@ describe("POST /api/opdrachten/[id]/plannen", () => {
       startdatum: "2026-06-10",
       starttijd: "10:00",
       duur_dagen: 2,
+      weekend_telt_mee: false,
     });
+  });
+
+  it("weekend_telt_mee=true uit de body wordt doorgegeven; alles anders blijft false", async () => {
+    await POST(req({ startdatum: "2026-06-12", duur_dagen: 4, weekend_telt_mee: true }), { params });
+    expect(mockPlan.mock.calls[0][1].weekend_telt_mee).toBe(true);
+
+    mockPlan.mockReset();
+    mockPlan.mockResolvedValue(undefined);
+    await POST(req({ startdatum: "2026-06-12", weekend_telt_mee: "1" }), { params });
+    expect(mockPlan.mock.calls[0][1].weekend_telt_mee).toBe(false); // alleen exact true telt
   });
 
   it("lege tijd wordt null (dagblok); ontbrekende duur wordt 1", async () => {

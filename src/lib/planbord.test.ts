@@ -81,6 +81,7 @@ function opdr(
     starttijd: over.starttijd ?? null,
     duur_dagen: over.duur_dagen ?? 1,
     dashboard_status: over.dashboard_status ?? ("gepland" as DashboardStatus),
+    weekend_telt_mee: over.weekend_telt_mee ?? false,
   };
 }
 
@@ -322,6 +323,7 @@ describe("vindDubbeleBoekingen", () => {
       starttijd: over.starttijd ?? null,
       duur_dagen: over.duur_dagen ?? basis.duur_dagen,
       dashboard_status: over.dashboard_status ?? basis.dashboard_status,
+      weekend_telt_mee: over.weekend_telt_mee ?? false,
     };
   }
 
@@ -384,6 +386,23 @@ describe("vindDubbeleBoekingen", () => {
       b({ id: "c", dashboard_status: "gepland" }),
     ]);
     // Geen vals alarm: de nieuwe (geplande) klus mag op de dag van een al opgeleverde klus.
+    expect(set.size).toBe(0);
+  });
+
+  it("weekend-klus (vr+za) botst met een montage op die zaterdag (per-klus vlag telt het weekend)", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "we", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: true }), // vr 12 + za 13
+      b({ id: "za", startdatum: "2026-06-13", duur_dagen: 1 }), // za 13
+    ]);
+    expect(set.has("we")).toBe(true);
+    expect(set.has("za")).toBe(true);
+  });
+
+  it("dezelfde montage ZONDER weekend-vlag (vr, dan ma) botst NIET met de zaterdag-klus", () => {
+    const set = vindDubbeleBoekingen([
+      b({ id: "gw", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: false }), // vr 12, dan ma 15
+      b({ id: "za", startdatum: "2026-06-13", duur_dagen: 1 }), // za 13
+    ]);
     expect(set.size).toBe(0);
   });
 });
@@ -473,48 +492,72 @@ describe("verschuifMaand", () => {
   });
 });
 
-describe("plaatsOpdrachten met weekend", () => {
+describe("plaatsOpdrachten met weekend (per klus)", () => {
   const WEEK7 = weekDagen("2026-06-08", true); // ma 8 t/m zo 14 juni (7 dagen)
-  it("vrijdag 2 dagen, weekend AAN: loopt door naar zaterdag (vr+za, span 2)", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2 })], WEEK7, true);
+  it("vrijdag 2 dagen, weekend telt mee: loopt door naar zaterdag (vr+za, span 2)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: true })], WEEK7);
     expect(p).toHaveLength(1);
     expect(p[0].dagIndex).toBe(4); // vrijdag
     expect(p[0].span).toBe(2); // vr + za
   });
-  it("vrijdag 2 dagen, weekend UIT: alleen vrijdag deze week (rest = maandag volgende week)", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2 })], WEEK, false);
+  it("vrijdag 2 dagen, weekend telt NIET mee: alleen vrijdag deze week (rest = maandag volgende week)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: false })], WEEK);
     expect(p[0].dagIndex).toBe(4);
     expect(p[0].span).toBe(1);
   });
-  it("vrijdag 3 dagen, weekend aan: vr, za, zo (span 3)", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 3 })], WEEK7, true);
+  it("vrijdag 3 dagen, weekend telt mee: vr, za, zo (span 3)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-12", duur_dagen: 3, weekend_telt_mee: true })], WEEK7);
     expect(p[0].dagIndex).toBe(4);
     expect(p[0].span).toBe(3);
   });
-  it("maandag 6 dagen, weekend aan: ma t/m za (span 6)", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-08", duur_dagen: 6 })], WEEK7, true);
+  it("maandag 6 dagen, weekend telt mee: ma t/m za (span 6)", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-08", duur_dagen: 6, weekend_telt_mee: true })], WEEK7);
     expect(p[0].dagIndex).toBe(0);
     expect(p[0].span).toBe(6);
   });
-  it("een klus die OP zaterdag staat blijft op zaterdag (kolom 5), ook met weekend-vlag uit", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-13", duur_dagen: 1 })], WEEK7, false);
+  it("een klus die OP zaterdag staat blijft op zaterdag (kolom 5), ook zonder weekend-vlag", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-13", duur_dagen: 1, weekend_telt_mee: false })], WEEK7);
     expect(p[0].dagIndex).toBe(5);
     expect(p[0].span).toBe(1);
   });
   // "Onlogische" invoer die toch netjes moet lopen:
-  it("donderdag 5 dagen, weekend aan: do/vr/za/zo deze week (span 4), maandag loopt door", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-11", duur_dagen: 5 })], WEEK7, true);
+  it("donderdag 5 dagen, weekend telt mee: do/vr/za/zo deze week (span 4), maandag loopt door", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-11", duur_dagen: 5, weekend_telt_mee: true })], WEEK7);
     expect(p[0].dagIndex).toBe(3); // donderdag
     expect(p[0].span).toBe(4); // do, vr, za, zo
   });
-  it("zondag-start 2 dagen, weekend aan: zondag deze week (span 1), maandag loopt door", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-14", duur_dagen: 2 })], WEEK7, true);
+  it("zondag-start 2 dagen, weekend telt mee: zondag deze week (span 1), maandag loopt door", () => {
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-14", duur_dagen: 2, weekend_telt_mee: true })], WEEK7);
     expect(p[0].dagIndex).toBe(6); // zondag
     expect(p[0].span).toBe(1);
   });
   it("rare duur (0) wordt minimaal 1 dag", () => {
-    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-10", duur_dagen: 0 })], WEEK7, true);
+    const p = plaatsOpdrachten([opdr({ id: "a", startdatum: "2026-06-10", duur_dagen: 0, weekend_telt_mee: true })], WEEK7);
     expect(p[0].span).toBe(1);
+  });
+});
+
+describe("plaatsOpdrachten: weekend-keuze is per klus, niet globaal (regressie)", () => {
+  const WEEK7 = weekDagen("2026-06-08", true); // ma 8 t/m zo 14 juni
+  it("een weekend-klus en een gewone klus naast elkaar volgen elk hun eigen vlag", () => {
+    const weekendKlus = opdr({ id: "we", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: true }); // vr+za
+    const gewoon = opdr({ id: "gw", startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: false }); // vr (rest ma)
+    const p = plaatsOpdrachten([weekendKlus, gewoon], WEEK7);
+    const we = p.find((x) => x.opdracht.id === "we")!;
+    const gw = p.find((x) => x.opdracht.id === "gw")!;
+    expect(we.span).toBe(2); // vr + za
+    expect(gw.span).toBe(1); // alleen vrijdag deze week
+  });
+  it("een al-verstuurde weekend-klus (vr+4) blijft vr-za-zo-ma; de plaatsing leest geen globale knop", () => {
+    // De bug: kantoor plant vr + 4 met weekend aan (vr-za-zo-ma) en verstuurt. Daarna mag NIETS buiten
+    // de klus zelf die dagen nog verschuiven. plaatsOpdrachten kent geen globale weekend-parameter meer.
+    const o = opdr({ id: "v", startdatum: "2026-06-12", duur_dagen: 4, weekend_telt_mee: true, dashboard_status: "gepland" });
+    const dezeWeek = plaatsOpdrachten([o], WEEK7); // ma 8 t/m zo 14
+    expect(dezeWeek[0].dagIndex).toBe(4); // vrijdag
+    expect(dezeWeek[0].span).toBe(3); // vr, za, zo deze week; de maandag loopt door naar de week erna
+    const erna = plaatsOpdrachten([o], WEEK_ERNA); // ma 15 t/m vr 19
+    expect(erna[0].dagIndex).toBe(0); // maandag
+    expect(erna[0].span).toBe(1);
   });
 });
 
@@ -526,6 +569,7 @@ describe("weekHeeftWeekendKlus", () => {
     starttijd: null,
     duur_dagen: 1,
     dashboard_status: "gepland",
+    weekend_telt_mee: false,
     ...o,
   });
   // maandag 8 jun -> weekend = za 13 jun, zo 14 jun.
@@ -546,14 +590,14 @@ describe("weekHeeftWeekendKlus", () => {
   it("false zonder monteur of zonder startdatum (wordt toch niet geplaatst)", () => {
     expect(weekHeeftWeekendKlus([base({ startdatum: "2026-06-13", monteur_naam: null })], "2026-06-08")).toBe(false);
   });
-  it("true: een vrijdag-montage van 2 dagen met weekend aan bezet zaterdag", () => {
+  it("true: een vrijdag-montage van 2 dagen die het weekend meetelt, bezet zaterdag", () => {
     expect(
-      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2 })], "2026-06-08", true),
+      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: true })], "2026-06-08"),
     ).toBe(true);
   });
-  it("false: dezelfde vrijdag-montage met weekend uit bezet geen weekenddag (vr+ma)", () => {
+  it("false: dezelfde vrijdag-montage zonder weekend-vlag bezet geen weekenddag (vr+ma)", () => {
     expect(
-      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2 })], "2026-06-08", false),
+      weekHeeftWeekendKlus([base({ startdatum: "2026-06-12", duur_dagen: 2, weekend_telt_mee: false })], "2026-06-08"),
     ).toBe(false);
   });
 });

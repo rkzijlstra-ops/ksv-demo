@@ -51,6 +51,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       ? (typeof body.starttijd === "string" && body.starttijd.trim() ? body.starttijd.trim() : null)
       : opdracht.starttijd,
     duur_dagen: Number.isFinite(duur) && duur >= 1 ? Math.floor(duur) : opdracht.duur_dagen,
+    // Verplaatsen behoudt de weekend-keuze van de klus; alleen een duur-wijziging (meegestuurd) zet hem
+    // opnieuw naar de huidige knop-stand. Zo verschuift slepen naar een andere dag/monteur niets aan het weekend.
+    weekend_telt_mee: heeft("weekend_telt_mee")
+      ? body.weekend_telt_mee === true
+      : opdracht.weekend_telt_mee,
   };
 
   try {

@@ -203,16 +203,16 @@ export function PlanbordBord({
   }
 
   const maandag = maandagVan(weekAnker);
-  // Weekend tonen als de knop aan staat, OF als deze week een klus op za/zo heeft (anders zou die
-  // weekend-klus onzichtbaar van het bord vallen, dat mag nooit).
-  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag, toonWeekend);
+  // Weekend tonen als de knop aan staat, OF als deze week een klus heeft die het weekend meetelt en
+  // dus op za/zo valt (anders zou die weekend-klus onzichtbaar van het bord vallen, dat mag nooit).
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
   const dagen = weekDagen(maandag, effectiefWeekend);
   const weeknr = weeknummer(maandag);
-  // Plaatsing en conflicten rekenen het weekend mee als de KNOP aan staat (toonWeekend), niet als hij
-  // alleen geforceerd getoond wordt door een losse weekend-klus: een gewone montage springt dan nog
-  // steeds over het weekend, terwijl die ene weekend-klus wel zichtbaar blijft.
-  const plaatsingen = plaatsOpdrachten(items, dagen, toonWeekend);
-  const conflicten = vindDubbeleBoekingen(items, toonWeekend);
+  // Plaatsing en conflicten lezen de weekend-keuze PER KLUS (weekend_telt_mee), niet de globale knop.
+  // Zo verschuift het omzetten van de knop nooit een al-geplande klus; de knop bepaalt alleen of de
+  // lege za/zo-kolommen zichtbaar zijn.
+  const plaatsingen = plaatsOpdrachten(items, dagen);
+  const conflicten = vindDubbeleBoekingen(items);
   // Vangnet: elke ingeplande klus moet een rij krijgen, ook als zijn account niet (meer) in de
   // monteurlijst staat (bv. hernoemd of verwijderd). Zonder dit zou zo'n klus onzichtbaar van het bord
   // verdwijnen terwijl hij gewoon in de database staat.
@@ -317,8 +317,9 @@ export function PlanbordBord({
     if (over.zone === "week-prev" || over.zone === "week-next") {
       if (data.soort !== "kaart" || !o.startdatum) return;
       const richting = over.zone === "week-next" ? 7 : -7;
-      // Volgende week -> maandag (begin); vorige week -> laatste getoonde dag (vr of zo, afh. van weekend).
-      const nieuweDatum = weekschuifLanding(o.startdatum, richting, effectiefWeekend);
+      // Volgende week -> maandag (begin); vorige week -> laatste getoonde dag (vr, of zo als déze klus het
+      // weekend meetelt). De klus behoudt zijn weekend-keuze; verschuiven verandert die niet.
+      const nieuweDatum = weekschuifLanding(o.startdatum, richting, !!o.weekend_telt_mee);
       pasLokaalToe(o.id, {
         startdatum: nieuweDatum,
         gewijzigd_te_versturen: gewijzigdNa(o, o.toegewezen_aan, nieuweDatum, o.starttijd),
@@ -352,6 +353,7 @@ export function PlanbordBord({
         startdatum: dag,
         starttijd: null,
         duur_dagen: 1,
+        weekend_telt_mee: toonWeekend,
         dashboard_status: "concept_gepland",
       });
       startOpslag(o.id);
@@ -364,6 +366,7 @@ export function PlanbordBord({
           startdatum: dag,
           duur_dagen: 1,
           starttijd: null,
+          weekend_telt_mee: toonWeekend,
         }),
       })
         .then(() => router.refresh())
@@ -411,6 +414,8 @@ export function PlanbordBord({
         startdatum: o.startdatum,
         starttijd: o.starttijd,
         duur_dagen: nieuweDuur,
+        // Duur wijzigen herijkt de weekend-keuze op de huidige knop-stand (hier beslis je of het weekend telt).
+        weekend_telt_mee: toonWeekend,
       }),
     })
       .then(() => router.refresh())
@@ -419,10 +424,12 @@ export function PlanbordBord({
 
   // Past een nieuwe duur toe (optimistisch + opslaan), gedeeld door de resize-greep en de -/+ knoppen.
   // Een al verstuurde klus die korter/langer wordt, gaat opnieuw "te versturen" (monteur moet het weten).
+  // De duur-wijziging legt meteen de weekend-keuze vast op de huidige knop-stand (toonWeekend).
   function pasDuurToe(o: Melding, nieuweDuur: number) {
-    if (!o.startdatum || nieuweDuur === o.duur_dagen) return;
+    if (!o.startdatum || (nieuweDuur === o.duur_dagen && toonWeekend === o.weekend_telt_mee)) return;
     pasLokaalToe(o.id, {
       duur_dagen: nieuweDuur,
+      weekend_telt_mee: toonWeekend,
       gewijzigd_te_versturen:
         gewijzigdNa(o, o.toegewezen_aan, o.startdatum, o.starttijd) ||
         (moetOpnieuwVersturen(o.dashboard_status) && o.startdatum != null),

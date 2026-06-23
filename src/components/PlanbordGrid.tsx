@@ -316,7 +316,15 @@ export function PlanbordGrid({
   return (
     <div
       className="mt-3 grid border-2 border-ink bg-white"
-      style={{ gridTemplateColumns: `104px repeat(${weekdagen.length}, minmax(0, 1fr))` }}
+      style={{
+        gridTemplateColumns: `104px repeat(${weekdagen.length}, minmax(0, 1fr))`,
+        // Kop-rij op natuurlijke hoogte (auto); alle monteur-rijen een VASTE hoogte, zodat een blok van
+        // 1 dag en een blok van meerdere dagen even hoog zijn (geen verspringende, plattere balken meer).
+        // 98px = de natuurlijke hoogte van een volle 1-daagse kaart (gemeten: ~89px inhoud + 8px marge),
+        // zodat niets afkapt en een meerdaagse balk meegroeit i.p.v. platter te worden.
+        gridTemplateRows: "auto",
+        gridAutoRows: "98px",
+      }}
     >
       {/* Kop */}
       <div className="border-b-2 border-r border-ink bg-surface" style={{ gridRow: 1, gridColumn: 1 }} />
