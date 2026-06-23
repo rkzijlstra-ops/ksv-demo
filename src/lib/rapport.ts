@@ -17,6 +17,7 @@ import {
   type RGB,
 } from "pdf-lib";
 import type { Melding, Oplevering } from "./db";
+import type { ControlePunt } from "./oplever-controle";
 import { formatDatumKort, formatDatumLang } from "./datum";
 import { rapportAfzenderWeergave, type RapportAfzender } from "./afzender";
 
@@ -116,12 +117,50 @@ export function interneNotitieVoorRapport(
   return oplevering?.interne_opmerking?.trim() || null;
 }
 
+/** Interne foto's die in het rapport mogen: alleen de zaak-versie, nooit de klant. */
+export function interneFotosVoorRapport(
+  oplevering: Oplevering | null,
+  bedoeldVoor: RapportDoelgroep,
+): string[] {
+  if (bedoeldVoor !== "zaak") return [];
+  return oplevering?.interne_foto_urls ?? [];
+}
+
+/** Interne video die in het rapport mag: alleen de zaak-versie, nooit de klant. */
+export function interneVideoVoorRapport(
+  oplevering: Oplevering | null,
+  bedoeldVoor: RapportDoelgroep,
+): string | null {
+  if (bedoeldVoor !== "zaak") return null;
+  return oplevering?.interne_video_url?.trim() || null;
+}
+
+/**
+ * Variant van het rapport. "volledig" = de gewone oplevering (ongewijzigd). "verkorting" = voor
+ * snel afsluiten: zelfde rapport zonder handtekening en zonder de controle-checklist.
+ */
+export type RapportVariant = "volledig" | "verkorting";
+
+/** Toont het rapport de handtekening-sectie? Niet in de verkorte variant, en alleen als er een is. */
+export function toonHandtekeningInRapport(
+  oplevering: Oplevering | null,
+  variant: RapportVariant,
+): boolean {
+  return variant !== "verkorting" && !!oplevering?.handtekening_url;
+}
+
+/** Toont het rapport de controle-checklist? Niet in de verkorte variant, en alleen als er punten zijn. */
+export function toonControleInRapport(controle: ControlePunt[], variant: RapportVariant): boolean {
+  return variant !== "verkorting" && controle.length > 0;
+}
+
 export async function genereerRapportPdf(
   opdracht: Melding,
   meldingen: Melding[],
   oplevering: Oplevering | null = null,
   afzender: RapportAfzender | null = null,
   bedoeldVoor: RapportDoelgroep = "zaak",
+  variant: RapportVariant = "volledig",
 ): Promise<Uint8Array> {
   const samenvatting = rapportSamenvatting(opdracht, oplevering);
   const afz = rapportAfzenderWeergave(afzender);
@@ -165,12 +204,16 @@ export async function genereerRapportPdf(
   const fotos = oplevering?.eindstaat_foto_urls ?? [];
   const controle = oplevering?.controle ?? [];
   const controleNietAkkoord = controle.filter((c) => !c.akkoord).length;
+  const toonControle = toonControleInRapport(controle, variant);
+  const toonHandtekening = toonHandtekeningInRapport(oplevering, variant);
   sectieKop(1, "Oplevering");
-  leaderRegel(
-    "Ondertekend door klant",
-    samenvatting.ondertekend ? "Ja" : "Nee",
-    samenvatting.ondertekend ? SUCCESS : MUTED,
-  );
+  if (variant !== "verkorting") {
+    leaderRegel(
+      "Ondertekend door klant",
+      samenvatting.ondertekend ? "Ja" : "Nee",
+      samenvatting.ondertekend ? SUCCESS : MUTED,
+    );
+  }
   leaderRegel(
     "Video van de oplevering",
     samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
@@ -179,7 +222,7 @@ export async function genereerRapportPdf(
   leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
   leaderRegel("Meldingen", String(meldingen.length), INK);
   // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
-  if (controle.length > 0) {
+  if (toonControle) {
     leaderRegel(
       "Controle bij oplevering",
       controleNietAkkoord === 0 ? "Akkoord" : `${controleNietAkkoord} niet akkoord`,
@@ -190,10 +233,20 @@ export async function genereerRapportPdf(
 
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
 
-  // Interne notitie: alleen in de ZAAK-versie. De klant-tak levert hier null, dus de interne tekst
-  // kan structureel niet in de klant-PDF terechtkomen (zie test "interne notitie lekt niet").
+  // Interne blok: alleen in de ZAAK-versie. De klant-helpers leveren leeg/null, dus interne notitie
+  // én media kunnen structureel niet in de klant-PDF terechtkomen (zie tests "... lekt niet").
   const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
   if (intern) interneNotitieBlok(intern);
+  const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
+  if (interneFotos.length > 0) {
+    subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
+    await fotoGrid(interneFotos);
+  }
+  const interneVideo = interneVideoVoorRapport(oplevering, bedoeldVoor);
+  if (interneVideo) {
+    y -= 4;
+    videoLink("Interne video · alleen opdrachtgever", interneVideo);
+  }
 
   if (fotos.length > 0) {
     subKop("EINDSTAAT-FOTO'S");
@@ -238,8 +291,8 @@ export async function genereerRapportPdf(
     y -= 12;
   }
 
-  // ---- sectie 3: Controle bij oplevering ----
-  if (controle.length > 0) {
+  // ---- sectie 3: Controle bij oplevering (niet in de verkorte variant) ----
+  if (toonControle) {
     y -= 4;
     sectieKop(3, "Controle bij oplevering");
     for (const c of controle) controleRegel(c.punt, c.akkoord);
@@ -248,7 +301,7 @@ export async function genereerRapportPdf(
   // ---- sectie 4: Bijlagen (foto's zijn zelf klikbaar; hier de hint + de videolink) ----
   if (fotoTeller > 0 || samenvatting.videoUrl) {
     y -= 4;
-    sectieKop(controle.length > 0 ? 4 : 3, "Bijlagen");
+    sectieKop(toonControle ? 4 : 3, "Bijlagen");
     for (const regel of wikkel(
       helv,
       9.5,
@@ -267,8 +320,8 @@ export async function genereerRapportPdf(
     y -= 8;
   }
 
-  // ---- afsluiting onderaan: klant-handtekening in kader ----
-  if (oplevering?.handtekening_url) {
+  // ---- afsluiting onderaan: klant-handtekening in kader (niet in de verkorte variant) ----
+  if (toonHandtekening && oplevering?.handtekening_url) {
     ruimte(96);
     subKop("HANDTEKENING KLANT");
     y -= 2;
