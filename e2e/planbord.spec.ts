@@ -10,6 +10,12 @@ import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "./test-env";
  * gedeelde test-database schoon blijft en andere data ongemoeid.
  */
 
+// Hoge viewport: het planbord met vaste rijhoogte (98px per monteur) plus de werkbalk maakt de pagina
+// langer dan de standaard 720px, waardoor de pool met het sleephandvat onder beeld zou vallen en een
+// pool->cel-drag niet meer zou starten (de muis kan het handvat dan niet pakken). Een kantoor-desktop is
+// sowieso hoger; 1600px houdt zowel het handvat als de doelcel bereikbaar voor de drag-simulatie.
+test.use({ viewport: { width: 1280, height: 1600 } });
+
 const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth: { persistSession: false } });
 const db: Db = createDb({ url: SUPABASE_URL, secretKey: SUPABASE_SECRET });
 
