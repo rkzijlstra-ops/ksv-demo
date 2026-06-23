@@ -37,6 +37,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     starttijd:
       typeof body.starttijd === "string" && body.starttijd.trim() ? body.starttijd.trim() : null,
     duur_dagen: Number.isFinite(duur) && duur >= 1 ? Math.floor(duur) : 1,
+    // Vastleggen of deze klus het weekend meetelt (de weekend-knop-stand op het moment van plannen).
+    weekend_telt_mee: body.weekend_telt_mee === true,
   };
 
   try {

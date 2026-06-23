@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maandoverzicht — optie C: weekstroken</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #F4F4F5; --ink: #18181B; --ink-muted: #525252; --line: #D4D4D8;
+    --ant: #27272A; --accent: #F97316;
+    --st-binnen: #94A3B8; --st-gepland: #F97316; --st-bevestigd: #1D4ED8; --st-opgeleverd: #16A34A;
+    --urgent: #DC2626; --amber: #FBBF24;
+    --rein:#0EA5E9; --dani:#A855F7; --sam:#16A34A;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Lexend", ui-sans-serif, system-ui, sans-serif; font-size:16px; line-height:1.4; }
+  .mono { font-family: ui-monospace, "Consolas", monospace; letter-spacing:-.01em; }
+  main { max-width:1260px; margin:0 auto; padding:16px 16px 60px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:10px; }
+  .topbar a { color:inherit; }
+  .topbar b { color:var(--ink); }
+
+  /* Header */
+  .h { position:relative; background:#FFF; color:var(--ink); border:2px solid var(--line); border-bottom:none; padding:18px 22px 20px; }
+  .h::after { content:""; display:block; height:6px; background:var(--accent); position:absolute; left:0; right:0; bottom:0; }
+  .h .stamp { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-muted); }
+  .h h1 { margin:4px 0 0; font-size:28px; font-weight:800; letter-spacing:-.01em; }
+  .h .sub { margin-top:6px; font-size:14px; color:var(--ink-muted); }
+
+  /* Toolbar */
+  .toolbar { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .nav { display:inline-flex; gap:6px; align-items:center; }
+  .pill { border:1.5px solid var(--ant); background:#FFF; min-height:38px; padding:0 14px; display:inline-flex; align-items:center; gap:6px;
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .pill.ghost { border-color:var(--line); color:var(--ink-muted); }
+  .month { font-weight:800; font-size:18px; padding:0 8px; min-width:140px; text-align:center; }
+  .spacer { flex:1; }
+  .toggle { display:inline-flex; border:1.5px solid var(--ant); }
+  .toggle span { padding:0 16px; min-height:38px; display:inline-flex; align-items:center; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .toggle span.on { background:var(--ant); color:#fff; }
+  .toggle span:first-child { border-right:1.5px solid var(--ant); }
+
+  /* Legenda */
+  .leg { margin-top:12px; display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--ink-muted); align-items:center; }
+  .leg span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:2px; }
+  .mdot { width:11px; height:11px; border-radius:50%; flex:none; }
+
+  /* Maand = stapel van weekstroken */
+  .stack { margin-top:14px; display:flex; flex-direction:column; gap:14px; }
+  .wk { border:2px solid var(--ant); background:#FFF; }
+  .wk-h { background:var(--surface); border-bottom:2px solid var(--ant); padding:6px 12px; display:flex; align-items:baseline; gap:10px; }
+  .wk-h .wn { font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.06em; }
+  .wk-h .rng { font-size:12px; color:var(--ink-muted); }
+
+  /* mini weekbord: monteur-rijen x ma-vr (compact) */
+  .mini { display:grid; grid-template-columns:74px repeat(5,1fr); }
+  .dayh { background:#FBFBFC; border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:3px 7px; }
+  .dayh:last-child { border-right:none; }
+  .dayh .dw { font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-muted); }
+  .dayh .dn { font-weight:800; font-size:12px; }
+  .corner { background:#FBFBFC; border-bottom:1px solid var(--line); border-right:1px solid var(--line); }
+
+  .ml { border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:0 8px; display:flex; align-items:center; gap:6px; font-weight:800; font-size:12px; }
+  .mini .row:last-child .ml, .mini .row:last-child .cell { border-bottom:none; }
+  .cell { border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:46px; padding:3px; }
+  .cell:last-child { border-right:none; }
+  .row { display:contents; }
+
+  /* compacte blokken */
+  .blk { display:flex; align-items:center; gap:4px; padding:2px 5px; font-size:10.5px; font-weight:800; line-height:1.1; color:#fff; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .blk.bevestigd { background:var(--st-bevestigd); }
+  .blk.gepland { background:var(--st-gepland); }
+  .blk.opgeleverd { background:var(--st-opgeleverd); }
+  .blk.concept { background:repeating-linear-gradient(45deg,var(--st-gepland),var(--st-gepland) 5px,#fb8a3c 5px,#fb8a3c 10px); }
+  .blk .cont { opacity:.85; }
+  .svc { display:flex; align-items:center; gap:4px; padding:2px 5px; margin-top:2px; font-size:10px; font-weight:700; line-height:1.1;
+    background:#FFF; border:1px solid var(--line); border-left-width:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .svc.bevestigd { border-left-color:var(--st-bevestigd); }
+  .svc.gepland { border-left-color:var(--st-gepland); }
+  .svc.opgeleverd { border-left-color:var(--st-opgeleverd); }
+  .svc .t { color:var(--ant); font-weight:800; }
+
+  .we { background:#FAFAFA; }
+
+  .hint { font-size:13.5px; color:var(--ink-muted); margin-top:18px; border-left:3px solid var(--accent); padding-left:12px; }
+  .hint b { color:var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><a href="index.html">← mockups</a> · <b>Maandoverzicht — optie C: weekstroken</b></div>
+
+  <header class="h">
+    <div class="stamp mono">KSV / PLANBORD</div>
+    <h1 class="mono">Maandoverzicht</h1>
+    <div class="sub">Juni 2026 · 3 monteurs · 5 weekstroken onder elkaar · 2 nog te versturen</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="nav">
+      <span class="pill ghost">‹ vorige</span>
+      <span class="month">Juni 2026</span>
+      <span class="pill ghost">volgende ›</span>
+    </div>
+    <span class="pill">Vandaag</span>
+    <span class="spacer"></span>
+    <div class="toggle"><span>Week</span><span class="on">Maand</span></div>
+  </div>
+
+  <div class="leg">
+    <span><span class="mdot" style="background:var(--rein)"></span>Rein</span>
+    <span><span class="mdot" style="background:var(--dani)"></span>Dani</span>
+    <span><span class="mdot" style="background:var(--sam)"></span>Sam</span>
+    <span style="margin-left:6px">·</span>
+    <span><span class="dot" style="background:var(--st-gepland)"></span>Gepland</span>
+    <span><span class="dot" style="background:#fff;border:1.5px dashed var(--st-gepland)"></span>Concept</span>
+    <span><span class="dot" style="background:var(--st-bevestigd)"></span>Bevestigd</span>
+    <span><span class="dot" style="background:var(--st-opgeleverd)"></span>Opgeleverd</span>
+    <span style="margin-left:6px">· brede balk = montage, kaartje met tijd = service</span>
+  </div>
+
+  <div class="stack">
+
+    <!-- WEEK 23 -->
+    <div class="wk">
+      <div class="wk-h"><span class="wn">Week 23</span><span class="rng">1 t/m 5 juni</span></div>
+      <div class="mini">
+        <div class="corner"></div>
+        <div class="dayh"><div class="dw">ma</div><div class="dn">1</div></div>
+        <div class="dayh"><div class="dw">di</div><div class="dn">2</div></div>
+        <div class="dayh"><div class="dw">wo</div><div class="dn">3</div></div>
+        <div class="dayh"><div class="dw">do</div><div class="dn">4</div></div>
+        <div class="dayh"><div class="dw">vr</div><div class="dn">5</div></div>
+
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+          <div class="cell"><div class="blk bevestigd">Fam. Bakker 7588</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>Bakker</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>Bakker</div></div>
+          <div class="cell"><div class="blk gepland">Mevr. de Wit 7601</div></div>
+          <div class="cell"><div class="blk gepland"><span class="cont">‹</span>de Wit</div></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">09:00</span>Putman</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc opgeleverd"><span class="t mono">14:00</span>de Bruin</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">13:30</span>Heesakkers</div></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">11:00</span>J. Jansen</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">08:30</span>Vermeer</div></div>
+          <div class="cell"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK 24 -->
+    <div class="wk">
+      <div class="wk-h"><span class="wn">Week 24</span><span class="rng">8 t/m 12 juni</span></div>
+      <div class="mini">
+        <div class="corner"></div>
+        <div class="dayh"><div class="dw">ma</div><div class="dn">8</div></div>
+        <div class="dayh"><div class="dw">di</div><div class="dn">9</div></div>
+        <div class="dayh"><div class="dw">wo</div><div class="dn">10</div></div>
+        <div class="dayh"><div class="dw">do</div><div class="dn">11</div></div>
+        <div class="dayh"><div class="dw">vr</div><div class="dn">12</div></div>
+
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+          <div class="cell"><div class="blk bevestigd">Fam. el Amrani 7510</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>el Amrani</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>el Amrani</div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">09:30</span>Klaassen</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc opgeleverd"><span class="t mono">15:00</span>Hofman</div></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">10:00</span>Mevr. Smit</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="blk concept">Fam. Visser 7702</div></div>
+          <div class="cell"><div class="blk concept"><span class="cont">‹</span>Visser</div><div class="svc bevestigd"><span class="t mono">13:00</span>de Jong</div></div>
+          <div class="cell"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK 25 -->
+    <div class="wk">
+      <div class="wk-h"><span class="wn">Week 25</span><span class="rng">15 t/m 19 juni</span></div>
+      <div class="mini">
+        <div class="corner"></div>
+        <div class="dayh"><div class="dw">ma</div><div class="dn">15</div></div>
+        <div class="dayh"><div class="dw">di</div><div class="dn">16</div></div>
+        <div class="dayh"><div class="dw">wo</div><div class="dn">17</div></div>
+        <div class="dayh"><div class="dw">do</div><div class="dn">18</div></div>
+        <div class="dayh"><div class="dw">vr</div><div class="dn">19</div></div>
+
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+          <div class="cell"><div class="blk gepland">Mevr. Heesakkers 7636</div></div>
+          <div class="cell"><div class="blk gepland"><span class="cont">‹</span>Heesakkers</div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">10:30</span>Mol</div><div class="svc bevestigd"><span class="t mono">14:00</span>van Dijk</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">09:00</span>Willems</div></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">08:00</span>Peters</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="blk bevestigd">Fam. Koster 7715</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>Koster</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>Koster</div><div class="svc bevestigd"><span class="t mono">13:00</span>Veenstra</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK 26 -->
+    <div class="wk">
+      <div class="wk-h"><span class="wn">Week 26</span><span class="rng">22 t/m 26 juni · deze week</span></div>
+      <div class="mini">
+        <div class="corner"></div>
+        <div class="dayh we"><div class="dw">ma</div><div class="dn">22</div></div>
+        <div class="dayh"><div class="dw">di</div><div class="dn">23</div></div>
+        <div class="dayh"><div class="dw">wo</div><div class="dn">24</div></div>
+        <div class="dayh"><div class="dw">do</div><div class="dn">25</div></div>
+        <div class="dayh"><div class="dw">vr</div><div class="dn">26</div></div>
+
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+          <div class="cell we"><div class="blk gepland">J. Jansen 7444</div></div>
+          <div class="cell"><div class="blk gepland"><span class="cont">‹</span>Jansen</div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+          <div class="cell we"><div class="svc gepland"><span class="t mono">10:00</span>Bosman</div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">12:00</span>Schipper</div></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">15:00</span>Prins</div></div>
+          <div class="cell"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+          <div class="cell we"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">08:30</span>Kuijpers</div></div>
+          <div class="cell"><div class="blk concept">Fam. Dekker 7740</div></div>
+          <div class="cell"><div class="blk concept"><span class="cont">‹</span>Dekker</div><div class="svc bevestigd"><span class="t mono">09:30</span>Maas</div></div>
+          <div class="cell"><div class="blk concept"><span class="cont">‹</span>Dekker</div><div class="svc gepland"><span class="t mono">11:00</span>Hendriks</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK 27 -->
+    <div class="wk">
+      <div class="wk-h"><span class="wn">Week 27</span><span class="rng">29 en 30 juni</span></div>
+      <div class="mini">
+        <div class="corner"></div>
+        <div class="dayh"><div class="dw">ma</div><div class="dn">29</div></div>
+        <div class="dayh"><div class="dw">di</div><div class="dn">30</div></div>
+        <div class="dayh"><div class="dw">wo</div><div class="dn" style="color:var(--st-binnen)">1 jul</div></div>
+        <div class="dayh"><div class="dw">do</div><div class="dn" style="color:var(--st-binnen)">2 jul</div></div>
+        <div class="dayh"><div class="dw">vr</div><div class="dn" style="color:var(--st-binnen)">3 jul</div></div>
+
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+          <div class="cell"><div class="blk bevestigd">Mevr. de Wit 7755</div></div>
+          <div class="cell"><div class="blk bevestigd"><span class="cont">‹</span>de Wit</div></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+          <div class="cell"><div class="svc gepland"><span class="t mono">10:00</span>Groot</div></div>
+          <div class="cell"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+        </div>
+        <div class="row">
+          <div class="ml"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="svc bevestigd"><span class="t mono">13:00</span>Timmer</div></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+          <div class="cell" style="background:#F7F7F8"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="hint"><b>Optie C, weekstroken onder elkaar.</b> Sterk: bijna identiek aan het bestaande weekbord, dus meteen vertrouwd. Elke strook is een mini-weekbord met monteurs als rijen, je houdt dus de "wie doet wat per dag" structuur die je al kent, maar dan vijf weken onder elkaar. Montage en service zien er precies zo uit als in de weekweergave. Zwak: het past nipt op één laptop-pagina en je scrollt waarschijnlijk een klein stuk, en de cellen zijn klein dus per dag past er minder in dan in het echte weekbord. Goed als je het weekbord-gevoel wilt houden en gewoon een maand in één scroll wilt zien.</p>
+</main>
+</body>
+</html>

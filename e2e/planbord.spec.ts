@@ -10,6 +10,12 @@ import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "./test-env";
  * gedeelde test-database schoon blijft en andere data ongemoeid.
  */
 
+// Hoge viewport: het planbord met vaste rijhoogte (98px per monteur) plus de werkbalk maakt de pagina
+// langer dan de standaard 720px, waardoor de pool met het sleephandvat onder beeld zou vallen en een
+// pool->cel-drag niet meer zou starten (de muis kan het handvat dan niet pakken). Een kantoor-desktop is
+// sowieso hoger; 1600px houdt zowel het handvat als de doelcel bereikbaar voor de drag-simulatie.
+test.use({ viewport: { width: 1280, height: 1600 } });
+
 const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth: { persistSession: false } });
 const db: Db = createDb({ url: SUPABASE_URL, secretKey: SUPABASE_SECRET });
 
@@ -63,13 +69,20 @@ async function statusVan(id: string) {
 }
 
 /** Plant de geseede klus direct in de database op een monteur/dag met een gegeven duur (voor resize). */
-async function planDirect(monteurId: string, monteurNaam: string, dag: string, duur: number) {
+async function planDirect(
+  monteurId: string,
+  monteurNaam: string,
+  dag: string,
+  duur: number,
+  weekendTeltMee = false,
+) {
   await db.planOpdracht(seededId, {
     toegewezen_aan: monteurId,
     monteur_naam: monteurNaam,
     startdatum: dag,
     starttijd: null,
     duur_dagen: duur,
+    weekend_telt_mee: weekendTeltMee,
   });
 }
 
@@ -216,4 +229,205 @@ test("rechterrand voorbij vrijdag slepen laat de klus in de volgende week doorlo
   // Visueel: in de VOLGENDE week verschijnt de doorlopende kaart (ma/di).
   await page.getByRole("button", { name: "Volgende", exact: true }).click();
   await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible({ timeout: 8_000 });
+});
+
+test("de + knop op een montage maakt de klus een dag langer", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto("/planbord");
+  const kaart = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
+  await expect(kaart).toBeVisible({ timeout: 8_000 });
+
+  // Twee keer op "Eén dag langer" -> 3 dagen.
+  await kaart.getByRole("button", { name: "Eén dag langer" }).click();
+  await expect
+    .poll(async () => (await statusVan(seededId))?.duur_dagen, { timeout: 12_000, intervals: [500] })
+    .toBe(2);
+  await kaart.getByRole("button", { name: "Eén dag langer" }).click();
+  await expect
+    .poll(async () => (await statusVan(seededId))?.duur_dagen, { timeout: 12_000, intervals: [500] })
+    .toBe(3);
+  await expect(kaart.getByText("3 dagen")).toBeVisible({ timeout: 8_000 });
+  expect((await statusVan(seededId))?.startdatum).toBe(maandag);
+});
+
+test("een klus op zaterdag maakt het weekend zichtbaar, ook als de knop uit staat", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+  await planDirect(monteur.id, monteur.naam, zaterdag, 1);
+
+  await page.goto("/planbord");
+  // Weekend-knop staat standaard uit, maar de za-kolom verschijnt toch (anders zou de klus verdwijnen).
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toBeVisible();
+  // De klus staat in de DB op zaterdag.
+  expect((await statusVan(seededId))?.startdatum).toBe(zaterdag);
+});
+
+test("een klus naar zaterdag slepen blijft op zaterdag staan (springt niet naar maandag)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: /^Weekend/ }).click(); // weekend aan -> za-kolom bestaat
+  const kaart = page.locator("div.border-2.border-ink-muted").filter({ hasText: uniek });
+  await expect(kaart).toBeVisible();
+  const grip = kaart.getByRole("button", { name: "Sleep naar het planbord" });
+  const cel = page.locator(`[data-testid="cel-${monteur.id}-${zaterdag}"]`).first();
+  await expect(cel).toBeVisible();
+
+  const g = await grip.boundingBox();
+  if (!g) throw new Error("Greep niet gevonden");
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2 + 25, g.y + g.height / 2 + 25, { steps: 6 });
+  const c = await cel.boundingBox();
+  if (!c) throw new Error("Cel niet gevonden");
+  await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: de klus staat op zaterdag (niet op maandag).
+  await expect
+    .poll(async () => (await statusVan(seededId))?.startdatum, { timeout: 12_000, intervals: [500] })
+    .toBe(zaterdag);
+});
+
+test("naar de vorige week slepen landt op vrijdag (weekend uit)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdagVorige = verschuifDagen(maandag, -3); // ma - 3 = vr van vorige week
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto(`/planbord?week=${maandag}`);
+  const kaartOpBord = page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`);
+  await expect(kaartOpBord).toBeVisible({ timeout: 8_000 });
+
+  const randVorige = page.getByRole("button", { name: "Vorige week" });
+  const g = await kaartOpBord.boundingBox();
+  const r = await randVorige.boundingBox();
+  if (!g || !r) throw new Error("Kaart of rand-strook niet gevonden");
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2 - 20, g.y + g.height / 2, { steps: 6 });
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // Database: startdatum is de vrijdag van de vorige week (laatste werkdag, weekend uit).
+  await expect
+    .poll(async () => (await statusVan(seededId))?.startdatum, { timeout: 12_000, intervals: [500] })
+    .toBe(vrijdagVorige);
+});
+
+test("maandweergave toont de geplande klus en heeft maand-navigatie", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  await planDirect(monteur.id, monteur.naam, maandag, 1);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // De klus staat in het maandoverzicht (als link naar de detailpagina).
+  await expect(
+    page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first(),
+  ).toBeVisible({ timeout: 8_000 });
+  // Maand-navigatie aanwezig (een maandlabel met jaartal).
+  await expect(page.getByText(/20\d\d/).first()).toBeVisible();
+  // Terug naar Week werkt.
+  await page.getByRole("button", { name: "Week", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Weekend/ })).toBeVisible({ timeout: 5_000 });
+});
+
+test("een weekend-klus (vr+2, weekend telt mee) loopt naar zaterdag, niet naar volgende maandag", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdag = verschuifDagen(maandag, 4);
+  await planDirect(monteur.id, monteur.naam, vrijdag, 2, true); // weekend telt mee voor deze klus
+
+  await page.goto(`/planbord?week=${maandag}`);
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first()).toBeVisible();
+
+  // Volgende week mag de klus NIET tonen: hij past in vrijdag + zaterdag (de oude bug zette 'm op
+  // vrijdag + maandag, dan zou hij hier wél verschijnen).
+  await page.getByRole("button", { name: "Volgende", exact: true }).click();
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toHaveCount(0);
+});
+
+test("weekend-knop UIT verschuift een al-geplande weekend-klus NIET (de gemelde bug)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const vrijdag = verschuifDagen(maandag, 4);
+  // Kantoor plant vr + 2 met weekend aan (vr-za) en het is al verstuurd: weekend_telt_mee staat vast.
+  await planDirect(monteur.id, monteur.naam, vrijdag, 2, true);
+
+  await page.goto(`/planbord?week=${maandag}`);
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first()).toBeVisible({ timeout: 8_000 });
+
+  // De za-kolom is zichtbaar omdat de klus het weekend bezet (geforceerd), ook met de knop uit.
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible();
+
+  // Zet het weekend expliciet UIT (mocht de knop aan staan). De klus mag daardoor NIET verschuiven:
+  // hij blijft vr+za en duikt dus niet op in de week erna (dat zou vr+ma betekenen).
+  const knop = page.getByRole("button", { name: /^Weekend/ });
+  if ((await knop.getAttribute("aria-pressed")) === "true") await knop.click();
+
+  await page.getByRole("button", { name: "Volgende", exact: true }).click();
+  await expect(page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`)).toHaveCount(0);
+  // En in de database is er niets verschoven: startdatum en duur ongewijzigd.
+  const na = await statusVan(seededId);
+  expect(na?.startdatum).toBe(vrijdag);
+  expect(na?.duur_dagen).toBe(2);
+});
+
+test("maandweergave beweegt mee met de weekend-knop (za verschijnt)", async ({ page }) => {
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // Met weekend aan tonen de maand-stroken za/zo (de knop werkt ook in maandmodus). (De count vóór
+  // klikken niet asserten: op de gedeelde test-DB kan een andere weekend-klus de za al forceren.)
+  await page.getByRole("button", { name: /^Weekend/ }).click();
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("zo", { exact: true }).first()).toBeVisible();
+});
+
+test("een weekend-klus is ook in de maandweergave zichtbaar (geforceerd weekend)", async ({ page }) => {
+  const monteurs = await db.getMonteurs();
+  const monteur = monteurs.find((m) => m.rol === "monteur") ?? monteurs[0];
+  test.skip(!monteur, "Geen monteur-accounts");
+  const maandag = maandagVan(ankerVoorDatum(vandaagISO()));
+  const zaterdag = verschuifDagen(maandag, 5);
+  await planDirect(monteur.id, monteur.naam, zaterdag, 1);
+
+  await page.goto("/planbord");
+  await page.getByRole("button", { name: "Maand", exact: true }).click();
+  // Weekend-knop staat uit, maar de strook met de zaterdag-klus toont 'm toch.
+  await expect(
+    page.locator(`a[href*="/dashboard/opdracht/${seededId}"]`).first(),
+  ).toBeVisible({ timeout: 8_000 });
+});
+
+test("de weekend-knop toont zaterdag en zondag als extra kolommen", async ({ page }) => {
+  await page.goto("/planbord");
+  // Standaard verborgen: geen za/zo in de koprij.
+  await expect(page.getByText("za", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: /^Weekend/ }).click();
+  // Nu zichtbaar.
+  await expect(page.getByText("za", { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("zo", { exact: true }).first()).toBeVisible();
 });

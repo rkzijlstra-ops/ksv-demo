@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maandoverzicht — optie B: monteur-zwembanen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #F4F4F5; --ink: #18181B; --ink-muted: #525252; --line: #D4D4D8;
+    --ant: #27272A; --accent: #F97316;
+    --st-binnen: #94A3B8; --st-gepland: #F97316; --st-bevestigd: #1D4ED8; --st-opgeleverd: #16A34A;
+    --urgent: #DC2626; --amber: #FBBF24;
+    --rein:#0EA5E9; --dani:#A855F7; --sam:#16A34A;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Lexend", ui-sans-serif, system-ui, sans-serif; font-size:16px; line-height:1.4; }
+  .mono { font-family: ui-monospace, "Consolas", monospace; letter-spacing:-.01em; }
+  main { max-width:1260px; margin:0 auto; padding:16px 16px 60px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:10px; }
+  .topbar a { color:inherit; }
+  .topbar b { color:var(--ink); }
+
+  /* Header */
+  .h { position:relative; background:#FFF; color:var(--ink); border:2px solid var(--line); border-bottom:none; padding:18px 22px 20px; }
+  .h::after { content:""; display:block; height:6px; background:var(--accent); position:absolute; left:0; right:0; bottom:0; }
+  .h .stamp { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-muted); }
+  .h h1 { margin:4px 0 0; font-size:28px; font-weight:800; letter-spacing:-.01em; }
+  .h .sub { margin-top:6px; font-size:14px; color:var(--ink-muted); }
+
+  /* Toolbar */
+  .toolbar { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .nav { display:inline-flex; gap:6px; align-items:center; }
+  .pill { border:1.5px solid var(--ant); background:#FFF; min-height:38px; padding:0 14px; display:inline-flex; align-items:center; gap:6px;
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .pill.ghost { border-color:var(--line); color:var(--ink-muted); }
+  .month { font-weight:800; font-size:18px; padding:0 8px; min-width:140px; text-align:center; }
+  .spacer { flex:1; }
+  .toggle { display:inline-flex; border:1.5px solid var(--ant); }
+  .toggle span { padding:0 16px; min-height:38px; display:inline-flex; align-items:center; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .toggle span.on { background:var(--ant); color:#fff; }
+  .toggle span:first-child { border-right:1.5px solid var(--ant); }
+
+  /* Legenda */
+  .leg { margin-top:12px; display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--ink-muted); align-items:center; }
+  .leg span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:2px; }
+  .mdot { width:11px; height:11px; border-radius:50%; flex:none; }
+
+  /* Gantt / zwembanen */
+  .gantt { margin-top:14px; border:2px solid var(--ant); background:#FFF; overflow-x:auto; }
+  .grid { display:grid; grid-template-columns:96px repeat(30, 1fr); min-width:1140px; }
+
+  /* kop met dagnummers */
+  .ghead { display:contents; }
+  .corner { background:var(--surface); border-bottom:2px solid var(--ant); border-right:2px solid var(--ant); padding:6px 8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-muted); position:sticky; left:0; z-index:3; }
+  .dh { background:var(--surface); border-bottom:2px solid var(--ant); border-right:1px solid var(--line); text-align:center; padding:5px 0 4px; }
+  .dh .dn { font-weight:800; font-size:12px; }
+  .dh .dw { font-size:9px; text-transform:uppercase; color:var(--ink-muted); letter-spacing:.04em; }
+  .dh.we { background:#E9E9EC; }
+  .dh.today { background:var(--accent); }
+  .dh.today .dn, .dh.today .dw { color:#fff; }
+
+  /* monteur-rij */
+  .lane { display:contents; }
+  .mname { border-right:2px solid var(--ant); border-bottom:1px solid var(--line); padding:0 10px; display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; background:#FFF; position:sticky; left:0; z-index:2; min-height:62px; }
+  .lane:last-child .mname { border-bottom:none; }
+  .track { border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:62px; position:relative; }
+  .track.we { background:#FAFAFA; }
+  .lane:last-child .track { border-bottom:none; }
+
+  /* balk in een lane: gepositioneerd via grid-column over de track-cellen */
+  /* we leggen de balken in een aparte overlay-laag per lane */
+  .lanerow { position:relative; }
+  .bar { position:absolute; top:6px; height:24px; display:flex; align-items:center; gap:5px; padding:0 7px; font-size:11px; font-weight:800; color:#fff;
+    border-radius:2px; overflow:hidden; white-space:nowrap; box-shadow:0 1px 0 rgba(0,0,0,.08); }
+  .bar.row2 { top:33px; }
+  .bar.bevestigd { background:var(--st-bevestigd); }
+  .bar.gepland { background:var(--st-gepland); }
+  .bar.opgeleverd { background:var(--st-opgeleverd); }
+  .bar.concept { background:repeating-linear-gradient(45deg,var(--st-gepland),var(--st-gepland) 6px,#fb8a3c 6px,#fb8a3c 12px); border:1.5px dashed #fff; }
+  .bar .ref { opacity:.85; font-weight:700; }
+  /* service = smal blokje met tijd, half-hoog */
+  .svc { position:absolute; top:6px; height:24px; display:flex; flex-direction:column; justify-content:center; padding:0 4px; font-size:9.5px; font-weight:800; line-height:1.05;
+    background:#FFF; border:1.5px solid var(--line); border-left-width:4px; overflow:hidden; white-space:nowrap; }
+  .svc.row2 { top:33px; }
+  .svc.bevestigd { border-color:var(--st-bevestigd); border-left-color:var(--st-bevestigd); }
+  .svc.gepland { border-color:var(--st-gepland); border-left-color:var(--st-gepland); }
+  .svc.opgeleverd { border-color:var(--st-opgeleverd); border-left-color:var(--st-opgeleverd); }
+  .svc .t { color:var(--ant); }
+  .svc .n { color:var(--ink); }
+
+  .hint { font-size:13.5px; color:var(--ink-muted); margin-top:18px; border-left:3px solid var(--accent); padding-left:12px; }
+  .hint b { color:var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><a href="index.html">← mockups</a> · <b>Maandoverzicht — optie B: monteur-zwembanen</b></div>
+
+  <header class="h">
+    <div class="stamp mono">KSV / PLANBORD</div>
+    <h1 class="mono">Maandoverzicht</h1>
+    <div class="sub">Juni 2026 · 3 monteurs · alle dagen op één tijdlijn · 2 nog te versturen</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="nav">
+      <span class="pill ghost">‹ vorige</span>
+      <span class="month">Juni 2026</span>
+      <span class="pill ghost">volgende ›</span>
+    </div>
+    <span class="pill">Vandaag</span>
+    <span class="spacer"></span>
+    <div class="toggle"><span>Week</span><span class="on">Maand</span></div>
+  </div>
+
+  <div class="leg">
+    <span><span class="mdot" style="background:var(--rein)"></span>Rein</span>
+    <span><span class="mdot" style="background:var(--dani)"></span>Dani</span>
+    <span><span class="mdot" style="background:var(--sam)"></span>Sam</span>
+    <span style="margin-left:6px">·</span>
+    <span><span class="dot" style="background:var(--st-gepland)"></span>Gepland</span>
+    <span><span class="dot" style="background:#fff;border:1.5px dashed var(--st-gepland)"></span>Concept</span>
+    <span><span class="dot" style="background:var(--st-bevestigd)"></span>Bevestigd</span>
+    <span><span class="dot" style="background:var(--st-opgeleverd)"></span>Opgeleverd</span>
+    <span style="margin-left:6px">· brede balk = montage, smal blokje met tijd = service</span>
+  </div>
+
+  <!-- Gantt -->
+  <div class="gantt">
+    <div class="grid">
+      <!-- KOP: dagnummers 1..30 -->
+      <div class="ghead">
+        <div class="corner">Monteur</div>
+        <div class="dh"><div class="dn">1</div><div class="dw">ma</div></div>
+        <div class="dh"><div class="dn">2</div><div class="dw">di</div></div>
+        <div class="dh"><div class="dn">3</div><div class="dw">wo</div></div>
+        <div class="dh"><div class="dn">4</div><div class="dw">do</div></div>
+        <div class="dh"><div class="dn">5</div><div class="dw">vr</div></div>
+        <div class="dh we"><div class="dn">6</div><div class="dw">za</div></div>
+        <div class="dh we"><div class="dn">7</div><div class="dw">zo</div></div>
+        <div class="dh"><div class="dn">8</div><div class="dw">ma</div></div>
+        <div class="dh"><div class="dn">9</div><div class="dw">di</div></div>
+        <div class="dh"><div class="dn">10</div><div class="dw">wo</div></div>
+        <div class="dh"><div class="dn">11</div><div class="dw">do</div></div>
+        <div class="dh"><div class="dn">12</div><div class="dw">vr</div></div>
+        <div class="dh we"><div class="dn">13</div><div class="dw">za</div></div>
+        <div class="dh we"><div class="dn">14</div><div class="dw">zo</div></div>
+        <div class="dh"><div class="dn">15</div><div class="dw">ma</div></div>
+        <div class="dh"><div class="dn">16</div><div class="dw">di</div></div>
+        <div class="dh"><div class="dn">17</div><div class="dw">wo</div></div>
+        <div class="dh"><div class="dn">18</div><div class="dw">do</div></div>
+        <div class="dh"><div class="dn">19</div><div class="dw">vr</div></div>
+        <div class="dh we"><div class="dn">20</div><div class="dw">za</div></div>
+        <div class="dh we"><div class="dn">21</div><div class="dw">zo</div></div>
+        <div class="dh today"><div class="dn">22</div><div class="dw">ma</div></div>
+        <div class="dh"><div class="dn">23</div><div class="dw">di</div></div>
+        <div class="dh"><div class="dn">24</div><div class="dw">wo</div></div>
+        <div class="dh"><div class="dn">25</div><div class="dw">do</div></div>
+        <div class="dh"><div class="dn">26</div><div class="dw">vr</div></div>
+        <div class="dh we"><div class="dn">27</div><div class="dw">za</div></div>
+        <div class="dh we"><div class="dn">28</div><div class="dw">zo</div></div>
+        <div class="dh"><div class="dn">29</div><div class="dw">ma</div></div>
+        <div class="dh"><div class="dn">30</div><div class="dw">di</div></div>
+      </div>
+
+      <!-- LANE REIN -->
+      <div class="lane">
+        <div class="mname"><span class="mdot" style="background:var(--rein)"></span>Rein</div>
+        <!-- 30 lege track-cellen met weekend-arcering -->
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div>
+        <!-- overlay-balken Rein: gepositioneerd over de 30 kolommen via inline left/width -->
+        <!-- kolombreedte = (100% - 96px) / 30 ; we werken met calc per dag -->
+        <div class="bar bevestigd" style="left:calc(96px + (100% - 96px) * 0/30 + 2px); width:calc((100% - 96px) * 3/30 - 4px)"><span>Fam. Bakker</span><span class="ref">7588</span></div>
+        <div class="bar gepland row2" style="left:calc(96px + (100% - 96px) * 3/30 + 2px); width:calc((100% - 96px) * 2/30 - 4px)"><span>Mevr. de Wit</span><span class="ref">7601</span></div>
+        <div class="bar bevestigd" style="left:calc(96px + (100% - 96px) * 7/30 + 2px); width:calc((100% - 96px) * 3/30 - 4px)"><span>el Amrani</span><span class="ref">7510</span></div>
+        <div class="bar gepland" style="left:calc(96px + (100% - 96px) * 14/30 + 2px); width:calc((100% - 96px) * 2/30 - 4px)"><span>Heesakkers</span><span class="ref">7636</span></div>
+        <div class="bar gepland row2" style="left:calc(96px + (100% - 96px) * 21/30 + 2px); width:calc((100% - 96px) * 2/30 - 4px)"><span>J. Jansen</span><span class="ref">7444</span></div>
+        <div class="bar bevestigd" style="left:calc(96px + (100% - 96px) * 28/30 + 2px); width:calc((100% - 96px) * 2/30 - 4px)"><span>de Wit</span><span class="ref">7755</span></div>
+      </div>
+
+      <!-- LANE DANI -->
+      <div class="lane">
+        <div class="mname"><span class="mdot" style="background:var(--dani)"></span>Dani</div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div>
+        <!-- Dani draait vooral service: smalle blokjes met tijd -->
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 0/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">09:00</span><span class="n">Putman</span></div>
+        <div class="svc opgeleverd" style="left:calc(96px + (100% - 96px) * 2/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">14:00</span><span class="n">de Bruin</span></div>
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 4/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">13:30</span><span class="n">Heesakk.</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 9/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">09:30</span><span class="n">Klaassen</span></div>
+        <div class="svc opgeleverd" style="left:calc(96px + (100% - 96px) * 11/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">15:00</span><span class="n">Hofman</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 15/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">10:30</span><span class="n">Mol</span></div>
+        <div class="svc bevestigd row2" style="left:calc(96px + (100% - 96px) * 15/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">14:00</span><span class="n">v. Dijk</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 17/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">09:00</span><span class="n">Willems</span></div>
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 21/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">10:00</span><span class="n">Bosman</span></div>
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 23/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">12:00</span><span class="n">Schipper</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 24/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">15:00</span><span class="n">Prins</span></div>
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 28/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">10:00</span><span class="n">Groot</span></div>
+      </div>
+
+      <!-- LANE SAM -->
+      <div class="lane">
+        <div class="mname"><span class="mdot" style="background:var(--sam)"></span>Sam</div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div><div class="track"></div>
+        <div class="track we"></div><div class="track we"></div>
+        <div class="track"></div><div class="track"></div>
+        <!-- Sam: mix montage + service -->
+        <div class="bar concept" style="left:calc(96px + (100% - 96px) * 10/30 + 2px); width:calc((100% - 96px) * 2/30 - 4px)"><span>Fam. Visser</span><span class="ref">7702</span></div>
+        <div class="bar bevestigd" style="left:calc(96px + (100% - 96px) * 16/30 + 2px); width:calc((100% - 96px) * 3/30 - 4px)"><span>Fam. Koster</span><span class="ref">7715</span></div>
+        <div class="bar concept" style="left:calc(96px + (100% - 96px) * 23/30 + 2px); width:calc((100% - 96px) * 3/30 - 4px)"><span>Fam. Dekker</span><span class="ref">7740</span></div>
+        <div class="svc bevestigd row2" style="left:calc(96px + (100% - 96px) * 1/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">11:00</span><span class="n">J. Jansen</span></div>
+        <div class="svc bevestigd row2" style="left:calc(96px + (100% - 96px) * 3/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">08:30</span><span class="n">Vermeer</span></div>
+        <div class="svc gepland row2" style="left:calc(96px + (100% - 96px) * 8/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">10:00</span><span class="n">Smit</span></div>
+        <div class="svc gepland" style="left:calc(96px + (100% - 96px) * 14/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">08:00</span><span class="n">Peters</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 18/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">13:00</span><span class="n">Veenstra</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 22/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">08:30</span><span class="n">Kuijpers</span></div>
+        <div class="svc bevestigd row2" style="left:calc(96px + (100% - 96px) * 24/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">09:30</span><span class="n">Maas</span></div>
+        <div class="svc gepland row2" style="left:calc(96px + (100% - 96px) * 25/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">11:00</span><span class="n">Hendriks</span></div>
+        <div class="svc bevestigd" style="left:calc(96px + (100% - 96px) * 29/30 + 2px); width:calc((100% - 96px) * 1/30 - 4px)"><span class="t mono">13:00</span><span class="n">Timmer</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="hint"><b>Optie B, monteur-zwembanen over de hele maand.</b> Sterk: per monteur zie je in één horizontale baan zijn hele maand, je leest meteen af wie vol zit en wie nog ruimte heeft, ideaal om werk te verdelen. Meerdaagse montages zijn echte balken over meerdere dagen. Zwak: de dag-kolommen zijn smal, dus lange klantnamen worden afgekort en op een heel drukke dag stapelen service-blokjes (hier opgelost met twee rijen per baan). Op een kleiner scherm moet je horizontaal scrollen. Goed als je vooral denkt in "wie heeft het druk en waar kan ik nog wat bijplannen".</p>
+</main>
+</body>
+</html>

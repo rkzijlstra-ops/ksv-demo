@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Wrench, AlertTriangle, MapPin } from "lucide-react";
+import { Package, Wrench, AlertTriangle, MapPin, Minus, Plus } from "lucide-react";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Melding, DashboardStatus } from "@/lib/db";
 import {
   verdeelLanes,
   nieuweDuurNaResize,
+  duurNaStap,
   type PlanbordPlaatsing,
   type MonteurOptie,
 } from "@/lib/planbord";
@@ -15,7 +16,7 @@ import { duurLabel } from "@/lib/opdracht-weergave";
 import { isActief } from "@/lib/opdracht-status";
 import { MailMonteurKnop } from "./MailMonteurKnop";
 
-const DOW = ["ma", "di", "wo", "do", "vr"];
+const DOW = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 
 /** Dikke gekleurde omlijsting per status, rondom de hele kaart (ononderbroken, geen kartelrand meer). */
 const RAND: Record<DashboardStatus, string> = {
@@ -40,12 +41,15 @@ function Kaart({
   dubbel,
   maandag,
   resizeDelta,
+  onDuur,
 }: {
   p: GeplaatstOpBord;
   dubbel: boolean;
   maandag: string;
   /** Aantal kolommen dat de rechterrand nú versleept is (live), of null als deze kaart niet wordt geresized. */
   resizeDelta: number | null;
+  /** Zet een nieuwe duur (werkdagen) voor deze klus; gebruikt door de -/+ knoppen. */
+  onDuur: (o: Melding, nieuweDuur: number) => void;
 }) {
   const o = p.opdracht;
   // Een opgeleverde klus staat er alleen nog als afgerond overzicht; niet meer verslepen/herplannen.
@@ -142,7 +146,44 @@ function Kaart({
             className={`inline-flex shrink-0 items-center gap-1 ${aanHetResizen ? "font-bold text-accent" : ""}`}
           >
             <Package size={11} strokeWidth={2.2} aria-hidden="true" />
-            {duurLabel(aanHetResizen ? previewDuur : o.duur_dagen)}
+            {magResizen ? (
+              // -/+ knoppen: één klik = één werkdag erbij/eraf. Duidelijker dan de rand-sleep,
+              // en loopt vanzelf door over het weekend (de balk knipt op vrijdag, de rest volgt week erna).
+              <span className="inline-flex items-center gap-0.5">
+                <button
+                  type="button"
+                  aria-label="Eén dag korter"
+                  disabled={o.duur_dagen <= 1}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDuur(o, duurNaStap(o.duur_dagen, -1));
+                  }}
+                  className="flex h-[18px] w-[18px] items-center justify-center rounded border border-line text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Minus size={11} strokeWidth={2.6} aria-hidden="true" />
+                </button>
+                <span className="min-w-[3.4em] text-center tabular-nums">
+                  {duurLabel(aanHetResizen ? previewDuur : o.duur_dagen)}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Eén dag langer"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDuur(o, duurNaStap(o.duur_dagen, 1));
+                  }}
+                  className="flex h-[18px] w-[18px] items-center justify-center rounded border border-line text-ink hover:bg-surface"
+                >
+                  <Plus size={11} strokeWidth={2.6} aria-hidden="true" />
+                </button>
+              </span>
+            ) : (
+              duurLabel(aanHetResizen ? previewDuur : o.duur_dagen)
+            )}
           </span>
         )}
         {o.referentienummer ? (
@@ -213,13 +254,15 @@ function DropCel({
     id: `cel-${toegewezenAan}-${dag}-${lane}`,
     data: { toegewezen_aan: toegewezenAan, monteur_naam: monteurNaam, dag },
   });
+  // Weekendkolommen (za=5, zo=6) krijgen een lichte tint zodat ze visueel los staan van de werkweek.
+  const weekend = col >= 5;
   return (
     <div
       ref={setNodeRef}
       data-testid={`cel-${toegewezenAan}-${dag}`}
       className={`min-h-[64px] border-r border-line last:border-r-0 ${
         laatsteLane ? "border-b-4 border-b-line" : "border-b border-b-line"
-      } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : ""}`}
+      } ${isOver ? "bg-accent/10 outline-2 -outline-offset-2 outline-accent" : weekend ? "bg-surface/40" : ""}`}
       style={{ gridRow, gridColumn: col + 2 }}
     />
   );
@@ -230,6 +273,7 @@ export function PlanbordGrid({
   monteurs,
   plaatsingen,
   conflicten,
+  onDuur,
   resize,
 }: {
   weekdagen: string[];
@@ -237,6 +281,8 @@ export function PlanbordGrid({
   plaatsingen: PlanbordPlaatsing<Melding>[];
   /** Ids van dubbel geboekte opdrachten (rode waarschuwing op de kaart). */
   conflicten: Set<string>;
+  /** Zet een nieuwe duur (werkdagen) voor een klus; gebruikt door de -/+ knoppen op een montage. */
+  onDuur: (o: Melding, nieuweDuur: number) => void;
   /** De kaart waarvan de rand nú versleept wordt, met het aantal kolommen (live), of null. */
   resize: { id: string; deltaKolommen: number } | null;
 }) {
@@ -270,14 +316,24 @@ export function PlanbordGrid({
   return (
     <div
       className="mt-3 grid border-2 border-ink bg-white"
-      style={{ gridTemplateColumns: "104px repeat(5, minmax(0, 1fr))" }}
+      style={{
+        gridTemplateColumns: `104px repeat(${weekdagen.length}, minmax(0, 1fr))`,
+        // Kop-rij op natuurlijke hoogte (auto); alle monteur-rijen een VASTE hoogte, zodat een blok van
+        // 1 dag en een blok van meerdere dagen even hoog zijn (geen verspringende, plattere balken meer).
+        // 98px = de natuurlijke hoogte van een volle 1-daagse kaart (gemeten: ~89px inhoud + 8px marge),
+        // zodat niets afkapt en een meerdaagse balk meegroeit i.p.v. platter te worden.
+        gridTemplateRows: "auto",
+        gridAutoRows: "98px",
+      }}
     >
       {/* Kop */}
       <div className="border-b-2 border-r border-ink bg-surface" style={{ gridRow: 1, gridColumn: 1 }} />
       {weekdagen.map((d, i) => (
         <div
           key={d}
-          className="border-b-2 border-r border-ink bg-surface px-2.5 py-2 last:border-r-0"
+          className={`border-b-2 border-r border-ink px-2.5 py-2 last:border-r-0 ${
+            i >= 5 ? "bg-surface/60" : "bg-surface"
+          }`}
           style={{ gridRow: 1, gridColumn: i + 2 }}
         >
           <div className="text-[11px] uppercase tracking-[0.12em] text-ink-muted">{DOW[i]}</div>
@@ -319,6 +375,7 @@ export function PlanbordGrid({
               dubbel={conflicten.has(p.opdracht.id)}
               maandag={weekdagen[0]}
               resizeDelta={resize?.id === p.opdracht.id ? resize.deltaKolommen : null}
+              onDuur={onDuur}
             />
           ))}
         </div>

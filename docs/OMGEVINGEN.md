@@ -71,6 +71,11 @@ De vaste "eerst testen, dan productie"-weg loopt via een **eigen Vercel-project 
 - **Inloggen:** `/login` biedt alleen Google + magic-link; daarom `/test-login` (twee knoppen, vast test-account op de test-DB, gegrendeld op `TEST_LOGIN`/niet-productie). Beveiligd met Vercel Authentication, dus alleen Reinier komt erin.
 - **Prod en demo blijven onaangeroerd.** Mergen naar master deployt beide; de test-login is daar 404 en `MAIL_DRY_RUN` staat default uit (inert).
 - Verzend-grendel: de allowlist beperkt tot Reinier; een LEGE allowlist = geen beperking (zie `src/lib/demo.ts`). Een kanaal helemaal stilzetten kan met `MAIL_DRY_RUN`/`SMS_DRY_RUN=1`.
+- **VALKUIL: `kluslus-test.vercel.app` = de PRODUCTIE-deployment van het test-project, met production branch op `master` (steady state).** Een feature-branch pushen landt dus alleen als **preview** (eigen `...-bkm-s-projects.vercel.app`-URL, achter Vercel-login), en verschijnt NIET vanzelf op het publieke `kluslus-test.vercel.app`. Een sessie kan zo ten onrechte denken "het staat live op kluslus-test". Twee manieren om een feature-branch op het publieke adres te keuren:
+  1. **Promoten** (snel, tijdelijk): maak een Vercel-token (Account > Tokens, scope team `bkm-s-projects`, korte expiry; daarna intrekken), en draai:
+     `npx vercel ls kluslus-test --token=$T --scope=bkm-s-projects` (vind de deployment van je commit; preview-URL ook via `gh api repos/rkzijlstra-ops/ksv-demo/deployments/<id>/statuses --jq '.[0].environment_url'`), dan
+     `npx vercel promote <preview-url> --token=$T --scope=bkm-s-projects --yes`. Verifieer dáárna het echte gedrag (niet enkel HTTP 200).
+  2. **Production Branch tijdelijk omzetten** naar de feature-branch in de kluslus-test-projectinstellingen (zoals 06-22 voor `planbord-maand-weekend`), en na de keuring terug naar `master`.
 
 ## Openstaand / let op
 

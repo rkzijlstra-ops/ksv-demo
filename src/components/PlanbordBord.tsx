@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import {
@@ -26,12 +26,15 @@ import {
   plaatsOpdrachten,
   vindDubbeleBoekingen,
   nieuweDuurNaResize,
+  weekschuifLanding,
+  weekHeeftWeekendKlus,
   zoekPlanbord,
   type MonteurOptie,
 } from "@/lib/planbord";
 import { moetOpnieuwVersturen, opVerzondenPlek } from "@/lib/opdracht-status";
 import { formatDatumKort } from "@/lib/datum";
 import { PlanbordGrid } from "./PlanbordGrid";
+import { PlanbordMaand } from "./PlanbordMaand";
 import { PlanbordPool } from "./PlanbordPool";
 import { VerstuurKnop } from "./VerstuurKnop";
 
@@ -90,6 +93,24 @@ function RandZone({
   );
 }
 
+/** Leest de weekend-voorkeur uit localStorage (client). Server/SSR levert false via getServerSnapshot. */
+function leesWeekendVoorkeur(): boolean {
+  try {
+    return localStorage.getItem("planbord-weekend") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Leest de week/maand-weergave uit localStorage. Server/SSR levert "week" via getServerSnapshot. */
+function leesWeergave(): "week" | "maand" {
+  try {
+    return localStorage.getItem("planbord-weergave") === "maand" ? "maand" : "week";
+  } catch {
+    return "week";
+  }
+}
+
 /** Eerst kijken wat er direct onder de pointer ligt; pas daarna geometrisch dichtstbijzijnde. */
 const collisionDetectie: CollisionDetection = (args) => {
   const direct = pointerWithin(args);
@@ -115,6 +136,44 @@ export function PlanbordBord({
   const router = useRouter();
   const [weekAnker, setWeekAnker] = useState(ankerInit);
   const [zoek, setZoek] = useState("");
+  // Weekend tonen (za + zo als extra kolommen). Voorkeur onthouden in localStorage via
+  // useSyncExternalStore: server-snapshot = false (geen hydratie-mismatch), client leest de opgeslagen
+  // waarde. Een wissel schrijft localStorage en stoot een event af zodat de weergave meteen meeloopt.
+  const subscribeWeekend = useCallback((herteken: () => void) => {
+    window.addEventListener("storage", herteken);
+    window.addEventListener("planbord-weekend-wissel", herteken);
+    return () => {
+      window.removeEventListener("storage", herteken);
+      window.removeEventListener("planbord-weekend-wissel", herteken);
+    };
+  }, []);
+  const toonWeekend = useSyncExternalStore(subscribeWeekend, leesWeekendVoorkeur, () => false);
+  function wisselWeekend() {
+    try {
+      localStorage.setItem("planbord-weekend", leesWeekendVoorkeur() ? "0" : "1");
+    } catch {
+      /* opslaan mislukt: voorkeur geldt alleen deze sessie */
+    }
+    window.dispatchEvent(new Event("planbord-weekend-wissel"));
+  }
+  // Week- of maandweergave, onthouden in localStorage (zelfde hydratie-veilige aanpak).
+  const subscribeWeergave = useCallback((herteken: () => void) => {
+    window.addEventListener("storage", herteken);
+    window.addEventListener("planbord-weergave-wissel", herteken);
+    return () => {
+      window.removeEventListener("storage", herteken);
+      window.removeEventListener("planbord-weergave-wissel", herteken);
+    };
+  }, []);
+  const weergave = useSyncExternalStore(subscribeWeergave, leesWeergave, () => "week" as const);
+  function zetWeergave(naar: "week" | "maand") {
+    try {
+      localStorage.setItem("planbord-weergave", naar);
+    } catch {
+      /* opslaan mislukt: geldt alleen deze sessie */
+    }
+    window.dispatchEvent(new Event("planbord-weergave-wissel"));
+  }
   const [items, setItems] = useState<Melding[]>(opdrachten);
   const [vorigeProp, setVorigeProp] = useState(opdrachten);
   const [actief, setActief] = useState<Melding | null>(null);
@@ -144,8 +203,14 @@ export function PlanbordBord({
   }
 
   const maandag = maandagVan(weekAnker);
-  const dagen = weekDagen(maandag);
+  // Weekend tonen als de knop aan staat, OF als deze week een klus heeft die het weekend meetelt en
+  // dus op za/zo valt (anders zou die weekend-klus onzichtbaar van het bord vallen, dat mag nooit).
+  const effectiefWeekend = toonWeekend || weekHeeftWeekendKlus(items, maandag);
+  const dagen = weekDagen(maandag, effectiefWeekend);
   const weeknr = weeknummer(maandag);
+  // Plaatsing en conflicten lezen de weekend-keuze PER KLUS (weekend_telt_mee), niet de globale knop.
+  // Zo verschuift het omzetten van de knop nooit een al-geplande klus; de knop bepaalt alleen of de
+  // lege za/zo-kolommen zichtbaar zijn.
   const plaatsingen = plaatsOpdrachten(items, dagen);
   const conflicten = vindDubbeleBoekingen(items);
   // Vangnet: elke ingeplande klus moet een rij krijgen, ook als zijn account niet (meer) in de
@@ -238,16 +303,7 @@ export function PlanbordBord({
       const r = resizeActief;
       setResizeActief(null);
       const o = data.opdracht;
-      const nieuweDuur = nieuweDuurNaResize(o.duur_dagen, r.span, r.deltaKolommen);
-      if (nieuweDuur !== o.duur_dagen) {
-        pasLokaalToe(o.id, {
-          duur_dagen: nieuweDuur,
-          gewijzigd_te_versturen:
-            gewijzigdNa(o, o.toegewezen_aan, o.startdatum ?? "", o.starttijd) ||
-            (moetOpnieuwVersturen(o.dashboard_status) && o.startdatum != null),
-        });
-        void verplaatsMetDuur(o, nieuweDuur);
-      }
+      pasDuurToe(o, nieuweDuurNaResize(o.duur_dagen, r.span, r.deltaKolommen));
       return;
     }
 
@@ -261,7 +317,9 @@ export function PlanbordBord({
     if (over.zone === "week-prev" || over.zone === "week-next") {
       if (data.soort !== "kaart" || !o.startdatum) return;
       const richting = over.zone === "week-next" ? 7 : -7;
-      const nieuweDatum = verschuifDagen(o.startdatum, richting);
+      // Volgende week -> maandag (begin); vorige week -> laatste getoonde dag (vr, of zo als déze klus het
+      // weekend meetelt). De klus behoudt zijn weekend-keuze; verschuiven verandert die niet.
+      const nieuweDatum = weekschuifLanding(o.startdatum, richting, !!o.weekend_telt_mee);
       pasLokaalToe(o.id, {
         startdatum: nieuweDatum,
         gewijzigd_te_versturen: gewijzigdNa(o, o.toegewezen_aan, nieuweDatum, o.starttijd),
@@ -295,6 +353,7 @@ export function PlanbordBord({
         startdatum: dag,
         starttijd: null,
         duur_dagen: 1,
+        weekend_telt_mee: toonWeekend,
         dashboard_status: "concept_gepland",
       });
       startOpslag(o.id);
@@ -307,6 +366,7 @@ export function PlanbordBord({
           startdatum: dag,
           duur_dagen: 1,
           starttijd: null,
+          weekend_telt_mee: toonWeekend,
         }),
       })
         .then(() => router.refresh())
@@ -354,10 +414,27 @@ export function PlanbordBord({
         startdatum: o.startdatum,
         starttijd: o.starttijd,
         duur_dagen: nieuweDuur,
+        // Duur wijzigen herijkt de weekend-keuze op de huidige knop-stand (hier beslis je of het weekend telt).
+        weekend_telt_mee: toonWeekend,
       }),
     })
       .then(() => router.refresh())
       .finally(() => eindOpslag(o.id));
+  }
+
+  // Past een nieuwe duur toe (optimistisch + opslaan), gedeeld door de resize-greep en de -/+ knoppen.
+  // Een al verstuurde klus die korter/langer wordt, gaat opnieuw "te versturen" (monteur moet het weten).
+  // De duur-wijziging legt meteen de weekend-keuze vast op de huidige knop-stand (toonWeekend).
+  function pasDuurToe(o: Melding, nieuweDuur: number) {
+    if (!o.startdatum || (nieuweDuur === o.duur_dagen && toonWeekend === o.weekend_telt_mee)) return;
+    pasLokaalToe(o.id, {
+      duur_dagen: nieuweDuur,
+      weekend_telt_mee: toonWeekend,
+      gewijzigd_te_versturen:
+        gewijzigdNa(o, o.toegewezen_aan, o.startdatum, o.starttijd) ||
+        (moetOpnieuwVersturen(o.dashboard_status) && o.startdatum != null),
+    });
+    void verplaatsMetDuur(o, nieuweDuur);
   }
 
   function verplaats(o: Melding, toegewezenAan: string | null, monteurNaam: string | null, dag: string) {
@@ -428,34 +505,81 @@ export function PlanbordBord({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setWeekAnker(verschuifDagen(maandag, -7))}
-          className={`${navBtn} border-line text-ink-muted`}
-        >
-          <ChevronLeft size={16} aria-hidden="true" /> Vorige
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekAnker(vandaag)}
-          className={`${navBtn} border-primary`}
-        >
-          Vandaag
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekAnker(verschuifDagen(maandag, 7))}
-          className={`${navBtn} border-line text-ink-muted`}
-        >
-          Volgende <ChevronRight size={16} aria-hidden="true" />
-        </button>
+        {/* Week- of maandweergave kiezen */}
+        <div className="inline-flex border-[1.5px] border-ink">
+          {(["week", "maand"] as const).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => zetWeergave(w)}
+              aria-pressed={weergave === w}
+              className={`px-3 py-2 text-[13px] font-bold uppercase tracking-[0.03em] ${
+                weergave === w ? "bg-ink text-white" : "bg-white text-ink-muted"
+              }`}
+            >
+              {w === "week" ? "Week" : "Maand"}
+            </button>
+          ))}
+        </div>
+        {weergave === "week" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setWeekAnker(verschuifDagen(maandag, -7))}
+              className={`${navBtn} border-line text-ink-muted`}
+            >
+              <ChevronLeft size={16} aria-hidden="true" /> Vorige
+            </button>
+            <button type="button" onClick={() => setWeekAnker(vandaag)} className={`${navBtn} border-primary`}>
+              Vandaag
+            </button>
+            <button
+              type="button"
+              onClick={() => setWeekAnker(verschuifDagen(maandag, 7))}
+              className={`${navBtn} border-line text-ink-muted`}
+            >
+              Volgende <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          </>
+        )}
+        {(() => {
+          // In maandmodus geldt de knop-stand de voorkeur (toonWeekend); in weekmodus de echte stand
+          // (effectiefWeekend, die ook geforceerd "aan" kan zijn door een weekend-klus deze week).
+          const knopAan = weergave === "maand" ? toonWeekend : effectiefWeekend;
+          return (
+            <button
+              type="button"
+              onClick={wisselWeekend}
+              aria-pressed={knopAan}
+              title={
+                weergave === "week" && effectiefWeekend && !toonWeekend
+                  ? "Weekend blijft zichtbaar: er staat een klus in dit weekend"
+                  : "Zaterdag en zondag tonen of verbergen"
+              }
+              className={`${navBtn} ${knopAan ? "border-primary text-primary" : "border-line text-ink-muted"}`}
+            >
+              Weekend {knopAan ? "aan" : "uit"}
+            </button>
+          );
+        })()}
         <span className="flex-1" />
         <VerstuurKnop ids={teVersturen} />
       </div>
 
+      {weergave === "maand" ? (
+        <PlanbordMaand
+          items={items}
+          monteurs={rijMonteurs}
+          anker={weekAnker}
+          vandaag={vandaag}
+          toonWeekend={toonWeekend}
+          onAnker={setWeekAnker}
+        />
+      ) : (
+        <>
       <p className="mt-2 text-sm text-ink-muted">
-        Week {weeknr} · {formatDatumKort(dagen[0])} – {formatDatumKort(dagen[4])} · {monteurs.length}{" "}
-        {monteurs.length === 1 ? "monteur" : "monteurs"}
+        Week {weeknr} · {formatDatumKort(dagen[0])} – {formatDatumKort(dagen[dagen.length - 1])} ·{" "}
+        {monteurs.length} {monteurs.length === 1 ? "monteur" : "monteurs"}
       </p>
 
       {conflicten.size > 0 && (
@@ -474,6 +598,7 @@ export function PlanbordBord({
             monteurs={rijMonteurs}
             plaatsingen={plaatsingen}
             conflicten={conflicten}
+            onDuur={pasDuurToe}
             resize={
               resizeActief
                 ? { id: resizeActief.opdracht.id, deltaKolommen: resizeActief.deltaKolommen }
@@ -490,6 +615,8 @@ export function PlanbordBord({
       </p>
 
       <PlanbordPool pool={pool} monteurs={monteurs} standaardDatum={maandag} />
+        </>
+      )}
 
       <DragOverlay>
         {actief ? (

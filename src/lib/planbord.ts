@@ -53,14 +53,25 @@ function isWerkdag(iso: string): boolean {
 }
 
 /**
- * De werkdagen (ma t/m vr) die een opdracht beslaat: telt `aantal` werkdagen vanaf de startdatum en
- * slaat weekenddagen over. Valt de startdatum zelf in het weekend, dan begint de telling op de
- * eerstvolgende werkdag. Zo loopt een meerdaagse montage netjes door op maandag i.p.v. in het weekend.
+ * De dagen die een opdracht beslaat, vanaf de startdatum:
+ *  - Staat het weekend AAN (`metWeekend`, het weekend is dan een werkdag), of begint de klus bewust IN
+ *    het weekend (za/zo), dan loopt hij op KALENDERDAGEN door (het weekend telt mee). Een montage van
+ *    vrijdag, 2 dagen, met weekend aan = vrijdag + zaterdag.
+ *  - Anders (werkdag-start, weekend uit) telt hij `aantal` WERKDAGEN en slaat het weekend over: vrijdag,
+ *    2 dagen = vrijdag + maandag.
  */
-export function werkdagenVanaf(startIso: string, aantal: number): string[] {
+export function werkdagenVanaf(startIso: string, aantal: number, metWeekend: boolean = false): string[] {
   const n = Math.max(1, aantal || 1);
+  const dag0 = startIso.split("T")[0];
+
+  // Weekend telt mee (knop aan, of de klus begint in het weekend): kalenderdagen.
+  if (metWeekend || !isWerkdag(dag0)) {
+    return Array.from({ length: n }, (_, i) => verschuifDagen(dag0, i));
+  }
+
+  // Werkdag-start, weekend uit: weekenden overslaan.
   const dagen: string[] = [];
-  let kandidaat = startIso.split("T")[0];
+  let kandidaat = dag0;
   let veiligheid = 0;
   while (dagen.length < n && veiligheid < n * 2 + 14) {
     if (isWerkdag(kandidaat)) dagen.push(kandidaat);
@@ -79,9 +90,39 @@ export function maandagVan(iso: string): string {
   return format(d);
 }
 
-/** De vijf werkdagen (ma t/m vr) vanaf een maandag. */
-export function weekDagen(maandagIso: string): string[] {
-  return Array.from({ length: WERKDAGEN }, (_, i) => verschuifDagen(maandagIso, i));
+/**
+ * De dagen vanaf een maandag: standaard de vijf werkdagen (ma t/m vr); met `metWeekend` ook za en zo
+ * (ma t/m zo, zeven dagen) zodat het bord het weekend kan tonen.
+ */
+export function weekDagen(maandagIso: string, metWeekend: boolean = false): string[] {
+  const lengte = metWeekend ? 7 : WERKDAGEN;
+  return Array.from({ length: lengte }, (_, i) => verschuifDagen(maandagIso, i));
+}
+
+/** De 1e van de maand `maanden` verder (of terug bij negatief), als YYYY-MM-DD. Voor maand-navigatie. */
+export function verschuifMaand(iso: string, maanden: number): string {
+  const [y, m] = iso.split("T")[0].split("-").map(Number);
+  return format(new Date(Date.UTC(y, m - 1 + maanden, 1)));
+}
+
+/**
+ * De maandag van elke week die de maand van `iso` raakt (voor het maandoverzicht: vijf of zes
+ * week-stroken onder elkaar). De eerste strook begint op de maandag vóór of op de 1e van de maand.
+ */
+export function maandWeken(iso: string): string[] {
+  const eerste = verschuifMaand(iso, 0); // 1e van de maand
+  const [y, m] = eerste.split("-").map(Number);
+  const laatste = format(new Date(Date.UTC(y, m, 0))); // dag 0 van volgende maand = laatste dag van deze
+  const eindMaandag = maandagVan(laatste);
+  const weken: string[] = [];
+  let ma = maandagVan(eerste);
+  let veiligheid = 0;
+  while (ma <= eindMaandag && veiligheid < 8) {
+    weken.push(ma);
+    ma = verschuifDagen(ma, 7);
+    veiligheid++;
+  }
+  return weken;
 }
 
 /** ISO 8601-weeknummer (donderdag-regel). */
@@ -105,6 +146,12 @@ export interface PlanbaarOpdracht {
   starttijd: string | null;
   duur_dagen: number;
   dashboard_status: DashboardStatus;
+  /**
+   * Telt het weekend voor déze klus als werkdag mee? Vastgelegd op het moment van plannen/duur-wijzigen
+   * (= de weekend-knop-stand toen), zodat een klus die door het weekend loopt (vr+za i.p.v. vr+ma) dat
+   * geheugen vasthoudt en NIET verschuift als de globale weekend-knop later omgaat.
+   */
+  weekend_telt_mee?: boolean;
 }
 
 export interface PlanbordPlaatsing<T extends PlanbaarOpdracht = PlanbaarOpdracht> {
@@ -164,6 +211,8 @@ export interface BoekbaarOpdracht {
   starttijd: string | null;
   duur_dagen: number;
   dashboard_status: DashboardStatus;
+  /** Zie PlanbaarOpdracht: bepaalt per klus of het weekend als bezette dag meetelt. */
+  weekend_telt_mee?: boolean;
 }
 
 /** De dagen die een opdracht bezet: montage = de werkdagen over de hele duur, service = alleen de startdag. */
@@ -171,13 +220,14 @@ function bezetteDagen(o: BoekbaarOpdracht): string[] {
   if (!o.startdatum) return [];
   const dag = o.startdatum.split("T")[0];
   if (o.starttijd) return [dag];
-  return werkdagenVanaf(dag, Math.max(1, o.duur_dagen || 1));
+  return werkdagenVanaf(dag, Math.max(1, o.duur_dagen || 1), !!o.weekend_telt_mee);
 }
 
 /**
  * Vindt opdrachten die dubbel geboekt zijn: zelfde monteur (account) met overlappende dagen.
  * Twee montages of een montage en een service op dezelfde dag = conflict (montage vult de dag).
- * Twee services op dezelfde dag botsen alleen bij dezelfde starttijd. Pure functie.
+ * Twee services op dezelfde dag botsen alleen bij dezelfde starttijd. Of een meerdaagse montage het
+ * weekend meetelt, leest de functie per klus (`weekend_telt_mee`), zelfde regel als de plaatsing. Pure functie.
  */
 export function vindDubbeleBoekingen(opdrachten: BoekbaarOpdracht[]): Set<string> {
   const actief = opdrachten.filter(
@@ -233,6 +283,46 @@ export function nieuweDuurNaResize(
   const ondergrens = Math.max(1, huidigeDuur - (Math.max(1, zichtbareSpan) - 1));
   const gevraagd = huidigeDuur + deltaKolommen;
   return Math.min(maxDuur, Math.max(ondergrens, gevraagd));
+}
+
+/**
+ * Nieuwe duur na een klik op de -/+ dagknop op een montage-balk: één werkdag erbij of eraf, minimaal 1
+ * en met een veilige bovengrens. Loopt vanzelf door over de weekgrens (de weergave knipt op vrijdag en
+ * toont de rest in de volgende week). Pure functie.
+ */
+export function duurNaStap(huidigeDuur: number, stap: number, maxDuur: number = MAX_DUUR_DAGEN): number {
+  return Math.min(maxDuur, Math.max(1, huidigeDuur + stap));
+}
+
+/**
+ * Of de getoonde week (vanaf `maandagIso`) een klus op zaterdag of zondag heeft. Zo ja, dan moet het
+ * bord het weekend tonen, ook als de weekend-knop uit staat: anders zou die weekend-klus onzichtbaar
+ * van het bord vallen. Telt alleen plaatsbare klussen (op-bord-status, monteur en startdatum). Pure functie.
+ */
+export function weekHeeftWeekendKlus<T extends PlanbaarOpdracht>(
+  opdrachten: T[],
+  maandagIso: string,
+): boolean {
+  const za = verschuifDagen(maandagIso, 5);
+  const zo = verschuifDagen(maandagIso, 6);
+  return opdrachten.some((o) => {
+    if (!OP_BORD.has(o.dashboard_status) || !o.monteur_naam || !o.startdatum) return false;
+    const dag = o.startdatum.split("T")[0];
+    const dagen = o.starttijd ? [dag] : werkdagenVanaf(dag, o.duur_dagen, !!o.weekend_telt_mee);
+    return dagen.includes(za) || dagen.includes(zo);
+  });
+}
+
+/**
+ * De startdatum na het een week verschuiven via de rand-strook: land net over de weekgrens, op de rand
+ * van de doelweek die het dichtst bij ligt. Volgende week (`richting` > 0) -> de MAANDAG (begin van die
+ * week). Vorige week (`richting` < 0) -> de LAATSTE getoonde dag: vrijdag als het weekend uit staat,
+ * zondag als het weekend aan staat. `metWeekend` bepaalt dus alleen de vorige-week-landing. Pure functie.
+ */
+export function weekschuifLanding(iso: string, richting: number, metWeekend: boolean): string {
+  if (richting > 0) return maandagVan(verschuifDagen(iso, 7));
+  const maandagVorige = maandagVan(verschuifDagen(iso, -7));
+  return verschuifDagen(maandagVorige, metWeekend ? 6 : 4); // zo (+6) of vr (+4)
 }
 
 /** Minimale velden om een opdracht op het planbord te kunnen zoeken (een Melding voldoet hieraan). */
@@ -309,8 +399,12 @@ export function plaatsOpdrachten<T extends PlanbaarOpdracht>(
       continue;
     }
 
-    // Montage: de werkdagen die in déze week vallen vormen een aaneengesloten blok (ma..vr).
-    const dagen = werkdagenVanaf(o.startdatum, o.duur_dagen).filter((d) => weekDagenArr.includes(d));
+    // Montage: de (werk)dagen die in déze week vallen vormen een aaneengesloten blok. Of het weekend
+    // meetelt (vr+za i.p.v. vr+ma) is een eigenschap van de klus zelf (weekend_telt_mee), vastgelegd bij
+    // het plannen, zodat de globale weekend-knop een al-geplande klus nooit verschuift.
+    const dagen = werkdagenVanaf(o.startdatum, o.duur_dagen, !!o.weekend_telt_mee).filter((d) =>
+      weekDagenArr.includes(d),
+    );
     if (dagen.length === 0) continue;
     const dagIndex = weekDagenArr.indexOf(dagen[0]);
     plaatsingen.push({ opdracht: o, dagIndex, span: dagen.length, isService: false });

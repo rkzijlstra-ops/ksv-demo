@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maandoverzicht — optie A: kalenderraster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #F4F4F5; --ink: #18181B; --ink-muted: #525252; --line: #D4D4D8;
+    --ant: #27272A; --accent: #F97316;
+    --st-binnen: #94A3B8; --st-gepland: #F97316; --st-bevestigd: #1D4ED8; --st-opgeleverd: #16A34A;
+    --urgent: #DC2626; --amber: #FBBF24;
+    --rein:#0EA5E9; --dani:#A855F7; --sam:#16A34A;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Lexend", ui-sans-serif, system-ui, sans-serif; font-size:16px; line-height:1.4; }
+  .mono { font-family: ui-monospace, "Consolas", monospace; letter-spacing:-.01em; }
+  main { max-width:1260px; margin:0 auto; padding:16px 16px 60px; }
+  .topbar { display:flex; gap:8px; color:var(--ink-muted); font-size:14px; margin-bottom:10px; }
+  .topbar a { color:inherit; }
+  .topbar b { color:var(--ink); }
+
+  /* Header */
+  .h { position:relative; background:#FFF; color:var(--ink); border:2px solid var(--line); border-bottom:none; padding:18px 22px 20px; }
+  .h::after { content:""; display:block; height:6px; background:var(--accent); position:absolute; left:0; right:0; bottom:0; }
+  .h .stamp { font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-muted); }
+  .h h1 { margin:4px 0 0; font-size:28px; font-weight:800; letter-spacing:-.01em; }
+  .h .sub { margin-top:6px; font-size:14px; color:var(--ink-muted); }
+
+  /* Toolbar */
+  .toolbar { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .nav { display:inline-flex; gap:6px; align-items:center; }
+  .pill { border:1.5px solid var(--ant); background:#FFF; min-height:38px; padding:0 14px; display:inline-flex; align-items:center; gap:6px;
+    font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .pill.ghost { border-color:var(--line); color:var(--ink-muted); }
+  .month { font-weight:800; font-size:18px; padding:0 8px; min-width:140px; text-align:center; }
+  .spacer { flex:1; }
+  /* Week|Maand toggle */
+  .toggle { display:inline-flex; border:1.5px solid var(--ant); }
+  .toggle span { padding:0 16px; min-height:38px; display:inline-flex; align-items:center; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .toggle span.on { background:var(--ant); color:#fff; }
+  .toggle span:first-child { border-right:1.5px solid var(--ant); }
+
+  /* Legenda */
+  .leg { margin-top:12px; display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--ink-muted); align-items:center; }
+  .leg span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:2px; }
+  .mdot { width:11px; height:11px; border-radius:50%; flex:none; }
+
+  /* Maandkalender-raster */
+  .cal { margin-top:14px; border:2px solid var(--ant); background:#FFF; }
+  .dow { display:grid; grid-template-columns:repeat(7,1fr); background:var(--surface); border-bottom:2px solid var(--ant); }
+  .dow div { padding:7px 10px; font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-muted); font-weight:700; border-right:1px solid var(--line); }
+  .dow div:last-child { border-right:none; }
+  .dow div.we { background:#EFEFF1; }
+  .weeks { display:grid; grid-template-columns:repeat(7,1fr); }
+  .day { border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:118px; padding:4px 5px 6px; position:relative; }
+  .day:nth-child(7n) { border-right:none; }
+  .weeks .day:nth-last-child(-n+7) { border-bottom:none; }
+  .day.we { background:#FBFBFC; }
+  .day.out { background:#F7F7F8; }
+  .day .num { font-weight:800; font-size:13px; color:var(--ink); }
+  .day.out .num { color:var(--st-binnen); }
+  .day .num .today { background:var(--accent); color:#fff; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
+
+  /* chips */
+  .chip { display:flex; align-items:center; gap:5px; margin-top:3px; padding:2px 5px; font-size:11px; font-weight:700; line-height:1.15;
+    border:1.5px solid var(--line); border-left-width:4px; background:#FFF; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .chip .mdot { width:8px; height:8px; }
+  .chip .nm { overflow:hidden; text-overflow:ellipsis; }
+  .chip.bevestigd { border-color:var(--st-bevestigd); border-left-color:var(--st-bevestigd); }
+  .chip.gepland { border-color:var(--st-gepland); border-left-color:var(--st-gepland); }
+  .chip.opgeleverd { border-color:var(--st-opgeleverd); border-left-color:var(--st-opgeleverd); }
+  .chip.concept { border:1.5px dashed var(--st-gepland); border-left:4px dashed var(--st-gepland); }
+  .chip .tm { color:var(--ant); font-weight:800; }
+
+  /* meerdaagse balk: loopt over de breedte van de cel, uitsteeksels suggereren doorloop */
+  .bar { display:flex; align-items:center; gap:5px; margin-top:3px; padding:3px 6px; font-size:11px; font-weight:800; line-height:1.15; color:#fff; overflow:hidden; white-space:nowrap; }
+  .bar.bevestigd { background:var(--st-bevestigd); }
+  .bar.gepland { background:var(--st-gepland); }
+  .bar.opgeleverd { background:var(--st-opgeleverd); }
+  .bar.concept { background:repeating-linear-gradient(45deg,var(--st-gepland),var(--st-gepland) 6px,#fb8a3c 6px,#fb8a3c 12px); }
+  .bar.start { margin-left:-5px; border-top-left-radius:0; padding-left:8px; }
+  .bar.mid { margin-left:-5px; margin-right:-5px; }
+  .bar.end { margin-right:-5px; }
+  .bar .nm { overflow:hidden; text-overflow:ellipsis; }
+  .bar.cont::before { content:"‹ "; opacity:.8; }
+  .bar.goeson::after { content:" ›"; opacity:.8; margin-left:auto; }
+  .more { margin-top:3px; font-size:10.5px; color:var(--ink-muted); font-weight:700; }
+
+  .hint { font-size:13.5px; color:var(--ink-muted); margin-top:18px; border-left:3px solid var(--accent); padding-left:12px; }
+  .hint b { color:var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><a href="index.html">← mockups</a> · <b>Maandoverzicht — optie A: kalenderraster</b></div>
+
+  <header class="h">
+    <div class="stamp mono">KSV / PLANBORD</div>
+    <h1 class="mono">Maandoverzicht</h1>
+    <div class="sub">Juni 2026 · 3 monteurs · 18 klussen · 2 nog te versturen</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="nav">
+      <span class="pill ghost">‹ vorige</span>
+      <span class="month">Juni 2026</span>
+      <span class="pill ghost">volgende ›</span>
+    </div>
+    <span class="pill">Vandaag</span>
+    <span class="spacer"></span>
+    <div class="toggle"><span>Week</span><span class="on">Maand</span></div>
+  </div>
+
+  <div class="leg">
+    <span><span class="mdot" style="background:var(--rein)"></span>Rein</span>
+    <span><span class="mdot" style="background:var(--dani)"></span>Dani</span>
+    <span><span class="mdot" style="background:var(--sam)"></span>Sam</span>
+    <span style="margin-left:6px">·</span>
+    <span><span class="dot" style="background:var(--st-gepland)"></span>Gepland</span>
+    <span><span class="dot" style="background:#fff;border:1.5px dashed var(--st-gepland)"></span>Concept</span>
+    <span><span class="dot" style="background:var(--st-bevestigd)"></span>Bevestigd</span>
+    <span><span class="dot" style="background:var(--st-opgeleverd)"></span>Opgeleverd</span>
+    <span style="margin-left:6px">· brede balk = montage (meerdaags), kaartje met tijd = service</span>
+  </div>
+
+  <!-- Maandkalender -->
+  <div class="cal">
+    <div class="dow">
+      <div>maandag</div><div>dinsdag</div><div>woensdag</div><div>donderdag</div><div>vrijdag</div><div class="we">zaterdag</div><div class="we">zondag</div>
+    </div>
+    <div class="weeks">
+
+      <!-- Week 1: ma 1 - zo 7 -->
+      <div class="day">
+        <div class="num">1</div>
+        <div class="bar bevestigd start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Fam. Bakker · 7588</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">09:00</span><span class="nm">Putman</span></div>
+      </div>
+      <div class="day">
+        <div class="num">2</div>
+        <div class="bar bevestigd mid cont goeson"><span class="nm">Fam. Bakker</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">11:00</span><span class="nm">J. Jansen</span></div>
+      </div>
+      <div class="day">
+        <div class="num">3</div>
+        <div class="bar bevestigd end cont"><span class="nm">Fam. Bakker</span></div>
+        <div class="chip opgeleverd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">14:00</span><span class="nm">de Bruin</span></div>
+      </div>
+      <div class="day">
+        <div class="num">4</div>
+        <div class="bar gepland start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Mevr. de Wit · 7601</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">08:30</span><span class="nm">Vermeer</span></div>
+      </div>
+      <div class="day">
+        <div class="num">5</div>
+        <div class="bar gepland end cont"><span class="nm">Mevr. de Wit</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">13:30</span><span class="nm">Heesakkers</span></div>
+      </div>
+      <div class="day we"><div class="num">6</div></div>
+      <div class="day we"><div class="num">7</div></div>
+
+      <!-- Week 2: ma 8 - zo 14 -->
+      <div class="day">
+        <div class="num">8</div>
+        <div class="bar bevestigd start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Fam. el Amrani · 7510</span></div>
+      </div>
+      <div class="day">
+        <div class="num">9</div>
+        <div class="bar bevestigd mid cont goeson"><span class="nm">Fam. el Amrani</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">10:00</span><span class="nm">Mevr. Smit</span></div>
+      </div>
+      <div class="day">
+        <div class="num">10</div>
+        <div class="bar bevestigd end cont"><span class="nm">Fam. el Amrani</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">09:30</span><span class="nm">Klaassen</span></div>
+      </div>
+      <div class="day">
+        <div class="num">11</div>
+        <div class="bar concept start goeson"><span class="nm">Fam. Visser · 7702</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">13:00</span><span class="nm">de Jong</span></div>
+      </div>
+      <div class="day">
+        <div class="num">12</div>
+        <div class="bar concept end cont"><span class="nm">Fam. Visser</span></div>
+        <div class="chip opgeleverd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">15:00</span><span class="nm">Hofman</span></div>
+      </div>
+      <div class="day we"><div class="num">13</div></div>
+      <div class="day we"><div class="num">14</div></div>
+
+      <!-- Week 3: ma 15 - zo 21 -->
+      <div class="day">
+        <div class="num">15</div>
+        <div class="bar gepland start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Mevr. Heesakkers · 7636</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">08:00</span><span class="nm">Peters</span></div>
+      </div>
+      <div class="day">
+        <div class="num">16</div>
+        <div class="bar gepland end cont"><span class="nm">Mevr. Heesakkers</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">10:30</span><span class="nm">Mol</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">14:00</span><span class="nm">van Dijk</span></div>
+      </div>
+      <div class="day">
+        <div class="num">17</div>
+        <div class="bar bevestigd start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Fam. Koster · 7715</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">11:00</span><span class="nm">Brouwer</span></div>
+      </div>
+      <div class="day">
+        <div class="num">18</div>
+        <div class="bar bevestigd mid cont goeson"><span class="nm">Fam. Koster</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">09:00</span><span class="nm">Willems</span></div>
+      </div>
+      <div class="day">
+        <div class="num">19</div>
+        <div class="bar bevestigd end cont"><span class="nm">Fam. Koster</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">13:00</span><span class="nm">Veenstra</span></div>
+      </div>
+      <div class="day we"><div class="num">20</div></div>
+      <div class="day we"><div class="num">21</div></div>
+
+      <!-- Week 4: ma 22 - zo 28 -->
+      <div class="day">
+        <div class="num"><span class="today">22</span></div>
+        <div class="bar gepland start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">J. Jansen · 7444</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">10:00</span><span class="nm">Bosman</span></div>
+      </div>
+      <div class="day">
+        <div class="num">23</div>
+        <div class="bar gepland end cont"><span class="nm">J. Jansen</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">08:30</span><span class="nm">Kuijpers</span></div>
+      </div>
+      <div class="day">
+        <div class="num">24</div>
+        <div class="bar concept start goeson"><span class="nm">Fam. Dekker · 7740</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">12:00</span><span class="nm">Schipper</span></div>
+      </div>
+      <div class="day">
+        <div class="num">25</div>
+        <div class="bar concept mid cont goeson"><span class="nm">Fam. Dekker</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">09:30</span><span class="nm">Maas</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">15:00</span><span class="nm">Prins</span></div>
+        <div class="more">+1 meer</div>
+      </div>
+      <div class="day">
+        <div class="num">26</div>
+        <div class="bar concept end cont"><span class="nm">Fam. Dekker</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">11:00</span><span class="nm">Hendriks</span></div>
+      </div>
+      <div class="day we"><div class="num">27</div></div>
+      <div class="day we"><div class="num">28</div></div>
+
+      <!-- Week 5: ma 29 - zo 5 jul -->
+      <div class="day">
+        <div class="num">29</div>
+        <div class="bar bevestigd start goeson"><span class="mdot" style="background:#fff"></span><span class="nm">Mevr. de Wit · 7755</span></div>
+        <div class="chip gepland"><span class="mdot" style="background:var(--dani)"></span><span class="tm mono">10:00</span><span class="nm">Groot</span></div>
+      </div>
+      <div class="day">
+        <div class="num">30</div>
+        <div class="bar bevestigd end cont"><span class="nm">Mevr. de Wit</span></div>
+        <div class="chip bevestigd"><span class="mdot" style="background:var(--sam)"></span><span class="tm mono">13:00</span><span class="nm">Timmer</span></div>
+      </div>
+      <div class="day out"><div class="num">1</div></div>
+      <div class="day out"><div class="num">2</div></div>
+      <div class="day out"><div class="num">3</div></div>
+      <div class="day we out"><div class="num">4</div></div>
+      <div class="day we out"><div class="num">5</div></div>
+
+    </div>
+  </div>
+
+  <p class="hint"><b>Optie A, klassiek maandkalender-raster.</b> Sterk: meteen herkenbaar als een agenda, je ziet in één oogopslag welke dagen druk zijn en welke leeg, weekenden zijn gearceerd. Meerdaagse montages lopen als doorlopende balk over de dagen. Zwak: bij een drukke dag wordt een cel snel vol en moet je inkorten met "+1 meer", en je ziet niet per monteur op een rij wie wat doet, je leest dat af aan de kleurstip. Goed als je vooral wilt weten "wat staat er op welke dag".</p>
+</main>
+</body>
+</html>
