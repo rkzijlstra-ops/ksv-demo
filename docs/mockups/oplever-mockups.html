@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oplever-scherm mockups (app-stijl + kleur-staat-taal)</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --geel-bg:#fffbeb;
+    --accent-zacht:rgba(249,115,22,.13); --succ-zacht:rgba(22,163,74,.13);
+    --rood-zacht:rgba(220,38,38,.12); --grijs-zacht:rgba(71,85,105,.1);
+    --mono:ui-monospace,"Cascadia Code","DM Mono",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 60px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:860px;line-height:1.55;margin:0 0 20px;font-size:14px}
+  .row{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .col{flex:0 0 320px}
+  .cap{font-weight:700;font-size:13px;margin:0 0 8px;color:#1d2530}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:14px}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 10px}
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:14px 14px 16px;margin-bottom:14px}
+  .eyebrow{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:-.01em;margin:3px 0 0;line-height:1.05}
+  .subt{font-size:12px;color:var(--muted);margin:3px 0 0}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--accent)}
+
+  .h{font-family:var(--mono);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+  .opt{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)}
+
+  .media{display:flex;gap:8px}
+  .mbtn{flex:1;min-height:60px;border:2px dashed var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink)}
+  .mbtn .mi{line-height:1;color:var(--accent)}
+  .mbtn .mi svg{width:22px;height:22px;display:block}
+  .mbtn.alt .mi{color:var(--muted)}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .thumb{aspect-ratio:1;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:#94a3b8;font-size:11px}
+  textarea{width:100%;border:2px solid var(--line);background:#fff;padding:9px 10px;font:inherit;font-size:13px;color:var(--ink);resize:none;min-height:48px;margin-top:8px}
+  .lbl{font-size:13px;font-weight:600;color:var(--ink);margin-top:14px;display:block}
+
+  .keuzekaart{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;min-height:54px;margin-top:14px}
+  .keuzekaart .streep{width:6px;flex:none;background:var(--muted)}
+  .keuzekaart.on{border-color:var(--primary)}
+  .keuzekaart.on .streep{background:var(--accent)}
+  .keuzekaart .cirkel{width:38px;height:38px;border-radius:999px;flex:none;display:grid;place-items:center;font-size:16px;background:var(--grijs-zacht);color:var(--muted)}
+  .keuzekaart.on .cirkel{background:var(--accent-zacht);color:var(--accent)}
+  .keuzekaart .ks{color:var(--muted)}
+  .keuzekaart .vink{width:24px;height:24px;flex:none;border:2px solid var(--primary);display:grid;place-items:center;font-size:15px;font-weight:900;color:#fff}
+  .keuzekaart.on .vink{background:var(--primary)}
+  .keuzekaart.disabled{opacity:.5}
+  .keuzekaart.disabled .vink{border-color:var(--muted)}
+
+  .intern{border:2px solid var(--geel);background:var(--geel-bg);padding:0 0 12px;margin-top:12px}
+  .intern .ih{display:flex;align-items:center;gap:8px;padding:11px 12px 0;font-size:13px;font-weight:800}
+  .intern .isub{font-size:11px;color:#8a6d1f;padding:2px 12px 8px;display:block}
+  .intern .pad{padding:0 12px}
+  .tag{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border:1px solid #a16207;color:#a16207;margin-left:auto}
+
+  /* handtekening (inklap) + compacte akkoord/niet-akkoord */
+  details.aftekenen{border:2px solid var(--line);background:#fff;margin:12px 0}
+  details.aftekenen summary{list-style:none;cursor:pointer;display:flex;align-items:stretch;min-height:54px}
+  details.aftekenen summary::-webkit-details-marker{display:none}
+  details.aftekenen .streep{width:6px;flex:none;background:var(--muted)}
+  details.aftekenen .cirkel{width:38px;height:38px;border-radius:999px;flex:none;display:grid;place-items:center;font-size:16px;background:var(--grijs-zacht);color:var(--muted)}
+  details.aftekenen .ks{color:var(--muted)}
+  .chev{margin-left:auto;color:var(--muted);font-weight:400;transition:transform .15s}
+  details[open] .chev{transform:rotate(90deg)}
+  .opt2{font-weight:600;color:var(--muted);font-size:12px}
+  .abody2{padding:0 12px 12px}
+  .tekent{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px}
+  .tekent .q{font-weight:700;color:var(--ink)}
+  .seg{margin-left:auto;display:flex;border:2px solid var(--line)}
+  .seg span{padding:4px 9px;font-size:11px;font-weight:700;color:var(--muted)}
+  .seg .ok{background:var(--success);color:#fff}
+  .seg .nok{background:var(--rood);color:#fff}
+  .sig{border:2px dashed var(--line);background:var(--surface);min-height:70px;display:grid;place-items:center;color:#94a3b8;font-size:12px}
+
+  /* ActieKaart: balk links, icoon-cirkel, status-subtekst, pijl/vinkje rechts */
+  .kaart{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;min-height:56px;margin-bottom:8px;width:100%;text-align:left}
+  .streep{width:6px;flex:none}
+  .kmid{flex:1;display:flex;align-items:center;gap:11px;padding:8px 11px}
+  .cirkel{width:38px;height:38px;border-radius:999px;flex:none;display:grid;place-items:center;font-size:16px;font-weight:700}
+  .cirkel svg{width:19px;height:19px;display:block}
+  .ktxt{flex:1;min-width:0}
+  .kt{display:block;font-family:var(--mono);font-size:14px;font-weight:800;color:var(--ink)}
+  .ks{display:block;font-size:12px;margin-top:1px}
+  .kchev{flex:none;color:var(--muted);font-size:18px}
+  .kvink{flex:none;color:var(--success);font-size:18px;font-weight:900}
+  .kvink svg{width:18px;height:18px;display:block}
+
+  .kaart.neutraal .streep{background:var(--muted)} .kaart.neutraal .cirkel{background:var(--grijs-zacht);color:var(--muted)} .kaart.neutraal .ks{color:var(--muted)}
+  .kaart.actie .streep{background:var(--accent)} .kaart.actie .cirkel{background:var(--accent-zacht);color:var(--accent)} .kaart.actie .ks{color:#b4530a;font-weight:600}
+  .kaart.klaar .streep{background:var(--success)} .kaart.klaar .cirkel{background:var(--succ-zacht);color:var(--success)} .kaart.klaar .ks{color:var(--success);font-weight:600}
+
+  .kluspoolhint{font-size:11px;color:#b4530a;background:var(--accent-zacht);border-left:3px solid var(--accent);padding:8px 10px;margin-top:4px;line-height:1.45}
+
+  .legend{margin-top:30px;font-size:13px;color:#3a4654;max-width:860px;line-height:1.6}
+  .legend b{color:var(--ink)}
+  .kt2{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+  . kpill,.kpill{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);padding:3px 9px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .kpill .d{width:9px;height:9px}
+  .kpill.n .d{background:var(--muted)} .kpill.a .d{background:var(--accent)} .kpill.k .d{background:var(--success)} .kpill.r .d{background:var(--rood)}
+</style>
+</head>
+<body>
+  <h1>Oplever-scherm · echte kleur-staat-taal (ActieKaart)</h1>
+  <p class="lead">Verstuur-knoppen zijn nu de echte app-kaarten: gekleurde balk links, icoon-cirkel, status-subtekst, en rechts een pijl of vinkje.
+  Grijs = optioneel, oranje = nog te doen, groen = gedaan/verzonden. Het oranje "Nog te versturen" is meteen je kluspool-oranje, dus nu-of-later zit al in de kleur.
+  Frame 1 = alleen opdrachtgever. Frame 2 = klant aan. Frame 3 = klant-voorvertoning. Frame 4 = de verstuur-statussen.</p>
+
+  <div class="row">
+
+    <!-- ===== FRAME 1 ===== -->
+    <div class="col">
+      <p class="cap">1 · Alleen opdrachtgever (KSV-standaard)<small>Eén rapport, geen splitsing. Verstuur-kaarten in de kleur-staat-taal.</small></p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>━ ◓ ▮</span></div>
+        <div class="hdr"><p class="eyebrow">Opleveren</p><h2 class="title">Fam. Jansen</h2><p class="subt">keuken plaatsen · Voorschoten</p><span class="accbar"></span></div>
+
+        <div class="h">De oplevering</div>
+        <div class="media"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>Camera</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+        <div class="thumbs"><div class="thumb">foto</div><div class="thumb">foto</div><div class="thumb"></div></div>
+        <div class="media" style="margin-top:8px"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg></span>Opnemen</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+        <label class="lbl">Notitie voor de opdrachtgever</label>
+        <textarea placeholder="Bijv. lade afgesteld, alles getest, klant tevreden."></textarea>
+
+        <div class="keuzekaart disabled"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="ktxt"><span class="kt">Ook aan de klant opleveren</span><span class="ks">Niet beschikbaar: deze opdrachtgever levert zelf aan de klant.</span></span><span class="vink"></span></span></div>
+
+        <details class="aftekenen">
+          <summary><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span class="ktxt"><span class="kt">Handtekening</span><span class="ks">optioneel · klant tekent voor akkoord</span></span><span class="chev">›</span></span></summary>
+          <div class="abody2">
+            <div class="tekent"><span class="q">Klant tekent voor</span><span class="seg"><span class="ok">Akkoord</span><span>Niet akkoord</span></span></div>
+            <div class="sig">Laat de klant hier tekenen</div>
+          </div>
+        </details>
+
+        <div class="h">Versturen</div>
+        <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="ktxt"><span class="kt">Rapport voorvertonen</span><span class="ks">Bekijk hoe het rapport eruitziet</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart actie"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span><span class="ktxt"><span class="kt">Naar de opdrachtgever</span><span class="ks">Nog te versturen</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span><span class="ktxt"><span class="kt">Later versturen</span><span class="ks">zet klaar in je kluspool</span></span><span class="kchev">›</span></span></button>
+      </div>
+    </div>
+
+    <!-- ===== FRAME 2 ===== -->
+    <div class="col">
+      <p class="cap">2 · Ook naar de klant AAN<small>Rapport = wat de klant ziet. Interne melding verschijnt erbij. Twee verstuur-kaarten.</small></p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>━ ◓ ▮</span></div>
+        <div class="hdr"><p class="eyebrow">Opleveren</p><h2 class="title">Fam. de Wit</h2><p class="subt">keuken plaatsen · eigen klus</p><span class="accbar"></span></div>
+
+        <div class="h">De oplevering <span class="opt">· dit ziet iedereen</span></div>
+        <div class="media"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>Camera</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+        <div class="thumbs"><div class="thumb">foto</div><div class="thumb"></div><div class="thumb"></div></div>
+        <div class="media" style="margin-top:8px"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg></span>Opnemen</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+        <label class="lbl">Notitie (komt in de oplevering)</label>
+        <textarea placeholder="Bijv. keuken geplaatst en getest."></textarea>
+
+        <div class="keuzekaart on"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="ktxt"><span class="kt">Ook aan de klant opleveren</span><span class="ks">De klant krijgt de oplevering hierboven.</span></span><span class="vink">✓</span></span></div>
+
+        <div class="intern">
+          <div class="ih">Voor de opdrachtgever <span class="tag">klant ziet dit niet</span></div>
+          <div class="pad">
+            <div class="media" style="margin-top:8px"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span>Camera</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+            <div class="media" style="margin-top:8px"><div class="mbtn"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg></span>Opnemen</div><div class="mbtn alt"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Galerij</div></div>
+            <textarea placeholder="Bijv. plint beschadigd aangetroffen, foto/video bijgevoegd."></textarea>
+          </div>
+        </div>
+
+        <details class="aftekenen">
+          <summary><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span class="ktxt"><span class="kt">Handtekening</span><span class="ks">optioneel · klant tekent voor akkoord</span></span><span class="chev">›</span></span></summary>
+          <div class="abody2">
+            <div class="tekent"><span class="q">Klant tekent voor</span><span class="seg"><span class="ok">Akkoord</span><span>Niet akkoord</span></span></div>
+            <div class="sig">Laat de klant hier tekenen</div>
+          </div>
+        </details>
+
+        <div class="h">Versturen</div>
+        <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="ktxt"><span class="kt">Rapport voorvertonen</span><span class="ks">Bekijk hoe het rapport eruitziet</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart actie"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span><span class="ktxt"><span class="kt">Naar de opdrachtgever</span><span class="ks">Nog te versturen</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart actie"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span><span class="ktxt"><span class="kt">Naar de klant</span><span class="ks">Nog te versturen · via voorvertoning</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span><span class="ktxt"><span class="kt">Later versturen</span><span class="ks">zet klaar in je kluspool</span></span><span class="kchev">›</span></span></button>
+      </div>
+    </div>
+
+    <!-- ===== FRAME 3 ===== -->
+    <div class="col">
+      <p class="cap">3 · Voorvertoning vóór de klant<small>Verschijnt zodra je op "Naar de klant" tikt. Exact wat de klant krijgt, zonder de interne melding.</small></p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>━ ◓ ▮</span></div>
+        <div class="hdr" style="margin-bottom:0;border-bottom:0"><p class="eyebrow">Dit ziet de klant</p><h2 class="title" style="font-size:18px">Oplevering keuken</h2><span class="accbar"></span></div>
+        <div style="border:2px solid var(--line);border-top:0;padding:12px">
+          <div style="border:1px solid var(--line);padding:10px;font-size:12px;color:var(--muted);line-height:1.5">
+            <b style="color:var(--ink)">Fam. de Wit · Voorschoten</b><br><br>2 foto's · 1 video<br>"Keuken geplaatst en getest."<br><br>Uitgevoerd op 23-06-2026.
+          </div>
+          <div style="font-size:11px;color:#8a6d1f;background:var(--geel-bg);border:1px solid var(--geel);padding:7px 9px;margin-top:10px">De interne melding ("plint beschadigd…") zit hier bewust niet in. Die gaat alleen naar de opdrachtgever.</div>
+          <button class="kaart actie" style="margin-top:12px"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span><span class="ktxt"><span class="kt">Versturen naar klant</span><span class="ks">naar fam@dewit.nl</span></span><span class="kchev">›</span></span></button>
+          <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span><span class="ktxt"><span class="kt">Terug</span><span class="ks">eerst nog iets aanpassen</span></span><span class="kchev">›</span></span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FRAME 4 ===== -->
+    <div class="col">
+      <p class="cap">4 · Verstuur-statussen (de balkjes & vinkjes)<small>Zo verandert een kaart van kleur en krijgt rechts een vinkje zodra je verstuurt. Dit is de kleur-staat-taal in actie.</small></p>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>━ ◓ ▮</span></div>
+        <div class="h" style="margin-top:2px">Versturen</div>
+        <button class="kaart neutraal"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="ktxt"><span class="kt">Rapport voorvertonen</span><span class="ks">optioneel</span></span><span class="kchev">›</span></span></button>
+        <button class="kaart klaar"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span><span class="ktxt"><span class="kt">Naar de opdrachtgever</span><span class="ks">Verzonden · 23-06 14:12</span></span><span class="kvink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></span></button>
+        <button class="kaart actie"><span class="streep"></span><span class="kmid"><span class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg></span><span class="ktxt"><span class="kt">Naar de klant</span><span class="ks">Nog te versturen</span></span><span class="kchev">›</span></span></button>
+        <div class="kluspoolhint">Opdrachtgever is groen (verzonden, met vinkje). De klant staat nog oranje, dus deze klus blijft oranje in je kluspool tot ook die de deur uit is.</div>
+        <div class="kt2">
+          <span class="kpill n"><span class="d"></span>grijs · optioneel</span>
+          <span class="kpill a"><span class="d"></span>oranje · nog te doen</span>
+          <span class="kpill k"><span class="d"></span>groen · verzonden</span>
+          <span class="kpill r"><span class="d"></span>rood · afwijkend</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="legend">
+    <b>Kleur-staat-taal (uit de app):</b> grijs = optioneel/secundair, oranje = nog te doen, groen = gedaan/verzonden, rood = afwijkende keuze.
+    Elke verstuur-kaart draagt zijn status zelf: oranje "nog te versturen" wordt groen "verzonden" met een vinkje rechts.<br><br>
+    <b>Nu of later</b> zit al in die kleur: laat je een kaart oranje staan, dan blijft de klus oranje in de <b>kluspool</b> als "nog te versturen". Geen aparte knop nodig.
+    <b>Snel afsluiten</b> is ditzelfde, zonder handtekening; bij KSV blijft Frame 1 over.
+  </p>
+</body>
+</html>
