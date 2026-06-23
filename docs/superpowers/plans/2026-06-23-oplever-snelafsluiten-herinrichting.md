@@ -46,7 +46,7 @@ Migraties: D1 raakt het schema. Draai met `npm run migrate:test` (test + demo). 
 
 ## Brok D1 — DB-fundament klant-levering
 
-**Doel:** opdrachtgever krijgt `klant_levering_toegestaan` (default UIT), met db-functies om te lezen/schrijven.
+**Doel:** opdrachtgever krijgt `klant_levering_toegestaan` (default AAN; per opdrachtgever uit te zetten via de dashboard-schakelaar), met db-functies om te lezen/schrijven.
 
 **Bestanden:**
 - Create: `supabase/schema-compleet-16-klant-levering.sql`
@@ -57,7 +57,7 @@ Migraties: D1 raakt het schema. Draai met `npm run migrate:test` (test + demo). 
 ```sql
 -- supabase/schema-compleet-16-klant-levering.sql
 alter table public.opdrachtgevers
-  add column if not exists klant_levering_toegestaan boolean not null default false;
+  add column if not exists klant_levering_toegestaan boolean not null default true;
 ```
 - [ ] **D1.2. Migratie draaien op test+demo.** Run: `npm run migrate:test -- supabase/schema-compleet-16-klant-levering.sql`. Verwacht: succes op test- én demo-DB. (Prod = handmatig door Reinier, apart benoemen bij oplevering.)
 - [ ] **D1.3. Type uitbreiden.** In `src/lib/db.ts` de interface `Opdrachtgever` aanvullen met `klant_levering_toegestaan: boolean`.
@@ -115,7 +115,7 @@ Run `npm run migrate:test -- supabase/schema-compleet-17-opdrachtgever-media.sql
 - [ ] **C2. Implementeer `variant`-param.** Voeg `variant: "volledig" | "verkorting" = "volledig"` toe aan `genereerRapportPdf()`. In `"verkorting"`: sla de handtekening-sectie (regels ~270-278) en controle-checklist (sectie ~241-246) over; sectie-nummering loopt automatisch door. Volledige variant ongewijzigd. Test groen.
 - [ ] **C3. Route: variant doorgeven.** `rapport/route.ts` accepteert `{ variant }` in de body en geeft het door aan `genereerRapportPdf()`. Bestandsnaam-suffix `-verkort` toevoegen. Failing route-test → implementeren → groen.
 - [ ] **C4. Snel-afsluiten-scherm = oplever-flow (verkort).** `/opdracht/[id]/afronden/snel` rendert de oplever-flow in verkorte modus: geen handtekening-kaart, geen voorvertoon-stap, klant-kant alleen bij `magKlantLeveren`. Hergebruik dezelfde verstuur-kaarten + "Later". Bij KSV blijft over: oplevering + "Naar de opdrachtgever"/"Later".
-- [ ] **C5. Status-gedrag gelijktrekken.** Versturen naar de opdrachtgever zet de klus op "opgeleverd" (zoals opleveren). Het "er komt nog een vervolg"-vinkje behouden als optie (klus terug naar kantoor om opnieuw in te plannen). Failing test in `afgerond/route.test.ts`/opvolger → implementeren → groen.
+- [ ] **C5. Status-gedrag gelijktrekken.** Versturen naar de opdrachtgever zet de klus op "opgeleverd" (zoals opleveren). Het "er komt nog een vervolg"-vinkje behouden als optie, **inclusief de hele keten erachter**: bij vervolg-nodig + opdrachtgever-klus gaat de klus terug naar kantoor (ontplannen / dashboard_status terug naar binnen) om opnieuw in te plannen; bij ad-hoc klus (geen opdrachtgever) blijft hij bij de monteur. Dit gedrag staat nu in `src/app/api/opdrachten/[id]/afgerond/route.ts` (regels ~53-59) en moet behouden blijven. Failing test eerst (vervolg → ontplannen-overgang) → implementeren → groen.
 - [ ] **C6. E2e snel afsluiten.** `e2e/afgerond.spec.ts` herzien: snel afsluiten produceert een verkorte PDF en verstuurt naar de opdrachtgever (status opgeleverd); vervolg-vinkje-case blijft werken; "Later" laat hem oranje in de kluspool.
 - [ ] **C7. Opruimen + docs.** Uitgefaseerde `afgerond-mail.ts`-pad netjes verwijderen of laten verwijzen naar oplever-mail. `TOESTANDEN.md`/`TESTDEKKING.md` bij. Commit.
 
@@ -145,10 +145,12 @@ Run `npm run migrate:test -- supabase/schema-compleet-17-opdrachtgever-media.sql
 - [ ] Naar `omgeving-test` brengen; Reinier keurt op `kluslus-test` (beide rollen, end-to-end, opleverlat).
 - [ ] **STOP-poort:** pas na Reins expliciete "merge" naar master. **Productie-migraties (schema 16 + 17) draait Reinier handmatig** vóór/bij de merge.
 
-## Open punten (vóór go bevestigen)
+## Beslissingen (bevestigd door Reinier, 2026-06-23 — go)
 
-1. `klant_levering_toegestaan` default **UIT** voor alle bestaande opdrachtgevers (incl. KSV). [aanname: ja]
-2. Snel afsluiten zet status **opgeleverd** bij versturen naar de opdrachtgever, net als opleveren. [aanname: ja]
-3. "Er komt nog een vervolg"-vinkje **behouden** in de nieuwe snel afsluiten. [aanname: ja]
-4. Verkorte PDF = volledige PDF **zonder handtekening + controle-checklist**, foto/video/opmerking blijven. [aanname: ja]
-5. Plek van de dashboard-schakelaar (eigen instellingen-pagina vs sectie op `/gebruikers`). [aanname: eigen sectie; laag-risico]
+1. `klant_levering_toegestaan` default **AAN** voor alle opdrachtgevers; per opdrachtgever uit te zetten via de dashboard-schakelaar.
+2. Snel afsluiten zet status **opgeleverd** bij versturen naar de opdrachtgever, net als opleveren.
+3. "Er komt nog een vervolg"-vinkje **behouden**, inclusief de hele keten erachter (ontplannen/terug naar kantoor; ad-hoc blijft bij monteur).
+4. Verkorte PDF = volledige PDF **zonder handtekening + controle-checklist**, foto/video/opmerking blijven.
+5. Dashboard-schakelaar in een **eigen instellingen-sectie** in het dashboard.
+
+Reinier draait zelf SQL op de test-omgeving toegestaan; volledige autonomie om te beslissen en te bouwen tot werkend van a tot z.
