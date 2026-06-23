@@ -59,8 +59,25 @@ worden. Naam en adres zijn `truncate` (1 regel), alleen de meta-regel kan nog wr
 - Blokhoogte gemeten met een wegwerp-playwright-meting (render 90px voor 1- én 2-daags, inhoud 89/84
   past) en met een screenshot gecontroleerd. Meting daarna verwijderd.
 
-## Poort
-Niets naar master/productie/demo. Staat op `kluslus-test.vercel.app` (Vercel-build success geverifieerd).
-Reinier keurt op `/test-login` (incognito i.v.m. PWA-cache): kantoor -> Planbord -> zet een vrijdag-klus
-op meerdere dagen met weekend aan, verstuur, zet weekend uit, controleer dat hij niet verschuift; en kijk
-of 1- en meerdaagse blokken even hoog zijn. Pas na akkoord mergen + migratie 25 op productie.
+## Naar productie (vervolg dezelfde dag)
+
+Reinier gaf akkoord voor productie. Onderweg twee dingen opgelost:
+
+**1. kluslus-test toonde de oude versie (deploy-valkuil).** `kluslus-test.vercel.app` is de PRODUCTIE-
+deployment van het test-project, met production branch op `master` (steady state). Een feature-branch
+landt dus alleen als preview en verschijnt niet vanzelf op het publieke adres. Met een Vercel-token de
+nieuwste deployment naar productie gepromoot (`vercel promote`), daarna het echte gedrag live geverifieerd
+(weekend-klus springt niet naar volgende week). Token daarna door Reinier ingetrokken. Vastgelegd in
+`docs/OMGEVINGEN.md` + geheugen. Na de merge naar master keert kluslus-test vanzelf terug naar de
+master-spiegel.
+
+**2. CI rood: pool->cel-drag (echte regressie, geen flakiness).** Twee sleeptests faalden in CI (en lokaal
+headless), terwijl ze in de laatste groene master-CI nog slaagden. Niet hand-wavy als "flaky" afgedaan,
+maar gediagnosticeerd: door de vaste rijhoogte (98px/monteur) plus de werkbalk werd de pagina langer dan de
+720px-viewport, waardoor de pool met het sleephandvat onder beeld viel (gemeten: greep op y=996). De muis
+kon het handvat niet pakken, dus dnd-kit startte de drag nooit (status bleef 'binnen'). Echte gebruikers
+hebben dit niet (dnd-kit auto-scrollt tijdens slepen); het is een limiet van de drag-simulatie. Fix:
+`test.use` viewport 1280x1600 in `planbord.spec`. Daarna alle 14 planbord-e2e's groen.
+
+**Release:** PR #24 (planbord-maand-weekend -> master). Migratie 25 door Reinier op de productie-DB gedraaid
+(backward-compatible, default false). Na groene cloud-CI gemerged -> prod + demo deployen automatisch.
