@@ -343,6 +343,10 @@ export interface Opdrachtgever {
   id: string;
   naam: string;
   created_at: string;
+  // blok 26: mag de monteur de oplevering ook rechtstreeks aan de klant sturen? Default aan;
+  // een opdrachtgever die dat niet wil zet het uit via het dashboard. Bij een eigen klus (geen
+  // opdrachtgever) beslist de monteur zelf, los van deze vlag (zie magKlantLeveren).
+  klant_levering_toegestaan: boolean;
 }
 
 /** Profiel van een gebruiker: rol, naam en (voor monteur/opdrachtgever) de zaak. */
@@ -489,6 +493,9 @@ export interface Db {
   getProfielen(): Promise<Profiel[]>;
   getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
+  getOpdrachtgevers(): Promise<Opdrachtgever[]>;
+  getOpdrachtgever(id: string): Promise<Opdrachtgever | null>;
+  updateOpdrachtgever(id: string, input: { klant_levering_toegestaan: boolean }): Promise<void>;
   upsertProfiel(input: ProfielInput): Promise<void>;
   /** Werkt de eigen afzender-velden bij (via SECURITY DEFINER, kan de rol niet raken). */
   updateEigenGegevens(input: EigenGegevensInput): Promise<void>;
@@ -1363,6 +1370,36 @@ function createDbFromClient(client: SupabaseClient): Db {
         .order("created_at", { ascending: true });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return ((data ?? []) as Opdrachtgever[])[0] ?? null;
+    },
+
+    /** Alle opdrachtgevers (zaken), op naam. Voor het dashboard-instellingenscherm. */
+    async getOpdrachtgevers() {
+      const { data, error } = await client
+        .from("opdrachtgevers")
+        .select("*")
+        .order("naam", { ascending: true });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as Opdrachtgever[];
+    },
+
+    /** Eén opdrachtgever ophalen (met instellingen). Null als niet gevonden. */
+    async getOpdrachtgever(id: string) {
+      const { data, error } = await client
+        .from("opdrachtgevers")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data as Opdrachtgever | null) ?? null;
+    },
+
+    /** Instellingen van een opdrachtgever bijwerken (nu: klant-levering aan/uit). */
+    async updateOpdrachtgever(id: string, input: { klant_levering_toegestaan: boolean }) {
+      const { error } = await client
+        .from("opdrachtgevers")
+        .update({ klant_levering_toegestaan: input.klant_levering_toegestaan })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 
     async upsertProfiel(input) {
