@@ -123,6 +123,9 @@ export interface Oplevering {
   opmerking: string | null;
   /** Interne notitie: alleen voor de zaak, komt nooit in de klant-versie van het rapport. */
   interne_opmerking: string | null;
+  /** Interne media (foto/video) voor de opdrachtgever; nooit in de klant-versie van het rapport. */
+  interne_foto_urls: string[];
+  interne_video_url: string | null;
   /** Ontvanger voor de ZAAK-versie (bestaand gedrag). */
   rapport_email: string | null;
   /** Zaak-PDF + wanneer hij verstuurd is (null = nog niet). */
@@ -153,6 +156,10 @@ export interface OpleveringConceptInput {
   opmerking?: string | null;
   /** Interne notitie (alleen voor de zaak). Undefined = niet wijzigen, null = wissen. */
   interne_opmerking?: string | null;
+  /** Interne foto's (alleen voor de zaak). Undefined = niet wijzigen. */
+  interne_foto_urls?: string[];
+  /** Interne video (alleen voor de zaak). Undefined = niet wijzigen, null = wissen. */
+  interne_video_url?: string | null;
   rapport_email?: string | null;
   /** Voorgesteld/aangepast klant-mailadres voor de klant-versie. */
   klant_rapport_email?: string | null;
@@ -836,6 +843,12 @@ function createDbFromClient(client: SupabaseClient): Db {
       // losse tussenopslag ze niet per ongeluk wist.
       if (input.interne_opmerking !== undefined) {
         payload.interne_opmerking = input.interne_opmerking;
+      }
+      if (input.interne_foto_urls !== undefined) {
+        payload.interne_foto_urls = input.interne_foto_urls;
+      }
+      if (input.interne_video_url !== undefined) {
+        payload.interne_video_url = input.interne_video_url;
       }
       if (input.klant_rapport_email !== undefined) {
         payload.klant_rapport_email = input.klant_rapport_email;

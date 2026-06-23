@@ -38,6 +38,8 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     handtekening_url: null,
     opmerking: null,
     interne_opmerking: null,
+    interne_foto_urls: [],
+    interne_video_url: null,
     rapport_email: null,
     rapport_url: null,
     zaak_rapport_verzonden_at: null,
