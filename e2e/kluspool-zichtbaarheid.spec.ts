@@ -74,7 +74,9 @@ test("gat 3: een nog niet verstuurd concept is verborgen, een eigen klus blijft 
 test("gat 1: bij een wijziging na versturen houdt de monteur de afgesproken datum", async ({ page }) => {
   const klant = `WIJZIG-WP ${Date.now()}`;
   const afgesproken = "2026-06-10";
-  const nieuw = "2026-06-24";
+  // Bewust een datum ver weg van "vandaag": valt de nieuwe datum op de dag dat de test draait, dan
+  // matcht getByText(nieuw) ook de datum die de pagina elders van vandaag toont (count 0 zou falen).
+  const nieuw = "2026-09-15";
   const id = await seed(klant);
   await db.planOpdracht(id, { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: afgesproken, starttijd: null, duur_dagen: 1 });
   await db.markeerVerzonden(id, { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: afgesproken, starttijd: null });
