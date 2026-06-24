@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { storage } from "@/lib/storage";
-import { genereerRapportPdf, type RapportDoelgroep } from "@/lib/rapport";
+import { genereerRapportPdf, type RapportDoelgroep, type RapportVariant } from "@/lib/rapport";
 import { verstuurOpleverRapport } from "@/lib/mail";
 import { formatDatumLang } from "@/lib/datum";
 
@@ -24,6 +24,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     body = {};
   }
   const doelgroep: RapportDoelgroep = body.doelgroep === "klant" ? "klant" : "zaak";
+  // Verkorte variant (snel afsluiten): laat handtekening + controle weg. Default volledig.
+  const variant: RapportVariant = body.variant === "verkorting" ? "verkorting" : "volledig";
+  // Snel afsluiten met "er komt nog een vervolg": de zaak krijgt de PDF, maar de klus gaat NIET op
+  // opgeleverd en keert terug naar kantoor (alleen bij de zaak-verzending van toepassing).
+  const vervolg = body.vervolg === true;
 
   const dbi = await db();
   const opdracht = await dbi.getMeldingById(id);
@@ -75,7 +80,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   let rapportUrl: string;
   try {
-    const pdf = await genereerRapportPdf(opdracht, meldingen, oplevering, afzender, doelgroep);
+    const pdf = await genereerRapportPdf(opdracht, meldingen, oplevering, afzender, doelgroep, variant);
     const { publieke_url } = await storage().uploadOpdrachtDocument(
       Buffer.from(pdf),
       bestandsnaam,
@@ -104,6 +109,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     if (doelgroep === "klant") {
       await dbi.registreerKlantRapport(id, rapportUrl, naar);
+    } else if (vervolg) {
+      // Vervolg-keten: rapport vastleggen, NIET opgeleverd, en terug naar kantoor om opnieuw te plannen
+      // (ontplannen met service-rechten; een ad-hoc klus zonder kantoor blijft bij de monteur met de
+      // "Vervolg plannen"-markering).
+      await dbi.registreerVerkortRapportVervolg(id, rapportUrl);
+      if (opdracht.opdrachtgever_id) await dbAdmin().ontplanOpdracht(id);
     } else {
       // Zet de opdracht pas nu op opgeleverd (kantoor ziet het oplevermoment nu pas).
       await dbi.registreerZaakRapport(id, rapportUrl);
@@ -125,7 +136,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   return NextResponse.json(
-    { verzonden: true, doelgroep, rapport_url: rapportUrl, opgeleverd: doelgroep === "zaak" },
+    { verzonden: true, doelgroep, rapport_url: rapportUrl, opgeleverd: doelgroep === "zaak" && !vervolg },
     { status: 200 },
   );
 }

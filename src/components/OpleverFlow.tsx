@@ -25,6 +25,7 @@ export function OpleverFlow({
   klantEmailVoorstel = null,
   waarschuwKlantZicht = true,
   magKlantLeveren = true,
+  verkort = false,
 }: {
   opdrachtId: string;
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
@@ -33,6 +34,8 @@ export function OpleverFlow({
   waarschuwKlantZicht?: boolean;
   /** Mag deze klus ook aan de klant opgeleverd worden? (opdrachtgever-instelling / eigen klus) */
   magKlantLeveren?: boolean;
+  /** Snel afsluiten: uitgeklede oplevering (verkorte PDF, geen handtekening/voorvertoon, vervolg-optie). */
+  verkort?: boolean;
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
@@ -49,6 +52,8 @@ export function OpleverFlow({
   // Per klus: levert de monteur deze oplevering ook aan de klant? Onthult de klant-kant + het
   // "voor de opdrachtgever"-blok. Alleen beschikbaar als de klus het toestaat (magKlantLeveren).
   const [klantLeveringAan, setKlantLeveringAan] = useState(false);
+  // Snel afsluiten (verkort): "er komt nog een vervolg" houdt de klus open + zet hem terug naar kantoor.
+  const [vervolgNodig, setVervolgNodig] = useState(false);
   // Controlepunt dat de klant aftekent: true = akkoord, false = niet akkoord, null = nog niet gekozen.
   const [controleAkkoord, setControleAkkoord] = useState<boolean | null>(null);
   const [rapportEmail, setRapportEmail] = useState("");
@@ -379,7 +384,11 @@ export function OpleverFlow({
       const verstuurRes = await fetch(`/api/opdrachten/${opdrachtId}/rapport`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doelgroep }),
+        body: JSON.stringify({
+          doelgroep,
+          variant: verkort ? "verkorting" : "volledig",
+          vervolg: verkort && doelgroep === "zaak" && vervolgNodig,
+        }),
       });
       if (!verstuurRes.ok) {
         const b = await verstuurRes.json().catch(() => ({}));
@@ -429,8 +438,14 @@ export function OpleverFlow({
           aria-hidden="true"
         />
         <CheckCircle2 size={72} strokeWidth={2.5} className="-mt-[84px] text-success" aria-hidden="true" />
-        <p className="mt-2 font-mono text-2xl font-extrabold text-ink">Opgeleverd!</p>
-        <p className="text-sm text-ink-muted">Het rapport is naar de opdrachtgever verstuurd.</p>
+        <p className="mt-2 font-mono text-2xl font-extrabold text-ink">
+          {verkort && vervolgNodig ? "Doorgegeven!" : "Opgeleverd!"}
+        </p>
+        <p className="text-sm text-ink-muted">
+          {verkort && vervolgNodig
+            ? "De opdrachtgever heeft het rapport. De klus staat klaar voor een vervolg."
+            : "Het rapport is naar de opdrachtgever verstuurd."}
+        </p>
       </div>
     );
   }
@@ -627,7 +642,8 @@ export function OpleverFlow({
         </div>
       </section>
 
-      {/* Stap 2: handtekening (overslaanbaar) */}
+      {/* Handtekening (overslaanbaar) — niet bij snel afsluiten (verkort). */}
+      {!verkort && (
       <section className="border-t border-line pt-6">
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           3. Handtekening (optioneel)
@@ -689,8 +705,30 @@ export function OpleverFlow({
           </div>
         )}
       </section>
+      )}
 
-      {/* Rapport voorvertonen: in de flow, vóór versturen (was de vaste onderbalk). */}
+      {/* Snel afsluiten: er komt nog een vervolg (houdt de klus open + terug naar kantoor). */}
+      {verkort && (
+        <section className="border-t border-line pt-6">
+          <label className="flex items-start gap-3 border-2 border-urgent-geel bg-[#fffbeb] p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={vervolgNodig}
+              onChange={(e) => setVervolgNodig(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+            />
+            <span>
+              <span className="font-bold text-ink">Er komt nog een vervolg</span>
+              <span className="block text-ink-muted">
+                De opdrachtgever krijgt het rapport, maar de klus blijft open en gaat terug naar kantoor om opnieuw in te plannen.
+              </span>
+            </span>
+          </label>
+        </section>
+      )}
+
+      {/* Rapport voorvertonen — niet bij snel afsluiten (verkort). */}
+      {!verkort && (
       <section className="border-t border-line pt-6">
         <ActieKaart
           href={`/opdracht/${opdrachtId}/rapport`}
@@ -703,6 +741,7 @@ export function OpleverFlow({
           }}
         />
       </section>
+      )}
 
       {/* 4. Versturen: twee losse kaarten (klant / zaak), los in tijd. */}
       <section className="border-t border-line pt-6">

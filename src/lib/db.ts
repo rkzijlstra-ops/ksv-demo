@@ -445,6 +445,7 @@ export interface Db {
    * opgeleverd. Hierdoor ziet het kantoor het oplevermoment niet eerder dan de monteur het deelt.
    */
   registreerZaakRapport(opdrachtId: string, rapportUrl: string): Promise<void>;
+  registreerVerkortRapportVervolg(opdrachtId: string, rapportUrl: string): Promise<void>;
   /** Voegt een verzending toe aan de append-only verzendgeschiedenis van een opdracht. */
   logRapportVerzending(input: RapportVerzendingInput): Promise<void>;
   /** Verzendgeschiedenis van een opdracht, nieuwste eerst. */
@@ -920,6 +921,28 @@ function createDbFromClient(client: SupabaseClient): Db {
           teruggemeld_toelichting: null,
           // Opnieuw opgeleverd: niet meer "heropend".
           heropend_at: null,
+        })
+        .eq("id", opdrachtId);
+      if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
+    },
+
+    async registreerVerkortRapportVervolg(opdrachtId, rapportUrl) {
+      // Snel afsluiten MET vervolg: de verkorte PDF is naar de opdrachtgever gegaan (zaak heeft het
+      // oplever-blok gehad), maar de klus is NIET opgeleverd: er komt nog iets. We leggen het rapport
+      // vast op de oplevering en zetten de "Vervolg plannen"-markering (afgerond_vervolg_nodig). De
+      // eventuele ontplanning naar kantoor doet de route met service-rechten (zoals bij snel afronden).
+      const nu = new Date().toISOString();
+      const { error: opErr } = await client
+        .from("opleveringen")
+        .update({ rapport_url: rapportUrl, zaak_rapport_verzonden_at: nu })
+        .eq("opdracht_id", opdrachtId);
+      if (opErr) throw new Error(`DB update mislukt: ${opErr.message}`);
+      const { error: mErr } = await client
+        .from("meldingen")
+        .update({
+          afgerond_door_monteur_at: nu,
+          afgerond_vervolg_nodig: true,
+          rapport_url: rapportUrl,
         })
         .eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
