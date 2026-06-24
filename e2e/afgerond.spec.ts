@@ -64,7 +64,7 @@ test("snel afsluiten toont de verkorte oplever-flow (geen handtekening, wél ver
   // verstuurkaart naar de opdrachtgever.
   await expect(page.getByRole("heading", { name: /handtekening/i })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Rapport voorvertonen" })).toHaveCount(0);
-  await expect(page.getByText("Er komt nog een vervolg")).toBeVisible();
+  await expect(page.getByText("Klus is niet af.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 });
 
