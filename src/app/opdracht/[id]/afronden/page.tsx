@@ -52,7 +52,7 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
           accent="neutraal"
           icoon={<Zap size={22} strokeWidth={2.5} aria-hidden="true" />}
           titel="Snel afsluiten"
-          sub="Voor service of een kleine klus. Optioneel foto, video of een notitie. De opdrachtgever ziet dat het klaar is."
+          sub="Voor service of een kleine klus. Een verkort rapport naar de opdrachtgever, zonder handtekening."
         />
 
         <ActieKaart

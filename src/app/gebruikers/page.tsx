@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { UitnodigForm } from "@/components/UitnodigForm";
 import { GebruikerRij } from "@/components/GebruikerRij";
+import { OpdrachtgeverInstelling } from "@/components/OpdrachtgeverInstelling";
 import { UserMenu } from "@/components/UserMenu";
 import { TerugKnop } from "@/components/TerugKnop";
 import { vereisRol } from "@/lib/toegang";
@@ -11,6 +12,7 @@ export default async function GebruikersPage() {
   const { email, profiel } = await vereisRol(["beheerder"]);
   const dbi = await db();
   const profielen = await dbi.getProfielen();
+  const opdrachtgevers = await dbi.getOpdrachtgevers();
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -46,6 +48,21 @@ export default async function GebruikersPage() {
               rol={p.rol}
               isZelf={p.id === profiel.id}
             />
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
+          Klant-levering per opdrachtgever
+        </h2>
+        <p className="mb-3 text-sm text-ink-muted">
+          Staat dit aan, dan kan de monteur de oplevering ook rechtstreeks aan de klant sturen. Staat het
+          uit, dan levert hij alleen aan de opdrachtgever.
+        </p>
+        <ul className="flex flex-col gap-2">
+          {opdrachtgevers.map((o) => (
+            <OpdrachtgeverInstelling key={o.id} id={o.id} naam={o.naam} aan={o.klant_levering_toegestaan} />
           ))}
         </ul>
       </section>
