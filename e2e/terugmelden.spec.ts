@@ -103,7 +103,7 @@ test.describe("monteur meldt een Ed-klus terug", () => {
     await expect(page).not.toHaveURL(/\/opdracht\//);
 
     // Na "Klaar" verdwijnt de klus uit de actieve werkpool.
-    await page.getByRole("button", { name: "Klaar" }).click();
+    await page.getByRole("button", { name: "Klaar", exact: true }).click();
     await expect(page.getByText(klant)).toHaveCount(0);
   });
 });

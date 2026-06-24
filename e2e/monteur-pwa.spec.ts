@@ -151,7 +151,7 @@ test("monteur legt de oplevering vast: eindstaat-foto en handtekening (concept, 
   await page.mouse.move(box.x + 100, box.y + 70, { steps: 8 });
   await page.mouse.move(box.x + 160, box.y + 40, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Klaar" }).click();
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
 
   // De handtekening wordt geupload en "Gezet"; we verzenden NIET (zou mailen).
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });

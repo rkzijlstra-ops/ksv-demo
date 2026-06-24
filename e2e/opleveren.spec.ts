@@ -113,7 +113,7 @@ test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (
   await page.mouse.move(box.x + 110, box.y + 70, { steps: 8 });
   await page.mouse.move(box.x + 160, box.y + 40, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Klaar" }).click();
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
 
   // Meteen de opmerking typen en blur (Tab): dit is de race-trigger met de handtekening-save.

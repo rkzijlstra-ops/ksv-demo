@@ -502,7 +502,7 @@ export function OpleverFlow({
               <span className="min-w-0 flex-1">
                 <span className="block font-mono text-base font-extrabold text-ink">Ook aan de klant opleveren</span>
                 <span className="mt-0.5 block text-sm text-ink-muted">
-                  {klantLeveringAan ? "De klant krijgt de oplevering ook." : "Nu alleen naar de opdrachtgever."}
+                  {klantLeveringAan ? "De klant krijgt de oplevering ook." : "Klant krijgt geen eigen versie."}
                 </span>
               </span>
               <span

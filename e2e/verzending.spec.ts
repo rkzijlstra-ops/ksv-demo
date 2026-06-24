@@ -207,6 +207,8 @@ test.describe("privacy-waarschuwing bij versturen naar de klant", () => {
     const { id } = await seedOplevering({ klant_rapport_email: "klant@voorbeeld.test" });
 
     await page.goto(`/opdracht/${id}/opleveren`);
+    // Klant-kant aanzetten (gegate per opdrachtgever / eigen klus), dan pas de klant-verzendkaart.
+    await page.getByRole("button", { name: "Ook aan de klant opleveren" }).click();
     await page.getByRole("button", { name: "Naar de klant" }).click();
     // Klant-adres is voorinvuld; de knop is dus actief.
     await expect(page.getByLabel("E-mailadres van de klant")).toHaveValue("klant@voorbeeld.test");
