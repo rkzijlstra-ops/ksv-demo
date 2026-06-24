@@ -79,7 +79,7 @@ describe("opgeleverdBadgeConfig", () => {
   });
 });
 
-describe("bevestigBadgeConfig (monteur-werkpool)", () => {
+describe("bevestigBadgeConfig (monteur-kluspool)", () => {
   it("gepland: geel 'Te bevestigen', klok-icoon", () => {
     const c = bevestigBadgeConfig("gepland");
     expect(c).not.toBeNull();

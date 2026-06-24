@@ -104,7 +104,7 @@ export interface Melding {
   verzonden_toegewezen_aan: string | null;
   // compleet-systeem blok 6e: welke kantoor-zaak deze opdracht mag zien (null = ad-hoc, geen kantoor)
   opdrachtgever_id: string | null;
-  // blok 18 (inbound): per mail binnengekomen voorstel dat nog NIET in de werkpool staat tot bevestigd
+  // blok 18 (inbound): per mail binnengekomen voorstel dat nog NIET in de kluspool staat tot bevestigd
   te_verwerken: boolean;
   // werk-omschrijving: vrij-tekst "wat moet er gebeuren" voor een zelf-aangemaakte klus. Puur intern
   // (komt niet in het opleverrapport), als geheugensteun voor de monteur.
@@ -263,7 +263,7 @@ export interface OpdrachtInput {
   startdatum?: string | null;
   /** Starttijd bij de zelfgekozen datum (optioneel). */
   starttijd?: string | null;
-  /** Inbound: voorstel uit een binnengekomen mail; staat in het "te verwerken"-bakje, niet in de werkpool. */
+  /** Inbound: voorstel uit een binnengekomen mail; staat in het "te verwerken"-bakje, niet in de kluspool. */
   te_verwerken?: boolean;
   keukenzaak?: string | null;
   meldingen?: MeldingItem[];
@@ -323,7 +323,7 @@ export interface UpdateMeldingInput {
   versie: number;
 }
 
-/** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de werkpool). */
+/** Per opdracht: hoeveel meldingen en of er een spoed-melding bij zit (voor de kluspool). */
 export type MeldingTellingen = Record<string, { aantal: number; heeftSpoed: boolean }>;
 
 /** Planning-invoer voor een opdracht (één invoermodel: tijd leeg = dagblok, ingevuld = tijdkaart). */
@@ -419,11 +419,11 @@ export interface Db {
   logGebeurtenis(input: GebeurtenisInput): Promise<void>;
   getGebeurtenissenVoor(opdrachtId: string): Promise<Gebeurtenis[]>;
   getMeldingen(): Promise<Melding[]>;
-  /** De oplever-werkpool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
-  getWerkpoolVoor(userId: string): Promise<Melding[]>;
+  /** De oplever-kluspool van één persoon: top-level opdrachten die aan hem zijn toegewezen. */
+  getKluspoolVoor(userId: string): Promise<Melding[]>;
   /**
    * Welke van de gegeven opdrachten een oplevering-in-uitvoering hebben (foto of handtekening gezet)
-   * die nog NIET naar de zaak is verstuurd. Voor de werkpool-marker "rapport niet verzonden".
+   * die nog NIET naar de zaak is verstuurd. Voor de kluspool-marker "rapport niet verzonden".
    */
   getOpdrachtenRapportNietVerzonden(opdrachtIds: string[]): Promise<string[]>;
   getMeldingById(id: string): Promise<Melding | null>;
@@ -562,7 +562,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           leverweek: input.leverweek,
           startdatum: input.startdatum ?? null,
           starttijd: input.starttijd ?? null,
-          // De werkpool leest uitvoerdatum; gelijkhouden aan de gekozen startdatum (net als het planbord).
+          // De kluspool leest uitvoerdatum; gelijkhouden aan de gekozen startdatum (net als het planbord).
           uitvoerdatum: input.startdatum ?? null,
           keukenzaak: input.keukenzaak ?? null,
           meldingen: input.meldingen ?? [],
@@ -712,7 +712,7 @@ function createDbFromClient(client: SupabaseClient): Db {
       return (data as Melding | null) ?? null;
     },
 
-    async getWerkpoolVoor(userId: string) {
+    async getKluspoolVoor(userId: string) {
       // De monteur ziet zijn klussen op de "effectieve" monteur: normaal de huidige toewijzing, maar
       // bij een nog-niet-opnieuw-verstuurde wijziging de VERZONDEN monteur. Zo houdt hij een aan hem
       // verstuurde klus vast als kantoor hem op het planbord naar een ander schuift, tot het opnieuw
@@ -722,7 +722,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         .select("*")
         .is("opdracht_id", null)
         .is("verwijderd_at", null)
-        // Inbound-voorstellen (te_verwerken) horen in het bakje, niet in de werkpool.
+        // Inbound-voorstellen (te_verwerken) horen in het bakje, niet in de kluspool.
         .eq("te_verwerken", false)
         .or(
           `and(gewijzigd_te_versturen.is.false,toegewezen_aan.eq.${userId}),` +
@@ -1043,7 +1043,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         .is("opdracht_id", null)
         .is("verwijderd_at", null)
         // Alleen kantoor-opdrachten (met een zaak). Ad-hoc/zelf-ingeschoten klussen horen niet op
-        // het dashboard of planbord; die staan in de oplever-werkpool van de monteur.
+        // het dashboard of planbord; die staan in de oplever-kluspool van de monteur.
         .not("opdrachtgever_id", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
@@ -1080,7 +1080,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         dashboard_status: "concept_gepland",
         monteur_naam: planning.monteur_naam,
         toegewezen_aan: planning.toegewezen_aan,
-        // uitvoerdatum gelijkhouden aan startdatum: de monteur-werkpool leest die nog.
+        // uitvoerdatum gelijkhouden aan startdatum: de monteur-kluspool leest die nog.
         uitvoerdatum: planning.startdatum,
       };
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
@@ -1176,8 +1176,8 @@ function createDbFromClient(client: SupabaseClient): Db {
 
     async ontplanOpdracht(id) {
       // Terug naar de pool: status binnen, planning leeg, gewijzigd-marker reset. Ook de
-      // monteur-toewijzing wissen, anders blijft de klus in de werkpool van die monteur hangen
-      // (getWerkpoolVoor filtert op toegewezen_aan, en RLS toont de monteur zijn toegewezen rijen).
+      // monteur-toewijzing wissen, anders blijft de klus in de kluspool van die monteur hangen
+      // (getKluspoolVoor filtert op toegewezen_aan, en RLS toont de monteur zijn toegewezen rijen).
       const { error } = await client
         .from("meldingen")
         .update({
@@ -1214,7 +1214,7 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (pErr) throw new Error(`DB terugmeld-poging mislukt: ${pErr.message}`);
       // 2) Transiënte vlag (teruggemeld_*) + terug naar de pool "te plannen" (zelfde planning-reset als
       //    ontplannen). De toewijzing blijft bewust staan: zo houdt de monteur de klus in zijn
-      //    werkpool-geschiedenis tot kantoor hem herplant (de poging-regel dekt de periode daarna).
+      //    kluspool-geschiedenis tot kantoor hem herplant (de poging-regel dekt de periode daarna).
       const { error } = await client
         .from("meldingen")
         .update({

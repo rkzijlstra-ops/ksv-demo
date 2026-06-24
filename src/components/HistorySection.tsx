@@ -12,7 +12,7 @@ export function HistorySection({
   pogingen = [],
 }: {
   meldingen: Melding[];
-  /** Blijvende terugmeld-pogingen voor klussen die niet meer in de werkpool staan (read-only). */
+  /** Blijvende terugmeld-pogingen voor klussen die niet meer in de kluspool staan (read-only). */
   pogingen?: TerugmeldPoging[];
 }) {
   const [open, setOpen] = useState(false);

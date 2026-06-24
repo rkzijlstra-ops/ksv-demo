@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groepeerMeldingen } from "./werkpool";
+import { groepeerMeldingen } from "./kluspool";
 import type { Melding } from "./db";
 
 function maakMelding(over: Partial<Melding>): Melding {
@@ -96,7 +96,7 @@ describe("groepeerMeldingen", () => {
     expect(history).toEqual([]);
   });
 
-  it("verbergt geannuleerde klussen uit de monteur-werkpool (gat 2)", () => {
+  it("verbergt geannuleerde klussen uit de monteur-kluspool (gat 2)", () => {
     const rows = [
       maakMelding({ id: "a", dashboard_status: "bevestigd" }),
       maakMelding({ id: "geann", dashboard_status: "geannuleerd" }),
@@ -116,7 +116,7 @@ describe("groepeerMeldingen", () => {
     expect(history.map((m) => m.id)).toEqual(["teruggemeld"]);
   });
 
-  it("verbergt een nog niet verstuurd concept (concept_gepland) uit de werkpool (gat 3)", () => {
+  it("verbergt een nog niet verstuurd concept (concept_gepland) uit de kluspool (gat 3)", () => {
     const rows = [
       maakMelding({ id: "eigen", dashboard_status: "binnen" }),
       maakMelding({ id: "concept", dashboard_status: "concept_gepland" }),

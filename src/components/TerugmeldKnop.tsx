@@ -7,7 +7,7 @@ import { Undo2, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { TERUGMELD_REDENEN } from "@/lib/terugmeld-mail";
 
 /**
- * "Terugmelden aan kantoor" op een werkpool-kaart bij een door kantoor ingeschoten klus die de monteur
+ * "Terugmelden aan kantoor" op een kluspool-kaart bij een door kantoor ingeschoten klus die de monteur
  * niet rond kreeg. Opent een venster met een reden en optionele toelichting. De klus verdwijnt daarna
  * uit zijn actieve pool (komt in zijn history) en kantoor krijgt bericht.
  *
@@ -47,7 +47,7 @@ export function TerugmeldKnop({ opdrachtId, klantNaam }: { opdrachtId: string; k
         return;
       }
       // Niet stil sluiten: eerst een bevestiging tonen, zodat de monteur weet wat er gebeurde voordat
-      // de kaart uit zijn werkpool verdwijnt.
+      // de kaart uit zijn kluspool verdwijnt.
       setKlaar(true);
     } catch {
       setFout("Netwerkfout, probeer opnieuw");
@@ -108,7 +108,7 @@ export function TerugmeldKnop({ opdrachtId, klantNaam }: { opdrachtId: string; k
                   <h2 className="font-mono text-lg font-extrabold text-ink">Terugmelden aan kantoor</h2>
                   <p className="mt-1 text-sm text-ink-muted">
                     Klus voor <span className="font-bold">{klantNaam}</span>. Hij verdwijnt uit je
-                    werkpool en kantoor krijgt bericht. Je vindt hem terug in je geschiedenis.
+                    kluspool en kantoor krijgt bericht. Je vindt hem terug in je geschiedenis.
                   </p>
 
                   <label className="mt-4 flex flex-col gap-1 text-sm font-semibold text-ink">

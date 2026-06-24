@@ -6,7 +6,7 @@ import { getAuthenticatedUserId } from "@/lib/auth";
 /**
  * Haalt een opdracht van het planbord terug naar de pool (status binnen, planning leeg). Alleen
  * kantoor. Was de klus al naar de monteur verstuurd (gepland/bevestigd), dan volgt automatisch een
- * ontplan-mail naar de monteur, zodat de klus niet stil uit zijn werkpool verdwijnt. De mail is
+ * ontplan-mail naar de monteur, zodat de klus niet stil uit zijn kluspool verdwijnt. De mail is
  * best-effort: het ontplannen blijft staan, ook als de mail faalt (dan met mailFout in het antwoord).
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {

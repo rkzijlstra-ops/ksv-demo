@@ -23,7 +23,7 @@ export type HandleidingStap = {
 export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
   {
     bestand: "01-werkpool.png",
-    titel: "Je werkpool",
+    titel: "Je kluspool",
     intro: "Je klussen: actief bovenaan, geschiedenis eronder.",
     punten: [
       "Een klus komt van de opdrachtgever, of je voegt er zelf een toe.",

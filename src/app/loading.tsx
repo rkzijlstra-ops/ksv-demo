@@ -1,6 +1,6 @@
 import { HeaderSkelet, KaartSkelet } from "@/components/Skelet";
 
-/** Laadscherm voor de werkpool: header + een paar klus-kaarten in app-stijl. */
+/** Laadscherm voor de kluspool: header + een paar klus-kaarten in app-stijl. */
 export default function Loading() {
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">

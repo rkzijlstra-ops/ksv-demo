@@ -115,7 +115,7 @@ export function OpleverFlow({
   const opslaanChainRef = useRef<Promise<unknown>>(Promise.resolve());
 
   // Bestaand concept laden bij binnenkomst, zodat een halve oplevering (incl. de geuploade
-  // video) bewaard blijft als je tussendoor naar de werkpool gaat en terugkomt.
+  // video) bewaard blijft als je tussendoor naar de kluspool gaat en terugkomt.
   useEffect(() => {
     let actief = true;
     (async () => {

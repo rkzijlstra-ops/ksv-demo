@@ -5,7 +5,7 @@ import { formatDatumKort } from "@/lib/datum";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "./test-env";
 
 /**
- * Cross-rol: wat de monteur in zijn werkpool ziet als kantoor iets met zijn klus doet. Dekt de drie
+ * Cross-rol: wat de monteur in zijn kluspool ziet als kantoor iets met zijn klus doet. Dekt de drie
  * gaten uit TOESTANDEN.md. Draait onder de monteur-sessie (rk); de kantoor-acties gaan via de db-laag.
  */
 
@@ -44,7 +44,7 @@ test.afterEach(async () => {
   for (const id of ids) await admin.from("meldingen").delete().eq("id", id);
 });
 
-test("gat 2: een geannuleerde klus staat niet meer in de werkpool van de monteur", async ({ page }) => {
+test("gat 2: een geannuleerde klus staat niet meer in de kluspool van de monteur", async ({ page }) => {
   const klant = `GEANN-WP ${Date.now()}`;
   const id = await seed(klant);
   await db.planOpdracht(id, { toegewezen_aan: RK, monteur_naam: "Rein RK", startdatum: "2026-06-15", starttijd: null, duur_dagen: 1 });
@@ -54,7 +54,7 @@ test("gat 2: een geannuleerde klus staat niet meer in de werkpool van de monteur
   await db.annuleerOpdracht(id);
 
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   await expect(page.getByText(klant)).toHaveCount(0);
 });
 
@@ -66,7 +66,7 @@ test("gat 3: een nog niet verstuurd concept is verborgen, een eigen klus blijft 
   await seed(eigenKlant); // status binnen, toegewezen aan RK (eigen werk)
 
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   await expect(page.getByText(eigenKlant)).toBeVisible(); // eigen werk blijft
   await expect(page.getByText(conceptKlant)).toHaveCount(0); // kantoor-concept verborgen
 });
@@ -109,7 +109,7 @@ test("gat 5: bij een monteur-wissel na versturen houdt de oorspronkelijke monteu
   );
 
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   // RK (de verzonden monteur) blijft de klus zien tot kantoor opnieuw verstuurt.
   await expect(page.getByText(klant)).toBeVisible();
 });

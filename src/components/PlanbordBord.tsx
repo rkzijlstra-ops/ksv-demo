@@ -646,7 +646,7 @@ export function PlanbordBord({
                   De klus voor{" "}
                   <span className="font-bold">{bevestigOntplan.klant_naam ?? "deze klant"}</span> is al
                   naar de monteur verstuurd. Als je hem terug naar de pool zet, krijgt de monteur
-                  automatisch bericht en verdwijnt de klus uit zijn werkpool.
+                  automatisch bericht en verdwijnt de klus uit zijn kluspool.
                 </p>
               </div>
             </div>

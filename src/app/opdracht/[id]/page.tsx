@@ -277,7 +277,7 @@ export default async function OpdrachtDetailPage({
             className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
             <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
-            Werkpool
+            Kluspool
           </Link>
           <Link
             href={`/opdracht/${id}/afronden`}

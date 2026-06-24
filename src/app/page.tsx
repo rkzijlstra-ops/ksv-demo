@@ -2,11 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox, ChevronRight, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
-import { groepeerMeldingen } from "@/lib/werkpool";
+import { groepeerMeldingen } from "@/lib/kluspool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
 import { KlusInvoer } from "@/components/KlusInvoer";
-import { WerkpoolOnboarding } from "@/components/WerkpoolOnboarding";
+import { KluspoolOnboarding } from "@/components/KluspoolOnboarding";
 import { UserMenu } from "@/components/UserMenu";
 import { PrefetchOpdrachten } from "@/components/PrefetchOpdrachten";
 import { DemoAutoRefresh } from "@/components/DemoAutoRefresh";
@@ -15,26 +15,28 @@ import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
-export default async function WerkpoolPage({
+export default async function KluspoolPage({
   searchParams,
 }: {
-  searchParams: Promise<{ werkpool?: string }>;
+  searchParams: Promise<{ kluspool?: string; werkpool?: string }>;
 }) {
   const { email, profiel } = await vereisRol(["monteur", "beheerder"]);
 
-  // Een beheerder is dubbelrol (mag werkpool én dashboard). Standaard sturen we 'm naar het dashboard,
-  // zijn echte thuis. Wil hij tóch zijn eigen werkpool zien, dan komt hij hier via ?werkpool=1
-  // (link in het accountmenu). Een monteur en het param-geval renderen gewoon de werkpool hieronder.
+  // Een beheerder is dubbelrol (mag kluspool én dashboard). Standaard sturen we 'm naar het dashboard,
+  // zijn echte thuis. Wil hij tóch zijn eigen kluspool zien, dan komt hij hier via ?kluspool=1
+  // (link in het accountmenu). Legacy ?werkpool=1 blijft werken voor oude links/bookmarks.
+  // Een monteur en het param-geval renderen gewoon de kluspool hieronder.
   const sp = await searchParams;
-  if (profiel.rol === "beheerder" && sp?.werkpool !== "1") {
+  const kluspoolParam = sp?.kluspool === "1" || sp?.werkpool === "1";
+  if (profiel.rol === "beheerder" && !kluspoolParam) {
     redirect("/dashboard");
   }
 
   const dbi = await db();
-  // Oplever-werkpool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
+  // Oplever-kluspool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
   // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
   const [meldingen, tellingen, inbox, pogingen] = await Promise.all([
-    dbi.getWerkpoolVoor(profiel.id),
+    dbi.getKluspoolVoor(profiel.id),
     dbi.getMeldingTellingen(),
     dbi.getInboxVoor(profiel.id),
     dbi.getTerugmeldPogingenVoor(profiel.id),
@@ -42,9 +44,9 @@ export default async function WerkpoolPage({
   const { actief, history } = groepeerMeldingen(meldingen);
 
   // Blijvende terugmeld-historie (blok 22): klussen die ik terugmeldde maar die kantoor daarna aan een
-  // andere monteur gaf, staan niet meer in mijn werkpool. Toon die pogingen read-only in mijn
+  // andere monteur gaf, staan niet meer in mijn kluspool. Toon die pogingen read-only in mijn
   // geschiedenis, zodat "ik heb deze klus teruggemeld" een feit blijft, los van wie hem nu heeft.
-  // Dedupe: pogingen voor een klus die nog wél in mijn werkpool staat (live kaart toont 'm al) overslaan.
+  // Dedupe: pogingen voor een klus die nog wél in mijn kluspool staat (live kaart toont 'm al) overslaan.
   const getoondeIds = new Set([...actief, ...history].map((m) => m.id));
   const gezienePogingen = new Set<string>();
   const verweesdePogingen = pogingen.filter((p) => {
@@ -76,7 +78,7 @@ export default async function WerkpoolPage({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">
-              Werkpool
+              Kluspool
             </p>
             <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Klussen</h1>
             <p className="mt-1 text-sm text-ink-muted">
@@ -114,7 +116,7 @@ export default async function WerkpoolPage({
         <KlusInvoer context="monteur" />
       </div>
 
-      <WerkpoolOnboarding leeg={actief.length === 0} />
+      <KluspoolOnboarding leeg={actief.length === 0} />
 
       {actief.length > 0 && (
         <div className="flex flex-col gap-3">

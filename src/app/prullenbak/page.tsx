@@ -12,7 +12,7 @@ export default async function PrullenbakPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
-      <TerugKnop href="/" label="Werkpool" />
+      <TerugKnop href="/" label="Kluspool" />
 
       <header className="relative mt-2 mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Prullenbak</p>

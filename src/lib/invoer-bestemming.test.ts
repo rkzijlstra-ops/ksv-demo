@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { bestemmingVoor } from "./invoer-bestemming";
 
 describe("bestemmingVoor", () => {
-  it("monteur: klus aan zichzelf, geen opdrachtgever (eigen werkpool, ad-hoc)", () => {
+  it("monteur: klus aan zichzelf, geen opdrachtgever (eigen kluspool, ad-hoc)", () => {
     const b = bestemmingVoor("monteur", { id: "monteur-1" });
     expect(b.toegewezen_aan).toBe("monteur-1");
     expect(b.opdrachtgever_id).toBeNull();

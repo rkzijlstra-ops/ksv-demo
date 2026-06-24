@@ -938,7 +938,7 @@ describe("ontplanOpdracht", () => {
     expect(patch.monteur_naam).toBeNull();
     expect(patch.startdatum).toBeNull();
     expect(patch.starttijd).toBeNull();
-    // Ook de toewijzing wissen, anders blijft de klus in de werkpool van de monteur (6d/RLS).
+    // Ook de toewijzing wissen, anders blijft de klus in de kluspool van de monteur (6d/RLS).
     expect(patch.toegewezen_aan).toBeNull();
     expect(patch.verzonden_toegewezen_aan).toBeNull();
   });
@@ -1099,9 +1099,9 @@ describe("gebruikersbeheer", () => {
     expect(h.fns.eq).toHaveBeenCalledWith("id", "u1");
   });
 
-  it("getWerkpoolVoor haalt de klussen van de effectieve monteur op (huidige of verzonden bij wijziging)", async () => {
+  it("getKluspoolVoor haalt de klussen van de effectieve monteur op (huidige of verzonden bij wijziging)", async () => {
     h.setResult({ data: [{ id: "o1" }], error: null });
-    await createDb(cfg).getWerkpoolVoor("m1");
+    await createDb(cfg).getKluspoolVoor("m1");
     expect(h.fns.from).toHaveBeenCalledWith("meldingen");
     expect(h.fns.is).toHaveBeenCalledWith("opdracht_id", null);
     expect(h.fns.is).toHaveBeenCalledWith("verwijderd_at", null);

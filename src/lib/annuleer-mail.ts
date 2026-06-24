@@ -13,7 +13,7 @@ export function annuleringTekst(
   const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${monteurNaam},
 
-De klus voor ${klantNaam}${ref} is geannuleerd. Je hoeft er niets meer mee te doen; hij staat niet meer in je werkpool.
+De klus voor ${klantNaam}${ref} is geannuleerd. Je hoeft er niets meer mee te doen; hij staat niet meer in je kluspool.
 
 ${afzender}`;
   return { subject, text };

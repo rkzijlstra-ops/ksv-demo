@@ -6,14 +6,14 @@ import { Inbox, BookOpen, X, Sparkles } from "lucide-react";
 import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 
 /**
- * Onboarding voor de werkpool: leidt een nieuwe gebruiker naar de handleiding. Past zich aan:
+ * Onboarding voor de kluspool: leidt een nieuwe gebruiker naar de handleiding. Past zich aan:
  * - geen klussen + niet weggeklikt: rijke welkom-uitleg met 3 stappen.
  * - wel klussen + niet weggeklikt: compacte tip-balk boven de lijst.
- * - weggeklikt: verdwijnt; bij een lege werkpool valt het terug op de gewone lege-staat.
+ * - weggeklikt: verdwijnt; bij een lege kluspool valt het terug op de gewone lege-staat.
  * De handleiding blijft altijd in het menu staan; dat staat ook in het blok zelf, zodat
  * niemand denkt dat de uitleg na "Niet meer tonen" voorgoed weg is.
  */
-export function WerkpoolOnboarding({ leeg }: { leeg: boolean }) {
+export function KluspoolOnboarding({ leeg }: { leeg: boolean }) {
   // null = nog niet uit localStorage gelezen (SSR/voor mount); daarna true/false.
   const [weg, setWeg] = useState<boolean | null>(null);
 
@@ -37,7 +37,7 @@ export function WerkpoolOnboarding({ leeg }: { leeg: boolean }) {
   // Voor mount weten we nog niet of het is weggeklikt: niets tonen om een flits te voorkomen.
   if (weg === null) return null;
 
-  // Weggeklikt: lege werkpool valt terug op de gewone lege-staat; met klussen tonen we niets.
+  // Weggeklikt: lege kluspool valt terug op de gewone lege-staat; met klussen tonen we niets.
   if (weg) {
     if (!leeg) return null;
     return (

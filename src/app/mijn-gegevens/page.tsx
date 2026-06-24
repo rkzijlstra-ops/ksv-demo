@@ -12,9 +12,9 @@ export default async function MijnGegevensPage() {
   const { email, profiel } = await vereisRol(["monteur", "beheerder", "opdrachtgever"]);
   const isMonteur = profiel.rol === "monteur";
   const terugHref = isMonteur ? "/" : "/dashboard";
-  const terugLabel = isMonteur ? "Werkpool" : "Dashboard";
+  const terugLabel = isMonteur ? "Kluspool" : "Dashboard";
 
-  // Inbound-adres voor iedereen die klussen kan binnenkrijgen: monteur (eigen werkpool), en kantoor
+  // Inbound-adres voor iedereen die klussen kan binnenkrijgen: monteur (eigen kluspool), en kantoor
   // (beheerder/opdrachtgever) dat een mail doorstuurt zodat de klus op het dashboard belandt. Token lui aanmaken.
   const magInbound =
     profiel.rol === "monteur" || profiel.rol === "beheerder" || profiel.rol === "opdrachtgever";

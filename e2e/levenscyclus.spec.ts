@@ -100,7 +100,7 @@ test("volledige klus-levenscyclus: inschieten -> plannen -> versturen -> bevesti
     });
     expect((await statusVan(id))?.dashboard_status).toBe("gepland");
 
-    // 4. MONTEUR ziet de verstuurde klus in zijn werkpool en bevestigt via de ECHTE UI.
+    // 4. MONTEUR ziet de verstuurde klus in zijn kluspool en bevestigt via de ECHTE UI.
     await pageM.goto("/");
     const kaart = pageM.locator(`a[href="/opdracht/${id}"]`);
     await expect(kaart).toBeVisible({ timeout: 15_000 });

@@ -1,13 +1,13 @@
 import type { Melding, DashboardStatus } from "./db";
 import { uitvoerdatumVoorMonteur } from "./opdracht-status";
 
-export interface Werkpool {
+export interface Kluspool {
   actief: Melding[];
   history: Melding[];
 }
 
 /**
- * Statussen die NIET in de monteur-werkpool thuishoren, ook al staat de klus aan hem toegewezen:
+ * Statussen die NIET in de monteur-kluspool thuishoren, ook al staat de klus aan hem toegewezen:
  * - geannuleerd: de klus gaat niet door, hij hoeft er niets mee (toewijzing blijft wel voor het
  *   dossier aan kantoor-kant).
  * - concept_gepland: kantoor heeft hem wel ingepland maar nog niet verstuurd; pas bij versturen is
@@ -21,10 +21,10 @@ const VERBORGEN_VOOR_MONTEUR: ReadonlySet<DashboardStatus> = new Set<DashboardSt
 
 /**
  * Splitst de aan een monteur toegewezen klussen in actief werk en history, en verbergt wat niet in
- * zijn werkpool thuishoort (geannuleerd, nog niet verstuurd concept). History = opgeleverde
+ * zijn kluspool thuishoort (geannuleerd, nog niet verstuurd concept). History = opgeleverde
  * opdrachten (of legacy verzonden-status). Volgorde binnen elke groep blijft behouden. Pure functie.
  */
-export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
+export function groepeerMeldingen(meldingen: Melding[]): Kluspool {
   const actief: Melding[] = [];
   const history: Melding[] = [];
   for (const m of meldingen) {
@@ -44,7 +44,7 @@ export function groepeerMeldingen(meldingen: Melding[]): Werkpool {
 }
 
 /**
- * Volgorde van de actieve werkpool: geplande klussen eerst, op uitvoerdatum oplopend (de eerstvolgende
+ * Volgorde van de actieve kluspool: geplande klussen eerst, op uitvoerdatum oplopend (de eerstvolgende
  * bovenaan), bij gelijke datum op starttijd. Klussen zonder datum komen daarna, nieuwste invoer eerst.
  * Zo komt een zelf ingevoerde klus met datum meteen op de juiste plek te staan.
  */

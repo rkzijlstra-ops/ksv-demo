@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, AlertCircle } from "lucide-react";
 
 /**
- * Compacte "Ontvangst bevestigen"-knop op een werkpool-kaart, zodat de monteur direct vanaf het
+ * Compacte "Ontvangst bevestigen"-knop op een kluspool-kaart, zodat de monteur direct vanaf het
  * overzicht kan bevestigen (klant, adres en datum staan al op de kaart). Zit in de klikbare kaart,
  * dus de klik wordt onderschept (geen navigatie naar detail). Alleen zichtbaar bij status 'gepland';
  * bij 'bevestigd' toont de kaart enkel de badge. De volledige knop staat ook op het detailscherm.

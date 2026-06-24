@@ -75,6 +75,6 @@ export async function GET(req: Request): Promise<NextResponse> {
   });
   if (error) return NextResponse.redirect(new URL("/login?test=nogniet", req.url));
 
-  // Kantoor naar het dashboard, monteur naar de werkpool (home).
+  // Kantoor naar het dashboard, monteur naar de kluspool (home).
   return NextResponse.redirect(new URL(rol === "kantoor" ? "/dashboard" : "/", req.url));
 }

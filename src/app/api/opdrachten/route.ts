@@ -136,7 +136,7 @@ export async function POST(req: Request) {
       // De monteur koos zelf in het formulier, dus geen openstaande keuze meer.
       adres_keuze_nodig: false,
       user_id: userId,
-      // Zelf inschieten = de klus is meteen van jou (verschijnt in je werkpool).
+      // Zelf inschieten = de klus is meteen van jou (verschijnt in je kluspool).
       toegewezen_aan: userId,
     };
   } else {
@@ -195,7 +195,7 @@ export async function POST(req: Request) {
   const dbi = await db();
 
   // Rol-bewuste bestemming (één motor, twee gezichten): een monteur schiet voor zichzelf in (eigen
-  // werkpool, ad-hoc); kantoor (beheerder/opdrachtgever) maakt een klus voor een zaak die nog gepland
+  // kluspool, ad-hoc); kantoor (beheerder/opdrachtgever) maakt een klus voor een zaak die nog gepland
   // moet worden ("te plannen"). De inline toegewezen_aan hierboven wordt hiermee overschreven.
   const eigenProfiel = await dbi.getProfiel(userId);
   const rol = (eigenProfiel?.rol ?? "monteur") as Rol;

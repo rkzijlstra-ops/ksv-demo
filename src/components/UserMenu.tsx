@@ -81,15 +81,15 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
             type="button"
             role="menuitem"
             onClick={() => {
-              // Welkom-markering wissen en naar de werkpool, waar het uitleg-blok dan weer verschijnt.
+              // Welkom-markering wissen en naar de kluspool, waar het uitleg-blok dan weer verschijnt.
               try {
                 localStorage.removeItem(WELKOM_WEG_KEY);
               } catch {
                 // private mode e.d.: niets te wissen, gewoon doorgaan.
               }
               setOpen(false);
-              // ?werkpool=1 zodat ook een beheerder de werkpool (met uitleg) ziet i.p.v. naar het dashboard te gaan.
-              window.location.assign("/?werkpool=1");
+              // ?kluspool=1 zodat ook een beheerder de kluspool (met uitleg) ziet i.p.v. naar het dashboard te gaan.
+              window.location.assign("/?kluspool=1");
             }}
             className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
@@ -108,13 +108,13 @@ export function UserMenu({ email, isBeheerder = false }: { email: string; isBehe
           {isBeheerder && (
             <>
               <Link
-                href="/?werkpool=1"
+                href="/?kluspool=1"
                 role="menuitem"
                 onClick={() => setOpen(false)}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
               >
                 <Hammer size={16} strokeWidth={2.5} className="text-ink-muted" aria-hidden="true" />
-                Mijn werkpool
+                Mijn kluspool
               </Link>
               <Link
                 href="/gebruikers"

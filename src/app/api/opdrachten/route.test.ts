@@ -71,7 +71,7 @@ describe("POST /api/opdrachten", () => {
     mockUpload.mockResolvedValue({ pad: "uuid.pdf", publieke_url: "https://x/opdracht-documenten/uuid.pdf" });
     mockGetProfiel.mockReset();
     mockStandaard.mockReset();
-    // standaard: de inschieter is een monteur (zelf-invoer → eigen werkpool, ad-hoc)
+    // standaard: de inschieter is een monteur (zelf-invoer → eigen kluspool, ad-hoc)
     mockGetProfiel.mockResolvedValue({ id: "test-user-uuid", rol: "monteur" });
     mockStandaard.mockResolvedValue({ id: "zaak-standaard" });
   });

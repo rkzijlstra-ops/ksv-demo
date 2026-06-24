@@ -206,10 +206,10 @@ test.describe("kantoor (desktop)", () => {
 test.describe("monteur (mobiel)", () => {
   test.use({ storageState: "e2e/.auth/monteur.json", viewport: { width: 390, height: 844 } });
 
-  test("werkpool met meerdere opdrachten", async ({ page }) => {
+  test("kluspool met meerdere opdrachten", async ({ page }) => {
     test.skip(!process.env.SHOTS, "SHOTS=1");
     await page.goto("/");
-    await expect(page.getByText("Werkpool")).toBeVisible();
+    await expect(page.getByText("Kluspool")).toBeVisible();
     await page.waitForTimeout(800);
     await page.screenshot({ path: "screenshots/04-werkpool-monteur.png", fullPage: true });
   });

@@ -6,7 +6,7 @@ import { wachtOpHydratie } from "./hydratie";
 
 /**
  * Het inbound "te verwerken"-bakje: een per mail binnengekomen voorstel (te_verwerken) staat niet in
- * de werkpool maar in het bakje. De monteur bevestigt het, waarna het een gewone klus in de werkpool
+ * de kluspool maar in het bakje. De monteur bevestigt het, waarna het een gewone klus in de kluspool
  * wordt. Seedt een voorstel als de testmonteur en ruimt het op.
  */
 test.use({ storageState: "e2e/.auth/monteur.json" });
@@ -20,7 +20,7 @@ test.afterEach(async () => {
   if (voorstelId) await admin.from("meldingen").delete().eq("id", voorstelId);
 });
 
-test("monteur bevestigt een inbound-voorstel, dat naar de werkpool verhuist", async ({ page }) => {
+test("monteur bevestigt een inbound-voorstel, dat naar de kluspool verhuist", async ({ page }) => {
   const naam = `INBOUND ${Date.now()}`;
   const { id } = await db.createOpdracht({
     documenttype: "onbekend",
@@ -37,7 +37,7 @@ test("monteur bevestigt een inbound-voorstel, dat naar de werkpool verhuist", as
   });
   voorstelId = id;
 
-  // Werkpool: het voorstel staat er NIET in, maar de banner wijst naar het bakje.
+  // Kluspool: het voorstel staat er NIET in, maar de banner wijst naar het bakje.
   await page.goto("/");
   await wachtOpHydratie(page);
   await expect(page.getByText("te verwerken uit je mail")).toBeVisible();
@@ -48,7 +48,7 @@ test("monteur bevestigt een inbound-voorstel, dat naar de werkpool verhuist", as
   await wachtOpHydratie(page);
   await expect(page.getByText(naam)).toBeVisible();
   // Wacht tot de bevestig-POST klaar is vóór we wegnavigeren: anders annuleert page.goto de nog
-  // lopende fetch (de knop-handler is async) en blijft te_verwerken=true -> klus niet in de werkpool.
+  // lopende fetch (de knop-handler is async) en blijft te_verwerken=true -> klus niet in de kluspool.
   await Promise.all([
     page.waitForResponse(
       (r) => r.url().includes(`/api/inbound/${voorstelId}/bevestigen`) && r.request().method() === "POST",
@@ -56,7 +56,7 @@ test("monteur bevestigt een inbound-voorstel, dat naar de werkpool verhuist", as
     page.getByRole("button", { name: "Bevestigen" }).click(),
   ]);
 
-  // Daarna staat het als gewone klus in de werkpool.
+  // Daarna staat het als gewone klus in de kluspool.
   await page.goto("/");
   await expect(page.getByText(naam)).toBeVisible({ timeout: 15_000 });
 });

@@ -48,7 +48,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Vervolg nodig EN er is een kantoor: terug naar "te plannen" zodat het kantoor het oppakt (historie
   // blijft, niet meer toegewezen). Ontplannen is een kantoor-actie; met service-rechten na de check.
   // Bij een ad-hoc klus (geen opdrachtgever) is de monteur zelf het kantoor: dan NIET ontplannen, anders
-  // verdwijnt de klus uit zijn werkpool en is hij nergens meer te zien. Hij blijft bij de monteur met
+  // verdwijnt de klus uit zijn kluspool en is hij nergens meer te zien. Hij blijft bij de monteur met
   // de "Vervolg plannen"-markering (afgerond_vervolg_nodig).
   if (vervolgNodig && opdracht.opdrachtgever_id) {
     try {

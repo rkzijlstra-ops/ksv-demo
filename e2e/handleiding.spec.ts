@@ -9,7 +9,7 @@ test.use({ storageState: "e2e/.auth/monteur.json" });
 
 test("monteur opent de handleiding via het menu", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   await page.getByRole("button", { name: /menu voor/i }).click();
   await page.getByRole("menuitem", { name: /handleiding/i }).click();
   await page.waitForURL((u) => new URL(u).pathname === "/handleiding");

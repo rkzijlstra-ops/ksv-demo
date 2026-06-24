@@ -101,7 +101,7 @@ describe("POST /api/inbound", () => {
     }) as unknown as typeof fetch;
   });
 
-  it("monteur-adres: 2 PDF's zelfde ref -> één voorstel (gegroepeerd) + 2 documenten, te_verwerken, eigen werkpool", async () => {
+  it("monteur-adres: 2 PDF's zelfde ref -> één voorstel (gegroepeerd) + 2 documenten, te_verwerken, eigen kluspool", async () => {
     mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
     mockParse.mockResolvedValue(parsed("R1"));
 

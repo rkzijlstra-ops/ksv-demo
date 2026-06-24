@@ -24,6 +24,6 @@ export async function GET(req: Request): Promise<NextResponse> {
     // Account bestaat nog niet? Stuur naar het normale inlogscherm met een hint.
     return NextResponse.redirect(new URL("/login?demo=nogniet", req.url));
   }
-  // Kantoor naar het dashboard, monteur naar de werkpool.
+  // Kantoor naar het dashboard, monteur naar de kluspool.
   return NextResponse.redirect(new URL(rol === "kantoor" ? "/dashboard" : "/", req.url));
 }
