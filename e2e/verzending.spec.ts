@@ -173,7 +173,7 @@ test.describe("verzendgeschiedenis (append-only)", () => {
   });
 });
 
-test.describe("werkpool-marker: rapport niet verzonden", () => {
+test.describe("kluspool-marker: rapport niet verzonden", () => {
   test.use({ storageState: "e2e/.auth/monteur.json" });
 
   test("een klus met oplevering-in-uitvoering toont 'Rapport niet verzonden' tot de zaak-verzending", async ({
@@ -188,7 +188,7 @@ test.describe("werkpool-marker: rapport niet verzonden", () => {
     await expect(kaart.getByText("Rapport niet verzonden")).toBeVisible();
     // (a) De linker kleurstrip van de kaart is geel (van een afstand zichtbaar, los van de badge).
     await expect(kaart).toHaveClass(/border-l-urgent-geel/);
-    // (b) Bovenaan de werkpool staat een teller die eraan herinnert.
+    // (b) Bovenaan de kluspool staat een teller die eraan herinnert.
     await expect(page.getByText(/rapport nog naar de zaak versturen/i)).toBeVisible();
 
     // Na de zaak-verzending is de klus opgeleverd: hij zakt naar history en de marker is weg uit actief.

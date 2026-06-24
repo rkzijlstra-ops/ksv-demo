@@ -211,7 +211,7 @@ test.describe("monteur (mobiel)", () => {
     await page.goto("/");
     await expect(page.getByText("Kluspool")).toBeVisible();
     await page.waitForTimeout(800);
-    await page.screenshot({ path: "screenshots/04-werkpool-monteur.png", fullPage: true });
+    await page.screenshot({ path: "screenshots/04-kluspool-monteur.png", fullPage: true });
   });
 });
 
