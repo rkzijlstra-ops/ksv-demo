@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { opleverMailTekst, afzenderHeader } from "./oplever-mail";
+import { opleverMailTekst, afzenderHeader, bouwWhatsappTekst } from "./oplever-mail";
 
 const afzender = {
   naam: "Jan Bakker",
@@ -141,5 +141,21 @@ describe("opleverMailTekst — klant heeft het rapport ook (zaak-mail)", () => {
       klantOok: { wanneer: "11 juni 2026", adres: "jan@devries.nl" },
     });
     expect(text).not.toContain("De klant heeft dit rapport ook ontvangen");
+  });
+});
+
+describe("bouwWhatsappTekst", () => {
+  it("noemt klant, referentie, planning@kluslus.nl en het spam-verzoek", () => {
+    const t = bouwWhatsappTekst({ klantNaam: "Familie Schaddé", referentienummer: "192945" });
+    expect(t).toContain("Familie Schaddé");
+    expect(t).toContain("ref 192945");
+    expect(t).toContain("planning@kluslus.nl");
+    expect(t).toMatch(/spam/i);
+    expect(t).toMatch(/veilige afzender/i);
+  });
+  it("werkt zonder klantnaam en zonder referentie", () => {
+    const t = bouwWhatsappTekst({ klantNaam: null, referentienummer: null });
+    expect(t).toContain("de klant");
+    expect(t).not.toContain("ref ");
   });
 });

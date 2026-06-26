@@ -429,6 +429,8 @@ export interface Db {
   logRapportVerzending(input: RapportVerzendingInput): Promise<void>;
   /** Verzendgeschiedenis van een opdracht, nieuwste eerst. */
   getRapportVerzendingen(opdrachtId: string): Promise<RapportVerzending[]>;
+  /** Alle eerdere verzendingen naar een e-maildomein (over alle klussen heen), nieuwste eerst. */
+  eerdereVerzendingenNaarDomein(domein: string): Promise<RapportVerzending[]>;
   verwijderOpdracht(id: string): Promise<void>;
   herstelOpdracht(id: string): Promise<void>;
   definitiefVerwijderen(id: string): Promise<void>;
@@ -912,6 +914,19 @@ function createDbFromClient(client: SupabaseClient): Db {
         .from("rapport_verzendingen")
         .select("*")
         .eq("opdracht_id", opdrachtId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
+      return (data ?? []) as RapportVerzending[];
+    },
+
+    async eerdereVerzendingenNaarDomein(domein) {
+      const d = domein.trim().toLowerCase();
+      if (!d) return [];
+      // Adressen waarvan het deel na de @ exact dit domein is.
+      const { data, error } = await client
+        .from("rapport_verzendingen")
+        .select("*")
+        .ilike("naar", `%@${d}`)
         .order("created_at", { ascending: false });
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data ?? []) as RapportVerzending[];

@@ -61,6 +61,24 @@ ${ondertekening}`;
 }
 
 /**
+ * Korte WhatsApp/sms-tekst die de monteur naar zijn contact bij de keukenzaak kan sturen wanneer het
+ * de eerste oplever-mail naar dat domein is. Vraagt de spam-map te checken en planning@kluslus.nl als
+ * veilige afzender toe te voegen. Pure functie, los te testen.
+ */
+export function bouwWhatsappTekst(opts: {
+  klantNaam: string | null;
+  referentienummer: string | null;
+}): string {
+  const klant = opts.klantNaam?.trim() || "de klant";
+  const ref = opts.referentienummer?.trim() ? ` (ref ${opts.referentienummer.trim()})` : "";
+  return (
+    `Hoi, ik heb net de oplevering van ${klant}${ref} naar jullie gestuurd vanaf planning@kluslus.nl. ` +
+    `De eerste keer belandt die soms in de spam, wil je daar even kijken? ` +
+    `En planning@kluslus.nl toevoegen als veilige afzender, dan komen de volgende meteen binnen. Thanks!`
+  );
+}
+
+/**
  * Bouwt de From-header met een vaste weergavenaam (de afzender-kop), maar behoudt het ingestelde
  * verzendadres uit RESEND_FROM. Zo is de naam bovenaan de mail dezelfde als de ondertekening.
  */
