@@ -686,10 +686,10 @@ export function OpleverFlow({
         </section>
       )}
 
-      {/* 4. Versturen: twee losse kaarten (klant / zaak), los in tijd. */}
+      {/* Versturen: twee losse kaarten (klant / zaak), los in tijd. */}
       <section className="border-t border-line pt-6">
         <h2 className="mb-3 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
-          4. Versturen
+          Versturen
         </h2>
 
         {verstuurKeuze === null && (
