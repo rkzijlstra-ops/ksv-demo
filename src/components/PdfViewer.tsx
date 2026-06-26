@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { X, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { getPdfjs } from "@/lib/pdf-client";
 
 /**
- * In-app viewer: opent een PDF (of afbeelding) in een overlay over de app, zodat de monteur de app niet
- * verlaat. Bediening als de native viewer: KNIJP-ZOOMEN met twee vingers, SLEPEN met één vinger om naar
- * een ander stuk te bewegen. Paginanavigatie voor meerpagina-PDF's; onthoudt de laatst bekeken pagina.
+ * In-app viewer: opent een PDF (alle pagina's onder elkaar) of een afbeelding in een overlay over de
+ * app. Bediening als de native viewer: gewoon naar beneden SCROLLEN door alle pagina's, en KNIJP-ZOOMEN
+ * met twee vingers (daarna scroll je in beide richtingen). Je verlaat de app niet.
  */
-type Punt = { x: number; y: number };
-
 function afstand(a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
@@ -29,35 +27,25 @@ export function PdfViewer({
   type: "pdf" | "afbeelding";
   onClose: () => void;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const pdfRef = useRef<{ numPages: number; getPage: (n: number) => Promise<unknown> } | null>(null);
-  const renderTaskRef = useRef<{ promise: Promise<void>; cancel: () => void } | null>(null);
-  const paginaKey = `pdfpag:${url}`;
+  const taakRef = useRef<{ promise: Promise<void>; cancel: () => void } | null>(null);
+  const tokenRef = useRef(0);
+  const cssWRef = useRef(0);
+  const aspectRef = useRef<number[]>([]); // hoogte/breedte per pagina (of [0] voor de afbeelding)
 
   const [numPages, setNumPages] = useState(0);
-  const [pagina, setPagina] = useState(1);
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
   const [bezig, setBezig] = useState(true);
   const [fout, setFout] = useState("");
 
-  // Zoom + verschuiving (transform). Refs lopen mee zodat de touch-handlers de actuele waarde lezen.
-  const [schaal, setSchaal] = useState(1);
-  const [pan, setPan] = useState<Punt>({ x: 0, y: 0 });
-  const schaalRef = useRef(1);
-  useEffect(() => {
-    schaalRef.current = schaal;
-  }, [schaal]);
-
-  // Gebaar-toestand (niet in state: verandert per touchmove). `laatste` = vorige vingerpositie voor
-  // incrementeel slepen (werkt in elke richting én na een knijpgebaar).
-  const gebaar = useRef<{ startDist: number; startSchaal: number; laatste: Punt | null }>({
-    startDist: 0,
-    startSchaal: 1,
-    laatste: null,
-  });
-
-  // Esc sluit; achtergrond niet scrollen zolang de viewer open is.
+  // Esc sluit; achtergrond niet scrollen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -70,6 +58,26 @@ export function PdfViewer({
       document.body.style.overflow = vorige;
     };
   }, [onClose]);
+
+  // Weergavemaat van alle media toepassen op basis van de zoom (CSS-grootte; de backing-store is hoog,
+  // dus knijp-zoomen blijft scherp). Native scroll vangt het pannen op.
+  const pasMaten = useCallback(() => {
+    const cssW = cssWRef.current;
+    if (cssW <= 0) return;
+    const z = zoomRef.current;
+    if (type === "pdf") {
+      canvasRefs.current.forEach((c, i) => {
+        if (!c) return;
+        const a = aspectRef.current[i] || 1.414;
+        c.style.width = `${Math.round(cssW * z)}px`;
+        c.style.height = `${Math.round(cssW * z * a)}px`;
+      });
+    } else if (imgRef.current) {
+      const a = aspectRef.current[0] || 1;
+      imgRef.current.style.width = `${Math.round(cssW * z)}px`;
+      imgRef.current.style.height = `${Math.round(cssW * z * a)}px`;
+    }
+  }, [type]);
 
   // PDF laden.
   useEffect(() => {
@@ -84,150 +92,143 @@ export function PdfViewer({
         if (af) return;
         pdfRef.current = pdf as unknown as typeof pdfRef.current;
         setNumPages(pdf.numPages);
-        const onthouden = Number(localStorage.getItem(paginaKey) ?? "1");
-        setPagina(onthouden >= 1 && onthouden <= pdf.numPages ? onthouden : 1);
       } catch {
-        if (!af) setFout("Kon de PDF niet laden. Probeer hem extern te openen.");
-      } finally {
-        if (!af) setBezig(false);
+        if (!af) {
+          setFout("Kon de PDF niet laden. Probeer hem extern te openen.");
+          setBezig(false);
+        }
       }
     })();
     return () => {
       af = true;
     };
-  }, [url, type, paginaKey]);
+  }, [url, type]);
 
-  // Pagina renderen op breedte (groot), scherp op de schermdichtheid. Zoom gebeurt via de transform.
-  const renderPagina = useCallback(async () => {
+  // Alle pagina's renderen (scherp op hoge resolutie). Bij weinig pagina's hogere kwaliteit.
+  const renderAlles = useCallback(async () => {
     const pdf = pdfRef.current;
-    const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!pdf || !canvas || !container) return;
+    if (!pdf || !container) return;
+    const cssW = container.clientWidth - 16;
+    if (cssW <= 0) return;
+    cssWRef.current = cssW;
+    // Render op de resolutie die bij de HUIDIGE zoom hoort (scherp tot diep inzoomen). Bij veel pagina's
+    // de bovengrens lager houden voor het geheugen.
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const maxScale = pdf.numPages <= 2 ? 6 : 3.5;
+    const renderScale = klem(zoomRef.current * dpr, 3, maxScale);
+    const token = ++tokenRef.current;
+    taakRef.current?.cancel();
     try {
-      const page = (await pdf.getPage(pagina)) as {
-        getViewport: (o: { scale: number }) => { width: number; height: number };
-        render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void>; cancel: () => void };
-      };
-      const basis = page.getViewport({ scale: 1 });
-      const bw = container.clientWidth - 16;
-      if (bw <= 0) return;
-      const fit = bw / basis.width;
-      // Backing-store flink ruimer dan de weergave, zodat knijp-zoomen scherp blijft (tot ~4x).
-      const kwaliteit = Math.min(Math.max(window.devicePixelRatio || 1, 3), 4);
-      const viewport = page.getViewport({ scale: fit * kwaliteit });
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      canvas.style.width = `${Math.floor(bw)}px`;
-      canvas.style.height = `${Math.floor(bw * (basis.height / basis.width))}px`;
-      renderTaskRef.current?.cancel();
-      const taak = page.render({ canvasContext: ctx, viewport });
-      renderTaskRef.current = taak;
-      await taak.promise;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = (await pdf.getPage(i)) as {
+          getViewport: (o: { scale: number }) => { width: number; height: number };
+          render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void>; cancel: () => void };
+        };
+        if (token !== tokenRef.current) return;
+        const basis = page.getViewport({ scale: 1 });
+        aspectRef.current[i - 1] = basis.height / basis.width;
+        const canvas = canvasRefs.current[i - 1];
+        if (!canvas) continue;
+        const vp = page.getViewport({ scale: (cssW / basis.width) * renderScale });
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+        canvas.width = Math.floor(vp.width);
+        canvas.height = Math.floor(vp.height);
+        taakRef.current = page.render({ canvasContext: ctx, viewport: vp });
+        await taakRef.current.promise;
+        if (token !== tokenRef.current) return;
+        pasMaten();
+      }
+      setBezig(false);
     } catch (e) {
       if ((e as { name?: string } | null)?.name === "RenderingCancelledException") return;
-      setFout("Kon deze pagina niet tonen.");
+      setFout("Kon de PDF niet tonen.");
+      setBezig(false);
     }
-  }, [pagina]);
+  }, [pasMaten]);
 
   useEffect(() => {
-    if (type === "pdf" && !bezig && !fout) void renderPagina();
-  }, [type, bezig, fout, renderPagina]);
+    if (type === "pdf" && numPages > 0) void renderAlles();
+  }, [type, numPages, renderAlles]);
 
-  // Bij draaien/resize (BREEDTE-wijziging) opnieuw passend renderen; zoom/pan terug naar begin. Alleen
-  // op breedte, zodat het in/uit schuiven van de browserbalk (hoogte) de zoom niet reset.
+  // Bij draaien (breedte-wijziging): zoom terug + opnieuw renderen.
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || type !== "pdf") return;
+    if (!el) return;
     let laatsteBreedte = el.clientWidth;
     const obs = new ResizeObserver(() => {
       const w = el.clientWidth;
       if (w === laatsteBreedte) return;
       laatsteBreedte = w;
-      setSchaal(1);
-      setPan({ x: 0, y: 0 });
-      if (!bezig && !fout) void renderPagina();
+      setZoom(1);
+      if (type === "pdf") {
+        void renderAlles();
+      } else {
+        cssWRef.current = el.clientWidth - 16;
+        pasMaten();
+      }
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [type, bezig, fout, renderPagina]);
+  }, [type, renderAlles, pasMaten]);
 
-  // Laatst bekeken pagina onthouden.
+  // Zoom toepassen op de weergavemaat (live, vloeiend).
   useEffect(() => {
-    if (type === "pdf" && pagina) localStorage.setItem(paginaKey, String(pagina));
-  }, [type, pagina, paginaKey]);
+    pasMaten();
+  }, [zoom, numPages, pasMaten]);
 
-  // Pan begrenzen zodat je het beeld niet helemaal kwijtraakt.
-  const klemPan = useCallback((p: Punt, s: number): Punt => {
-    const container = containerRef.current;
-    const media = type === "pdf" ? canvasRef.current : imgRef.current;
-    if (!container || !media) return p;
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
-    const mw = (media as HTMLElement).offsetWidth * s;
-    const mh = (media as HTMLElement).offsetHeight * s;
-    const maxX = Math.max(0, (mw - cw) / 2);
-    const maxY = Math.max(0, (mh - ch) / 2);
-    return { x: klem(p.x, -maxX, maxX), y: klem(p.y, -maxY, maxY) };
-  }, [type]);
+  // Na het zoomen (kort wachten tot je stopt) opnieuw renderen op hogere resolutie -> scherp bij diep
+  // inzoomen, zonder vooraf alles op extreme resolutie te zetten.
+  useEffect(() => {
+    if (type !== "pdf" || numPages === 0) return;
+    const t = setTimeout(() => void renderAlles(), 220);
+    return () => clearTimeout(t);
+  }, [zoom, type, numPages, renderAlles]);
 
-  function onTouchStart(e: React.TouchEvent) {
-    if (e.touches.length === 2) {
-      gebaar.current.startDist = afstand(e.touches[0], e.touches[1]);
-      gebaar.current.startSchaal = schaalRef.current;
-      gebaar.current.laatste = null;
-    } else if (e.touches.length === 1) {
-      gebaar.current.laatste = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    if (e.touches.length === 2 && gebaar.current.startDist > 0) {
-      const d = afstand(e.touches[0], e.touches[1]);
-      const ns = klem((gebaar.current.startSchaal * d) / gebaar.current.startDist, 1, 5);
-      setSchaal(ns);
-      setPan((p) => klemPan(p, ns));
-      gebaar.current.laatste = null; // na knijpen opnieuw verankeren voor slepen
-    } else if (e.touches.length === 1) {
-      const t = e.touches[0];
-      const vorig = gebaar.current.laatste;
-      gebaar.current.laatste = { x: t.clientX, y: t.clientY };
-      if (!vorig) return; // eerste move = verankeren
-      const dx = t.clientX - vorig.x;
-      const dy = t.clientY - vorig.y;
-      setPan((p) => klemPan({ x: p.x + dx, y: p.y + dy }, schaalRef.current));
-    }
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    // Overgang naar één vinger (na knijpen): opnieuw verankeren zodat slepen meteen klopt.
-    gebaar.current.laatste = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
-    if (e.touches.length === 0 && schaalRef.current <= 1) setPan({ x: 0, y: 0 });
-  }
-  // Desktop: dubbelklik wisselt tussen 1x en 2x.
-  function onDoubleClick() {
-    const ns = schaalRef.current > 1 ? 1 : 2;
-    setSchaal(ns);
-    setPan((p) => (ns <= 1 ? { x: 0, y: 0 } : klemPan(p, ns)));
-  }
+  // Knijp-zoomen (twee vingers). Eén vinger = native scrollen (touch-action pan-x pan-y).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let startDist = 0;
+    let startZoom = 1;
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = afstand(e.touches[0], e.touches[1]);
+        startZoom = zoomRef.current;
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault();
+        const d = afstand(e.touches[0], e.touches[1]);
+        setZoom(klem((startZoom * d) / startDist, 1, 4));
+      }
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) startDist = 0;
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd);
+    el.addEventListener("touchcancel", onEnd);
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
 
-  const naarPagina = (volgende: boolean) => {
-    setSchaal(1);
-    setPan({ x: 0, y: 0 });
-    setPagina((p) => (volgende ? Math.min(numPages || 1, p + 1) : Math.max(1, p - 1)));
-  };
-  const vorige = () => naarPagina(false);
-  const volgende = () => naarPagina(true);
-
-  const transform = `translate(${pan.x}px, ${pan.y}px) scale(${schaal})`;
+  const dubbel = () => setZoom((z) => (z > 1 ? 1 : 2));
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label={bestandsnaam}>
       <div className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
-        {/* kop */}
         <div className="flex items-center gap-2 border-b-2 border-line px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-ink">{bestandsnaam}</span>
           {type === "pdf" && numPages > 0 && (
-            <span className="shrink-0 font-mono text-xs text-ink-muted">pag. {pagina} / {numPages}</span>
+            <span className="shrink-0 font-mono text-xs text-ink-muted">{numPages} pag.</span>
           )}
           <button
             type="button"
@@ -239,15 +240,11 @@ export function PdfViewer({
           </button>
         </div>
 
-        {/* inhoud: knijp-zoomen + slepen */}
         <div
           ref={containerRef}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          onDoubleClick={onDoubleClick}
-          className="relative flex-1 select-none overflow-hidden bg-surface p-2"
-          style={{ touchAction: "none" }}
+          onDoubleClick={dubbel}
+          className="relative flex-1 select-none overflow-auto bg-surface"
+          style={{ touchAction: "pan-x pan-y" }}
         >
           {bezig && (
             <div className="absolute inset-0 grid place-items-center text-ink-muted">
@@ -270,44 +267,42 @@ export function PdfViewer({
               </div>
             </div>
           )}
-          {!fout && (
-            <div className="flex min-h-full min-w-full items-center justify-center">
-              <div style={{ transform, transformOrigin: "center center" }}>
-                {type === "afbeelding" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    ref={imgRef}
-                    src={url}
-                    alt={bestandsnaam}
-                    onLoad={() => setBezig(false)}
-                    onError={() => {
-                      setBezig(false);
-                      setFout("Kon de afbeelding niet laden.");
-                    }}
-                    className="block max-w-full"
-                  />
-                ) : (
-                  <canvas ref={canvasRef} className="block bg-white shadow" />
-                )}
-              </div>
+          {!fout && type === "pdf" && numPages > 0 && (
+            <div className="flex w-max min-w-full flex-col items-center gap-3 p-2">
+              {Array.from({ length: numPages }).map((_, i) => (
+                <canvas
+                  key={i}
+                  ref={(el) => {
+                    canvasRefs.current[i] = el;
+                  }}
+                  className="block bg-white shadow"
+                />
+              ))}
+            </div>
+          )}
+          {!fout && type === "afbeelding" && (
+            <div className="flex w-max min-w-full justify-center p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={url}
+                alt={bestandsnaam}
+                onLoad={(e) => {
+                  const im = e.currentTarget;
+                  aspectRef.current[0] = im.naturalHeight / im.naturalWidth || 1;
+                  cssWRef.current = (containerRef.current?.clientWidth ?? 0) - 16;
+                  pasMaten();
+                  setBezig(false);
+                }}
+                onError={() => {
+                  setBezig(false);
+                  setFout("Kon de afbeelding niet laden.");
+                }}
+                className="block bg-white shadow"
+              />
             </div>
           )}
         </div>
-
-        {/* onderbalk: alleen paginanavigatie (zoom = knijpen) */}
-        {type === "pdf" && numPages > 1 && (
-          <div className="flex items-center justify-center gap-3 border-t-2 border-line px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-            <button type="button" onClick={vorige} disabled={pagina <= 1} aria-label="Vorige pagina"
-              className="grid h-10 w-12 place-items-center border-2 border-primary bg-white text-primary disabled:opacity-40 hover:bg-surface">
-              <ChevronLeft size={20} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-            <span className="font-mono text-xs text-ink-muted">{pagina} / {numPages}</span>
-            <button type="button" onClick={volgende} disabled={pagina >= numPages} aria-label="Volgende pagina"
-              className="grid h-10 w-12 place-items-center border-2 border-primary bg-white text-primary disabled:opacity-40 hover:bg-surface">
-              <ChevronRight size={20} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

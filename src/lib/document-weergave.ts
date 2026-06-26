@@ -47,7 +47,7 @@ const META: Record<DocumentSoort, SoortMeta> = {
   offerte: { label: "Offerte", tekening: false, iconKey: "offerte" },
   werkbon: { label: "Werkbon", tekening: false, iconKey: "werkbon" },
   afbeelding: { label: "Foto", tekening: false, iconKey: "afbeelding" },
-  overig: { label: "Document", tekening: false, iconKey: "overig" },
+  overig: { label: "Order", tekening: false, iconKey: "overig" },
 };
 
 export function documentMeta(soort: DocumentSoort): SoortMeta {

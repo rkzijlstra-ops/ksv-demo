@@ -35,9 +35,9 @@ export function DocumentKaart({
         <span className="min-w-0 flex-1">
           <span
             className={`inline-block border px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.04em] ${
-              meta.tekening ? "border-accent bg-accent/10" : "border-line bg-surface text-ink-muted"
+              doc.type === "pdf" ? "border-accent bg-accent/10" : "border-line bg-surface text-ink-muted"
             }`}
-            style={meta.tekening ? { color: "#b45309" } : undefined}
+            style={doc.type === "pdf" ? { color: "#b45309" } : undefined}
           >
             {meta.label}
           </span>
