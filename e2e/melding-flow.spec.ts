@@ -20,8 +20,10 @@ const RK = MONTEUR_ACC.uid;
 
 const klusIds: string[] = [];
 
-async function maakKlus(prefix: string): Promise<string> {
-  const zaak = await db.getStandaardOpdrachtgever();
+async function maakKlus(prefix: string, opts: { eigen?: boolean } = {}): Promise<string> {
+  // Eigen klus (geen opdrachtgever) => klant-levering altijd toegestaan (magKlantLeveren); handig om de
+  // klant-optie in snel afsluiten deterministisch te tonen, los van de opdrachtgever-instelling.
+  const zaak = opts.eigen ? null : await db.getStandaardOpdrachtgever();
   const stamp = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
   const { id } = await db.createOpdracht({
     documenttype: "werkbon_service",
@@ -31,7 +33,7 @@ async function maakKlus(prefix: string): Promise<string> {
     adviseur: null,
     klant_telefoon: null,
     leverweek: null,
-    keukenzaak: "Keukenstudio Voorschoten",
+    keukenzaak: opts.eigen ? null : "Keukenstudio Voorschoten",
     user_id: RK,
     toegewezen_aan: RK,
     opdrachtgever_id: zaak?.id ?? null,
@@ -137,6 +139,10 @@ test("snel afsluiten: meldingen-overzicht + begeleidend bericht, geen media-invo
   // Geen media-invoer-blok meer ("De oplevering" met foto/video).
   await expect(page.getByRole("heading", { name: /^De oplevering/ })).toHaveCount(0);
 
+  // Geen verwarrende "Ook aan de klant opleveren"-schakelaar in snel afsluiten (die opende vroeger het
+  // interne blok dat hier weg is). Klant-levering loopt via de verstuur-optie.
+  await expect(page.getByText("Ook aan de klant opleveren")).toHaveCount(0);
+
   // Wel een begeleidend bericht en het bestaande versturen-blok.
   await expect(page.getByText(/Begeleidend bericht/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
@@ -160,6 +166,22 @@ test("melding-concept blijft bewaard na weg-navigeren en terugkomen (vangnet)", 
 
   // De invoer is hersteld uit het lokale vangnet.
   await expect(page.getByLabel("Wat is er aan de hand?")).toHaveValue(tekst);
+});
+
+test("snel afsluiten: klant-levering is een directe verstuur-optie (geen schakelaar), en opent het klant-adresveld", async ({ page }) => {
+  const id = await maakKlus("MF-KLANT", { eigen: true }); // eigen klus => klant-levering toegestaan
+  await seedMelding(id, { spoed: false, tekst: "Iets gemeld" });
+
+  await page.goto(`/opdracht/${id}/afronden/snel`);
+
+  // Geen schakelaar, wél een directe "Naar de klant"-verstuuroptie.
+  await expect(page.getByText("Ook aan de klant opleveren")).toHaveCount(0);
+  const klant = page.getByRole("button", { name: "Naar de klant" });
+  await expect(klant).toBeVisible();
+
+  // Klikken opent het klant-adresveld (de verstuur-stap werkt).
+  await klant.click();
+  await expect(page.getByLabel("E-mailadres van de klant")).toBeVisible();
 });
 
 test("snel afsluiten zonder meldingen: lege staat + bevestiging 'Versturen zonder melding?'", async ({ page }) => {

@@ -483,8 +483,10 @@ export function OpleverFlow({
         />
       )}
 
-      {/* Klant-kant: schakelaar bovenaan. Aan = de blokken eronder klappen open (pijl draait + oranje). */}
-      {magKlantLeveren && (
+      {/* Klant-kant: schakelaar bovenaan. Aan = de blokken eronder klappen open (pijl draait + oranje).
+          Niet in snel afsluiten (verkort): daar is geen intern blok om te openen, dus de schakelaar zou
+          "leeg" voelen. Klant-levering bieden we daar direct als verstuur-optie aan (zie Versturen). */}
+      {magKlantLeveren && !verkort && (
         <button
           type="button"
           onClick={() => setKlantLeveringAan((v) => !v)}
@@ -764,7 +766,9 @@ export function OpleverFlow({
               sub={zaakVerzondenAt ? `Verzonden · ${formatDatumKort(zaakVerzondenAt)}` : "Nog te versturen"}
               onClick={() => setVerstuurKeuze("zaak")}
             />
-            {klantLeveringAan && (
+            {/* Klant-optie: in de volledige oplevering via de schakelaar (klantLeveringAan); in snel
+                afsluiten direct als die klus klant-levering toestaat (geen schakelaar daar). */}
+            {(klantLeveringAan || (verkort && magKlantLeveren)) && (
               <ActieKaart
                 accent={klantVerzondenAt ? "klaar" : "actie"}
                 subAccent
