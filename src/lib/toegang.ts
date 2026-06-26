@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { db, type Rol, type Profiel } from "./db";
 import { createSupabaseServerClient } from "./supabase-server";
+import { profielVolledig } from "./profiel";
+import { isDemoMode } from "./demo";
 
 /** Startpagina per rol: monteur -> werkpool, opdrachtgever/beheerder -> dashboard. */
 export function startpaginaVoorRol(rol: Rol): string {
@@ -12,10 +14,12 @@ export function startpaginaVoorRol(rol: Rol): string {
  * - niet ingelogd -> /login
  * - ingelogd zonder profiel -> /geen-toegang
  * - verkeerde rol -> naar de eigen startpagina
+ * - monteur met onvolledig profiel -> /welkom (onboarding), tenzij skipOnboarding (de /welkom-pagina zelf)
  * Geeft anders het profiel + e-mailadres terug.
  */
 export async function vereisRol(
   toegestane: Rol[],
+  opts?: { skipOnboarding?: boolean },
 ): Promise<{ profiel: Profiel; email: string | null }> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -26,6 +30,14 @@ export async function vereisRol(
   const profiel = await (await db()).getProfiel(user.id);
   if (!profiel) redirect("/geen-toegang");
   if (!toegestane.includes(profiel.rol)) redirect(startpaginaVoorRol(profiel.rol));
+
+  // Eerste gebruik: een monteur moet zijn afzendergegevens invullen voor hij verder kan. Zo staat
+  // het Reply-To-adres en het briefhoofd van het rapport altijd goed. De /welkom-pagina zelf slaat
+  // dit over om een redirect-lus te voorkomen.
+  // In demo-modus niet: de demo is een scripted uitstalraam, geen echte onboarding.
+  if (profiel.rol === "monteur" && !opts?.skipOnboarding && !isDemoMode() && !profielVolledig(profiel)) {
+    redirect("/welkom");
+  }
 
   return { profiel, email: user.email ?? null };
 }

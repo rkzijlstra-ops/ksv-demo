@@ -169,3 +169,25 @@ describe("POST /api/opdrachten/[id]/rapport", () => {
     expect(mockMail).not.toHaveBeenCalled();
   });
 });
+
+describe("POST rapport: adres-override (Opnieuw versturen met correctie)", () => {
+  const reqMet = (body: Record<string, unknown>) =>
+    new Request("http://localhost/api/opdrachten/opdr-1/rapport", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  it("gebruikt het gecorrigeerde adres als geldig `naar` is meegegeven", async () => {
+    const res = await POST(reqMet({ doelgroep: "zaak", naar: "service@keukenzaak.nl" }), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockMail.mock.calls[0][0].naar).toBe("service@keukenzaak.nl");
+    expect(mockLog.mock.calls[0][0].naar).toBe("service@keukenzaak.nl");
+  });
+
+  it("negeert een ongeldig override-adres en valt terug op het opgeslagen adres", async () => {
+    const res = await POST(reqMet({ doelgroep: "zaak", naar: "geen-adres" }), params("opdr-1"));
+    expect(res.status).toBe(200);
+    expect(mockMail.mock.calls[0][0].naar).toBe("zaak@keukenzaak.nl");
+  });
+});

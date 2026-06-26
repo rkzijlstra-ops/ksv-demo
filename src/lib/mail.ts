@@ -5,6 +5,7 @@ import type { Melding, Rol } from "./db";
 import type { RapportAfzender } from "./afzender";
 import { htmlVanTekst } from "./mail-html";
 import { opleverMailTekst, afzenderHeader } from "./oplever-mail";
+import { bepaalReplyTo } from "./reply-to";
 import { monteurMailTekst, type MailbareOpdracht } from "./monteur-mail";
 import { uitnodigingTekst } from "./uitnodig-mail";
 import { afmeldingTekst } from "./afmeld-mail";
@@ -172,8 +173,12 @@ async function verzendMail(resend: Resend, payload: MailPayload, foutLabel: stri
  * Resend zit hier expres achter één functie zodat een latere provider-wissel alleen dit bestand raakt.
  */
 export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<void> {
-  const { apiKey, from, replyTo } = mailConfig();
+  const { apiKey, from, replyTo: replyToVangnet } = mailConfig();
   const resend = new Resend(apiKey);
+
+  // Antwoord op een opleverrapport hoort bij de monteur die opleverde, niet bij het centrale adres.
+  // Afzender blijft RESEND_FROM (aflevering); Reply-To = monteur-mail, met het vangnet erachter.
+  const replyTo = bepaalReplyTo(input.afzender?.email, replyToVangnet);
 
   const { subject, text, afzenderNaam } = opleverMailTekst({
     klantNaam: input.opdracht.klant_naam,

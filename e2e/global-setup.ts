@@ -103,8 +103,18 @@ async function ensureProfielen(url: string, secret: string) {
     { id: BEHEERDER.uid, rol: "beheerder", naam: "E2E Beheerder", opdrachtgever_id: zaakId },
     { onConflict: "id" },
   );
+  // Afzendergegevens compleet: anders stuurt de onboarding-gate (vereisRol) elke monteur-pagina naar
+  // /welkom. De gate zelf is unit-gedekt in toegang.test.ts; de e2e-monteur start dus "klaar".
   await admin.from("profielen").upsert(
-    { id: MONTEUR.uid, rol: "monteur", naam: "E2E Monteur", opdrachtgever_id: zaakId },
+    {
+      id: MONTEUR.uid,
+      rol: "monteur",
+      naam: "E2E Monteur",
+      opdrachtgever_id: zaakId,
+      bedrijfsnaam: "E2E Montage",
+      telefoon: "0612345678",
+      contact_email: "monteur@e2e.test",
+    },
     { onConflict: "id" },
   );
 }

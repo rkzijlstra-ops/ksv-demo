@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
+import { domeinVanAdres, isEersteContactMetDomein } from "@/lib/verzend-domein";
+import { VerzendInfoBlok } from "@/components/VerzendInfoBlok";
 import { planningTijd, duurLabel } from "@/lib/opdracht-weergave";
 import { OpdrachtStatusBadge } from "@/components/OpdrachtStatusBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
@@ -79,6 +81,11 @@ export default async function OpdrachtgeverDetailPage({
       opdracht.referentienummer ? dbi.zoekOpReferentie(opdracht.referentienummer) : Promise.resolve([]),
     ]);
   const historie = historieRuw.filter((h) => h.id !== opdracht.id);
+  // Eerste-contact-met-domein voor de waarschuwing op het verzendblok (kans op spam bij een nieuwe zaak).
+  const laatsteZaakVerz = verzendingen.find((v) => v.doelgroep === "zaak") ?? verzendingen[0];
+  const verzDomein = laatsteZaakVerz ? domeinVanAdres(laatsteZaakVerz.naar) : null;
+  const verzNaarDomein = verzDomein ? await dbi.eerdereVerzendingenNaarDomein(verzDomein) : [];
+  const eersteContact = isEersteContactMetDomein(opdracht.id, verzNaarDomein);
   const planning =
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
@@ -249,30 +256,23 @@ export default async function OpdrachtgeverDetailPage({
               </div>
             )}
 
-            {verzendingen.length > 0 && (
-              <div>
-                <p className="mb-1 text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
-                  Verzonden
-                </p>
-                <ul className="flex flex-col gap-1">
-                  {verzendingen.map((v) => (
-                    <li key={v.id} className="flex items-start gap-2 text-sm text-ink">
-                      <span
-                        className={`mt-0.5 shrink-0 border px-1.5 text-xs font-bold uppercase tracking-[0.03em] ${
-                          v.doelgroep === "zaak" ? "border-primary text-primary" : "border-ink-muted text-ink-muted"
-                        }`}
-                      >
-                        {v.doelgroep}
-                      </span>
-                      <span className="min-w-0 flex-1 break-all">{v.naar}</span>
-                      <span className="shrink-0 text-xs text-ink-muted">{formatDatumKort(v.created_at)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </section>
+      )}
+
+      {verzendingen.length > 0 && (
+        <VerzendInfoBlok
+          opdrachtId={opdracht.id}
+          verzendingen={verzendingen.map((v) => ({
+            id: v.id,
+            created_at: v.created_at,
+            doelgroep: v.doelgroep,
+            naar: v.naar,
+          }))}
+          eersteKeer={eersteContact}
+          klantNaam={opdracht.klant_naam}
+          referentienummer={opdracht.referentienummer}
+        />
       )}
 
       {/* Documenten: openen, verwijderen, bijvoegen (kantoor) */}
