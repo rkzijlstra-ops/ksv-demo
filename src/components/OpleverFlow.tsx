@@ -358,7 +358,9 @@ export function OpleverFlow({
     ) {
       return;
     }
-    if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
+    // De "geen foto/video"-waarschuwing hoort bij de volledige oplevering; snel afsluiten (verkort) heeft
+    // bewust geen media-invoer (de meldingen dragen het bewijs), daar geldt de 0-meldingen-bevestiging.
+    if (!verkort && check.waarschuwing && !window.confirm(check.waarschuwing)) return;
 
     const zetBezig = doelgroep === "klant" ? setKlantBezig : setZaakBezig;
     zetBezig(true);
