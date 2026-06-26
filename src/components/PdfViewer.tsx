@@ -89,10 +89,10 @@ export function PdfViewer({
       };
       const basis = page.getViewport({ scale: 1 });
       const bw = container.clientWidth - 16;
-      const bh = container.clientHeight - 16;
-      if (bw <= 0 || bh <= 0) return;
-      // Bij zoom 1 past de hele pagina in beeld; daarna schaalt zoom hem groter (scrollen kan dan).
-      const fit = Math.min(bw / basis.width, bh / basis.height);
+      if (bw <= 0) return;
+      // Op breedte passen (groot, zoals versie 2). Draaien naar liggend geeft een bredere container en
+      // dus een grotere tekening (zie de ResizeObserver). Met +/- zoom je verder in.
+      const fit = bw / basis.width;
       const cssSchaal = Math.max(0.05, fit * zoom);
       // Scherp op retina/telefoon: render op de echte schermdichtheid en toon op CSS-formaat.
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -194,7 +194,7 @@ export function PdfViewer({
             />
           )}
           {!fout && type === "pdf" && (
-            <div className="flex min-h-full min-w-full items-center justify-center">
+            <div className="flex min-h-full min-w-full items-start justify-center">
               <canvas ref={canvasRef} className="block bg-white shadow" />
             </div>
           )}
