@@ -45,6 +45,8 @@ export interface Melding {
   adres_keuze_nodig: boolean;
   meldingen: MeldingItem[];
   foto_urls: string[];
+  // Video bij een monteur-melding (los van de oplever-video); null als er geen is.
+  video_url: string | null;
   spraak_tekst: string | null;
   ruwe_tekst: string | null;
   status: "concept" | "verzonden";
@@ -311,6 +313,7 @@ export interface MonteurMeldingInput {
   ruwe_tekst: string | null;
   spraak_tekst: string | null;
   foto_urls: string[];
+  video_url: string | null;
   status?: "concept" | "verzonden";
   user_id: string;
 }
@@ -319,6 +322,7 @@ export interface UpdateMeldingInput {
   spoed: boolean;
   ruwe_tekst: string | null;
   foto_urls: string[];
+  video_url: string | null;
   status: "concept" | "verzonden";
   versie: number;
 }
@@ -771,6 +775,7 @@ function createDbFromClient(client: SupabaseClient): Db {
           ruwe_tekst: data.ruwe_tekst,
           spraak_tekst: data.spraak_tekst,
           foto_urls: data.foto_urls,
+          video_url: data.video_url,
           meldingen: [],
           user_id: data.user_id,
         })
@@ -800,6 +805,7 @@ function createDbFromClient(client: SupabaseClient): Db {
         spoed: data.spoed,
         ruwe_tekst: data.ruwe_tekst,
         foto_urls: data.foto_urls,
+        video_url: data.video_url,
         status: data.status,
         versie: data.versie,
         aangepast: data.versie > 1,

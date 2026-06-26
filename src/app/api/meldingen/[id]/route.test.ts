@@ -58,6 +58,18 @@ describe("PATCH /api/meldingen/[id]", () => {
     expect((m.updateArg as { versie: number }).versie).toBe(3);
   });
 
+  it("werkt video_url bij als die wordt meegestuurd", async () => {
+    const res = await PATCH(patchReq("row-1", { ...geldig, video_url: "https://x/v.mp4" }), params("row-1"));
+    expect(res.status).toBe(200);
+    expect((m.updateArg as { video_url: string | null }).video_url).toBe("https://x/v.mp4");
+  });
+
+  it("zet video_url op null als die ontbreekt", async () => {
+    const res = await PATCH(patchReq("row-1", geldig), params("row-1"));
+    expect(res.status).toBe(200);
+    expect((m.updateArg as { video_url: string | null }).video_url).toBeNull();
+  });
+
   it("geeft 404 als melding niet bestaat", async () => {
     m.getByIdResult = null;
     const res = await PATCH(patchReq("weg", geldig), params("weg"));
