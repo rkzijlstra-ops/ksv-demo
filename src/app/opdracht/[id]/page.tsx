@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
+import { domeinVanAdres, isEersteContactMetDomein } from "@/lib/verzend-domein";
+import { VerzendInfoBlok } from "@/components/VerzendInfoBlok";
 import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
@@ -38,13 +40,20 @@ export default async function OpdrachtDetailPage({
   const { id } = await params;
   const dbi = await db();
   // Onafhankelijke gegevens tegelijk ophalen i.p.v. in een rij (sneller).
-  const [opdracht, meldingen, documenten] = await Promise.all([
+  const [opdracht, meldingen, documenten, verzendingen] = await Promise.all([
     dbi.getMeldingById(id),
     dbi.getMeldingenVoorOpdracht(id),
     dbi.getDocumentenVoorOpdracht(id),
+    dbi.getRapportVerzendingen(id),
   ]);
   if (!opdracht) notFound();
   const opgeleverd = opdracht.opdracht_status === "opgeleverd";
+
+  // Eerste-contact-met-domein voor de waarschuwing op het verzendblok (kans op spam bij een nieuwe zaak).
+  const laatsteZaakVerz = verzendingen.find((v) => v.doelgroep === "zaak") ?? verzendingen[0];
+  const verzDomein = laatsteZaakVerz ? domeinVanAdres(laatsteZaakVerz.naar) : null;
+  const verzNaarDomein = verzDomein ? await dbi.eerdereVerzendingenNaarDomein(verzDomein) : [];
+  const eersteContact = isEersteContactMetDomein(opdracht.id, verzNaarDomein);
 
   // Eerdere klussen op dezelfde referentie (vervolg-bezoeken aan dezelfde keuken), zodat de historie
   // meereist. RLS toont de monteur alleen zijn eigen klussen; voor KSV (één monteur) is dat zijn eerdere
@@ -136,6 +145,21 @@ export default async function OpdrachtDetailPage({
             </a>
           )}
         </div>
+      )}
+
+      {verzendingen.length > 0 && (
+        <VerzendInfoBlok
+          opdrachtId={opdracht.id}
+          verzendingen={verzendingen.map((v) => ({
+            id: v.id,
+            created_at: v.created_at,
+            doelgroep: v.doelgroep,
+            naar: v.naar,
+          }))}
+          eersteKeer={eersteContact}
+          klantNaam={opdracht.klant_naam}
+          referentienummer={opdracht.referentienummer}
+        />
       )}
 
       <WerkomschrijvingBlok opdrachtId={id} initieel={opdracht.werkomschrijving} />

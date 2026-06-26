@@ -3,6 +3,11 @@ import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenK
 import type { Melding, Oplevering } from "./db";
 import type { ControlePunt } from "./oplever-controle";
 
+// Echte PDF-rendering (pdf-lib) is CPU-zwaar; één render zit lokaal rond de 5s en tikt op een koude
+// CI-runner over de default-timeout van 5000ms. Ruimer zetten voor dit bestand; de pure-functie-tests
+// blijven instant, dus geen nadeel.
+vi.setConfig({ testTimeout: 20000 });
+
 describe("rapportAfzenderWeergave", () => {
   it("gebruikt de bedrijfsnaam als kop en bundelt de voetregel", () => {
     const r = rapportAfzenderWeergave({

@@ -41,6 +41,8 @@ beide kanten checkt. Zie de skill projectstart-discipline (toestandsmatrix). Laa
 | oplevering vastleggen (tussenopslag) | oplevering-record (foto/handtekening/opmerking/interne notitie); foto's per stuk gecommit, verwijderde/vervangen foto/video uit storage opgeruimd (mits nog niet verstuurd) | **niets zichtbaar** (privacy-fix) ⚠️E | flow met ingevulde velden; foto's per stuk geüpload met teller + per-item opnieuw, upload-verlies-bestendig bij navigeren/fout, foto en video serieel (zie DESIGN-OPLEVER-UPLOAD-ROBUUST.md) | geen |
 | versturen naar klant (schone versie) | klant-PDF, klant_rapport_verzonden_at/_email/_url | niets | "klant: verzonden ✓" | mail naar klant, zonder interne notitie (U) |
 | versturen naar zaak → opgeleverd | zaak-PDF, zaak_rapport_verzonden_at, rapport_url, opdracht_status én **dashboard_status → opgeleverd** (was eerder alleen opdracht_status; lijst/badge/planbord bleven "Bevestigd" — gat gedicht 2026-06-18) | oplever-blok + groen op de detailpagina, in het vak "Opgeleverd" op de lijst, en blijft als **groene "opgeleverd"-kaart op zijn dag op het planbord** staan (niet meer sleepbaar; telt niet als dubbele boeking); valt vanzelf weg na ARCHIEF_DAGEN (nu 30) ✓ | "zaak: verzonden ✓", naar history | mail naar zaak, mét interne notitie; meldt of klant het ook kreeg (U) |
+| versturen naar zaak: eerste mail ooit naar dat domein | rapport_verzendingen-rij; domein nog niet eerder gemaild (alleen deze klus) | inklapbaar verzendblok met **waarschuwing** (kans op spam) + Kopieer bericht + Opnieuw versturen (adres-correctie) ✓ | zelfde verzendblok op de monteur-klus ✓ | Reply-To = monteur (vangnet antwoord@); WhatsApp-copy voor de zaak (U) |
+| opnieuw versturen met gecorrigeerd adres | extra rapport_verzendingen-rij naar nieuw adres; blok toont nieuw adres | blok bijgewerkt; waarschuwing als domein nog nieuw is | idem | mail naar het gecorrigeerde adres (U: route naar-override) |
 | afgerond, zaak nog niet verstuurd | oplevering vastgelegd, zaak_rapport_verzonden_at null | **niets** (geen tijdstip) | kluspool-geheugensteun ❌ (nog te bouwen) | geen |
 | verwijderen (prullenbak) | verwijderd_at gezet | uit lijst, in prullenbak | verdwijnt uit kluspool ✓ | geen |
 
@@ -52,6 +54,14 @@ status. Levenscyclus: aanmaken (zelf-invoer) → tonen (detailpagina) → wijzig
 klus + kantoor) → leeg. Puur intern, komt bewust NIET in het opleverrapport (zie
 BRAINSTORM-INVOER-UNIFICATIE.md voor de afweging). Volledige toestandsmatrix daarvan staat in dat
 brainstorm-document. Gedekt: db.test, opdrachten/route.test, werkomschrijving/route.test, zelf-invoer.spec.
+
+### Monteur-onboarding (eigen levenscyclus, geen opdracht-status)
+Een nieuwe monteur moet bij eerste gebruik zijn afzendergegevens invullen (naam, bedrijfsnaam, telefoon,
+contact-mail) voordat hij verder kan. Overgangen: account aangemaakt (kantoor zet naam) → eerste login,
+profiel onvolledig → gate stuurt naar `/welkom` → invullen → welkom-stap met handleiding-knop → werkpool.
+Niet in demo-modus (scripted uitstalraam). De gate zit in `vereisRol` (alleen rol monteur, behalve
+skipOnboarding op de /welkom-pagina zelf). Gedekt: profiel.test (profielVolledig), toegang.test (gate),
+e2e-monteur staat compleet in global-setup; de visuele flow keurt Rein op omgeving-test.
 
 ## Gaten (status)
 

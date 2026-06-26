@@ -80,7 +80,16 @@ async function run() {
   // Profielen upserten (service_role bypast RLS).
   const { error: pe } = await admin.from("profielen").upsert([
     { id: beheerderUid, rol: "beheerder", naam: "Test Beheerder", opdrachtgever_id: zaak.id },
-    { id: monteurUid, rol: "monteur", naam: "Test Monteur", opdrachtgever_id: zaak.id },
+    {
+      id: monteurUid,
+      rol: "monteur",
+      naam: "Test Monteur",
+      opdrachtgever_id: zaak.id,
+      // Compleet, anders stuurt de onboarding-gate elke monteur-pagina naar /welkom.
+      bedrijfsnaam: "Test Montage",
+      telefoon: "0612345678",
+      contact_email: "test-monteur@kluslus.test",
+    },
   ]);
   if (pe) throw pe;
 

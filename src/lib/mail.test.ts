@@ -90,6 +90,26 @@ describe("verstuurOpleverRapport", () => {
     expect(mockSend.mock.calls[0][0].replyTo).toBeUndefined();
   });
 
+  it("zet reply-to op de monteur-mail (boven het vangnet) als het profiel een mailadres heeft", async () => {
+    process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
+    await verstuurOpleverRapport({
+      ...basis,
+      opdracht: opdracht(),
+      afzender: { naam: "Jan Bakker", bedrijfsnaam: "BKM", telefoon: "0612", email: "jan@bkm.nl" },
+    });
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("jan@bkm.nl");
+  });
+
+  it("valt voor reply-to terug op het vangnet als het profiel geen mailadres heeft", async () => {
+    process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
+    await verstuurOpleverRapport({
+      ...basis,
+      opdracht: opdracht(),
+      afzender: { naam: "Jan Bakker", bedrijfsnaam: "BKM", telefoon: "0612", email: null },
+    });
+    expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
+  });
+
   it("gooit een duidelijke error als RESEND_API_KEY ontbreekt", async () => {
     delete process.env.RESEND_API_KEY;
     await expect(

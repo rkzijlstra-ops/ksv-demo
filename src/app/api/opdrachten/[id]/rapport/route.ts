@@ -4,6 +4,7 @@ import { storage } from "@/lib/storage";
 import { genereerRapportPdf, type RapportDoelgroep, type RapportVariant } from "@/lib/rapport";
 import { verstuurOpleverRapport } from "@/lib/mail";
 import { formatDatumLang } from "@/lib/datum";
+import { geldigEmail } from "@/lib/email";
 
 /**
  * Verstuurt het opleverrapport naar één doelgroep, los in tijd:
@@ -44,11 +45,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  // Ontvanger per doelgroep.
+  // Ontvanger per doelgroep. Optioneel `naar` in de body overschrijft het opgeslagen adres
+  // (gebruikt door "Opnieuw versturen" met adres-correctie als de eerste mail niet aankwam).
+  const naarOverride =
+    typeof body.naar === "string" && geldigEmail(body.naar) ? body.naar.trim() : null;
   const naar =
-    doelgroep === "klant"
+    naarOverride ??
+    (doelgroep === "klant"
       ? oplevering.klant_rapport_email?.trim()
-      : oplevering.rapport_email?.trim() || process.env.RAPPORT_EMAIL?.trim();
+      : oplevering.rapport_email?.trim() || process.env.RAPPORT_EMAIL?.trim());
   if (!naar) {
     return doelgroep === "klant"
       ? NextResponse.json({ error: "Geen klant-mailadres ingevuld" }, { status: 400 })
