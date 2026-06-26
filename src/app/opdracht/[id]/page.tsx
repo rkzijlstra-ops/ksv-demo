@@ -22,7 +22,7 @@ import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { ActieKaart } from "@/components/ActieKaart";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
-import { DocumentRij } from "@/components/DocumentRij";
+import { DocumentenBlok } from "@/components/DocumentenBlok";
 import { MeldingVerwijderKnop } from "@/components/MeldingVerwijderKnop";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
@@ -202,17 +202,7 @@ export default async function OpdrachtDetailPage({
           <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Documenten ({documenten.length})</h2>
           <DocumentToevoegen opdrachtId={id} />
         </div>
-        {documenten.length === 0 ? (
-          <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
-            Geen documenten bij deze klus. Voeg een PDF of foto toe met de knop hierboven.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {documenten.map((doc) => (
-              <DocumentRij key={doc.id} doc={doc} />
-            ))}
-          </ul>
-        )}
+        <DocumentenBlok documenten={documenten} magOffline />
       </section>
 
       {opdracht.meldingen.length > 0 && (

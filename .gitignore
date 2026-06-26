@@ -54,3 +54,4 @@ dev-server.log
 *.tsbuildinfo
 next-env.d.ts
 screenshots/
+_debug-pdfs/
