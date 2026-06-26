@@ -76,6 +76,18 @@ describe("POST /api/meldingen", () => {
     expect((m.lastArg as { user_id: string }).user_id).toBe("test-user-uuid");
   });
 
+  it("slaat video_url op als die wordt meegestuurd", async () => {
+    const res = await POST(jsonReq({ ...geldig, video_url: "https://x/v.mp4" }));
+    expect(res.status).toBe(200);
+    expect((m.lastArg as { video_url: string | null }).video_url).toBe("https://x/v.mp4");
+  });
+
+  it("zet video_url op null als die ontbreekt", async () => {
+    const res = await POST(jsonReq(geldig));
+    expect(res.status).toBe(200);
+    expect((m.lastArg as { video_url: string | null }).video_url).toBeNull();
+  });
+
   it("geeft 503 als DB faalt", async () => {
     m.behavior = async () => {
       throw new Error("DB insert mislukt: connection refused");

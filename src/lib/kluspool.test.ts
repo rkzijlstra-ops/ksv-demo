@@ -18,6 +18,7 @@ function maakMelding(over: Partial<Melding>): Melding {
     adres_keuze_nodig: false,
     meldingen: [],
     foto_urls: [],
+    video_url: null,
     spraak_tekst: null,
     ruwe_tekst: null,
     status: "concept",

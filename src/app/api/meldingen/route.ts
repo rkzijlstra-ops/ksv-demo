@@ -8,6 +8,7 @@ const NieuweMeldingSchema = z.object({
   spoed: z.boolean(),
   ruwe_tekst: z.string().nullable(),
   foto_urls: z.array(z.string()),
+  video_url: z.string().nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
       ruwe_tekst: parsed.data.ruwe_tekst,
       spraak_tekst: null,
       foto_urls: parsed.data.foto_urls,
+      video_url: parsed.data.video_url ?? null,
       user_id: userId,
     });
     return NextResponse.json({ id }, { status: 200 });

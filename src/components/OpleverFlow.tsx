@@ -12,6 +12,7 @@ import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
 import { Voortgang } from "@/components/Voortgang";
 import { OntvangerKeuze } from "@/components/OntvangerKeuze";
+import { MeldingenOverzicht, type OverzichtMelding } from "@/components/MeldingenOverzicht";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
@@ -26,6 +27,7 @@ export function OpleverFlow({
   waarschuwKlantZicht = true,
   magKlantLeveren = true,
   verkort = false,
+  meldingen = [],
 }: {
   opdrachtId: string;
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
@@ -36,6 +38,8 @@ export function OpleverFlow({
   magKlantLeveren?: boolean;
   /** Snel afsluiten: uitgeklede oplevering (verkorte PDF, geen handtekening/voorvertoon, vervolg-optie). */
   verkort?: boolean;
+  /** Meldingen van de klus; alleen gebruikt in de verkort-modus voor het read-only overzicht. */
+  meldingen?: OverzichtMelding[];
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
@@ -338,6 +342,10 @@ export function OpleverFlow({
       setFout("Kies een ontvanger voor de opdrachtgever.");
       return;
     }
+    // Snel afsluiten zonder meldingen: een leeg rapport is bijna nooit de bedoeling, dus even bevestigen.
+    if (verkort && meldingen.length === 0 && !window.confirm("Versturen zonder melding?")) {
+      return;
+    }
     // Privacy-waarschuwing: de klant ziet ALLE foto's en meldingen, niet alleen de opmerking. Wil de
     // monteur iets alleen voor de zaak kwijt, dan is daar de interne notitie voor. Aan/uit in Mijn gegevens.
     if (
@@ -350,7 +358,9 @@ export function OpleverFlow({
     ) {
       return;
     }
-    if (check.waarschuwing && !window.confirm(check.waarschuwing)) return;
+    // De "geen foto/video"-waarschuwing hoort bij de volledige oplevering; snel afsluiten (verkort) heeft
+    // bewust geen media-invoer (de meldingen dragen het bewijs), daar geldt de 0-meldingen-bevestiging.
+    if (!verkort && check.waarschuwing && !window.confirm(check.waarschuwing)) return;
 
     const zetBezig = doelgroep === "klant" ? setKlantBezig : setZaakBezig;
     zetBezig(true);
@@ -460,8 +470,23 @@ export function OpleverFlow({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Klant-kant: schakelaar bovenaan. Aan = de blokken eronder klappen open (pijl draait + oranje). */}
-      {magKlantLeveren && (
+      {/* Snel afsluiten: de afslag naar de volledige oplevering staat bovenaan (de keuze maak je vóóraf,
+          niet ná het versturen). Het verschil met snel afsluiten is de handtekening + akkoord, niet
+          foto/video (die heb je bij de melding al). */}
+      {verkort && (
+        <ActieKaart
+          href={`/opdracht/${opdrachtId}/opleveren`}
+          accent="neutraal"
+          icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Liever uitgebreid opleveren?"
+          sub="Met klant-handtekening en akkoord"
+        />
+      )}
+
+      {/* Klant-kant: schakelaar bovenaan. Aan = de blokken eronder klappen open (pijl draait + oranje).
+          Niet in snel afsluiten (verkort): daar is geen intern blok om te openen, dus de schakelaar zou
+          "leeg" voelen. Klant-levering bieden we daar direct als verstuur-optie aan (zie Versturen). */}
+      {magKlantLeveren && !verkort && (
         <button
           type="button"
           onClick={() => setKlantLeveringAan((v) => !v)}
@@ -494,8 +519,9 @@ export function OpleverFlow({
       )}
 
       {/* Voor de opdrachtgever: foto/video/tekst die de klant NIET ziet. Alleen bij klant-levering aan.
+          Niet in snel afsluiten (verkort): media-invoer hoort in de volledige oplevering.
           Hergebruikt exact dezelfde upload-componenten als de oplevering (met hun voortgang). */}
-      {klantLeveringAan && (
+      {klantLeveringAan && !verkort && (
         <section className="border-2 border-urgent-geel bg-urgent-geel/10 p-3">
           <div className="flex items-center gap-2">
             <Lock size={18} strokeWidth={2.4} className="shrink-0 text-ink" aria-hidden="true" />
@@ -546,7 +572,9 @@ export function OpleverFlow({
         </section>
       )}
 
-      {/* De oplevering: foto, video, notitie. Bij klant-levering = wat iedereen (ook de klant) ziet. */}
+      {/* De oplevering: foto, video, notitie. Bij klant-levering = wat iedereen (ook de klant) ziet.
+          Niet in snel afsluiten (verkort): daar staan een meldingen-overzicht + begeleidend bericht. */}
+      {!verkort && (
       <section>
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           De oplevering{klantLeveringAan ? " · klant ziet dit ook" : ""}
@@ -598,6 +626,36 @@ export function OpleverFlow({
           </div>
         </div>
       </section>
+      )}
+
+      {/* Snel afsluiten (verkort): meldingen-overzicht ("dit gaat mee in het rapport") + begeleidend
+          bericht (hergebruikt het opmerking-veld; geen nieuw datamodel). Geen foto/video-invoer. */}
+      {verkort && (
+        <section className="flex flex-col gap-5">
+          <MeldingenOverzicht meldingen={meldingen} />
+          <div>
+            <p className="mb-1 text-sm font-semibold text-ink">
+              Begeleidend bericht <span className="font-normal text-ink-muted">· optioneel</span>
+            </p>
+            <textarea
+              value={opmerking}
+              onChange={(e) => setOpmerking(e.target.value)}
+              onBlur={() => bewaarConcept()}
+              rows={3}
+              aria-label="Begeleidend bericht bij het rapport"
+              placeholder="Korte toelichting voor de opdrachtgever, bijv. wat nog volgt of opviel…"
+              className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+            />
+            <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+              <Mic size={16} aria-hidden="true" />
+              Of spreek het in:
+            </div>
+            <div className="mt-1">
+              <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Afronden: handtekening + voorvertonen, als twee kaarten dicht op elkaar (gelijk aan versturen).
           Niet bij snel afsluiten (verkort). Het akkoord/niet-akkoord zit in het teken-scherm zelf. */}
@@ -708,7 +766,9 @@ export function OpleverFlow({
               sub={zaakVerzondenAt ? `Verzonden · ${formatDatumKort(zaakVerzondenAt)}` : "Nog te versturen"}
               onClick={() => setVerstuurKeuze("zaak")}
             />
-            {klantLeveringAan && (
+            {/* Klant-optie: in de volledige oplevering via de schakelaar (klantLeveringAan); in snel
+                afsluiten direct als die klus klant-levering toestaat (geen schakelaar daar). */}
+            {(klantLeveringAan || (verkort && magKlantLeveren)) && (
               <ActieKaart
                 accent={klantVerzondenAt ? "klaar" : "actie"}
                 subAccent

@@ -50,23 +50,21 @@ describe("documenttypeConfig", () => {
 describe("meldingStaatConfig (kleur-staat)", () => {
   it("spoed + verstuurd: rood, label 'Spoed verstuurd'", () => {
     const c = meldingStaatConfig(true, "2026-05-29T18:00:00Z");
-    expect(c.label).toBe("Spoed verstuurd");
-    expect(c.bg).toContain("urgent-rood");
-    expect(c.ink).toContain("white");
+    expect(c).not.toBeNull();
+    expect(c!.label).toBe("Spoed verstuurd");
+    expect(c!.bg).toContain("urgent-rood");
+    expect(c!.ink).toContain("white");
   });
 
   it("spoed, nog niet verstuurd: rood, label 'Spoed'", () => {
     const c = meldingStaatConfig(true, null);
-    expect(c.label).toBe("Spoed");
-    expect(c.bg).toContain("urgent-rood");
+    expect(c).not.toBeNull();
+    expect(c!.label).toBe("Spoed");
+    expect(c!.bg).toContain("urgent-rood");
   });
 
-  it("normaal: outline oranje accent (industrieel D), label 'Open'", () => {
-    const c = meldingStaatConfig(false, null);
-    expect(c.label).toBe("Open");
-    expect(c.bg).toContain("white");
-    expect(c.ink).toContain("accent");
-    expect(c.border).toContain("accent");
+  it("normaal (geen spoed): geen badge (null)", () => {
+    expect(meldingStaatConfig(false, null)).toBeNull();
   });
 });
 

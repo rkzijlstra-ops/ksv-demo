@@ -115,3 +115,34 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   ✓ afgerond.spec (UI-smoke + db-keten via registreerVerkortRapportVervolg).
 - **kluspool-hernoeming.** Puur naamgeving (werkpool → kluspool), geen statusgedrag gewijzigd; legacy
   `?werkpool=1` blijft werken (backward-compat).
+
+## Melding-flow herinrichting (2026-06-26)
+
+De melding is een eigen entiteit op een klus (beschadiging/manco), met een eigen levenscyclus naast de
+opdracht. Matrix per overgang (kolommen: Data | Monteur-UI | Bericht; kantoor ziet meldingen via het rapport):
+
+| Overgang | Data | Monteur-UI | Bericht/notificatie |
+|---|---|---|---|
+| melding aanmaken (gewoon) | rij met `spoed=false`, `ruwe_tekst`, `foto_urls`, **`video_url`** (nieuw), status concept→verzonden | detail-lijst: tekst + foto/video, **geen label** (alleen spoed labelt) ✓ | geen (gaat mee in het rapport) |
+| melding aanmaken (spoed) | `spoed=true`; bij versturen `spoed_verzonden_at` | rode "Spoed"-badge + driehoek ✓ | spoed-mail meteen naar kantoor (bestaand) ✓ |
+| video toevoegen aan een melding | `video_url` gezet (VideoMaken, online-only); offline-queue draagt bewust GEEN video | formulier toont VideoMaken (Opnemen/Galerij); opgeslagen video komt terug als "Video vastgelegd" ✓ | komt als videolink in de rapport-PDF (melding-sectie) ✓ |
+| melding bewerken | `versie+1`, `aangepast=true`, velden incl. `video_url` bijgewerkt | "aangepast (vN)" naast de (eventuele) badge ✓ | n.v.t. |
+| melding verwijderen | soft/echte verwijdering (bestaand) | uit de lijst | n.v.t. |
+| melding offline aanmaken | IndexedDB-queue (foto's lokaal), **zonder video** (online-only) | "wacht op netwerk" (bestaand) | sync zodra online (bestaand) |
+| melding-invoer weg-navigeren vóór opslaan (ook telefoon-terugknop) | concept-vangnet in localStorage (tekst/spoed/foto's/video); gewist bij opslaan of bewust weggooien | invoer wordt hersteld bij terugkeer naar het formulier; opslaan-knop blijft leidend ✓ | n.v.t. | melding-concept.test, melding-flow.spec |
+
+### Detailpagina (`/opdracht/[id]`) — leesvolgorde van de klus
+Documenten → "Meldingen tijdens de klus" (knop "Beschadiging of manco melden" → aparte pagina) →
+"Aan het einde van de klus" (ActieKaart "Klus afsluiten" → `/afronden`). Vaste onderbalk: alléén
+"Terug naar kluspool" (afsluiten is uit de balk naar het pagina-blok verhuisd). Gedekt: melding-flow.spec.
+
+### Snel afsluiten (`/afronden/snel`) — ontdubbeld
+| Situatie | Data | Monteur-UI | Bericht |
+|---|---|---|---|
+| openen | meldingen van de klus opgehaald (server) | bovenaan ontsnap-kaart "Liever uitgebreid opleveren? (met klant-handtekening en akkoord)" → `/opleveren`; daaronder compact "Dit gaat mee in het rapport"-overzicht (thumbnails + tekst + telling, spoed-only label) + "Begeleidend bericht" (= `opmerking`, typen/spraak); GEEN foto/video-invoer (die staat in de volledige oplevering) ✓ | n.v.t. |
+| versturen met ≥1 melding | verkorte PDF (meldingen incl. videolink + begeleidend bericht), bestaand versturen-blok (klant/opdrachtgever/later) ongewijzigd | bestaand versturen-gedrag | mail naar gekozen ontvanger (bestaand) |
+| versturen met 0 meldingen | idem, maar eerst bevestiging | confirm "Versturen zonder melding?"; annuleren stopt, bevestigen verstuurt ✓ | idem na bevestiging |
+| "geen foto/video"-waarschuwing | n.v.t. in verkort | NIET getoond in verkort (media-invoer is daar bewust weg; de meldingen dragen het bewijs) ✓ | n.v.t. |
+
+De **volledige oplevering** (`/opleveren`) is ongewijzigd: foto/video/handtekening + akkoord blijven daar.
+Gedekt: melding-flow.spec (layout, lege staat, 0-meldingen-confirm), rapport.test (verkorte PDF).

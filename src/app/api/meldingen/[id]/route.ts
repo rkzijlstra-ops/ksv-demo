@@ -6,6 +6,7 @@ const UpdateSchema = z.object({
   spoed: z.boolean(),
   ruwe_tekst: z.string().nullable(),
   foto_urls: z.array(z.string()),
+  video_url: z.string().nullable().optional(),
   status: z.enum(["concept", "verzonden"]),
 });
 
@@ -39,6 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       spoed: parsed.data.spoed,
       ruwe_tekst: parsed.data.ruwe_tekst,
       foto_urls: parsed.data.foto_urls,
+      video_url: parsed.data.video_url ?? null,
       status: parsed.data.status,
       versie: nieuweVersie,
     });

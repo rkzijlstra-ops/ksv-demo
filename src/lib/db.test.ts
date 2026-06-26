@@ -172,6 +172,7 @@ describe("createMonteurMelding", () => {
       ruwe_tekst: "Front beschadigd",
       spraak_tekst: null,
       foto_urls: ["https://x/foto1.jpg"],
+      video_url: null,
       user_id: "u-test",
     });
 
@@ -190,6 +191,7 @@ describe("createMonteurMelding", () => {
       ruwe_tekst: null,
       spraak_tekst: "ingesproken tekst",
       foto_urls: [],
+      video_url: null,
       user_id: "u-test",
     });
     expect(r.id).toBe("m-1");
@@ -531,6 +533,7 @@ describe("updateMelding", () => {
       spoed: true,
       ruwe_tekst: "Toch erger dan gedacht",
       foto_urls: ["https://x/f2.jpg"],
+      video_url: null,
       status: "verzonden",
       versie: 2,
     });
@@ -549,6 +552,7 @@ describe("updateMelding", () => {
       spoed: false,
       ruwe_tekst: null,
       foto_urls: [],
+      video_url: null,
       status: "concept",
       versie: 1,
     });
@@ -564,6 +568,7 @@ describe("updateMelding", () => {
         spoed: false,
         ruwe_tekst: null,
         foto_urls: [],
+        video_url: null,
         status: "verzonden",
         versie: 3,
       }),

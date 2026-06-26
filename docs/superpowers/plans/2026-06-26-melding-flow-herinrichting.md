@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **STATUS 2026-06-26: gebouwd, test-first, op `omgeving-test` → kluslus-test.** Alle taken (T2–T16) af. 872 unit + 106 e2e groen (16 skipped, 0 fail). `TESTDEKKING.md` + `TOESTANDEN.md` bijgewerkt. Branch `melding-flow` gepusht; gemerged in `omgeving-test` (kluslus-test deployt). **STOP-poort: wacht op Reins keuring (beide rollen) vóór de PR/merge naar master.** Productie-migratie `schema-compleet-28-melding-video.sql` moet Rein nog op prod draaien vóór merge (test+demo zijn gedaan). Extra t.o.v. plan: in verkort geen "geen foto/video"-waarschuwing (media-invoer is daar bewust weg).
+
 **Goal:** Meldingen schoner en duidelijker maken voor een nieuwe monteur, video toevoegen aan meldingen, en "snel afsluiten" ontdubbelen (geen foto/video-herinvoer, maar een meldingen-overzicht + begeleidend bericht).
 
 **Architecture:** Hergebruik bestaande componenten (`MeldingForm`, `OpleverFlow`-versturen-blok, `VideoMaken`, `OntvangerKeuze`, `ActieKaart`). Drie blokken werk: (A) video op melding, (B) detailpagina-herinrichting, (C) snel-afsluiten ontdubbelen. Volledige oplevering blijft ongewijzigd.
