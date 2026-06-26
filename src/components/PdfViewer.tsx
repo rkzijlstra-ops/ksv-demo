@@ -271,7 +271,7 @@ export function PdfViewer({
             </div>
           )}
           {!fout && (
-            <div className="flex min-h-full min-w-full items-start justify-center">
+            <div className="flex min-h-full min-w-full items-center justify-center">
               <div style={{ transform, transformOrigin: "center center" }}>
                 {type === "afbeelding" ? (
                   // eslint-disable-next-line @next/next/no-img-element
