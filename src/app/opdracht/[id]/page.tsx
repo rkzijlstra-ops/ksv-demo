@@ -233,14 +233,15 @@ export default async function OpdrachtDetailPage({
       )}
 
       <section className="mt-6">
-        <h2 className="mb-3 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Meldingen ({meldingen.length})</h2>
+        <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Meldingen tijdens de klus</h2>
+        <p className="mb-3 mt-1 text-sm text-ink-muted">Iets kapot of ontbrekend? Meld het, per stuk.</p>
 
         <Link
           href={`/opdracht/${id}/melding`}
           className="relative mb-3 flex min-h-[56px] cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-base font-extrabold uppercase tracking-[0.06em] text-white transition-colors duration-150 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
         >
           <Plus size={22} strokeWidth={2.5} aria-hidden="true" />
-          Melding toevoegen
+          Beschadiging of manco melden
         </Link>
 
         <PendingMeldingen opdrachtId={id} />
