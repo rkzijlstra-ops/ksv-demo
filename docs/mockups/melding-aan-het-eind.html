@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Afsluiten: vaste balk vs "Aan het eind"-blok in de pagina</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --bevestigd:#1d4ed8;
+    --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 70px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:820px;line-height:1.6;margin:0 0 22px;font-size:14px}
+  .row{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start}
+  .col{flex:0 0 326px}
+  .cap{font-weight:700;font-size:14px;margin:0 0 8px}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:13px 13px 0;position:relative}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 9px}
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:11px 13px 13px;margin-bottom:0}
+  .eyebrow{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:20px;font-weight:800;margin:2px 0 0;line-height:1.05}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--accent)}
+
+  .secline{font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 7px}
+  .docrow{display:flex;align-items:center;gap:9px;border:2px solid var(--line);background:#fff;padding:9px 10px;margin-bottom:7px}
+  .docrow .pdf{width:30px;height:30px;flex:none;display:grid;place-items:center;background:var(--surface);color:var(--rood)}
+  .docrow .pdf svg{width:17px;height:17px}
+  .docrow b{font-size:12.5px}
+
+  .phasehead{font-family:var(--mono);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 4px;display:flex;align-items:center;gap:7px}
+  .phasehead .n{display:inline-grid;place-items:center;width:20px;height:20px;background:var(--ink);color:#fff;font-size:11px}
+  .phasesub{font-size:11.5px;color:var(--muted);margin:0 0 9px;line-height:1.45}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;position:relative;cursor:default}
+  .btn svg{width:19px;height:19px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.wit{background:#fff;color:var(--primary);border:2px solid var(--primary)}.btn.wit::after{display:none}
+
+  .mitem{border:1px solid var(--line);background:#fff;padding:9px 10px;margin-top:8px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px}
+  .badge svg{width:13px;height:13px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .badge.achteraf{background:var(--geel);color:#0f172a}
+  .mt{font-size:12.5px;margin:7px 0 0}
+
+  .divider{height:2px;background:var(--line);margin:18px 0 4px}
+
+  /* in-pagina "aan het eind" kaart */
+  .endcard{display:flex;align-items:stretch;border:2px solid var(--primary);background:#fff;min-height:62px;margin-top:4px;position:relative}
+  .endcard .streep{width:6px;flex:none;background:var(--accent)}
+  .endcard .mid{flex:1;display:flex;align-items:center;gap:11px;padding:10px 11px}
+  .endcard .cirkel{width:40px;height:40px;border-radius:999px;flex:none;display:grid;place-items:center;background:#27272a;color:#fff}
+  .endcard .cirkel svg{width:20px;height:20px}
+  .endcard .kt b{font-size:14px;display:block}
+  .endcard .kt small{font-size:11.5px;color:var(--muted);display:block;margin-top:2px}
+  .endcard .pijl{align-self:center;color:var(--muted);padding-right:10px}
+  .endcard .pijl svg{width:20px;height:20px}
+
+  .bar{position:sticky;bottom:0;display:flex;gap:8px;margin:16px -13px 0;padding:11px 13px;border-top:2px solid var(--line);background:#fff}
+  .bar .btn{min-height:46px;font-size:12px}
+
+  .scrollnote{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:6px 0;margin:12px -13px;background:repeating-linear-gradient(45deg,#fff,#fff 6px,#f6f8fb 6px,#f6f8fb 12px)}
+
+  .note{max-width:820px;font-size:13px;color:#3a4654;line-height:1.65;background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);padding:13px 15px;margin-top:30px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<h1>Afsluiten: vaste balk vs "Aan het eind"-blok</h1>
+<p class="lead">Dit is het stuk van variant C waar je nieuwsgierig naar was. De vraag: staat de afsluit-actie alleen onderin als vaste knop (zoals nu), of óók als gelabeld "Aan het eind"-blok in de pagina zelf, zodat de pagina het verhaal van de klus vertelt? Documenten staan in beide bovenaan.</p>
+
+<div class="row">
+
+  <!-- NU -->
+  <div class="col">
+    <p class="cap">Nu &mdash; afsluiten alleen in de vaste balk<small>Altijd bereikbaar, maar zonder uitleg dat het de eind-stap is.</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">KSV / Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="secline">Documenten (3)</div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Tekening keuken.pdf</b></div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Bestellijst.pdf</b></div>
+      <div class="secline">Meldingen (2)</div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Beschadiging of manco melden</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p></div>
+      <div class="mitem"><span class="badge achteraf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Achteraf</span><p class="mt">Zijwand beschadigd.</p></div>
+      <div class="scrollnote">geen eind-uitleg in de pagina</div>
+      <div class="bar">
+        <button class="btn wit" style="flex:0 0 88px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Pool</button>
+        <button class="btn">Klus afsluiten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- C-IDEE -->
+  <div class="col">
+    <p class="cap">C-idee &mdash; "Aan het eind"-blok in de pagina<small>De pagina vertelt het ritme: tijdens de klus melden, aan het eind opleveren.</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">KSV / Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="secline">Documenten (3)</div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Tekening keuken.pdf</b></div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Bestellijst.pdf</b></div>
+
+      <div class="phasehead"><span class="n">1</span> Tijdens de klus</div>
+      <p class="phasesub">Iets kapot of ontbrekend? Meld het, per stuk.</p>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Beschadiging of manco melden</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p></div>
+      <div class="mitem"><span class="badge achteraf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Achteraf</span><p class="mt">Zijwand beschadigd.</p></div>
+
+      <div class="divider"></div>
+
+      <div class="phasehead"><span class="n">2</span> Aan het eind</div>
+      <p class="phasesub">Klus klaar? Sluit hem af en maak het rapport.</p>
+      <div class="endcard">
+        <div class="streep"></div>
+        <div class="mid">
+          <div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div>
+          <div class="kt"><b>Klus afsluiten</b><small>Daarna kies je: snel of volledig opleveren.</small></div>
+        </div>
+        <span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+
+      <div class="bar">
+        <button class="btn wit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Terug naar kluspool</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Het verschil zit alleen in de afsluit-actie:</b><br><br>
+  &bull; <b>Nu:</b> afsluiten staat onderin in de vaste balk. Altijd bereikbaar terwijl je scrollt, maar de pagina legt nergens uit "dit is de eind-stap".<br><br>
+  &bull; <b>C-idee:</b> afsluiten staat als gelabeld blok "Aan het eind" in de pagina, gekoppeld aan "Tijdens de klus" erboven. Een nieuweling leest het ritme van de klus af. Nadeel: het blok scrollt mee, dus niet altijd in beeld (de balk onderin heeft dan alleen nog "Terug naar kluspool").<br><br>
+  &bull; <b>Combineren kan ook:</b> het "Aan het eind"-blok in de pagina voor de uitleg, én afsluiten in de vaste balk voor het altijd-bereikbaar zijn. Iets meer dubbel op het scherm, maar het beste van twee.
+</div>
+
+</body>
+</html>

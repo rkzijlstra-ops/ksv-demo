@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detailpagina - PDF boven, melden eronder (app-kleuren)</title>
+<style>
+  :root{
+    /* exact uit globals.css / design-system.md */
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --bevestigd:#1d4ed8;
+    --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 70px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:760px;line-height:1.6;margin:0 0 22px;font-size:14px}
+  .wrap{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+
+  .phone{flex:0 0 340px;background:#fff;border:2px solid var(--line);padding:14px 14px 0;position:relative}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 9px}
+
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:12px 14px 14px}
+  .eyebrow{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:22px;font-weight:800;margin:3px 0 0;line-height:1.05}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--accent)}
+
+  .meta{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:9px 0 3px}
+  .chip{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);padding:2px 7px;color:var(--muted)}
+  .ref{font-size:12px;font-weight:700;color:var(--muted)}
+  .adres{display:flex;align-items:flex-start;gap:7px;font-size:13px;margin:9px 0 0}
+  .adres svg{width:18px;height:18px;color:var(--muted);flex:none;margin-top:1px}
+
+  .navrow{display:flex;gap:8px;margin:13px 0 0}
+  .navbtn{flex:1;min-height:46px;border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink)}
+  .navbtn svg{width:18px;height:18px;color:var(--muted)}
+
+  .sec{margin-top:20px}
+  .sechead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+  .h{font-family:var(--mono);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:0}
+  .h small{display:block;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11.5px;margin-top:3px;font-family:var(--sans);line-height:1.45}
+  .mini{font-family:var(--sans);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;border:2px solid var(--line);background:#fff;padding:6px 9px;display:inline-flex;align-items:center;gap:5px;color:var(--ink)}
+  .mini svg{width:14px;height:14px}
+
+  /* PDF / documenten rij - groot en uitnodigend want vaak geraadpleegd */
+  .doc{display:flex;align-items:center;gap:11px;border:2px solid var(--line);background:#fff;padding:12px 12px;margin-bottom:9px;min-height:58px}
+  .doc .pdf{width:40px;height:40px;flex:none;display:grid;place-items:center;background:var(--surface);color:var(--rood)}
+  .doc .pdf svg{width:21px;height:21px}
+  .doc .dt{flex:1;min-width:0}
+  .doc .dt b{font-size:14px;display:block}
+  .doc .dt small{font-size:11px;color:var(--muted)}
+  .doc .open{color:var(--muted)}
+  .doc .open svg{width:20px;height:20px}
+
+  /* melden */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;position:relative;cursor:default}
+  .btn svg{width:20px;height:20px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.wit{background:#fff;color:var(--primary);border:2px solid var(--primary)}.btn.wit::after{display:none}
+
+  .mitem{border:1px solid var(--line);background:#fff;padding:10px 11px;margin-top:9px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px}
+  .badge svg{width:13px;height:13px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .badge.achteraf{background:var(--geel);color:#0f172a}
+  .mt{font-size:13px;margin:8px 0 0}
+  .mf{font-size:11px;color:var(--muted);margin-top:5px}
+
+  .bar{position:sticky;bottom:0;display:flex;gap:9px;margin:18px -14px 0;padding:12px 14px;border-top:2px solid var(--line);background:#fff}
+  .bar .btn{min-height:48px;font-size:12.5px}
+
+  .uitleg{flex:0 0 360px;font-size:13.5px;color:#3a4654;line-height:1.65}
+  .uitleg h3{font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+  .uitleg ul{padding-left:18px;margin:0 0 16px}
+  .uitleg li{margin-bottom:7px}
+  .uitleg .kl{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+  .sw{width:13px;height:13px;display:inline-block;border:1px solid rgba(0,0,0,.15);vertical-align:-1px}
+  .note{background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);padding:11px 13px;font-size:12.5px;line-height:1.55}
+</style>
+</head>
+<body>
+
+<h1>Detailpagina &mdash; PDF boven, melden eronder</h1>
+<p class="lead">Variant C omgebouwd naar de echte app-kleuren en de volgorde die jij aangeeft: documenten (PDF) bovenaan want vaakst geraadpleegd, melden eronder, onder elkaar. Afsluiten is één dichte knop in de balk; de snel/volledig-keuze komt pas op het volgende scherm.</p>
+
+<div class="wrap">
+
+  <div class="phone">
+    <div class="status"><span>09:41</span><span>Kluslus</span></div>
+
+    <div class="hdr">
+      <p class="eyebrow">KSV / Klus</p>
+      <p class="title">Fam. Jansen</p>
+      <div class="meta">
+        <span class="chip">Montage</span>
+        <span class="ref">ref 4821</span>
+      </div>
+      <p class="adres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg> Dorpsstraat 14, Noordwijkerhout</p>
+      <span class="accbar"></span>
+    </div>
+
+    <div class="navrow">
+      <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg> Route</div>
+      <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19 19 0 0 1 3 5.2 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L9 10.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg> Bellen</div>
+      <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-1L3 21l1.1-4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg> App</div>
+    </div>
+
+    <!-- DOCUMENTEN bovenaan: vaakst geraadpleegd -->
+    <div class="sec">
+      <div class="sechead">
+        <p class="h">Documenten (3)<small>Tekeningen en bestellijst. Tik om te openen.</small></p>
+        <span class="mini"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span>
+      </div>
+      <div class="doc"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><div class="dt"><b>Tekening keuken.pdf</b><small>2 pagina's</small></div><span class="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="doc"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><div class="dt"><b>Bestellijst.pdf</b><small>4 pagina's</small></div><span class="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="doc"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><div class="dt"><b>Offerte.pdf</b><small>1 pagina</small></div><span class="open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+    </div>
+
+    <!-- MELDEN eronder -->
+    <div class="sec">
+      <p class="h">Meldingen (2)<small>Iets kapot, beschadigd of ontbrekend? Meld het per stuk.</small></p>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Beschadiging of manco melden</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt in levering.</p><p class="mf">1 foto &middot; verstuurd 09:12</p></div>
+      <div class="mitem"><span class="badge achteraf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Achteraf</span><p class="mt">Zijwand kastje beschadigd.</p><p class="mf">2 foto's</p></div>
+    </div>
+
+    <!-- balk: afsluiten als 1 dichte knop -->
+    <div class="bar">
+      <button class="btn wit" style="flex:0 0 92px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Pool</button>
+      <button class="btn">Klus afsluiten</button>
+    </div>
+  </div>
+
+  <div class="uitleg">
+    <h3>Wat hier gebeurt</h3>
+    <ul>
+      <li><b>Documenten bovenaan.</b> PDF's raadpleeg je het vaakst, dus staan ze hoog en groot. Tikken opent. (De vraag "hoe houden we ze snel bij de hand zonder steeds opnieuw te openen" pak ik straks apart op.)</li>
+      <li><b>Melden eronder.</b> Onder elkaar, niet ernaast: melden gebruik je minder vaak dan de PDF's.</li>
+      <li><b>Afsluiten = één dichte knop</b> in de vaste balk. De keuze snel afsluiten / volledig opleveren klapt pas open op het volgende scherm, niet hier.</li>
+    </ul>
+    <h3>Kleuren (uit de app-kaart)</h3>
+    <ul style="list-style:none;padding-left:0">
+      <li><span class="kl"><span class="sw" style="background:#dc2626"></span> Rood = spoed</span> (driehoek, direct naar opdrachtgever)</li>
+      <li><span class="kl"><span class="sw" style="background:#fbbf24"></span> Geel = achteraf</span> (klok, opdrachtgever moet er nog iets mee)</li>
+      <li><span class="kl"><span class="sw" style="background:#27272a"></span> Anthraciet = primaire knop</span> (melden &eacute;n afsluiten)</li>
+      <li><span class="kl"><span class="sw" style="background:#f97316"></span> Oranje = merk-accent</span> (streep onder knoppen, header)</li>
+    </ul>
+    <div class="note"><b>Let op:</b> melden en afsluiten zijn allebei anthraciet (zo schrijft de app-kaart het voor). Ze verschillen door plek, icoon en label, niet door kleur. Wil je ze tóch sterker uit elkaar, dan is dat een aparte keuze, geen verzonnen kleur.</div>
+  </div>
+
+</div>
+
+</body>
+</html>

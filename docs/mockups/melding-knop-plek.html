@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plek van de meldingen-knop op de detailpagina</title>
+<style>
+  :root{
+    /* exact uit globals.css / design-system.md */
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --bevestigd:#1d4ed8;
+    --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 70px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:880px;line-height:1.6;margin:0 0 22px;font-size:14px}
+  .row{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start}
+  .col{flex:0 0 320px}
+  .cap{font-weight:700;font-size:14px;margin:0 0 8px}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:13px 13px 0;position:relative;min-height:560px}
+  .scrollnote{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:6px 0;margin:10px -13px;background:repeating-linear-gradient(45deg,#fff,#fff 6px,#f6f8fb 6px,#f6f8fb 12px)}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 9px}
+
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:11px 13px 13px;margin-bottom:11px}
+  .eyebrow{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:19px;font-weight:800;margin:2px 0 0;line-height:1.05}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--accent)}
+
+  .navrow{display:flex;gap:8px;margin-bottom:12px}
+  .navbtn{flex:1;min-height:42px;border:2px solid var(--line);background:#fff;display:grid;place-items:center;color:var(--muted)}
+  .navbtn svg{width:18px;height:18px}
+
+  .faint{opacity:.5}
+  .secline{font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 7px}
+  .ghost{border:1px solid var(--line);background:var(--surface);height:34px;margin-bottom:7px}
+
+  .h{font-family:var(--mono);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:0 0 3px}
+  .hsub{font-size:11.5px;color:var(--muted);margin:0 0 9px;line-height:1.45}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;position:relative;cursor:default}
+  .btn svg{width:20px;height:20px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.wit{background:#fff;color:var(--primary);border:2px solid var(--primary)}.btn.wit::after{display:none}
+
+  .mitem{border:1px solid var(--line);background:#fff;padding:9px 10px;margin-top:8px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px}
+  .badge svg{width:13px;height:13px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .badge.achteraf{background:var(--geel);color:#0f172a}
+  .mt{font-size:13px;margin:7px 0 0}
+  .mf{font-size:11px;color:var(--muted);margin-top:4px}
+
+  .bar{position:sticky;bottom:0;display:flex;gap:8px;margin:14px -13px 0;padding:11px 13px;border-top:2px solid var(--line);background:#fff}
+  .bar .btn{min-height:46px;font-size:12px}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:800;padding:2px 8px;letter-spacing:.04em;margin-bottom:6px}
+  .tag.bad{background:#fde2e2;color:#b91c1c}
+  .tag.good{background:#dcfce7;color:#15803d}
+  .note{max-width:880px;font-size:13px;color:#3a4654;line-height:1.6;background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);padding:12px 14px;margin-top:30px}
+</style>
+</head>
+<body>
+
+<h1>Waar staat de meldingen-knop?</h1>
+<p class="lead">Eén vraag: zit de knop om te melden goed op de klusdetailpagina? Kleuren volgen de app-kaart: <b style="color:var(--rood)">rood = spoed (direct)</b>, <b style="color:#a16207">geel = achteraf</b>, anthraciet = primaire knop. Geen verzonnen kleuren.</p>
+
+<div class="row">
+
+  <!-- NU -->
+  <div class="col">
+    <p class="cap">Nu<small>Knop staat laag, onder documenten en artikelen. Je moet scrollen.</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">Meldingen</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="navrow">
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5-5 5-5M4 15h11a4 4 0 0 0 0-8h-1"/></svg></div>
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19 19 0 0 1 3 5.2 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L9 10.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg></div>
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-1L3 21l1.1-4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg></div>
+      </div>
+      <div class="secline faint">Werkomschrijving</div>
+      <div class="ghost faint"></div>
+      <div class="secline faint">Documenten (3)</div>
+      <div class="ghost faint"></div><div class="ghost faint"></div>
+      <div class="secline faint">Artikelen uit klus</div>
+      <div class="ghost faint"></div>
+      <div class="scrollnote">&darr; hier pas, na scrollen &darr;</div>
+      <div class="h">Meldingen (2)</div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Melding toevoegen</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p></div>
+      <div class="mitem"><span class="badge achteraf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Achteraf</span><p class="mt">Zijwand beschadigd.</p></div>
+      <div class="bar">
+        <button class="btn wit" style="flex:0 0 96px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Pool</button>
+        <button class="btn">Klus afsluiten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOORSTEL -->
+  <div class="col">
+    <p class="cap">Voorstel<small>Melden meteen in beeld als "tijdens de klus". Afsluiten blijft de eind-actie in de balk.</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="navrow">
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5-5 5-5M4 15h11a4 4 0 0 0 0-8h-1"/></svg></div>
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19 19 0 0 1 3 5.2 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L9 10.5a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg></div>
+        <div class="navbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-1L3 21l1.1-4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg></div>
+      </div>
+
+      <div class="h">Tijdens de klus</div>
+      <p class="hsub">Iets kapot, beschadigd of ontbrekend? Meld het meteen, per stuk.</p>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Beschadiging of manco melden</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p><p class="mf">1 foto &middot; verstuurd 09:12</p></div>
+      <div class="mitem"><span class="badge achteraf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Achteraf</span><p class="mt">Zijwand beschadigd.</p><p class="mf">2 foto's</p></div>
+
+      <div class="scrollnote">&darr; daaronder: documenten, artikelen, historie &darr;</div>
+      <div class="secline faint">Documenten (3)</div>
+      <div class="ghost faint"></div>
+
+      <div class="bar">
+        <button class="btn wit" style="flex:0 0 96px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Pool</button>
+        <button class="btn">Klus afsluiten</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>De kern:</b> de pagina leest van boven naar onder als het verhaal van de klus &mdash; bovenaan "tijdens de klus" (melden), onderaan in de vaste balk "aan het eind" (afsluiten). Melden en afsluiten zijn allebei makkelijk te vinden, elk op zijn eigen logische plek.<br><br>
+  <b>Alternatief om te overwegen:</b> melden óók in de onderbalk zetten, zodat beide acties altijd één tik weg zijn (balk = Pool &bull; Melden &bull; Afsluiten). Nadeel: drie knoppen in een smalle balk wordt krap, en het mengt "tijdens" en "eind" weer in één rij.
+</div>
+
+</body>
+</html>

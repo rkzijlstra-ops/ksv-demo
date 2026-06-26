@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meldingen-blok als inklap-kaart (zoals "ook aan de klant")</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24; --geel-bg:#fffbeb;
+    --success:#16a34a;
+    --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 70px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:880px;line-height:1.6;margin:0 0 22px;font-size:14px}
+  .row{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start}
+  .col{flex:0 0 330px}
+  .cap{font-weight:700;font-size:13px;margin:0 0 8px}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:13px 13px 16px;position:relative}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 9px}
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:11px 13px 13px}
+  .eyebrow{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:20px;font-weight:800;margin:2px 0 0;line-height:1.05}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--accent)}
+
+  .secline{font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 7px}
+  .docrow{display:flex;align-items:center;gap:9px;border:2px solid var(--line);background:#fff;padding:8px 10px;margin-bottom:7px}
+  .docrow .pdf{width:28px;height:28px;flex:none;display:grid;place-items:center;background:var(--surface);color:var(--rood)}
+  .docrow .pdf svg{width:16px;height:16px}
+  .docrow b{font-size:12px}
+
+  .phasehead{font-family:var(--mono);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:15px 0 4px;display:flex;align-items:center;gap:7px}
+  .phasehead .n{display:inline-grid;place-items:center;width:19px;height:19px;background:var(--ink);color:#fff;font-size:10px}
+  .phasesub{font-size:11px;color:var(--muted);margin:0 0 9px;line-height:1.4}
+
+  /* inklap-kaart in exact de stijl van "ook aan de klant opleveren" */
+  .inklap{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;width:100%;text-align:left}
+  .inklap .streep{width:6px;flex:none;background:var(--muted)}
+  .inklap.open .streep{background:var(--accent)}
+  .inklap .mid{flex:1;display:flex;align-items:center;gap:11px;padding:9px 11px}
+  .inklap .cirkel{width:40px;height:40px;border-radius:999px;flex:none;display:grid;place-items:center;background:rgba(71,85,105,.1);color:var(--muted)}
+  .inklap.open .cirkel{background:rgba(249,115,22,.15);color:var(--accent)}
+  .inklap .cirkel svg{width:20px;height:20px}
+  .inklap .kt{flex:1;min-width:0}
+  .inklap .kt b{font-size:14px;display:block;font-family:var(--mono);font-weight:800}
+  .inklap .kt small{font-size:11.5px;color:var(--muted);display:block;margin-top:2px}
+  .inklap .chev{align-self:center;color:var(--muted);padding-right:11px;transition:transform .15s}
+  .inklap.open .chev{transform:rotate(90deg);color:var(--accent)}
+  .inklap .chev svg{width:22px;height:22px}
+
+  /* opengeklapt invoer-blok (bestaande invoer-stijl) */
+  .body{border:2px solid var(--accent);border-top:none;background:#fff;padding:13px}
+  .lbl{font-size:13px;font-weight:700;color:var(--ink);display:block;margin-bottom:6px}
+  .lbl .new{font-family:var(--mono);font-size:9px;font-weight:800;color:#fff;background:var(--accent);padding:1px 5px;margin-left:6px;letter-spacing:.05em}
+  .media{display:flex;gap:8px}
+  .mbtn{flex:1;min-height:58px;border:2px dashed var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:var(--mono);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink)}
+  .mbtn .ic{color:var(--accent)}.mbtn .ic svg{width:21px;height:21px}
+  .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+  .thumb{aspect-ratio:1;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:#94a3b8;font-size:10px}
+  textarea{width:100%;border:2px solid var(--line);background:#fff;padding:9px 10px;font:inherit;font-size:12.5px;color:var(--muted);resize:none;min-height:50px;margin-top:2px}
+  .spraak{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;padding:6px 10px;font-size:11px;font-weight:700;color:var(--ink);margin-top:8px}
+  .spraak svg{width:14px;height:14px;color:var(--accent)}
+  .spoedrow{display:flex;align-items:center;gap:8px;margin-top:14px}
+  .spoedbtn{display:inline-flex;align-items:center;gap:7px;min-height:46px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:13px;padding:0 14px}
+  .spoedbtn .ic{color:var(--rood)}.spoedbtn .ic svg{width:18px;height:18px}
+  .help{width:34px;height:34px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
+  .help svg{width:18px;height:18px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;position:relative;cursor:default;margin-top:14px}
+  .btn svg{width:19px;height:19px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+
+  .mitem{border:1px solid var(--line);background:#fff;padding:9px 10px;margin-top:8px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px}
+  .badge svg{width:12px;height:12px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .mt{font-size:12.5px;margin:6px 0 0}
+  .mf{font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;gap:8px;align-items:center}
+  .mf svg{width:12px;height:12px}
+
+  .note{max-width:880px;font-size:13.5px;color:#3a4654;line-height:1.65;background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);padding:12px 15px;margin-top:30px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<h1>Meldingen-blok als inklap-kaart</h1>
+<p class="lead">Zelfde principe als "ook aan de klant opleveren": dicht een kaart met pijl naar rechts, klik en hij klapt open in de pagina (pijl draait naar beneden + oranje, oranje balk links). Wat openklapt is het invoerformulier in de bestaande invoer-stijl. Geen aparte melding-pagina meer.</p>
+
+<div class="row">
+
+  <!-- DICHT -->
+  <div class="col">
+    <p class="cap">Dicht<small>Kaart met pijl naar rechts, consistent met andere knoppen</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">KSV / Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="secline">Documenten (3)</div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Tekening keuken.pdf</b></div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Bestellijst.pdf</b></div>
+
+      <div class="phasehead"><span class="n">1</span> Meldingen tijdens de klus</div>
+      <p class="phasesub">Iets kapot of ontbrekend? Meld het, per stuk.</p>
+
+      <div class="inklap">
+        <div class="streep"></div>
+        <div class="mid">
+          <div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg></div>
+          <div class="kt"><b>Beschadiging of manco melden</b><small>Foto, video of tekst. Spoed gaat meteen los.</small></div>
+        </div>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p><p class="mf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg> 1 foto</p></div>
+      <div class="mitem"><p class="mt" style="margin-top:0">Zijwand beschadigd.</p><p class="mf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg> 2 foto's</p></div>
+    </div>
+  </div>
+
+  <!-- OPEN -->
+  <div class="col">
+    <p class="cap">Open<small>Pijl naar beneden + oranje, invoer klapt eronder uit (bestaande invoer-stijl)</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">KSV / Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+
+      <div class="phasehead"><span class="n">1</span> Meldingen tijdens de klus</div>
+      <p class="phasesub">Iets kapot of ontbrekend? Meld het, per stuk.</p>
+
+      <div class="inklap open">
+        <div class="streep"></div>
+        <div class="mid">
+          <div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg></div>
+          <div class="kt"><b>Beschadiging of manco melden</b><small>Foto, video of tekst. Spoed gaat meteen los.</small></div>
+        </div>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+
+      <div class="body">
+        <span class="lbl">Foto's en video <span class="new">NIEUW: video</span></span>
+        <div class="media">
+          <div class="mbtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg></span>Foto</div>
+          <div class="mbtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg></span>Video</div>
+        </div>
+        <div class="thumbs"><div class="thumb">foto 1</div></div>
+
+        <span class="lbl" style="margin-top:14px">Wat is er aan de hand?</span>
+        <textarea>Typ of spreek je melding in&hellip;</textarea>
+        <span class="spraak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> Of inspreken</span>
+
+        <div class="spoedrow">
+          <span class="spoedbtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17v.3"/></svg></span> Spoed</span>
+          <span class="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17v.3"/></svg></span>
+        </div>
+
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Toevoegen aan rapport</button>
+      </div>
+
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Wat dit betekent voor de bouw:</b> de melding-invoer (foto, video, tekst, spoed) wordt hergebruikt uit het bestaande <code>MeldingForm</code>, maar getoond als inklap-blok op de detailpagina in plaats van een aparte pagina. De inklap-kaart krijgt exact de stijl en het gedrag van de "ook aan de klant opleveren"-knop (chevron rechts &rarr; draait naar beneden + oranje, oranje balk links). Alleen "Spoed" als label op meldingen, gewone melding zonder label.
+</div>
+
+</body>
+</html>
