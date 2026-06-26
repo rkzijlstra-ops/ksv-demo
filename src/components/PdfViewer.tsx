@@ -24,6 +24,8 @@ export function PdfViewer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   // pdfjs PDFDocumentProxy; los getypeerd om de pdfjs-types niet door de hele app te trekken.
   const pdfRef = useRef<{ numPages: number; getPage: (n: number) => Promise<unknown> } | null>(null);
+  // Lopende render-taak, zodat we hem kunnen annuleren bij snel her-renderen (draaien/resize).
+  const renderTaskRef = useRef<{ promise: Promise<void>; cancel: () => void } | null>(null);
   const paginaKey = `pdfpag:${url}`;
 
   const [numPages, setNumPages] = useState(0);
@@ -83,7 +85,7 @@ export function PdfViewer({
     try {
       const page = (await pdf.getPage(pagina)) as {
         getViewport: (o: { scale: number }) => { width: number; height: number };
-        render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void> };
+        render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void>; cancel: () => void };
       };
       const basis = page.getViewport({ scale: 1 });
       const bw = container.clientWidth - 16;
@@ -101,8 +103,14 @@ export function PdfViewer({
       canvas.height = Math.floor(viewport.height);
       canvas.style.width = `${Math.floor(viewport.width / dpr)}px`;
       canvas.style.height = `${Math.floor(viewport.height / dpr)}px`;
-      await page.render({ canvasContext: ctx, viewport }).promise;
-    } catch {
+      // Vorige render annuleren: anders gooit pdfjs "zelfde canvas tijdens meerdere renders" bij snel
+      // her-renderen (resize/draaien). Een geannuleerde render is normaal, geen fout.
+      renderTaskRef.current?.cancel();
+      const taak = page.render({ canvasContext: ctx, viewport });
+      renderTaskRef.current = taak;
+      await taak.promise;
+    } catch (e) {
+      if ((e as { name?: string } | null)?.name === "RenderingCancelledException") return;
       setFout("Kon deze pagina niet tonen.");
     }
   }, [pagina, zoom]);

@@ -20,21 +20,21 @@ export function SwRegistrar() {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then((reg) => {
-        // Nieuwe SW gevonden: zodra hij geïnstalleerd is én er al een actieve versie draaide, is het
-        // een update (niet de allereerste installatie). Dan het verversen-balkje tonen.
-        reg.addEventListener("updatefound", () => {
-          const nieuw = reg.installing;
-          if (!nieuw) return;
-          nieuw.addEventListener("statechange", () => {
-            if (nieuw.state === "installed" && navigator.serviceWorker.controller) {
-              setUpdateKlaar(true);
-            }
+        // Een SW volgen: zodra hij geïnstalleerd is én er al een actieve versie draaide, is het een
+        // update (niet de allereerste installatie). Dan het verversen-balkje tonen.
+        const volg = (sw: ServiceWorker | null) => {
+          if (!sw) return;
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) setUpdateKlaar(true);
           });
-        });
-        // Tijdens een lange sessie / keuring af en toe op updates checken.
-        const interval = setInterval(() => {
-          reg.update().catch(() => {});
-        }, 60_000);
+        };
+        // Update die al klaarstond toen we registreerden, of die nu binnenkomt.
+        if (reg.waiting && navigator.serviceWorker.controller) setUpdateKlaar(true);
+        volg(reg.installing);
+        reg.addEventListener("updatefound", () => volg(reg.installing));
+        // Meteen checken (en daarna periodiek), zodat een verse deploy snel zichtbaar is.
+        reg.update().catch(() => {});
+        const interval = setInterval(() => reg.update().catch(() => {}), 60_000);
         return () => clearInterval(interval);
       })
       .catch(() => {
