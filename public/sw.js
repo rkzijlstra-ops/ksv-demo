@@ -5,7 +5,7 @@
 //   2. HTML/RSC-navigatie (stale-while-revalidate, snel + actueel)
 //   3. Supabase Storage assets + next/image (cache-first, lange TTL)
 
-const VERSION = "ksv-v6";
+const VERSION = "ksv-v7";
 const CACHE_SHELL = `${VERSION}-shell`;
 const CACHE_PAGES = `${VERSION}-pages`;
 const CACHE_STORAGE = `${VERSION}-storage`;
