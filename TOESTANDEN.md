@@ -136,6 +136,16 @@ Documenten → "Meldingen tijdens de klus" (knop "Beschadiging of manco melden" 
 "Aan het einde van de klus" (ActieKaart "Klus afsluiten" → `/afronden`). Vaste onderbalk: alléén
 "Terug naar kluspool" (afsluiten is uit de balk naar het pagina-blok verhuisd). Gedekt: melding-flow.spec.
 
+### Documenten-blok (weergave, geen statusovergang)
+Gedeeld component voor monteur (`/opdracht/[id]`) én kantoor (`/dashboard/opdracht/[id]`, in
+`DocumentBeheer`). De soort wordt uit de bestandsnaam afgeleid (`documentSoort`, geen DB-kolom);
+documenten worden gegroepeerd (orderbon / tekeningen / overig), bron bovenaan, met soort-label en
+een lui geladen mini-voorbeeld (eerste pagina via pdfjs, terugval op het soort-icoon). Openen gebeurt
+IN de app via de `PdfViewer`-overlay (paginanav, zoom, onthoudt de laatste pagina), niet meer in een
+nieuw tabblad. Alleen de monteur ziet "Laad alles offline" (warmt de service-worker-cache). Kantoor
+houdt zijn verwijder-actie per document. De rest van de detailpagina is ongemoeid. Gedekt:
+document-weergave.test, pdf-documenten.spec.
+
 ### Snel afsluiten (`/afronden/snel`) — ontdubbeld
 | Situatie | Data | Monteur-UI | Bericht |
 |---|---|---|---|

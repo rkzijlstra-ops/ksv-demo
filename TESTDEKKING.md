@@ -47,6 +47,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
 | Rol-gates per pagina (dashboard/planbord/kluspool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |
+| Documenten-blok (gedeeld monteur/kantoor): soort-label + voorbeeld + groepering, in-app PDF-viewer (overlay, geen nieuw tabblad), offline-laadknop (alleen monteur) | U, E | document-weergave.test (soort/meta/groep), pdf-documenten.spec (groepering + viewer-dialoog + offline aan/afwezig + verwijderen) | groen |
 | Verwijderen met eigendom-slot (monteur alleen eigen ingeschoten klus) | U | opdrachten/[id]/route.test | groen |
 | Terugmelden aan kantoor (reden + toelichting, uit pool naar history, mail, logboek) | U, E | terugmeld-mail.test, terugmelden/route.test, kluspool.test, terugmelden.spec | groen |
 | Terugmelden zet de klus terug naar "te plannen" (status binnen + planning leeg) + blijvende poging-historie (blok 22, snapshot) | U, E | db.test (markeerTeruggemeld), terugmelden/route.test (snapshot), terugmelden.spec (status binnen + poging) | groen |
