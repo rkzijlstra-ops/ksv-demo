@@ -17,7 +17,11 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
   await vereisRol(["monteur", "beheerder"]);
   const { id } = await params;
   const dbi = await db();
-  const [opdracht, userId] = await Promise.all([dbi.getMeldingById(id), getAuthenticatedUserId()]);
+  const [opdracht, userId, meldingen] = await Promise.all([
+    dbi.getMeldingById(id),
+    getAuthenticatedUserId(),
+    dbi.getMeldingenVoorOpdracht(id),
+  ]);
   if (!opdracht) notFound();
   const profiel = userId ? await dbi.getProfiel(userId) : null;
   const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
@@ -54,6 +58,15 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
           waarschuwKlantZicht={waarschuwKlantZicht}
           magKlantLeveren={magKlant}
           verkort
+          meldingen={meldingen.map((m) => ({
+            id: m.id,
+            spoed: m.spoed,
+            spoed_verzonden_at: m.spoed_verzonden_at,
+            ruwe_tekst: m.ruwe_tekst,
+            foto_urls: m.foto_urls,
+            video_url: m.video_url,
+            created_at: m.created_at,
+          }))}
         />
       </div>
     </main>

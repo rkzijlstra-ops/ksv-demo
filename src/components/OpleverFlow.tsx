@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, ChevronRight, Eye, CloudOff, Lock, Send, Check, Users, Clock } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, ChevronRight, Eye, CloudOff, Lock, Send, Check, Users, Clock, Camera } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { useOpleverUpload } from "@/lib/oplever-upload-status";
 import { OpleverFotos } from "@/components/OpleverFotos";
@@ -12,6 +12,7 @@ import { HandtekeningModal } from "@/components/HandtekeningModal";
 import { SpraakOpname } from "@/components/SpraakOpname";
 import { Voortgang } from "@/components/Voortgang";
 import { OntvangerKeuze } from "@/components/OntvangerKeuze";
+import { MeldingenOverzicht, type OverzichtMelding } from "@/components/MeldingenOverzicht";
 import { controleerOplevering } from "@/lib/oplever-validatie";
 import { dataUrlNaarBlob, uploadHandtekening } from "@/lib/handtekening";
 import { useVerlaatWaarschuwing } from "@/lib/use-verlaat-waarschuwing";
@@ -26,6 +27,7 @@ export function OpleverFlow({
   waarschuwKlantZicht = true,
   magKlantLeveren = true,
   verkort = false,
+  meldingen = [],
 }: {
   opdrachtId: string;
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
@@ -36,6 +38,8 @@ export function OpleverFlow({
   magKlantLeveren?: boolean;
   /** Snel afsluiten: uitgeklede oplevering (verkorte PDF, geen handtekening/voorvertoon, vervolg-optie). */
   verkort?: boolean;
+  /** Meldingen van de klus; alleen gebruikt in de verkort-modus voor het read-only overzicht. */
+  meldingen?: OverzichtMelding[];
 }) {
   const router = useRouter();
   const { online } = useOfflineState();
@@ -338,6 +342,10 @@ export function OpleverFlow({
       setFout("Kies een ontvanger voor de opdrachtgever.");
       return;
     }
+    // Snel afsluiten zonder meldingen: een leeg rapport is bijna nooit de bedoeling, dus even bevestigen.
+    if (verkort && meldingen.length === 0 && !window.confirm("Versturen zonder melding?")) {
+      return;
+    }
     // Privacy-waarschuwing: de klant ziet ALLE foto's en meldingen, niet alleen de opmerking. Wil de
     // monteur iets alleen voor de zaak kwijt, dan is daar de interne notitie voor. Aan/uit in Mijn gegevens.
     if (
@@ -494,8 +502,9 @@ export function OpleverFlow({
       )}
 
       {/* Voor de opdrachtgever: foto/video/tekst die de klant NIET ziet. Alleen bij klant-levering aan.
+          Niet in snel afsluiten (verkort): media-invoer hoort in de volledige oplevering.
           Hergebruikt exact dezelfde upload-componenten als de oplevering (met hun voortgang). */}
-      {klantLeveringAan && (
+      {klantLeveringAan && !verkort && (
         <section className="border-2 border-urgent-geel bg-urgent-geel/10 p-3">
           <div className="flex items-center gap-2">
             <Lock size={18} strokeWidth={2.4} className="shrink-0 text-ink" aria-hidden="true" />
@@ -546,7 +555,9 @@ export function OpleverFlow({
         </section>
       )}
 
-      {/* De oplevering: foto, video, notitie. Bij klant-levering = wat iedereen (ook de klant) ziet. */}
+      {/* De oplevering: foto, video, notitie. Bij klant-levering = wat iedereen (ook de klant) ziet.
+          Niet in snel afsluiten (verkort): daar staan een meldingen-overzicht + begeleidend bericht. */}
+      {!verkort && (
       <section>
         <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
           De oplevering{klantLeveringAan ? " · klant ziet dit ook" : ""}
@@ -598,6 +609,36 @@ export function OpleverFlow({
           </div>
         </div>
       </section>
+      )}
+
+      {/* Snel afsluiten (verkort): meldingen-overzicht ("dit gaat mee in het rapport") + begeleidend
+          bericht (hergebruikt het opmerking-veld; geen nieuw datamodel). Geen foto/video-invoer. */}
+      {verkort && (
+        <section className="flex flex-col gap-5">
+          <MeldingenOverzicht meldingen={meldingen} />
+          <div>
+            <p className="mb-1 text-sm font-semibold text-ink">
+              Begeleidend bericht <span className="font-normal text-ink-muted">· optioneel</span>
+            </p>
+            <textarea
+              value={opmerking}
+              onChange={(e) => setOpmerking(e.target.value)}
+              onBlur={() => bewaarConcept()}
+              rows={3}
+              aria-label="Begeleidend bericht bij het rapport"
+              placeholder="Korte toelichting voor de opdrachtgever, bijv. wat nog volgt of opviel…"
+              className="w-full rounded-none border border-line bg-white p-3 text-base text-ink focus-visible:outline-3 focus-visible:outline-primary"
+            />
+            <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+              <Mic size={16} aria-hidden="true" />
+              Of spreek het in:
+            </div>
+            <div className="mt-1">
+              <SpraakOpname onTekst={(t) => setOpmerking((prev) => (prev ? `${prev} ${t}` : t))} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Afronden: handtekening + voorvertonen, als twee kaarten dicht op elkaar (gelijk aan versturen).
           Niet bij snel afsluiten (verkort). Het akkoord/niet-akkoord zit in het teken-scherm zelf. */}
@@ -1011,6 +1052,18 @@ export function OpleverFlow({
           </p>
         )}
       </section>
+
+      {/* Ontsnap-knop: snel afsluiten dekt geen foto/video/handtekening. Wie dat wel wil, gaat hier
+          naar de volledige oplevering. Geen doodlopend pad. */}
+      {verkort && (
+        <ActieKaart
+          href={`/opdracht/${opdrachtId}/opleveren`}
+          accent="neutraal"
+          icoon={<Camera size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Toch foto, video of handtekening?"
+          sub="Naar de volledige oplevering"
+        />
+      )}
 
       {modalOpen && (
         <HandtekeningModal
