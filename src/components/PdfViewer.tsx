@@ -45,16 +45,17 @@ export function PdfViewer({
   const [schaal, setSchaal] = useState(1);
   const [pan, setPan] = useState<Punt>({ x: 0, y: 0 });
   const schaalRef = useRef(1);
-  const panRef = useRef<Punt>({ x: 0, y: 0 });
   useEffect(() => {
     schaalRef.current = schaal;
   }, [schaal]);
-  useEffect(() => {
-    panRef.current = pan;
-  }, [pan]);
 
-  // Gebaar-toestand (niet in state: verandert per touchmove).
-  const gebaar = useRef({ startDist: 0, startSchaal: 1, startPan: { x: 0, y: 0 }, startTouch: { x: 0, y: 0 } });
+  // Gebaar-toestand (niet in state: verandert per touchmove). `laatste` = vorige vingerpositie voor
+  // incrementeel slepen (werkt in elke richting én na een knijpgebaar).
+  const gebaar = useRef<{ startDist: number; startSchaal: number; laatste: Punt | null }>({
+    startDist: 0,
+    startSchaal: 1,
+    laatste: null,
+  });
 
   // Esc sluit; achtergrond niet scrollen zolang de viewer open is.
   useEffect(() => {
@@ -111,8 +112,8 @@ export function PdfViewer({
       const bw = container.clientWidth - 16;
       if (bw <= 0) return;
       const fit = bw / basis.width;
-      // Backing-store ruimer dan de weergave, zodat knijp-zoomen scherp blijft (tot ~3x).
-      const kwaliteit = Math.min(Math.max(window.devicePixelRatio || 1, 2.5), 3);
+      // Backing-store flink ruimer dan de weergave, zodat knijp-zoomen scherp blijft (tot ~4x).
+      const kwaliteit = Math.min(Math.max(window.devicePixelRatio || 1, 3), 4);
       const viewport = page.getViewport({ scale: fit * kwaliteit });
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -175,9 +176,9 @@ export function PdfViewer({
     if (e.touches.length === 2) {
       gebaar.current.startDist = afstand(e.touches[0], e.touches[1]);
       gebaar.current.startSchaal = schaalRef.current;
+      gebaar.current.laatste = null;
     } else if (e.touches.length === 1) {
-      gebaar.current.startTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      gebaar.current.startPan = panRef.current;
+      gebaar.current.laatste = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
   }
   function onTouchMove(e: React.TouchEvent) {
@@ -186,16 +187,20 @@ export function PdfViewer({
       const ns = klem((gebaar.current.startSchaal * d) / gebaar.current.startDist, 1, 5);
       setSchaal(ns);
       setPan((p) => klemPan(p, ns));
+      gebaar.current.laatste = null; // na knijpen opnieuw verankeren voor slepen
     } else if (e.touches.length === 1) {
       const t = e.touches[0];
-      const np = {
-        x: gebaar.current.startPan.x + (t.clientX - gebaar.current.startTouch.x),
-        y: gebaar.current.startPan.y + (t.clientY - gebaar.current.startTouch.y),
-      };
-      setPan(klemPan(np, schaalRef.current));
+      const vorig = gebaar.current.laatste;
+      gebaar.current.laatste = { x: t.clientX, y: t.clientY };
+      if (!vorig) return; // eerste move = verankeren
+      const dx = t.clientX - vorig.x;
+      const dy = t.clientY - vorig.y;
+      setPan((p) => klemPan({ x: p.x + dx, y: p.y + dy }, schaalRef.current));
     }
   }
   function onTouchEnd(e: React.TouchEvent) {
+    // Overgang naar één vinger (na knijpen): opnieuw verankeren zodat slepen meteen klopt.
+    gebaar.current.laatste = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
     if (e.touches.length === 0 && schaalRef.current <= 1) setPan({ x: 0, y: 0 });
   }
   // Desktop: dubbelklik wisselt tussen 1x en 2x.
