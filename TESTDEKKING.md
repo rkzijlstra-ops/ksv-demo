@@ -2,7 +2,7 @@
 
 Per feature/flow welke testlagen en welk(e) testbestand(en) hem dekken. Werk dit bij in dezelfde
 commit als elke nieuwe feature of wijziging (afrond-check uit de skill projectstart-discipline).
-Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-16.
+Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-26.
 
 Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = browser-e2e (Playwright),
 **M** = e2e-mail (echt versturen achter `E2E_MAIL=1`).
@@ -73,7 +73,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Bevestigen vanaf de kluspool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
 | Zelf-invoer klus (gecombineerd: PDF voorvullen + handmatig, niets verplicht) | U, E | opdrachten/route.test, zelf-invoer.spec | groen |
 | Werk-omschrijving (typen + spraak): invoeren, tonen op detail, bewerken (eigen klus + kantoor), puur intern (niet in rapport) | U, E | db.test (createOpdracht/updateWerkomschrijving), opdrachten/route.test, opdrachten/[id]/werkomschrijving/route.test, zelf-invoer.spec | groen (E door Rein) |
-| Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |
+| Melding toevoegen (incl. spoed, incl. video) + spoed-mail | U, E, M | mail-flows.spec (spoed), melding-flow.spec (video-invoer + round-trip), meldingen/route.test + meldingen/[id]/route.test (video_url) | grotendeels |
 | Oplevering: foto-upload + handtekening-canvas + opmerking als concept (saves geserialiseerd) | U, E | rapport.test, opleveren.spec | groen |
 | Oplever-foto-upload robuust (per foto committen, teller + thumbnails 1-voor-1, per-item fout + opnieuw, abort bij verlaten) | U, E | foto-upload-queue.test, oplever-upload.spec (1-voor-1 + concept, fout-isolatie + opnieuw) | groen |
 | Verlaat-waarschuwing + in-app navigatie-bevestiging bij lopende oplever-upload | U, E | oplever-upload-status.test, oplever-upload.spec (Terug tijdens upload → bevestiging; niets loopt → geen) | groen |
@@ -105,6 +105,20 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Snel afsluiten = verkorte oplevering (verkorte PDF i.p.v. tekstmail); geen handtekening/voorvertoon | E | afgerond.spec (UI-smoke verkorte flow) | groen |
 | Vervolg-keten: verkorte PDF naar opdrachtgever, NIET opgeleverd, terug naar kantoor + "Vervolg plannen"-label; ad-hoc blijft bij monteur | E | afgerond.spec (db-keten registreerVerkortRapportVervolg + ontplan) | groen |
 | kluspool → kluspool app-breed (UI + codenamen), legacy ?kluspool=1 blijft werken | U, E | kluspool.test, kluspool-zichtbaarheid.spec + 11 specs | groen |
+
+## Melding-flow herinrichting (2026-06-26)
+
+| Feature / flow | Lagen | Testbestand(en) | Status |
+|---|---|---|---|
+| Video op een melding (API accepteert+bewaart `video_url`, db-laag, formulier, rapport-PDF videolink) | U, E | meldingen/route.test (POST video_url), meldingen/[id]/route.test (PATCH video_url), db.test (create/updateMelding video_url), rapport.test (melding-videolink-annotatie), melding-flow.spec (video-invoer aanwezig + opgeslagen video terug in bewerk-formulier) | groen |
+| Spoed-only label: alleen spoed krijgt een badge, gewone melding zonder label (oude "Open"/"Achteraf" geschrapt) | U, E | urgentie.test (meldingStaatConfig → null bij niet-spoed), melding-flow.spec (één spoed-badge, geen Open/Achteraf) | groen |
+| Detailpagina-herinrichting: koppen "Meldingen tijdens de klus" + "Aan het einde van de klus"-blok, knop "Beschadiging of manco melden", afsluiten als blok → /afronden, onderbalk alleen "Terug naar kluspool" | E | melding-flow.spec (koppen + afsluit-blok navigeert + onderbalk) | groen |
+| Meldingen-media-telling (read-only overzicht "Dit gaat mee in het rapport") | U, E | melding-overzicht.test (meldingMediaTelling: enkelvoud/meervoud/video/leeg), melding-flow.spec (overzicht toont de meldingen) | groen |
+| Snel afsluiten ontdubbeld: geen media-invoer, meldingen-overzicht + begeleidend bericht (= hergebruikt `opmerking`), bestaand versturen-blok ongewijzigd, ontsnap-knop → /opleveren; geen "geen foto/video"-waarschuwing in verkort | E | melding-flow.spec (layout: geen "De oplevering", begeleidend bericht, versturen-knop, ontsnap-link) | groen |
+| Snel afsluiten met 0 meldingen: lege overzicht-staat + bevestiging "Versturen zonder melding?" vóór versturen | E | melding-flow.spec (lege staat + dialog-bevestiging, annuleren blijft op de pagina) | groen |
+| Verkorte PDF bevat de meldingen incl. melding-videolink + het begeleidend bericht (opmerking, onvoorwaardelijk) | U | rapport.test (verkorte variant: meldingen-videolink-annotatie) | groen |
+
+Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zelfde component); de melding-flow-e2e seedt de video via de db en checkt de create→opslag→lezen→formulier-keten (geen flaky upload-dubbeling). Video offline: bewust NIET in de offline-queue (VideoMaken is online-only), gedocumenteerd in MeldingForm.
 
 ## Invoer-unificatie Part 2 (backend-fundament, blok 0/1/3.3/6)
 
