@@ -1,11 +1,11 @@
 // KSV Service Worker
-// Versie: v2 - blok H van sessie 2A.9 (lezen offline)
+// Versie: v3 - PDF-viewer/documenten-blok; cache-bump dwingt verse code af + ruimt oude caches op
 // Drie cache-strategieen:
 //   1. app-shell + Next static chunks (cache-first, langere TTL)
 //   2. HTML/RSC-navigatie (stale-while-revalidate, snel + actueel)
 //   3. Supabase Storage assets + next/image (cache-first, lange TTL)
 
-const VERSION = "ksv-v2";
+const VERSION = "ksv-v3";
 const CACHE_SHELL = `${VERSION}-shell`;
 const CACHE_PAGES = `${VERSION}-pages`;
 const CACHE_STORAGE = `${VERSION}-storage`;
