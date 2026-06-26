@@ -61,23 +61,26 @@ export function PdfViewer({
 
   // Weergavemaat van alle media toepassen op basis van de zoom (CSS-grootte; de backing-store is hoog,
   // dus knijp-zoomen blijft scherp). Native scroll vangt het pannen op.
-  const pasMaten = useCallback(() => {
-    const cssW = cssWRef.current;
-    if (cssW <= 0) return;
-    const z = zoomRef.current;
-    if (type === "pdf") {
-      canvasRefs.current.forEach((c, i) => {
-        if (!c) return;
-        const a = aspectRef.current[i] || 1.414;
-        c.style.width = `${Math.round(cssW * z)}px`;
-        c.style.height = `${Math.round(cssW * z * a)}px`;
-      });
-    } else if (imgRef.current) {
-      const a = aspectRef.current[0] || 1;
-      imgRef.current.style.width = `${Math.round(cssW * z)}px`;
-      imgRef.current.style.height = `${Math.round(cssW * z * a)}px`;
-    }
-  }, [type]);
+  const zetMaten = useCallback(
+    (z: number) => {
+      const cssW = cssWRef.current;
+      if (cssW <= 0) return;
+      if (type === "pdf") {
+        canvasRefs.current.forEach((c, i) => {
+          if (!c) return;
+          const a = aspectRef.current[i] || 1.414;
+          c.style.width = `${Math.round(cssW * z)}px`;
+          c.style.height = `${Math.round(cssW * z * a)}px`;
+        });
+      } else if (imgRef.current) {
+        const a = aspectRef.current[0] || 1;
+        imgRef.current.style.width = `${Math.round(cssW * z)}px`;
+        imgRef.current.style.height = `${Math.round(cssW * z * a)}px`;
+      }
+    },
+    [type],
+  );
+  const pasMaten = useCallback(() => zetMaten(zoomRef.current), [zetMaten]);
 
   // PDF laden.
   useEffect(() => {
@@ -192,21 +195,40 @@ export function PdfViewer({
     if (!el) return;
     let startDist = 0;
     let startZoom = 1;
+    let midX = 0;
+    let midY = 0;
+    let startL = 0;
+    let startT = 0;
     const onStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
+        const r = el.getBoundingClientRect();
         startDist = afstand(e.touches[0], e.touches[1]);
         startZoom = zoomRef.current;
+        midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+        midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+        startL = el.scrollLeft;
+        startT = el.scrollTop;
       }
     };
     const onMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && startDist > 0) {
         e.preventDefault();
         const d = afstand(e.touches[0], e.touches[1]);
-        setZoom(klem((startZoom * d) / startDist, 1, 4));
+        const nz = klem((startZoom * d) / startDist, 1, 4);
+        const f = nz / startZoom;
+        // Direct de DOM-maten zetten (vloeiend) en de scroll zo bijstellen dat het punt onder je
+        // vingers op z'n plek blijft: zoomen op de knijp-plek i.p.v. de hoek.
+        zetMaten(nz);
+        zoomRef.current = nz;
+        el.scrollLeft = (startL + midX) * f - midX;
+        el.scrollTop = (startT + midY) * f - midY;
       }
     };
     const onEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) startDist = 0;
+      if (e.touches.length < 2 && startDist > 0) {
+        startDist = 0;
+        setZoom(zoomRef.current); // pas nu de state bijwerken -> scherp her-renderen op dit zoomniveau
+      }
     };
     el.addEventListener("touchstart", onStart, { passive: true });
     el.addEventListener("touchmove", onMove, { passive: false });
@@ -218,7 +240,7 @@ export function PdfViewer({
       el.removeEventListener("touchend", onEnd);
       el.removeEventListener("touchcancel", onEnd);
     };
-  }, []);
+  }, [zetMaten]);
 
   const dubbel = () => setZoom((z) => (z > 1 ? 1 : 2));
 
@@ -268,7 +290,7 @@ export function PdfViewer({
             </div>
           )}
           {!fout && type === "pdf" && numPages > 0 && (
-            <div className="flex w-max min-w-full flex-col items-center gap-3 p-2">
+            <div className="flex w-max min-h-full min-w-full flex-col items-center justify-center gap-3 p-2">
               {Array.from({ length: numPages }).map((_, i) => (
                 <canvas
                   key={i}
@@ -281,7 +303,7 @@ export function PdfViewer({
             </div>
           )}
           {!fout && type === "afbeelding" && (
-            <div className="flex w-max min-w-full justify-center p-2">
+            <div className="flex w-max min-h-full min-w-full items-center justify-center p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 ref={imgRef}
