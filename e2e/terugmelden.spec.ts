@@ -5,7 +5,7 @@ import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER, MONTEUR } from "./test-env";
 
 /**
  * Terugmelden (blok 9) + logboek (blok 8), cross-rol: de monteur meldt een door kantoor ingeschoten
- * klus terug, die verdwijnt uit zijn actieve werkpool en kantoor ziet hem met een markering plus het
+ * klus terug, die verdwijnt uit zijn actieve kluspool en kantoor ziet hem met een markering plus het
  * logboek. Verifieert dat een Ed-klus nooit stil verdwijnt en de actie herleidbaar is.
  */
 
@@ -54,7 +54,7 @@ test.describe("monteur meldt een Ed-klus terug", () => {
     await expect(page.getByRole("button", { name: `Klus ${klant} verwijderen` })).toHaveCount(0);
   });
 
-  test("terugmelden haalt de klus uit de actieve werkpool en logt de gebeurtenis", async ({ page }) => {
+  test("terugmelden haalt de klus uit de actieve kluspool en logt de gebeurtenis", async ({ page }) => {
     const res = await page.request.post(`/api/opdrachten/${id}/terugmelden`, {
       data: { reden: "klant_niet_thuis", toelichting: "3x aangebeld" },
     });
@@ -80,9 +80,9 @@ test.describe("monteur meldt een Ed-klus terug", () => {
     expect((p ?? []).length).toBe(1);
     expect(p?.[0]?.monteur_id).toBe(MONTEUR.uid);
 
-    // Werkpool: niet meer in de actieve lijst (zit in de ingeklapte geschiedenis).
+    // Kluspool: niet meer in de actieve lijst (zit in de ingeklapte geschiedenis).
     await page.goto("/");
-    await expect(page.getByText("Werkpool")).toBeVisible();
+    await expect(page.getByText("Kluspool")).toBeVisible();
     await expect(page.getByText(klant)).toHaveCount(0);
     await page.getByRole("button", { name: /Geschiedenis/ }).click();
     await expect(page.getByText(klant)).toBeVisible();
@@ -102,8 +102,8 @@ test.describe("monteur meldt een Ed-klus terug", () => {
     await expect(page.getByText("Teruggemeld bij kantoor")).toBeVisible();
     await expect(page).not.toHaveURL(/\/opdracht\//);
 
-    // Na "Klaar" verdwijnt de klus uit de actieve werkpool.
-    await page.getByRole("button", { name: "Klaar" }).click();
+    // Na "Klaar" verdwijnt de klus uit de actieve kluspool.
+    await page.getByRole("button", { name: "Klaar", exact: true }).click();
     await expect(page.getByText(klant)).toHaveCount(0);
   });
 });
@@ -161,9 +161,9 @@ test.describe("herkansing na terugmelden (datalaag)", () => {
     expect(m?.dashboard_status).toBe("gepland");
     expect(m?.toegewezen_aan).toBe(BEHEERDER.uid);
 
-    // De klus staat actief in de werkpool van de ontvangende persoon (niet in zijn geschiedenis).
-    const werkpool = await db.getWerkpoolVoor(BEHEERDER.uid);
-    expect(werkpool.some((w) => w.id === id)).toBe(true);
+    // De klus staat actief in de kluspool van de ontvangende persoon (niet in zijn geschiedenis).
+    const kluspool = await db.getKluspoolVoor(BEHEERDER.uid);
+    expect(kluspool.some((w) => w.id === id)).toBe(true);
 
     // De poging-historie blijft bewaard (blijvende geschiedenis voor de eerste monteur).
     const pogingen = await db.getTerugmeldPogingenVoor(MONTEUR.uid);

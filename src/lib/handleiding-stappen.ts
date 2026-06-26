@@ -23,7 +23,7 @@ export type HandleidingStap = {
 export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
   {
     bestand: "01-werkpool.png",
-    titel: "Je werkpool",
+    titel: "Je kluspool",
     intro: "Je klussen: actief bovenaan, geschiedenis eronder.",
     punten: [
       "Een klus komt van de opdrachtgever, of je voegt er zelf een toe.",
@@ -60,7 +60,7 @@ export const HANDLEIDING_STAPPEN: HandleidingStap[] = [
     titel: "Klus afsluiten",
     intro: "Klaar? Tik 'Klus afsluiten' onderaan en kies hoe. Foto, video en handtekening zijn altijd optioneel, niks is verplicht.",
     punten: [
-      "Snel afsluiten: voor een serviceklus. Optioneel foto, video of een notitie. De opdrachtgever ziet dat het klaar is.",
+      "Snel afsluiten: voor een serviceklus. Een verkort rapport naar de opdrachtgever, zonder handtekening of voorvertoning.",
       "Afsluiten + rapport: volledige oplevering, optioneel met foto, video en handtekening, voor een keuken.",
       "Niet doorgegaan: klant niet thuis of werk niet af te ronden. Meld terug met een reden.",
       "Komt er nog een vervolg (onderdelen later)? Zet dat vinkje aan bij 'Snel afsluiten'.",

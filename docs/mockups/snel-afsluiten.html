@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snel afsluiten opnieuw ingericht (meldingen-overzicht + begeleidend schrijven)</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24; --geel-bg:#fffbeb;
+    --success:#16a34a;
+    --mono:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 70px}
+  h1{font-family:var(--mono);font-size:20px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:880px;line-height:1.6;margin:0 0 22px;font-size:14px}
+  .flow{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .arrow{color:var(--muted);font-size:26px;flex:none}
+  .col{flex:0 0 320px}
+  .cap{font-weight:700;font-size:13px;margin:0 0 8px}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+  .cap.big{color:var(--accent)}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:13px 13px 0;position:relative}
+  .phone.hero{border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.18)}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 9px}
+  .back{font-size:11px;font-weight:800;color:var(--primary);border:2px solid var(--primary);display:inline-flex;align-items:center;gap:4px;padding:5px 8px;margin-bottom:10px}
+  .back svg{width:13px;height:13px}
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:11px 13px 13px}
+  .eyebrow{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:20px;font-weight:800;margin:2px 0 0;line-height:1.05}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--accent)}
+
+  .secline{font-family:var(--mono);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 7px}
+  .docrow{display:flex;align-items:center;gap:9px;border:2px solid var(--line);background:#fff;padding:8px 10px;margin-bottom:7px}
+  .docrow .pdf{width:28px;height:28px;flex:none;display:grid;place-items:center;background:var(--surface);color:var(--rood)}
+  .docrow .pdf svg{width:16px;height:16px}
+  .docrow b{font-size:12px}
+
+  .phasehead{font-family:var(--mono);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:15px 0 4px;display:flex;align-items:center;gap:7px}
+  .phasehead .n{display:inline-grid;place-items:center;width:19px;height:19px;background:var(--ink);color:#fff;font-size:10px}
+  .phasesub{font-size:11px;color:var(--muted);margin:0 0 8px;line-height:1.4}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;position:relative;cursor:default}
+  .btn svg{width:18px;height:18px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.wit{background:#fff;color:var(--primary);border:2px solid var(--primary)}.btn.wit::after{display:none}
+
+  .mitem{border:1px solid var(--line);background:#fff;padding:8px 10px;margin-top:7px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px}
+  .badge svg{width:12px;height:12px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .badge.achteraf{background:var(--geel);color:#0f172a}
+  .mt{font-size:12px;margin:6px 0 0}
+  .mf{font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;gap:9px;align-items:center}
+  .mf svg{width:12px;height:12px}
+
+  .divider{height:2px;background:var(--line);margin:16px 0 4px}
+  .endcard{display:flex;align-items:stretch;border:2px solid var(--primary);background:#fff;min-height:58px;margin-top:4px}
+  .endcard .streep{width:6px;flex:none;background:var(--accent)}
+  .endcard .mid{flex:1;display:flex;align-items:center;gap:10px;padding:9px 10px}
+  .endcard .cirkel{width:36px;height:36px;border-radius:999px;flex:none;display:grid;place-items:center;background:#27272a;color:#fff}
+  .endcard .cirkel svg{width:18px;height:18px}
+  .endcard .kt b{font-size:13px;display:block}
+  .endcard .kt small{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+  .endcard .pijl{align-self:center;color:var(--muted);padding-right:9px}
+  .endcard .pijl svg{width:18px;height:18px}
+
+  .bar{display:flex;gap:8px;margin:15px -13px 0;padding:11px 13px;border-top:2px solid var(--line);background:#fff}
+  .bar .btn{min-height:44px;font-size:11.5px}
+
+  /* keuzekaarten afronden */
+  .kaart{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;min-height:56px;margin-bottom:8px}
+  .kaart .streep{width:6px;flex:none;background:var(--muted)}
+  .kaart.actie .streep{background:var(--accent)}
+  .kaart .mid{flex:1;display:flex;align-items:center;gap:10px;padding:9px 10px}
+  .kaart .cirkel{width:36px;height:36px;border-radius:999px;flex:none;display:grid;place-items:center;background:rgba(71,85,105,.1);color:var(--muted)}
+  .kaart.actie .cirkel{background:rgba(249,115,22,.13);color:var(--accent)}
+  .kaart .cirkel svg{width:18px;height:18px}
+  .kaart .kt b{font-size:13px;display:block}
+  .kaart .kt small{font-size:11px;color:var(--muted);display:block;margin-top:2px;line-height:1.35}
+  .kaart .pijl{align-self:center;color:var(--muted);padding-right:9px}
+  .kaart .pijl svg{width:18px;height:18px}
+
+  /* recap-blok in snel-scherm */
+  .recap{border:2px solid var(--line);background:var(--surface);padding:10px 11px}
+  .recap .rt{font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:7px}
+  .recap .rt svg{width:16px;height:16px;color:var(--accent)}
+  .recapitem{border:1px solid var(--line);background:#fff;padding:7px 9px;margin-top:8px}
+
+  textarea{width:100%;border:2px solid var(--line);background:#fff;padding:9px 10px;font:inherit;font-size:12.5px;color:var(--muted);resize:none;min-height:60px;margin-top:2px}
+  .lbl{font-size:12.5px;font-weight:700;color:var(--ink);display:block}
+  .lbl small{font-weight:500;color:var(--muted)}
+  .spraak{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;padding:6px 10px;font-size:11px;font-weight:700;color:var(--ink);margin-top:7px}
+  .spraak svg{width:14px;height:14px;color:var(--accent)}
+
+  .vervolg{display:flex;align-items:flex-start;gap:9px;border:2px solid var(--geel);background:var(--geel-bg);padding:9px 10px;margin-top:4px;font-size:11.5px}
+  .vervolg .box{width:18px;height:18px;border:2px solid var(--ink);flex:none;margin-top:1px}
+  .vervolg b{display:block}
+
+  .select{display:flex;align-items:center;justify-content:space-between;border:2px solid var(--line);background:#fff;padding:11px 11px;font-size:12.5px;font-weight:700;margin-bottom:8px}
+  .select svg{width:16px;height:16px;color:var(--muted)}
+
+  .escape{display:flex;align-items:stretch;border:2px dashed var(--line);background:#fff;min-height:52px;margin-top:4px}
+  .escape .mid{flex:1;display:flex;align-items:center;gap:10px;padding:8px 10px}
+  .escape .cirkel{width:34px;height:34px;border-radius:999px;flex:none;display:grid;place-items:center;background:var(--surface);color:var(--muted)}
+  .escape .cirkel svg{width:17px;height:17px}
+  .escape .kt b{font-size:12.5px;display:block}
+  .escape .kt small{font-size:10.5px;color:var(--muted);display:block;margin-top:1px}
+  .escape .pijl{align-self:center;color:var(--muted);padding-right:9px}
+  .escape .pijl svg{width:17px;height:17px}
+
+  .uitleg{max-width:880px;font-size:13.5px;color:#3a4654;line-height:1.65;margin-top:34px}
+  .uitleg h3{font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
+  .uitleg ul{padding-left:18px;margin:0 0 8px}
+  .uitleg li{margin-bottom:7px}
+  .weg{text-decoration:line-through;color:var(--rood)}
+  .vraag{background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent);padding:13px 15px;margin-top:14px}
+  .vraag b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<h1>Snel afsluiten &mdash; opnieuw ingericht</h1>
+<p class="lead">Geen foto/video-invoer meer bij snel afsluiten. Die staan al in je meldingen. Snel afsluiten wordt: een overzicht van je meldingen, een begeleidend schrijven, en versturen. Wil je tóch foto/video/handtekening, dan ga je via een knop alsnog naar de volledige oplevering. De volledige oplevering zelf blijft ongewijzigd.</p>
+
+<div class="flow">
+
+  <!-- 1. DETAIL -->
+  <div class="col">
+    <p class="cap">1. Klusdetail<small>C-idee, jouw titels, geen combi</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">KSV / Klus</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <div class="secline">Documenten (3)</div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Tekening keuken.pdf</b></div>
+      <div class="docrow"><span class="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span><b>Bestellijst.pdf</b></div>
+
+      <div class="phasehead"><span class="n">1</span> Meldingen tijdens de klus</div>
+      <p class="phasesub">Iets kapot of ontbrekend? Meld het, per stuk.</p>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Beschadiging of manco melden</button>
+      <div class="mitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt.</p></div>
+      <div class="mitem"><p class="mt" style="margin-top:0">Zijwand beschadigd.</p><p class="mf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg> 2 foto's</p></div>
+
+      <div class="divider"></div>
+      <div class="phasehead"><span class="n">2</span> Aan het einde van de klus</div>
+      <p class="phasesub">Klus klaar? Sluit af en maak het rapport.</p>
+      <div class="endcard"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Klus afsluiten</b><small>Daarna kies je: snel of volledig.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="bar"><button class="btn wit" style="width:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg> Terug naar kluspool</button></div>
+    </div>
+  </div>
+
+  <div class="arrow">&rarr;</div>
+
+  <!-- 2. KEUZE -->
+  <div class="col">
+    <p class="cap">2. Hoe afsluiten?<small>Ongewijzigd</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <a class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg> Terug</a>
+      <div class="hdr"><p class="eyebrow">Klus afsluiten</p><p class="title">Hoe sluit je af?</p><span class="accbar"></span></div>
+      <div style="height:12px"></div>
+      <div class="kaart"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h7l-1 7 9-11h-7z"/></svg></div><div class="kt"><b>Snel afsluiten</b><small>Meldingen + kort bericht. Zonder foto's opnieuw.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="kaart actie"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Afsluiten + rapport</b><small>Volledige oplevering, foto/video + handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+    </div>
+  </div>
+
+  <div class="arrow">&rarr;</div>
+
+  <!-- 3. NIEUW SNEL AFSLUITEN -->
+  <div class="col">
+    <p class="cap big">3. Snel afsluiten (nieuw)<small>Overzicht + begeleidend schrijven + versturen</small></p>
+    <div class="phone hero">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <a class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg> Terug</a>
+      <div class="hdr"><p class="eyebrow">Snel afsluiten</p><p class="title">Fam. Jansen</p><span class="accbar"></span></div>
+      <p class="phasesub" style="margin-top:11px">Je meldingen gaan mee in een kort rapport. Je hoeft geen foto's opnieuw te maken.</p>
+
+      <div class="secline">Dit gaat mee in het rapport</div>
+      <div class="recap">
+        <div class="rt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> 2 meldingen</div>
+        <div class="recapitem"><span class="badge spoed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.3"/></svg> Spoed</span><p class="mt">Kraan ontbreekt in levering.</p><p class="mf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg> 1 foto</p></div>
+        <div class="recapitem"><p class="mt" style="margin-top:0">Zijwand kastje beschadigd.</p><p class="mf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg> 2 foto's <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg> 1 video</p></div>
+      </div>
+
+      <div class="secline">Begeleidend bericht <span style="font-weight:500;text-transform:none;letter-spacing:0">(optioneel)</span></div>
+      <textarea>Korte toelichting voor de opdrachtgever&hellip;</textarea>
+      <span class="spraak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> Of inspreken</span>
+
+      <div class="vervolg" style="margin-top:14px"><span class="box"></span><span><b>Klus is niet af.</b>Laat de opdrachtgever weten dat er nog een vervolg komt.</span></div>
+
+      <div class="secline">Versturen</div>
+      <div class="select">Naar de opdrachtgever <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+      <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg> Verstuur kort rapport</button>
+
+      <div class="divider"></div>
+      <div class="escape"><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Toch foto, video of handtekening?</b><small>Ga naar de volledige oplevering.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div style="height:14px"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="uitleg">
+  <h3>Wat verandert er aan snel afsluiten</h3>
+  <ul>
+    <li><span class="weg">Blok "De oplevering" met foto's, video en opmerking</span> &mdash; weg. Dat was de dubbeling.</li>
+    <li><span class="weg">Blok "Voor de opdrachtgever" (interne foto/video/notitie)</span> &mdash; weg uit snel; hoort thuis in de volledige oplevering.</li>
+    <li><b>Nieuw: "Dit gaat mee in het rapport"</b> &mdash; een overzicht van je meldingen (met hun foto/video), zodat je ziet wat de opdrachtgever krijgt.</li>
+    <li><b>Begeleidend bericht</b> &mdash; één tekstveld (typen of inspreken) voor een korte toelichting. Dit hergebruikt het bestaande opmerking-veld, geen nieuw datamodel.</li>
+    <li><b>"Klus is niet af"</b> &mdash; blijft (het vervolg-vinkje).</li>
+    <li><b>Versturen</b> &mdash; blijft, maar kaal: ontvanger kiezen en versturen.</li>
+    <li><b>Ontsnap-knop</b> &mdash; "Toch foto/video/handtekening?" stuurt je naar de volledige oplevering. Geen doodlopend pad.</li>
+  </ul>
+  <h3>De volledige oplevering</h3>
+  <ul>
+    <li>Ongewijzigd. Daar staan de algemene bevindingen, overzichtsfoto's en video van het project, en handtekening + akkoord, precies zoals nu.</li>
+  </ul>
+  <div class="vraag">
+    <b>Jouw open punt &mdash; de ontsnap-knop.</b> Je twijfelde over "een knop die je alsnog naar het rapport doorstuurt". Ik heb hem als gestippelde kaart onderaan gezet ("Toch foto/video/handtekening? → volledige oplevering"). Mijn advies: hou hem, zodat snel afsluiten geen doodlopend pad is als je je bedenkt. Maar het is jouw keuze: <b>knop houden, of snel afsluiten echt kaal zonder uitweg?</b>
+  </div>
+</div>
+
+</body>
+</html>

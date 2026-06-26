@@ -18,7 +18,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Opgeleverde klus blijft groen op zijn dag op het planbord (geplaatst, niet als dubbele boeking, niet sleepbaar) | U | planbord.test (plaats + vindDubbeleBoekingen opgeleverd) | groen |
 | Archief-venster dashboard/planbord = 30 dagen (ARCHIEF_DAGEN, één bron) | U | dashboard-scope.test, db.test (getOpdrachtenVoorDashboard) | groen |
 | Heropenen opgeleverde klus → open + te plannen, instructie → werkomschrijving, "Heropend"-markering; opnieuw opleveren wist hem | U | db.test (heropenen + registreerZaakRapport), heropenen/route (instructie) | U groen; E door Rein |
-| Vervolg-bezoek: "Eerder op deze referentie" op monteur- én kantoor-detailpagina + "meerdere bezoeken"-hint in de werkpool | E | (visueel/RLS; nog door Rein e2e te dekken) | grotendeels |
+| Vervolg-bezoek: "Eerder op deze referentie" op monteur- én kantoor-detailpagina + "meerdere bezoeken"-hint in de kluspool | E | (visueel/RLS; nog door Rein e2e te dekken) | grotendeels |
 | Planbord drag-drop: plannen, verplaatsen, week schuiven | E | planbord.spec, planbord-extra.spec | groen |
 | Planbord koppelt klussen op account-id (toegewezen_aan), nooit onzichtbaar bij naam-mismatch + vangnet-rij; pool-inplanknop kiest geen monteur voor | E | planbord.spec (rendering + inplannen) | groen |
 | Planbord resize: rechterrand van een montage slepen wijzigt de duur (1 kolom = 1 werkdag), kapt visueel op vrijdag, telt door over de weekgrens, ondergrens 1 zichtbare kolom, max 20 | U | planbord.test (nieuweDuurNaResize) | groen |
@@ -45,10 +45,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Annuleren + mail naar monteur bij verstuurd | U, E, M | annuleren/route.test, annuleren.spec, mail-flows.spec | groen |
 | Gebruikersbeheer, rollen, uitnodigen/afmelden | U, M | mail-flows.spec (uitnodiging/afmelding) | grotendeels |
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
-| Rol-gates per pagina (dashboard/planbord/werkpool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
+| Rol-gates per pagina (dashboard/planbord/kluspool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |
 | Verwijderen met eigendom-slot (monteur alleen eigen ingeschoten klus) | U | opdrachten/[id]/route.test | groen |
-| Terugmelden aan kantoor (reden + toelichting, uit pool naar history, mail, logboek) | U, E | terugmeld-mail.test, terugmelden/route.test, werkpool.test, terugmelden.spec | groen |
+| Terugmelden aan kantoor (reden + toelichting, uit pool naar history, mail, logboek) | U, E | terugmeld-mail.test, terugmelden/route.test, kluspool.test, terugmelden.spec | groen |
 | Terugmelden zet de klus terug naar "te plannen" (status binnen + planning leeg) + blijvende poging-historie (blok 22, snapshot) | U, E | db.test (markeerTeruggemeld), terugmelden/route.test (snapshot), terugmelden.spec (status binnen + poging) | groen |
 | Kantoor ziet de terugmelding: filter-tab "Teruggemeld" + reden op kaart en in de planbord-pool | U, E | dashboard-lijst.test (pseudo-filter), terugmelden.spec (filter-chip + reden) | groen |
 | Herkansing-keten: opnieuw uitsturen wist de terugmeld-vlag → klus weer actief bij de ontvangende monteur | U, E | db.test (markeerVerzonden reset), terugmelden.spec (datalaag) | groen |
@@ -67,10 +67,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 
 | Feature / flow | Lagen | Testbestand(en) | Status |
 |---|---|---|---|
-| Werkpool: alleen eigen klussen (RLS), toegang afgeschermd | E | monteur.spec | groen |
-| Werkpool-zichtbaarheid bij kantoor-statuswijziging (geannuleerd/concept verborgen, afspraak + monteur vasthouden) | U, E | werkpool.test, opdracht-status.test, werkpool-zichtbaarheid.spec | groen |
+| Kluspool: alleen eigen klussen (RLS), toegang afgeschermd | E | monteur.spec | groen |
+| Kluspool-zichtbaarheid bij kantoor-statuswijziging (geannuleerd/concept verborgen, afspraak + monteur vasthouden) | U, E | kluspool.test, opdracht-status.test, kluspool-zichtbaarheid.spec | groen |
 | Bevestigen op de detailpagina | E | bevestigen.spec | groen |
-| Bevestigen vanaf de werkpool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
+| Bevestigen vanaf de kluspool-kaart (badge + snelknop, geen navigatie) | U, E | urgentie.test (bevestigBadgeConfig), bevestigen.spec | groen |
 | Zelf-invoer klus (gecombineerd: PDF voorvullen + handmatig, niets verplicht) | U, E | opdrachten/route.test, zelf-invoer.spec | groen |
 | Werk-omschrijving (typen + spraak): invoeren, tonen op detail, bewerken (eigen klus + kantoor), puur intern (niet in rapport) | U, E | db.test (createOpdracht/updateWerkomschrijving), opdrachten/route.test, opdrachten/[id]/werkomschrijving/route.test, zelf-invoer.spec | groen (E door Rein) |
 | Melding toevoegen (incl. spoed) + spoed-mail | U, M | mail-flows.spec (spoed) | grotendeels |
@@ -93,6 +93,19 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
+## Oplever-herinrichting + snel afsluiten (2026-06-24)
+
+| Feature / flow | Lagen | Testbestand(en) | Status |
+|---|---|---|---|
+| Klant-levering per opdrachtgever (eigen klus altijd; opdrachtgever-klus volgt de vlag) | U | klant-levering.test (magKlantLeveren) | groen |
+| Dashboard-schakelaar klant-levering aan/uit (beheerder, PATCH + persist) | E | opdrachtgever-instelling.spec | groen |
+| Opleveren: klant-kant gegate (keuzekaart "ook aan de klant"), "voor de opdrachtgever"-blok met foto/video/tekst, "Later versturen"-kaart | E | opleveren.spec, verzending.spec (klant-kant aanzetten) | groen |
+| Interne media (foto/video) voor de opdrachtgever: alleen in de zaak-versie, nooit klant | U | rapport.test (interneFotosVoorRapport/interneVideoVoorRapport) | groen |
+| Verkorte rapport-variant (snel afsluiten): zonder handtekening + controle; volledige PDF onveranderd | U | rapport.test (toonHandtekening/toonControleInRapport + verkorte PDF rendert) | groen |
+| Snel afsluiten = verkorte oplevering (verkorte PDF i.p.v. tekstmail); geen handtekening/voorvertoon | E | afgerond.spec (UI-smoke verkorte flow) | groen |
+| Vervolg-keten: verkorte PDF naar opdrachtgever, NIET opgeleverd, terug naar kantoor + "Vervolg plannen"-label; ad-hoc blijft bij monteur | E | afgerond.spec (db-keten registreerVerkortRapportVervolg + ontplan) | groen |
+| kluspool → kluspool app-breed (UI + codenamen), legacy ?kluspool=1 blijft werken | U, E | kluspool.test, kluspool-zichtbaarheid.spec + 11 specs | groen |
+
 ## Invoer-unificatie Part 2 (backend-fundament, blok 0/1/3.3/6)
 
 | Feature / flow | Lagen | Testbestand(en) | Status |
@@ -100,18 +113,18 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Parser leest order uit PDF **én** foto (Claude vision; mediaType-bewust) | U | claude-client.test (buildOrderContent + image-block), opdrachten/route.test (foto = order-foto, 200) | groen |
 | Samenvoegen geparste order met bestaand blok (vul leeg, met rust bij gelijk, botsing bij verschil, nooit stil overschrijven) | U | order-samenvoegen.test | groen |
 | Andere-referentie-waarschuwing (bijgevoegde PDF hoort bij andere keuken) | U | order-samenvoegen.test | groen |
-| Rol-bewuste invoer-bestemming (monteur → eigen werkpool; kantoor → zaak/te plannen) | U | invoer-bestemming.test | groen |
+| Rol-bewuste invoer-bestemming (monteur → eigen kluspool; kantoor → zaak/te plannen) | U | invoer-bestemming.test | groen |
 | Kantoor-correctie uitgebreide velden (e-mail/adviseur/leverweek/werkomschrijving), alleen als meegestuurd | U | opdrachten/[id]/route.test | groen |
 | Gat A: gegevens wijzigen ná versturen zet "gewijzigd, opnieuw versturen"-markering | U | opdrachten/[id]/route.test (gepland=markeren, binnen=niet) | groen |
 | Gat B: opgeleverde/geannuleerde klus niet meer bewerkbaar (409) | U | opdrachten/[id]/route.test | groen |
-| Rol-bewuste create in `/api/opdrachten` (monteur → werkpool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
+| Rol-bewuste create in `/api/opdrachten` (monteur → kluspool; kantoor → zaak/te plannen) | U | opdrachten/route.test (monteur/opdrachtgever/beheerder) | groen |
 | **Robuuste klus-invoer: meerdere/grote PDF's per klus, één orderbon leidend** (ref/telefoon uit de orderbon ook met tekeningen erbij) | U | order-groep.test (refKern 166/SP166, naamKern, union-find, voegOrderSamen), order-inlezen.test (per-bestand eerste pagina + groeperen, orderbon wint) | groen |
 | Client-upload buiten de 413-grens (signed upload-URL) + validatie | U | upload-validatie.test (aantal/type/grootte); storage.signDocumentUpload/downloadDocument | U groen; live door Rein |
 | Inlezen-route (paden → groepen) + aanmaken-route (per groep een klus + documenten, rol-bewust) | U | opdrachten/inlezen/route.test (groep-passthrough), opdrachten/aanmaken/route.test (2 klussen, juiste docs/primair, 401/400) | groen |
 | Twee-klussen-keuze in `KlusInvoer` (voorgegroepeerd, invoerder wijst per bestand toe) | E | (live door Rein: vereist echt parsen, niet in CI met dummy-keys) | open (handmatig pad via zelf-invoer/dashboard-nieuwe-klus groen) |
 | Werkomschrijving uit mail opgeschoond (handtekening/citaat/disclaimer eraf), PDF-order laat 'm leeg | U | mail-schoon.test, inbound/route.test (mailtekst in werk-veld) | groen |
 | Eerste pagina van een PDF (kosten/snelheid bij inlezen), valt terug op origineel | U | pdf-eerste-pagina.test | groen |
-| KlusInvoer handmatige invoer via nieuwe aanmaken-flow (monteur werkpool, kantoor dashboard) | E | zelf-invoer.spec, dashboard-nieuwe-klus.spec (POST /aanmaken, klus verschijnt) | groen (lokaal bevestigd) |
+| KlusInvoer handmatige invoer via nieuwe aanmaken-flow (monteur kluspool, kantoor dashboard) | E | zelf-invoer.spec, dashboard-nieuwe-klus.spec (POST /aanmaken, klus verschijnt) | groen (lokaal bevestigd) |
 | Gedeeld `KlusInvoer`-component, monteur-context (vervangt `OpdrachtAanmaken`, zelfde flow) | E | zelf-invoer.spec | groen (CI) |
 | Dashboard "Nieuwe klus" (kantoor-context), handmatig zonder PDF → in de lijst | E | dashboard-nieuwe-klus.spec | via CI |
 | Order toevoegen via "Order fotograferen" (camera op mobiel) + "Bestand kiezen" | E | zelf-invoer.spec (knop zichtbaar) | via CI |
@@ -129,7 +142,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
   toont de oplevering pas na de zaak-versie (privacy). (4) interne notitie wel in de zaak-, niet in de
   klant-PDF is unit-gedekt (rapport.test). De volledige keten t/m het dashboard-opleverblok loopt nu in
   `levenscyclus.spec`.
-- **❌ NOG OPEN: werkpool-geheugensteun "rapport naar zaak nog versturen"** (privé voor de monteur) is nog
+- **❌ NOG OPEN: kluspool-geheugensteun "rapport naar zaak nog versturen"** (privé voor de monteur) is nog
   niet gebouwd. Dit is een nieuwe UI-feature met ontwerpkeuzes, geen test; bewust niet 's nachts gebouwd.
   De twee verzendkaarten tonen de status al per kant op het oplever-scherm zelf. Aanbevolen volgende stap.
 - Component-test-laag (jsdom/RTL) bestaat niet; UI-gedrag hoort daarom in de Playwright-e2e.

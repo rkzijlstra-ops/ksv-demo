@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { magKlantLeveren } from "@/lib/klant-levering";
 import { OpleverFlow } from "@/components/OpleverFlow";
 import { OpleverTerugLink } from "@/components/OpleverTerugLink";
 
@@ -23,6 +24,12 @@ export default async function OpleverenPage({
   // Privacy-voorkeur van de monteur: waarschuwen bij versturen naar de klant (standaard aan).
   const profiel = userId ? await dbi.getProfiel(userId) : null;
   const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
+  // Mag deze klus ook aan de klant opgeleverd worden? Eigen klus altijd; opdrachtgever-klus volgt
+  // de instelling van die opdrachtgever (standaard aan, per opdrachtgever uit te zetten in het dashboard).
+  const opdrachtgever = opdracht.opdrachtgever_id
+    ? await dbi.getOpdrachtgever(opdracht.opdrachtgever_id)
+    : null;
+  const magKlant = magKlantLeveren(opdracht, opdrachtgever);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -63,6 +70,7 @@ export default async function OpleverenPage({
           opdrachtId={id}
           klantEmailVoorstel={opdracht.klant_email}
           waarschuwKlantZicht={waarschuwKlantZicht}
+          magKlantLeveren={magKlant}
         />
       </div>
     </main>

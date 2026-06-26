@@ -4,7 +4,7 @@ import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER as BEHEERDER_ACC, MONTEUR as MONTEUR_ACC } from "./test-env";
 
 /**
- * Browser-e2e voor de monteur-rol: hij ziet ALLEEN zijn eigen toegewezen klussen in de werkpool
+ * Browser-e2e voor de monteur-rol: hij ziet ALLEEN zijn eigen toegewezen klussen in de kluspool
  * (afscherming/RLS in de praktijk) en mag niet bij de kantoor-schermen (dashboard/planbord).
  * Draait onder de monteur-sessie (rk). Seedt eigen data en ruimt die op.
  */
@@ -57,24 +57,24 @@ test.afterEach(async () => {
   }
 });
 
-test("monteur ziet in de werkpool alleen zijn eigen klus, niet die van een ander", async ({ page }) => {
+test("monteur ziet in de kluspool alleen zijn eigen klus, niet die van een ander", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   await expect(page.getByText(mijnNaam)).toBeVisible();
   await expect(page.getByText(andersNaam)).toHaveCount(0);
 });
 
-test("monteur wordt weggestuurd van het dashboard naar zijn werkpool", async ({ page }) => {
+test("monteur wordt weggestuurd van het dashboard naar zijn kluspool", async ({ page }) => {
   await page.goto("/dashboard");
   // Wacht op de redirect (async door het laadscherm), lees de URL niet meteen af.
   await page.waitForURL((u) => new URL(u).pathname === "/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
 });
 
-test("monteur wordt weggestuurd van het planbord naar zijn werkpool", async ({ page }) => {
+test("monteur wordt weggestuurd van het planbord naar zijn kluspool", async ({ page }) => {
   await page.goto("/planbord");
   await page.waitForURL((u) => new URL(u).pathname === "/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
 });
 
 test("monteur mag niet bij het gebruikersbeheer (beheerder-only)", async ({ page }) => {

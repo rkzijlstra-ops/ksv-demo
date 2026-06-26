@@ -7,7 +7,7 @@ import { Check, Trash2, ChevronRight, Loader2, AlertCircle } from "lucide-react"
 
 /**
  * Eén voorstel in het "te verwerken"-bakje (binnengekomen per mail). De monteur kan het openen om de
- * gegevens en bijlagen te bekijken, bevestigen (dan wordt het een gewone klus in de werkpool) of
+ * gegevens en bijlagen te bekijken, bevestigen (dan wordt het een gewone klus in de kluspool) of
  * weggooien (soft-delete).
  */
 export function InboxItem({

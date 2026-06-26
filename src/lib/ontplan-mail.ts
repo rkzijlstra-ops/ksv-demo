@@ -14,7 +14,7 @@ export function ontplanningTekst(
   const afzender = organisatie.trim() || "Het planning-team";
   const text = `Hoi ${monteurNaam},
 
-De geplande klus voor ${klantNaam}${ref} is van je planning gehaald en staat niet meer in je werkpool. Mogelijk plannen we hem later opnieuw in; je krijgt dan vanzelf weer bericht.
+De geplande klus voor ${klantNaam}${ref} is van je planning gehaald en staat niet meer in je kluspool. Mogelijk plannen we hem later opnieuw in; je krijgt dan vanzelf weer bericht.
 
 ${afzender}`;
   return { subject, text };

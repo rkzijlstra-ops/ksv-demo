@@ -111,7 +111,7 @@ test("oplevering versturen mailt het rapport naar het ingestelde adres", async (
   await page.mouse.move(box.x + 110, box.y + 70, { steps: 8 });
   await page.mouse.move(box.x + 160, box.y + 40, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Klaar" }).click();
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
 
   // Rapport naar een leesbaar test-adres (eigen dropdown: open en kies "Anders").

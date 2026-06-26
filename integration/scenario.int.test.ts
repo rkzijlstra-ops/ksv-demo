@@ -67,7 +67,7 @@ beforeEach(wipe);
 afterAll(wipe);
 
 describe("Volume: 7 monteurs, veel montages over meerdere dagen", () => {
-  it("alle kantoor-opdrachten staan op het dashboard; per monteur klopt de werkpool", async () => {
+  it("alle kantoor-opdrachten staan op het dashboard; per monteur klopt de kluspool", async () => {
     // 14 montages: 2 per monteur, verspreid over de week.
     const perMonteur: Record<string, number> = {};
     for (let i = 0; i < 14; i++) {
@@ -87,15 +87,15 @@ describe("Volume: 7 monteurs, veel montages over meerdere dagen", () => {
     const dashboard = await db.getOpdrachtenVoorDashboard(PEIL);
     expect(dashboard).toHaveLength(14);
 
-    // Werkpool van M(1): alleen zijn eigen toegewezen klussen.
-    const werkpoolM1 = await db.getWerkpoolVoor(M(1));
-    expect(werkpoolM1).toHaveLength(perMonteur[M(1)]);
-    expect(werkpoolM1.every((o) => o.toegewezen_aan === M(1))).toBe(true);
+    // Kluspool van M(1): alleen zijn eigen toegewezen klussen.
+    const kluspoolM1 = await db.getKluspoolVoor(M(1));
+    expect(kluspoolM1).toHaveLength(perMonteur[M(1)]);
+    expect(kluspoolM1.every((o) => o.toegewezen_aan === M(1))).toBe(true);
   });
 });
 
 describe("Zaak-scheiding: ad-hoc (KKS) blijft uit het dashboard", () => {
-  it("een ad-hoc opdracht staat in de werkpool van de monteur, niet op het dashboard", async () => {
+  it("een ad-hoc opdracht staat in de kluspool van de monteur, niet op het dashboard", async () => {
     const m = MONTEURS[0];
     // Ad-hoc: geen zaak, direct toegewezen aan de monteur (zoals zelf-inschieten).
     const { id } = await db.createOpdracht({
@@ -118,8 +118,8 @@ describe("Zaak-scheiding: ad-hoc (KKS) blijft uit het dashboard", () => {
     expect(dashboard.map((o) => o.id)).toContain(kantoorId);
     expect(dashboard.map((o) => o.id)).not.toContain(id);
 
-    const werkpool = await db.getWerkpoolVoor(m.id);
-    expect(werkpool.map((o) => o.id)).toContain(id);
+    const kluspool = await db.getKluspoolVoor(m.id);
+    expect(kluspool.map((o) => o.id)).toContain(id);
   });
 });
 
@@ -206,7 +206,7 @@ describe("Vervolgservice: eerdere rapporten op referentie", () => {
 });
 
 describe("Status-flow en ontplannen", () => {
-  it("plan -> verstuur -> bevestig, en ontplannen haalt de klus echt uit de werkpool", async () => {
+  it("plan -> verstuur -> bevestig, en ontplannen haalt de klus echt uit de kluspool", async () => {
     const m = MONTEURS[2]; // Klaas, M(3)
     const id = await maakOpdracht({ klant: "Flow", ref: "SF1" });
     await db.planOpdracht(id, {
@@ -229,15 +229,15 @@ describe("Status-flow en ontplannen", () => {
     await db.bevestigOntvangst(id);
     expect((await db.getOpdrachtById(id))?.dashboard_status).toBe("bevestigd");
 
-    // De monteur ziet 'm nu in zijn werkpool.
-    expect((await db.getWerkpoolVoor(m.id)).map((o) => o.id)).toContain(id);
+    // De monteur ziet 'm nu in zijn kluspool.
+    expect((await db.getKluspoolVoor(m.id)).map((o) => o.id)).toContain(id);
 
-    // Ontplannen: terug naar de pool. De monteur mag 'm daarna NIET meer in zijn werkpool zien.
+    // Ontplannen: terug naar de pool. De monteur mag 'm daarna NIET meer in zijn kluspool zien.
     await db.ontplanOpdracht(id);
     const o = await db.getOpdrachtById(id);
     expect(o?.dashboard_status).toBe("binnen");
     expect(o?.toegewezen_aan).toBeNull();
-    expect((await db.getWerkpoolVoor(m.id)).map((x) => x.id)).not.toContain(id);
+    expect((await db.getKluspoolVoor(m.id)).map((x) => x.id)).not.toContain(id);
   });
 });
 
@@ -271,10 +271,10 @@ describe("Dubbele-boeking detectie tegen echte data", () => {
 });
 
 describe("Herverdelen tussen monteurs", () => {
-  it("verplaatsen naar een andere monteur verhuist de klus tussen de werkpools", async () => {
+  it("verplaatsen naar een andere monteur verhuist de klus tussen de kluspools", async () => {
     const id = await maakOpdracht({ klant: "Herverdeel", ref: "H1" });
     await db.planOpdracht(id, { toegewezen_aan: M(1), monteur_naam: "Jan", startdatum: "2026-06-16", starttijd: null, duur_dagen: 1 });
-    expect((await db.getWerkpoolVoor(M(1))).map((o) => o.id)).toContain(id);
+    expect((await db.getKluspoolVoor(M(1))).map((o) => o.id)).toContain(id);
 
     await db.wijzigOpdracht(
       id,
@@ -282,17 +282,17 @@ describe("Herverdelen tussen monteurs", () => {
       "concept_gepland",
       null,
     );
-    expect((await db.getWerkpoolVoor(M(1))).map((o) => o.id)).not.toContain(id);
-    expect((await db.getWerkpoolVoor(M(5))).map((o) => o.id)).toContain(id);
+    expect((await db.getKluspoolVoor(M(1))).map((o) => o.id)).not.toContain(id);
+    expect((await db.getKluspoolVoor(M(5))).map((o) => o.id)).toContain(id);
   });
 });
 
 describe("Soft-delete (prullenbak)", () => {
-  it("een verwijderde opdracht verdwijnt uit dashboard en werkpool", async () => {
+  it("een verwijderde opdracht verdwijnt uit dashboard en kluspool", async () => {
     const id = await maakOpdracht({ klant: "Weg", ref: "W1" });
     await db.planOpdracht(id, { toegewezen_aan: M(6), monteur_naam: "Tom", startdatum: "2026-06-16", starttijd: null, duur_dagen: 1 });
     await db.verwijderOpdracht(id);
     expect((await db.getOpdrachtenVoorDashboard(PEIL)).map((o) => o.id)).not.toContain(id);
-    expect((await db.getWerkpoolVoor(M(6))).map((o) => o.id)).not.toContain(id);
+    expect((await db.getKluspoolVoor(M(6))).map((o) => o.id)).not.toContain(id);
   });
 });

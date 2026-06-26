@@ -7,7 +7,7 @@ import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * De monteur meldt een aan hem toegewezen klus terug aan kantoor (niet doorgegaan, met reden). De klus
- * gaat uit zijn actieve werkpool (in zijn history) en komt bij kantoor met een markering; kantoor
+ * gaat uit zijn actieve kluspool (in zijn history) en komt bij kantoor met een markering; kantoor
  * krijgt automatisch bericht. De klus verdwijnt nooit stil. Alleen de toegewezen monteur, met een
  * geldige reden. Best-effort mail; de terugmelding blijft staan ook als de mail faalt.
  */

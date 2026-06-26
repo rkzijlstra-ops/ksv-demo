@@ -70,18 +70,18 @@ test("verzet: na opnieuw versturen ziet de monteur de NIEUWE datum en moet hij h
   await expect(page.getByText(`Uitvoer: ${formatDatumKort(nieuw)}`)).toBeVisible();
   await expect(page.getByText(`Uitvoer: ${formatDatumKort(oud)}`)).toHaveCount(0);
 
-  // En in de werkpool staat hij weer op "Te bevestigen".
+  // En in de kluspool staat hij weer op "Te bevestigen".
   await page.goto("/");
   const kaart = page.locator(`a[href="/opdracht/${id}"]`);
   await expect(kaart).toBeVisible();
   await expect(kaart.getByText("Te bevestigen")).toBeVisible();
 });
 
-test("wissel: na opnieuw versturen naar een andere monteur verdwijnt de klus uit de werkpool van de eerste", async ({ page }) => {
+test("wissel: na opnieuw versturen naar een andere monteur verdwijnt de klus uit de kluspool van de eerste", async ({ page }) => {
   const klant = `WISSEL ${Date.now()}`;
   id = await seedVerstuurdBevestigd(klant, "2026-06-12");
 
-  // Vóór de herzending ziet RK de klus nog (gedekt in werkpool-zichtbaarheid gat 5). Nu de wissel + herzending:
+  // Vóór de herzending ziet RK de klus nog (gedekt in kluspool-zichtbaarheid gat 5). Nu de wissel + herzending:
   await db.wijzigOpdracht(
     id,
     { toegewezen_aan: ANDERE, monteur_naam: "Andere Monteur", startdatum: "2026-06-12", starttijd: null, duur_dagen: 1 },
@@ -94,8 +94,8 @@ test("wissel: na opnieuw versturen naar een andere monteur verdwijnt de klus uit
   const { data } = await admin.from("meldingen").select("toegewezen_aan").eq("id", id).single();
   expect(data?.toegewezen_aan).toBe(ANDERE);
 
-  // Monteur-UI (RK): de klus is uit zijn werkpool verdwenen.
+  // Monteur-UI (RK): de klus is uit zijn kluspool verdwenen.
   await page.goto("/");
-  await expect(page.getByText("Werkpool")).toBeVisible();
+  await expect(page.getByText("Kluspool")).toBeVisible();
   await expect(page.getByText(klant)).toHaveCount(0);
 });

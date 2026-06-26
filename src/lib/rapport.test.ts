@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport } from "./rapport";
+import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport, interneFotosVoorRapport, interneVideoVoorRapport, toonHandtekeningInRapport, toonControleInRapport } from "./rapport";
 import type { Melding, Oplevering } from "./db";
+import type { ControlePunt } from "./oplever-controle";
 
 // Echte PDF-rendering (pdf-lib) is CPU-zwaar; één render zit lokaal rond de 5s en tikt op een koude
 // CI-runner over de default-timeout van 5000ms. Ruimer zetten voor dit bestand; de pure-functie-tests
@@ -43,6 +44,8 @@ function maakOplevering(over: Partial<Oplevering>): Oplevering {
     handtekening_url: null,
     opmerking: null,
     interne_opmerking: null,
+    interne_foto_urls: [],
+    interne_video_url: null,
     rapport_email: null,
     rapport_url: null,
     zaak_rapport_verzonden_at: null,
@@ -333,6 +336,42 @@ describe("genereerRapportPdf met interne notitie (beide doelgroepen renderen gel
 
   it("rendert een geldige KLANT-PDF zonder de interne notitie te raken", async () => {
     const bytes = await genereerRapportPdf(maakMelding({}), [], opl(), null, "klant");
+    expect(startsWithPdf(bytes)).toBe(true);
+  });
+})
+
+describe("interne media in het rapport", () => {
+  it("interne foto's alleen voor de zaak, nooit voor de klant", () => {
+    const opl = maakOplevering({ interne_foto_urls: ["https://x/a.jpg", "https://x/b.jpg"] });
+    expect(interneFotosVoorRapport(opl, "zaak")).toEqual(["https://x/a.jpg", "https://x/b.jpg"]);
+    expect(interneFotosVoorRapport(opl, "klant")).toEqual([]);
+  });
+
+  it("interne video alleen voor de zaak, nooit voor de klant", () => {
+    const opl = maakOplevering({ interne_video_url: "https://x/intern.mp4" });
+    expect(interneVideoVoorRapport(opl, "zaak")).toBe("https://x/intern.mp4");
+    expect(interneVideoVoorRapport(opl, "klant")).toBeNull();
+  });
+})
+
+describe("verkorte rapport-variant", () => {
+  const controle: ControlePunt[] = [{ punt: "Alles afgetekend", akkoord: true }];
+
+  it("verkorting verbergt handtekening en controle, ook als de data er is", () => {
+    const opl = maakOplevering({ handtekening_url: "https://x/h.png", controle });
+    expect(toonHandtekeningInRapport(opl, "verkorting")).toBe(false);
+    expect(toonControleInRapport(controle, "verkorting")).toBe(false);
+  });
+
+  it("volledig toont handtekening en controle wanneer de data er is", () => {
+    const opl = maakOplevering({ handtekening_url: "https://x/h.png", controle });
+    expect(toonHandtekeningInRapport(opl, "volledig")).toBe(true);
+    expect(toonControleInRapport(controle, "volledig")).toBe(true);
+  });
+
+  it("rendert een geldige verkorte PDF", async () => {
+    const opl = maakOplevering({ handtekening_url: "https://x/h.png", controle });
+    const bytes = await genereerRapportPdf(maakMelding({}), [], opl, null, "zaak", "verkorting");
     expect(startsWithPdf(bytes)).toBe(true);
   });
 })

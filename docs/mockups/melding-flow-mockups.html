@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Melding-flow mockups (richtingen voor nieuwe-gebruiker-duidelijkheid)</title>
+<style>
+  :root{
+    --surface:#f1f5f9; --ink:#0f172a; --muted:#475569; --line:#cbd5e1;
+    --primary:#27272a; --accent:#f97316; --rood:#dc2626; --geel:#fbbf24;
+    --success:#16a34a; --geel-bg:#fffbeb;
+    --accent-zacht:rgba(249,115,22,.13); --succ-zacht:rgba(22,163,74,.13);
+    --rood-zacht:rgba(220,38,38,.12); --grijs-zacht:rgba(71,85,105,.1);
+    --paars:#7c3aed; --paars-zacht:rgba(124,58,237,.12);
+    --mono:ui-monospace,"Cascadia Code","DM Mono",Consolas,Menlo,monospace;
+    --sans:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe5ec;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:26px 20px 80px}
+  h1{font-family:var(--mono);font-size:21px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em}
+  .lead{color:#3a4654;max-width:920px;line-height:1.6;margin:0 0 8px;font-size:14px}
+  .legenda{max-width:920px;font-size:13px;color:#3a4654;background:#fff;border:1px solid var(--line);padding:12px 14px;margin:14px 0 26px;line-height:1.6}
+  .legenda b{color:var(--ink)}
+
+  .blok{margin:0 0 14px}
+  .bnum{display:inline-grid;place-items:center;width:26px;height:26px;background:var(--primary);color:#fff;font-family:var(--mono);font-weight:800;font-size:14px;margin-right:8px;vertical-align:middle}
+  .btitle{font-family:var(--mono);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;display:inline;vertical-align:middle}
+  .bsum{max-width:920px;font-size:13.5px;color:#3a4654;line-height:1.6;margin:8px 0 4px}
+  .vw{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 6px}
+  .vw .pro,.vw .con{flex:1 1 300px;border:1px solid var(--line);background:#fff;padding:10px 12px;font-size:12.5px;line-height:1.55}
+  .vw .pro{border-left:5px solid var(--success)}
+  .vw .con{border-left:5px solid var(--rood)}
+  .vw h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .vw ul{margin:0;padding-left:16px}
+
+  .row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin:14px 0 36px;border-top:2px dashed #b9c3d0;padding-top:18px}
+  .col{flex:0 0 322px}
+  .cap{font-weight:700;font-size:13px;margin:0 0 8px;color:#1d2530}
+  .cap small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.45}
+
+  .phone{background:#fff;border:2px solid var(--line);padding:14px;position:relative}
+  .status{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono);padding:0 2px 10px}
+  .hdr{position:relative;border:2px solid var(--line);background:#fff;padding:12px 14px 14px;margin-bottom:12px}
+  .eyebrow{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin:0}
+  .title{font-family:var(--mono);font-size:21px;font-weight:800;letter-spacing:-.01em;margin:3px 0 0;line-height:1.05}
+  .subt{font-size:12px;color:var(--muted);margin:3px 0 0}
+  .accbar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--accent)}
+  .accbar.succ{background:var(--success)}
+
+  .h{font-family:var(--mono);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+  .h small{display:block;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11.5px;margin-top:2px;font-family:var(--sans)}
+  .p{font-size:13px;color:var(--ink);line-height:1.5;margin:8px 0}
+  .pm{font-size:12px;color:var(--muted);line-height:1.5}
+
+  svg{width:1em;height:1em;display:block}
+  .ico{display:inline-grid;place-items:center}
+
+  /* knoppen */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border:none;background:var(--primary);color:#fff;font-family:var(--sans);font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.05em;padding:0 12px;position:relative;cursor:default}
+  .btn .ico svg{width:20px;height:20px}
+  .btn::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent)}
+  .btn.accent{background:var(--accent)}.btn.accent::after{background:var(--primary)}
+  .btn.rood{background:var(--rood)}.btn.rood::after{background:#7f1d1d}
+  .btn.wit{background:#fff;color:var(--primary);border:2px solid var(--primary)}.btn.wit::after{display:none}
+  .btn.paars{background:var(--paars)}.btn.paars::after{background:#4c1d95}
+
+  /* lijst-item melding */
+  .mitem{border:1px solid var(--line);background:#fff;padding:10px 11px;margin-bottom:8px}
+  .mitem .top{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px}
+  .badge.spoed{background:var(--rood);color:#fff}
+  .badge.gewoon{background:var(--grijs-zacht);color:var(--muted)}
+  .mitem .mt{font-size:13px;margin:6px 0 0;color:var(--ink)}
+  .mitem .mf{font-size:11px;color:var(--muted);margin-top:4px;display:flex;gap:10px}
+
+  .media{display:flex;gap:8px;margin-top:8px}
+  .mbtn{flex:1;min-height:58px;border:2px dashed var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:var(--mono);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink)}
+  .mbtn .ico{color:var(--accent)}.mbtn .ico svg{width:21px;height:21px}
+  .mbtn.nieuw{border-color:var(--accent);background:var(--accent-zacht)}
+  .nieuwtag{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:800;color:#fff;background:var(--accent);padding:1px 5px;margin-left:6px;vertical-align:middle;letter-spacing:.05em}
+  textarea{width:100%;border:2px solid var(--line);background:#fff;padding:9px 10px;font:inherit;font-size:13px;color:var(--muted);resize:none;min-height:46px;margin-top:8px}
+  .lbl{font-size:13px;font-weight:700;color:var(--ink);margin-top:14px;display:block}
+
+  .spoedrow{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .spoedbtn{display:inline-flex;align-items:center;gap:7px;min-height:46px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:13px;padding:0 14px}
+  .spoedbtn .ico{color:var(--rood)}.spoedbtn .ico svg{width:18px;height:18px}
+  .help{width:34px;height:34px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted)}
+  .uitleg{margin-top:8px;background:var(--surface);padding:9px 11px;font-size:11.5px;color:var(--ink);line-height:1.5}
+
+  /* keuzekaart (afsluiten) */
+  .kaart{display:flex;align-items:stretch;border:2px solid var(--line);background:#fff;min-height:58px;margin-bottom:9px}
+  .kaart .streep{width:6px;flex:none;background:var(--muted)}
+  .kaart.actie .streep{background:var(--accent)}
+  .kaart.neutr .streep{background:var(--muted)}
+  .kaart .mid{flex:1;display:flex;align-items:center;gap:11px;padding:9px 11px}
+  .kaart .cirkel{width:38px;height:38px;border-radius:999px;flex:none;display:grid;place-items:center;background:var(--grijs-zacht);color:var(--muted)}
+  .kaart.actie .cirkel{background:var(--accent-zacht);color:var(--accent)}
+  .kaart .cirkel svg{width:19px;height:19px}
+  .kaart .kt{flex:1;min-width:0}
+  .kaart .kt b{font-size:14px;display:block}
+  .kaart .kt small{font-size:11.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px}
+  .kaart .pijl{align-self:center;color:var(--muted);padding-right:10px}
+  .kaart .pijl svg{width:20px;height:20px}
+
+  .recap{border:2px solid var(--accent);background:var(--accent-zacht);padding:11px 12px;margin-bottom:12px}
+  .recap .rt{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
+  .recap ul{margin:8px 0 0;padding-left:0;list-style:none}
+  .recap li{font-size:12.5px;color:var(--ink);padding:4px 0;border-top:1px solid rgba(124,58,237,.18);display:flex;gap:7px;align-items:center}
+  .recap li:first-child{border-top:none}
+  .recap .badge{flex:none}
+
+  /* stepper */
+  .stepper{display:flex;gap:4px;margin-bottom:14px}
+  .step{flex:1;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);padding-bottom:8px;border-bottom:4px solid var(--line)}
+  .step.on{color:var(--accent);border-color:var(--accent)}
+  .step.done{color:var(--success);border-color:var(--success)}
+
+  .tabbar{display:flex;gap:10px;margin-top:14px;border-top:2px solid var(--line);padding-top:12px}
+  .tabbar .btn{min-height:46px;font-size:12px}
+
+  .divider{height:1px;background:var(--line);margin:16px 0}
+  .arrowflow{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:700;margin:6px 0 12px}
+  .arrowflow svg{width:16px;height:16px}
+</style>
+</head>
+<body>
+
+<h1>Melding-flow &mdash; drie richtingen</h1>
+<p class="lead">Doel: een nieuwe monteur snapt meteen het verschil tussen <b>melden</b> (beschadiging of manco, kan op elk moment) en <b>opleveren</b> (de klus afronden, aan het eind). Spoed blijft het directe kanaal naar de opdrachtgever. De inhoud verandert niet: een melding voer je niet nog eens in bij het opleveren. Het gaat puur om de flow, de taal en de schermen.</p>
+
+<div class="legenda">
+  <b>Wat is wat (afgesproken):</b><br>
+  &bull; <b>Melding</b> = beschadiging of manco, per stuk gemeld met foto/tekst (en nieuw: video). De opdrachtgever moet er actie op nemen, bijvoorbeeld opnieuw bestellen.<br>
+  &bull; <b>Spoed</b> = zelfde melding, maar tijdkritisch. Gaat meteen los naar de opdrachtgever zodat die nog op tijd kan handelen (kraan maandag gemist, dinsdag binnen, alsnog gemonteerd).<br>
+  &bull; <b>Opleveren / afsluiten</b> = de klus netjes afronden, met foto/video en eventueel handtekening. Iets anders dan een melding.<br>
+  <span style="color:var(--accent);font-weight:700">Oranje "NIEUW"</span> = video toevoegen aan een melding, in alle drie de richtingen meegenomen.
+</div>
+
+<!-- ============ NU ============ -->
+<div class="blok">
+  <span class="bnum">0</span><span class="btitle">Nu &mdash; hoe het vandaag is</span>
+</div>
+<p class="bsum">Op de klusdetailpagina staat "Melding toevoegen" met de lijst eronder. In de onderbalk zit "Klus afsluiten". Een nieuweling ziet twee losse acties zonder uitleg wat het verschil is. Geen video op meldingen.</p>
+<div class="row">
+  <div class="col">
+    <p class="cap">Klusdetail (onderaan)</p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="h">Meldingen (2)</div>
+      <button class="btn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span> Melding toevoegen</button>
+      <div style="height:10px"></div>
+      <div class="mitem"><div class="top"><span class="badge spoed">Spoed verstuurd</span></div><p class="mt">Kraan ontbreekt in levering.</p><div class="mf"><span>1 foto</span></div></div>
+      <div class="mitem"><div class="top"><span class="badge gewoon">Melding</span></div><p class="mt">Zijwand kastje beschadigd.</p><div class="mf"><span>2 foto's</span></div></div>
+      <div class="tabbar">
+        <button class="btn wit">&larr; Kluspool</button>
+        <button class="btn">Klus afsluiten &rarr;</button>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <p class="cap">Afsluiten</p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">Klus afsluiten</p><p class="title">Hoe sluit je af?</p><span class="accbar"></span></div>
+      <div class="kaart neutr"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h7l-1 7 9-11h-7z"/></svg></div><div class="kt"><b>Snel afsluiten</b><small>Verkort rapport, zonder handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="kaart actie"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Afsluiten + rapport</b><small>Volledige oplevering, met foto/video en handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ A ============ -->
+<div class="blok">
+  <span class="bnum">A</span><span class="btitle">Aankleden waar het staat</span>
+</div>
+<p class="bsum">Zelfde structuur, maar de taal en het uiterlijk maken het verschil meteen duidelijk. "Melding" wordt "Beschadiging of manco melden", met een zin eronder die uitlegt wat het is. Spoed krijgt een korte uitleg in beeld. Video erbij. Kleinste verbouwing, laagste risico.</p>
+<div class="vw">
+  <div class="pro"><h4>Voordeel</h4><ul><li>Snel te bouwen, weinig risico op nieuwe bugs.</li><li>Bestaande gewoontes blijven; alleen duidelijker.</li></ul></div>
+  <div class="con"><h4>Nadeel</h4><ul><li>Twee aparte acties blijven naast elkaar; de samenhang met afsluiten leg je niet expliciet.</li></ul></div>
+</div>
+<div class="row">
+  <div class="col">
+    <p class="cap">Klusdetail (onderaan)<small>Duidelijke sectie + zelfsprekende knop</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="h">Beschadigingen &amp; manco's (2)<small>Iets kapot, beschadigd of ontbrekend? Meld het hier, per stuk.</small></div>
+      <button class="btn accent"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 16.5v.4"/></svg></span> Beschadiging of manco melden</button>
+      <div style="height:10px"></div>
+      <div class="mitem"><div class="top"><span class="badge spoed">Spoed verstuurd</span></div><p class="mt">Kraan ontbreekt in levering.</p><div class="mf"><span>1 foto</span></div></div>
+      <div class="mitem"><div class="top"><span class="badge gewoon">Manco</span></div><p class="mt">Zijwand kastje beschadigd.</p><div class="mf"><span>2 foto's</span><span>1 video</span></div></div>
+      <div class="tabbar">
+        <button class="btn wit">&larr; Kluspool</button>
+        <button class="btn">Klus afsluiten &rarr;</button>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <p class="cap">Melding maken<small>Video erbij + spoed uitgelegd in beeld</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">Melden</p><p class="title">Beschadiging of manco</p><p class="subt">Voor de fam. Jansen (ref 4821)</p><span class="accbar"></span></div>
+      <span class="lbl">Foto's en video <span class="nieuwtag">NIEUW: video</span></span>
+      <div class="media">
+        <div class="mbtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg></span>Foto</div>
+        <div class="mbtn nieuw"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg></span>Video</div>
+      </div>
+      <span class="lbl">Wat is er aan de hand?</span>
+      <textarea>Typ of spreek je melding in&hellip;</textarea>
+      <div class="spoedrow">
+        <span class="spoedbtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17v.4"/></svg></span> Spoed</span>
+        <span class="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17v.4"/></svg></span>
+      </div>
+      <div class="uitleg">Spoed = nu meteen naar de opdrachtgever, zodat hij nog op tijd kan handelen (bijv. een ontbrekend onderdeel nabestellen). Niet-spoed komt gewoon in het eindrapport.</div>
+      <div style="height:12px"></div>
+      <button class="btn accent">Toevoegen aan rapport</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ B ============ -->
+<div class="blok">
+  <span class="bnum">B</span><span class="btitle">Afrond-hub: alles komt samen aan het eind</span>
+</div>
+<p class="bsum">Melden kan nog steeds op elk moment tijdens de klus (knop blijft op het detail). Maar "Klus afsluiten" leidt nu naar één hub die eerst je meldingen samenvat (met "+ nog een melden"), en daaronder de keuze hoe je oplevert. Zo zie je aan het eind in één scherm hoe melden en opleveren samenhangen.</p>
+<div class="vw">
+  <div class="pro"><h4>Voordeel</h4><ul><li>Eén logisch eindmoment; de nieuweling ziet het verband.</li><li>Melden tussendoor blijft gewoon mogelijk.</li><li>Laatste check op je meldingen vlak voor je oplevert.</li></ul></div>
+  <div class="con"><h4>Nadeel</h4><ul><li>Eén scherm extra in de afrond-route.</li><li>Iets meer bouwwerk dan A.</li></ul></div>
+</div>
+<div class="row">
+  <div class="col">
+    <p class="cap">Klusdetail<small>Melden tussendoor blijft</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="h">Beschadigingen &amp; manco's (2)<small>Iets kapot of ontbrekend? Meld het hier, ook tussendoor.</small></div>
+      <button class="btn accent"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span> Melding toevoegen</button>
+      <div style="height:10px"></div>
+      <div class="mitem"><div class="top"><span class="badge spoed">Spoed verstuurd</span></div><p class="mt">Kraan ontbreekt in levering.</p></div>
+      <div class="mitem"><div class="top"><span class="badge gewoon">Manco</span></div><p class="mt">Zijwand kastje beschadigd.</p></div>
+      <div class="tabbar">
+        <button class="btn wit">&larr; Kluspool</button>
+        <button class="btn">Klus afsluiten &rarr;</button>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <p class="cap">Afrond-hub<small>Meldingen-recap + keuze opleveren</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow">Klus afronden</p><p class="title">Klaar om af te sluiten?</p><span class="accbar"></span></div>
+      <div class="recap">
+        <div class="rt"><span class="ico" style="color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> 2 meldingen op deze klus</div>
+        <ul>
+          <li><span class="badge spoed">Spoed</span> Kraan ontbreekt</li>
+          <li><span class="badge gewoon">Manco</span> Zijwand beschadigd</li>
+        </ul>
+        <div style="height:9px"></div>
+        <button class="btn wit" style="min-height:42px;font-size:12px"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span> Nog een melding toevoegen</button>
+      </div>
+      <div class="arrowflow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg> En dan opleveren:</div>
+      <div class="kaart neutr"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h7l-1 7 9-11h-7z"/></svg></div><div class="kt"><b>Snel afsluiten</b><small>Verkort rapport, zonder handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="kaart actie"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Afsluiten + rapport</b><small>Volledige oplevering met handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ C ============ -->
+<div class="blok">
+  <span class="bnum">C</span><span class="btitle">Twee duidelijke werelden</span>
+</div>
+<p class="bsum">De app-taal scheidt expliciet twee dingen, elk met eigen kleur en icoon, overal consequent: <b>Melden</b> (problemen, kan altijd, accent-oranje) en <b>Opleveren</b> (afronden, succes-groen). Op het detail staan ze als twee duidelijk verschillende blokken, niet als rijtje gelijke knoppen. Een nieuweling leest het verschil van het scherm af.</p>
+<div class="vw">
+  <div class="pro"><h4>Voordeel</h4><ul><li>Sterkst voor begrip: kleur en vorm vertellen het verhaal.</li><li>Consequent door de hele app door te trekken.</li></ul></div>
+  <div class="con"><h4>Nadeel</h4><ul><li>Meeste ontwerp- en bouwwerk (kleur/iconen overal).</li><li>Raakt meer schermen dan A of B.</li></ul></div>
+</div>
+<div class="row">
+  <div class="col">
+    <p class="cap">Klusdetail<small>Twee blokken, visueel verschillend</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="h" style="color:var(--accent)">1 &middot; Tijdens de klus</div>
+      <div class="kaart actie"><div class="streep"></div><div class="mid"><div class="cirkel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.4"/></svg></div><div class="kt"><b>Beschadiging of manco melden</b><small>Foto/video + tekst. Spoed gaat meteen los.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+      <div class="mitem"><div class="top"><span class="badge spoed">Spoed</span></div><p class="mt">Kraan ontbreekt.</p></div>
+      <div class="mitem"><div class="top"><span class="badge gewoon">Manco</span></div><p class="mt">Zijwand beschadigd.</p></div>
+      <div class="divider"></div>
+      <div class="h" style="color:var(--success)">2 &middot; Aan het eind</div>
+      <div class="kaart" style="border-color:var(--success)"><div class="streep" style="background:var(--success)"></div><div class="mid"><div class="cirkel" style="background:var(--succ-zacht);color:var(--success)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 13l2 2 4-4"/></svg></div><div class="kt"><b>Klus opleveren</b><small>Afronden met rapport en eventueel handtekening.</small></div></div><span class="pijl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+    </div>
+  </div>
+  <div class="col">
+    <p class="cap">Opleveren (groene wereld)<small>Toont meldingen ter controle, geen herinvoer</small></p>
+    <div class="phone">
+      <div class="status"><span>09:41</span><span>Kluslus</span></div>
+      <div class="hdr"><p class="eyebrow" style="color:var(--success)">Opleveren</p><p class="title">Klus afronden</p><p class="subt">Fam. Jansen (ref 4821)</p><span class="accbar succ"></span></div>
+      <div class="recap" style="border-color:var(--success);background:var(--succ-zacht)">
+        <div class="rt"><span class="ico" style="color:var(--success)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg></span> 2 meldingen gaan mee in het rapport</div>
+        <ul>
+          <li><span class="badge spoed">Spoed</span> Kraan ontbreekt</li>
+          <li><span class="badge gewoon">Manco</span> Zijwand beschadigd</li>
+        </ul>
+      </div>
+      <span class="lbl">Foto's en video van de oplevering</span>
+      <div class="media">
+        <div class="mbtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z"/><circle cx="12" cy="13" r="3.5"/></svg></span>Foto</div>
+        <div class="mbtn"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></svg></span>Video</div>
+      </div>
+      <div style="height:12px"></div>
+      <button class="btn" style="background:var(--success)">Oplevering versturen</button>
+    </div>
+  </div>
+</div>
+
+<p class="lead" style="margin-top:10px"><b>Te kiezen:</b> A (snel, duidelijke taal), B (één afrond-hub die het verband legt), of C (twee herkenbare werelden door de hele app). Ze kunnen ook combineren: bijvoorbeeld de taal van A + de hub van B. Wijs aan wat goed voelt, dan werk ik die richting uit tot een ontwerp.</p>
+
+</body>
+</html>

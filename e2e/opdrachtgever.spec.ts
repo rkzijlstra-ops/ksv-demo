@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER as BEHEERDER_ACC } from "./tes
 /**
  * Browser-e2e voor de opdrachtgever-rol (Ed): hij ziet op het dashboard alleen de opdrachten van
  * ZIJN zaak, niet ad-hoc klussen en niet die van een andere zaak (zaak-scheiding + RLS in de
- * praktijk), en hij mag niet bij de monteur-werkpool. Draait onder een tijdelijke test-opdrachtgever
+ * praktijk), en hij mag niet bij de monteur-kluspool. Draait onder een tijdelijke test-opdrachtgever
  * (gekoppeld aan de standaard-zaak), die global-setup aanmaakt en global-teardown weer opruimt.
  */
 
@@ -83,7 +83,7 @@ test("opdrachtgever mag bij het planbord", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Planbord" })).toBeVisible();
 });
 
-test("opdrachtgever wordt weggestuurd van de monteur-werkpool naar zijn dashboard", async ({ page }) => {
+test("opdrachtgever wordt weggestuurd van de monteur-kluspool naar zijn dashboard", async ({ page }) => {
   await page.goto("/");
   // Wacht op de redirect (async door het laadscherm), lees de URL niet meteen af.
   await page.waitForURL((u) => new URL(u).pathname === "/dashboard");

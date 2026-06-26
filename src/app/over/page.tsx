@@ -7,7 +7,7 @@ export const dynamic = "force-static";
 export default function OverPage() {
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
-      <TerugKnop href="/" label="Werkpool" />
+      <TerugKnop href="/" label="Kluspool" />
 
       <header className="relative mt-2 mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Over de app</p>
@@ -21,7 +21,7 @@ export default function OverPage() {
           <p className="text-ink-muted">
             Je gebruikt de app voor twee soorten klussen: het <b>monteren van een nieuwe keuken</b>
             {" "}en <b>servicewerk en nazorg</b> (reparaties, manco&apos;s, afmontage). Je klussen
-            staan in de werkpool. Je voegt ze toe via een PDF of foto, of handmatig. Bij elke
+            staan in de kluspool. Je voegt ze toe via een PDF of foto, of handmatig. Bij elke
             klus kun je meldingen maken en de klus opleveren met bewijs. Dezelfde oplever-flow
             werkt voor allebei.
           </p>

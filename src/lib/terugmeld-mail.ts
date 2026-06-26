@@ -31,7 +31,7 @@ ${monteurNaam} heeft de klus voor ${klantNaam}${ref} teruggemeld aan kantoor; hi
 
 Reden: ${redenLabel(reden)}${toel}
 
-De klus staat niet meer in de werkpool van de monteur. Bekijk hem op het dashboard om opnieuw in te plannen, de klant te bellen of de klus af te sluiten.
+De klus staat niet meer in de kluspool van de monteur. Bekijk hem op het dashboard om opnieuw in te plannen, de klant te bellen of de klus af te sluiten.
 
 ${afzender}`;
   return { subject, text };

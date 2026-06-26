@@ -14,7 +14,7 @@ export default async function HandleidingPage() {
   const { email, profiel } = await vereisRol(["monteur", "beheerder", "opdrachtgever"]);
   const isMonteur = profiel.rol === "monteur";
   const terugHref = isMonteur ? "/" : "/dashboard";
-  const terugLabel = isMonteur ? "Werkpool" : "Dashboard";
+  const terugLabel = isMonteur ? "Kluspool" : "Dashboard";
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -27,7 +27,7 @@ export default async function HandleidingPage() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Hulp / Handleiding</p>
             <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Handleiding</h1>
             <p className="mt-1 text-sm text-ink-muted">
-              Zo loop je een klus door, van werkpool tot versturen.
+              Zo loop je een klus door, van kluspool tot versturen.
             </p>
           </div>
           {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}

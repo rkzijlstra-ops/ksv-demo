@@ -5,7 +5,7 @@ import { Loader2, AlertCircle, HardHat } from "lucide-react";
 
 /**
  * Demo: zelf-aanmelden als monteur (de pagina achter de QR op het dashboard). Naam + 06 + e-mail
- * invullen -> je wordt monteur in de demo en komt meteen in je werkpool, met de berichten op dit toestel.
+ * invullen -> je wordt monteur in de demo en komt meteen in je kluspool, met de berichten op dit toestel.
  */
 export default function WordMonteurPage() {
   const [naam, setNaam] = useState("");
@@ -29,7 +29,7 @@ export default function WordMonteurPage() {
         setBezig(false);
         return;
       }
-      // Ingelogd als de nieuwe monteur; naar de werkpool.
+      // Ingelogd als de nieuwe monteur; naar de kluspool.
       window.location.href = "/";
     } catch {
       setFout("Netwerkfout, probeer opnieuw");

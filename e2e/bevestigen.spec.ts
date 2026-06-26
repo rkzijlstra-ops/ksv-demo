@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "./test-env";
 /**
  * De monteur bevestigt de ontvangst van een verstuurde klus (uit de opdracht-mail). Seedt een
  * geplande+verstuurde klus op rk en test twee plekken: de detailpagina ("Ontvangst bevestigen") en
- * de snelknop op de werkpool-kaart. Controleert telkens dat de status in de database op 'bevestigd'
+ * de snelknop op de kluspool-kaart. Controleert telkens dat de status in de database op 'bevestigd'
  * komt, en bij de kaart bovendien dat de klik niet naar detail navigeert en de badge omslaat.
  */
 
@@ -61,7 +61,7 @@ test("monteur bevestigt de ontvangst van zijn klus", async ({ page }) => {
   await expect(page.getByText("Ontvangst bevestigd")).toBeVisible();
 });
 
-test("monteur bevestigt direct vanaf de werkpool-kaart, zonder door te klikken", async ({ page }) => {
+test("monteur bevestigt direct vanaf de kluspool-kaart, zonder door te klikken", async ({ page }) => {
   await page.goto("/");
   // De kaart van déze klus (Link naar de detailpagina) en de bevestig-elementen daarbinnen.
   const kaart = page.locator(`a[href="/opdracht/${id}"]`);
@@ -70,7 +70,7 @@ test("monteur bevestigt direct vanaf de werkpool-kaart, zonder door te klikken",
 
   await kaart.getByRole("button", { name: "Ontvangst bevestigen" }).click();
 
-  // De klik mag NIET naar de detailpagina navigeren; we blijven op de werkpool.
+  // De klik mag NIET naar de detailpagina navigeren; we blijven op de kluspool.
   await expect(page.getByRole("heading", { name: "Klussen" })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe("/");
 

@@ -4,15 +4,15 @@ import { SUPABASE_URL, SUPABASE_SECRET } from "./test-env";
 import { wachtOpHydratie } from "./hydratie";
 
 /**
- * De monteur voegt zelf een klus toe via de gecombineerde flow op de werkpool: "Klus toevoegen" opent
+ * De monteur voegt zelf een klus toe via de gecombineerde flow op de kluspool: "Klus toevoegen" opent
  * het formulier, hij vult een naam en datum in (document is optioneel) en slaat op. De klus verschijnt
- * daarna in zijn werkpool. Ruimt de aangemaakte klus op via de service-rol.
+ * daarna in zijn kluspool. Ruimt de aangemaakte klus op via de service-rol.
  */
 test.use({ storageState: "e2e/.auth/monteur.json" });
 
 const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth: { persistSession: false } });
 
-test("monteur voegt zelf een klus toe met datum, die in de werkpool verschijnt", async ({ page }) => {
+test("monteur voegt zelf een klus toe met datum, die in de kluspool verschijnt", async ({ page }) => {
   const naam = `ZELF ${Date.now()}`;
   try {
     await page.goto("/");
@@ -25,7 +25,7 @@ test("monteur voegt zelf een klus toe met datum, die in de werkpool verschijnt",
     await page.getByLabel("Datum").fill("2026-06-20");
     await page.getByRole("button", { name: "Klus opslaan" }).click();
 
-    // De klus staat daarna in de werkpool.
+    // De klus staat daarna in de kluspool.
     await expect(page.getByText(naam)).toBeVisible({ timeout: 15_000 });
   } finally {
     await admin.from("meldingen").delete().eq("klant_naam", naam);
@@ -47,7 +47,7 @@ test("werk-omschrijving: invoeren, tonen op detail en bewerken", async ({ page }
     await page.getByPlaceholder("Bijv. kasten nastellen").fill("kasten nastellen");
     await page.getByRole("button", { name: "Klus opslaan" }).click();
 
-    // Open de klus vanuit de werkpool. Gericht de kaart-link aanklikken (niet de succesmelding, die
+    // Open de klus vanuit de kluspool. Gericht de kaart-link aanklikken (niet de succesmelding, die
     // ook de naam bevat); Playwright wacht tot de kaart na de refresh verschenen is.
     await page.locator('a[href^="/opdracht/"]', { hasText: naam }).click();
     await expect(page).toHaveURL(/\/opdracht\//);

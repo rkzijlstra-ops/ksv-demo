@@ -4,7 +4,7 @@ import { getAuthenticatedUserId } from "@/lib/auth";
 
 /**
  * Bevestigt een "te verwerken"-voorstel uit het inbound-bakje: zet `te_verwerken` af, waarna het een
- * gewone klus in de werkpool wordt. Alleen de toegewezen monteur (of de beheerder). De mutatie loopt
+ * gewone klus in de kluspool wordt. Alleen de toegewezen monteur (of de beheerder). De mutatie loopt
  * via service-rechten na de autorisatie-check, zodat RLS de monteur niet blokkeert.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {

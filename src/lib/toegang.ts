@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "./supabase-server";
 import { profielVolledig } from "./profiel";
 import { isDemoMode } from "./demo";
 
-/** Startpagina per rol: monteur -> werkpool, opdrachtgever/beheerder -> dashboard. */
+/** Startpagina per rol: monteur -> kluspool, opdrachtgever/beheerder -> dashboard. */
 export function startpaginaVoorRol(rol: Rol): string {
   return rol === "monteur" ? "/" : "/dashboard";
 }

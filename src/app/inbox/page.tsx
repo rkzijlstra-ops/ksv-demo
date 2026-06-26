@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Het "te verwerken"-bakje: klussen die per mail zijn binnengekomen (inbound) en nog bevestigd moeten
- * worden voor ze in de werkpool komen. Alleen de monteur ziet zijn eigen voorstellen.
+ * worden voor ze in de kluspool komen. Alleen de monteur ziet zijn eigen voorstellen.
  */
 export default async function InboxPage() {
   const { profiel } = await vereisRol(["monteur", "beheerder"]);
@@ -20,13 +20,13 @@ export default async function InboxPage() {
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
       <HydratieKlaar />
       <div className="mb-4">
-        <TerugKnop href="/" label="Werkpool" />
+        <TerugKnop href="/" label="Kluspool" />
       </div>
       <header className="relative mb-4 border-2 border-b-0 border-line bg-white px-5 py-5 text-ink">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ink-muted">Inbound / Te verwerken</p>
         <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Te verwerken</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Per mail binnengekomen. Bevestig wat klopt, dan komt het in je werkpool.
+          Per mail binnengekomen. Bevestig wat klopt, dan komt het in je kluspool.
         </p>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

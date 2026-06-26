@@ -4,8 +4,12 @@ import { createDb, type Db } from "@/lib/db";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR as MONTEUR_ACC } from "./test-env";
 
 /**
- * De monteur kan een toegewezen klus afgerond melden via het keuzescherm. Daarna staat
- * afgerond_door_monteur_at gevuld in de database.
+ * Snel afsluiten = een uitgeklede oplevering (verkorte PDF), met de "er komt nog een vervolg"-optie.
+ *
+ * De UI-smoke toetst dat de verkorte flow rendert (geen handtekening/voorvertoon, wél het vervolg-vinkje).
+ * De vervolg-KETEN toetsen we op db-niveau (zoals verzending.spec), zodat er geen echte mail nodig is:
+ * we roepen dezelfde db-functies aan die de route (`/api/opdrachten/[id]/rapport`, vervolg-tak) gebruikt.
+ * Het echte versturen-met-mail wordt los gekeurd op de test-omgeving (allowlist) en in mail.spec.
  */
 test.use({ storageState: "e2e/.auth/monteur.json" });
 
@@ -13,6 +17,17 @@ const admin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SECRET, { auth
 const db: Db = createDb({ url: SUPABASE_URL, secretKey: SUPABASE_SECRET });
 const RK = MONTEUR_ACC.uid;
 let opdrachtId = "";
+
+/** Legt een oplevering-concept aan op een opdracht, zodat de vervolg-tak iets heeft om vast te leggen. */
+async function seedOpleveringConcept(id: string) {
+  await db.upsertOpleveringConcept({
+    opdracht_id: id,
+    eindstaat_foto_urls: [],
+    video_url: null,
+    opmerking: "Snel afgesloten, vervolg nodig.",
+    user_id: RK,
+  });
+}
 
 test.beforeEach(async () => {
   const zaak = await db.getStandaardOpdrachtgever();
@@ -33,20 +48,24 @@ test.beforeEach(async () => {
 });
 
 test.afterEach(async () => {
-  if (opdrachtId) await admin.from("meldingen").delete().eq("id", opdrachtId);
+  if (opdrachtId) {
+    await admin.from("opleveringen").delete().eq("opdracht_id", opdrachtId);
+    await admin.from("meldingen").delete().eq("id", opdrachtId);
+  }
 });
 
-test("monteur meldt een klus afgerond via het keuzescherm", async ({ page }) => {
+test("snel afsluiten toont de verkorte oplever-flow (geen handtekening, wél vervolg-vinkje)", async ({ page }) => {
   await page.goto(`/opdracht/${opdrachtId}/afronden`);
   await expect(page.getByRole("heading", { name: "Op welke manier sluit je af?" })).toBeVisible();
   await page.getByRole("link", { name: /snel afsluiten/i }).click();
   await page.waitForURL((u) => new URL(u).pathname.endsWith("/afronden/snel"));
-  await page.getByRole("textbox").fill("Alles getest, klant tevreden.");
-  await page.getByRole("button", { name: /klus afsluiten/i }).click();
-  await page.waitForURL((u) => new URL(u).pathname === "/");
 
-  const { data } = await admin.from("meldingen").select("afgerond_door_monteur_at").eq("id", opdrachtId).single();
-  expect(data?.afgerond_door_monteur_at).not.toBeNull();
+  // Verkort: geen handtekening-stap en geen voorvertoon-kaart, wél het vervolg-vinkje en de
+  // verstuurkaart naar de opdrachtgever.
+  await expect(page.getByRole("heading", { name: /handtekening/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Rapport voorvertonen" })).toHaveCount(0);
+  await expect(page.getByText("Klus is niet af.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 });
 
 test("monteur meldt een klus niet doorgegaan via het keuzescherm", async ({ page }) => {
@@ -60,25 +79,34 @@ test("monteur meldt een klus niet doorgegaan via het keuzescherm", async ({ page
   expect(data?.teruggemeld_at).not.toBeNull();
 });
 
-test("voltooid met vervolg-vinkje zet de klus terug naar te plannen", async ({ page }) => {
-  await page.goto(`/opdracht/${opdrachtId}/afronden/snel`);
-  await page.getByRole("checkbox").check();
-  await page.getByRole("textbox").fill("Onderdelen komen later, vervolg nodig.");
-  await page.getByRole("button", { name: /klus afsluiten/i }).click();
-  await page.waitForURL((u) => new URL(u).pathname === "/");
+test("vervolg op een opdrachtgever-klus: rapport vastgelegd, NIET opgeleverd, terug naar kantoor", async () => {
+  await seedOpleveringConcept(opdrachtId);
+  const url = `https://x/opdracht-documenten/${opdrachtId}-verkort.pdf`;
 
-  const { data } = await admin
+  // Dit is exact wat de route in de vervolg-tak doet (opdrachtgever_id gevuld -> ook ontplannen).
+  await db.registreerVerkortRapportVervolg(opdrachtId, url);
+  await db.ontplanOpdracht(opdrachtId);
+
+  const { data: opl } = await admin
+    .from("opleveringen")
+    .select("rapport_url, zaak_rapport_verzonden_at")
+    .eq("opdracht_id", opdrachtId)
+    .single();
+  expect(opl?.rapport_url).toBe(url);
+  expect(opl?.zaak_rapport_verzonden_at).toBeTruthy();
+
+  const { data: m } = await admin
     .from("meldingen")
-    .select("afgerond_vervolg_nodig, dashboard_status, toegewezen_aan")
+    .select("afgerond_vervolg_nodig, opdracht_status, dashboard_status, toegewezen_aan")
     .eq("id", opdrachtId)
     .single();
-  expect(data?.afgerond_vervolg_nodig).toBe(true);
-  expect(data?.dashboard_status).toBe("binnen");
-  expect(data?.toegewezen_aan).toBeNull();
+  expect(m?.afgerond_vervolg_nodig).toBe(true); // badge "Vervolg plannen"
+  expect(m?.opdracht_status).not.toBe("opgeleverd"); // blijft open
+  expect(m?.dashboard_status).toBe("binnen"); // terug in de pool bij kantoor
+  expect(m?.toegewezen_aan).toBeNull(); // niet meer toegewezen
 });
 
-test("voltooid met vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async ({ page }) => {
-  // Zelf-aangemaakte klus zonder opdrachtgever: er is geen kantoor om het op te pakken.
+test("vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async () => {
   const { id: adhocId } = await db.createOpdracht({
     documenttype: "onbekend",
     klant_naam: `ADHOC ${Date.now()}`,
@@ -93,19 +121,20 @@ test("voltooid met vervolg op een ad-hoc klus (geen kantoor) blijft bij de monte
     opdrachtgever_id: null,
   });
   try {
-    await page.goto(`/opdracht/${adhocId}/afronden/snel`);
-    await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: /klus afsluiten/i }).click();
-    await page.waitForURL((u) => new URL(u).pathname === "/");
+    await seedOpleveringConcept(adhocId);
+    // Ad-hoc: geen opdrachtgever_id, dus de route ontplant NIET. Alleen de vervolg-markering.
+    await db.registreerVerkortRapportVervolg(adhocId, `https://x/${adhocId}-verkort.pdf`);
 
     const { data } = await admin
       .from("meldingen")
-      .select("afgerond_vervolg_nodig, toegewezen_aan")
+      .select("afgerond_vervolg_nodig, toegewezen_aan, opdracht_status")
       .eq("id", adhocId)
       .single();
     expect(data?.afgerond_vervolg_nodig).toBe(true);
     expect(data?.toegewezen_aan).toBe(RK); // bleef bij de monteur, niet weg-geontplanned
+    expect(data?.opdracht_status).not.toBe("opgeleverd");
   } finally {
+    await admin.from("opleveringen").delete().eq("opdracht_id", adhocId);
     await admin.from("meldingen").delete().eq("id", adhocId);
   }
 });

@@ -100,11 +100,12 @@ test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (
   });
   await expect(page.getByRole("button", { name: "Foto verwijderen" })).toBeVisible({ timeout: 20_000 });
 
-  // Tekenen vóór de akkoord-keuze toont een bevestiging; die accepteren we (monteur tekent toch).
+  // Veiligheid: accepteer eventuele bevestigingen (bijv. verlaat-waarschuwing).
   page.on("dialog", (d) => d.accept());
 
-  // Handtekening op het canvas zetten.
+  // Handtekening + akkoord op het teken-scherm zetten (akkoord zit nu in dat scherm zelf).
   await page.getByRole("button", { name: "Klant laten tekenen" }).click();
+  await page.getByRole("button", { name: "Akkoord", exact: true }).click();
   const canvas = page.locator("canvas");
   const box = await canvas.boundingBox();
   if (!box) throw new Error("Canvas niet gevonden");
@@ -113,16 +114,13 @@ test("oplever-UI bewaart foto, handtekening, opmerking en controle als concept (
   await page.mouse.move(box.x + 110, box.y + 70, { steps: 8 });
   await page.mouse.move(box.x + 160, box.y + 40, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Klaar" }).click();
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
   await expect(page.getByText("Gezet")).toBeVisible({ timeout: 20_000 });
 
   // Meteen de opmerking typen en blur (Tab): dit is de race-trigger met de handtekening-save.
   const opmerking = `E2E oplevering ${Date.now()}`;
   await page.getByLabel("Opmerking bij de oplevering").fill(opmerking);
   await page.keyboard.press("Tab");
-
-  // Controlepunt aftekenen: "Akkoord" (slaat ook een concept op).
-  await page.getByRole("button", { name: "Akkoord", exact: true }).click();
 
   // Database: het concept bevat nu de foto, de handtekening-url, de opmerking én het controle-akkoord.
   await expect

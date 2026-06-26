@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Pre-cachet opdracht-detail-pagina's op de achtergrond zodra de werkpool laadt,
+ * Pre-cachet opdracht-detail-pagina's op de achtergrond zodra de kluspool laadt,
  * zodat de monteur later in de kelder kan doorklikken zonder netwerk.
  *
  * Belangrijk om dit licht te houden zodat het niet concurreert met POSTs van de

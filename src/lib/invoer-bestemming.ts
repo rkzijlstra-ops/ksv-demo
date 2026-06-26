@@ -1,6 +1,6 @@
 /**
  * Rol-bewuste bestemming voor een nieuw aangemaakte klus. Eén motor, twee gezichten:
- * - monteur: de klus is meteen van hemzelf (eigen werkpool, ad-hoc, geen aangesloten opdrachtgever);
+ * - monteur: de klus is meteen van hemzelf (eigen kluspool, ad-hoc, geen aangesloten opdrachtgever);
  * - kantoor (beheerder/opdrachtgever): de klus hoort bij een zaak en moet nog gepland/toegewezen worden.
  * Puur en testbaar; de route mapt het profiel naar deze parameters.
  */

@@ -44,7 +44,7 @@ export function opgeleverdBadgeConfig(): BadgeConfig {
 }
 
 /**
- * Bevestig-status van een klus als badge voor de monteur-werkpool. Geel "Te bevestigen" zolang de
+ * Bevestig-status van een klus als badge voor de monteur-kluspool. Geel "Te bevestigen" zolang de
  * klus verstuurd maar niet bevestigd is (status gepland), groen "Bevestigd" daarna. Andere statussen
  * (binnen, concept, opgeleverd, geannuleerd) geven null: daar valt niets te bevestigen.
  */
