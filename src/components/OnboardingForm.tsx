@@ -86,7 +86,7 @@ export function OnboardingForm({
           href="/"
           className="relative inline-flex min-h-[48px] items-center justify-center gap-2 bg-primary px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
         >
-          Naar de werkpool
+          Naar de kluspool
           <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
         </Link>
       </div>
@@ -120,7 +120,7 @@ export function OnboardingForm({
 
       <p className="text-xs text-ink-muted">
         Deze gegevens komen op je opleverrapporten (briefhoofd en voetregel), en een antwoord van de
-        keukenzaak komt op je e-mailadres binnen.
+        opdrachtgever komt op je e-mailadres binnen.
       </p>
 
       {fout && (

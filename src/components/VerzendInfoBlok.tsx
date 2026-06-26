@@ -101,7 +101,7 @@ export function VerzendInfoBlok({
               <p className="flex items-start gap-2 text-sm font-semibold text-ink">
                 <AlertTriangle size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-urgent-geel" aria-hidden="true" />
                 Eerste keer naar dit adres. De mail kan in hun spam-map staan. Stuur dit bericht even
-                door naar je contact bij de zaak, en vraag planning@kluslus.nl als veilige afzender toe te voegen.
+                door naar je contact bij de opdrachtgever, en vraag planning@kluslus.nl als veilige afzender toe te voegen.
               </p>
               <div className="flex items-center justify-between gap-2 border border-line bg-white p-3">
                 <p className="min-w-0 flex-1 text-sm text-ink-muted">{whatsappTekst}</p>
@@ -130,7 +130,7 @@ export function VerzendInfoBlok({
 
           <div className="flex flex-col gap-2 border-t border-line pt-3">
             <label className="text-xs font-bold uppercase tracking-[0.05em] text-ink-muted">
-              Opnieuw versturen naar de zaak
+              Opnieuw versturen naar de opdrachtgever
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -141,7 +141,7 @@ export function VerzendInfoBlok({
                   setKlaar(false);
                 }}
                 inputMode="email"
-                placeholder="adres van de zaak"
+                placeholder="adres van de opdrachtgever"
               />
               <button
                 type="button"

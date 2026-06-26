@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /**
  * Eerste-gebruik-onboarding voor een monteur: afzendergegevens invullen voor hij de app gebruikt.
  * Slaat de onboarding-gate over (skipOnboarding) om een redirect-lus te voorkomen. Is het profiel al
- * volledig, dan hoeft dit scherm niet en gaat de monteur naar de werkpool.
+ * volledig, dan hoeft dit scherm niet en gaat de monteur naar de kluspool.
  */
 export default async function WelkomPage() {
   const { profiel } = await vereisRol(["monteur"], { skipOnboarding: true });
@@ -21,7 +21,7 @@ export default async function WelkomPage() {
         <h1 className="mt-1 font-mono text-3xl font-extrabold tracking-tight">Even je gegevens</h1>
         <p className="mt-1 text-sm text-ink-muted">
           Vul je afzendergegevens in. Die komen op je opleverrapporten te staan en zorgen dat antwoorden
-          van de keukenzaak bij jou terechtkomen.
+          van de opdrachtgever bij jou terechtkomen.
         </p>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>

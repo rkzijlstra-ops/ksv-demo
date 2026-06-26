@@ -61,7 +61,7 @@ ${ondertekening}`;
 }
 
 /**
- * Korte WhatsApp/sms-tekst die de monteur naar zijn contact bij de keukenzaak kan sturen wanneer het
+ * Korte WhatsApp/sms-tekst die de monteur naar zijn contact bij de opdrachtgever kan sturen wanneer het
  * de eerste oplever-mail naar dat domein is. Vraagt de spam-map te checken en planning@kluslus.nl als
  * veilige afzender toe te voegen. Pure functie, los te testen.
  */
