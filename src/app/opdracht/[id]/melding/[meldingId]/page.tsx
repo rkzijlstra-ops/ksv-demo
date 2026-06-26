@@ -23,6 +23,7 @@ export default async function MeldingBewerkenPagina({
           spoed: melding.spoed,
           ruwe_tekst: melding.ruwe_tekst,
           foto_urls: melding.foto_urls,
+          video_url: melding.video_url,
         }}
         kop={
           <div>
