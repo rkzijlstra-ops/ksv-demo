@@ -256,12 +256,14 @@ export default async function OpdrachtDetailPage({
           <ul className="flex flex-col gap-4">
             {meldingen.map((m) => (
               <li key={m.id} className="rounded-none border border-line bg-white p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
-                  {m.versie > 1 && (
-                    <span className="text-sm font-semibold text-ink-muted">aangepast (v{m.versie})</span>
-                  )}
-                </div>
+                {(m.spoed || m.versie > 1) && (
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
+                    {m.versie > 1 && (
+                      <span className="text-sm font-semibold text-ink-muted">aangepast (v{m.versie})</span>
+                    )}
+                  </div>
+                )}
                 {m.spoed && m.spoed_verzonden_at && (
                   <p className="mt-1 text-xs font-semibold text-urgent-rood">
                     Spoed verstuurd op {formatDatumKort(m.spoed_verzonden_at)}

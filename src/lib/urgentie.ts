@@ -24,18 +24,18 @@ export function bronConfig(bron: Bron): BadgeConfig {
 }
 
 /**
- * Kleur-staat-taal (2A.7): rood = spoed, amber = open/wacht op oplevering, groen = opgeleverd.
- * Altijd kleur + icoon + label (niet kleur alleen).
+ * Kleur-staat-taal: alleen spoed krijgt een badge (rood). Een gewone melding krijgt geen label
+ * (de herinrichting schrapte het vage "Open"/"Achteraf"-label): null = niets renderen.
  */
-export function meldingStaatConfig(spoed: boolean, spoedVerzondenAt: string | null): BadgeConfig {
+export function meldingStaatConfig(spoed: boolean, spoedVerzondenAt: string | null): BadgeConfig | null {
   if (spoed && spoedVerzondenAt) {
     return { label: "Spoed verstuurd", bg: "bg-urgent-rood", ink: "text-white", border: "border-urgent-rood", icon: "alert" };
   }
   if (spoed) {
     return { label: "Spoed", bg: "bg-urgent-rood", ink: "text-white", border: "border-urgent-rood", icon: "alert" };
   }
-  // open = outlined oranje (industrieel D)
-  return { label: "Open", bg: "bg-white", ink: "text-accent", border: "border-accent", icon: "clock" };
+  // Gewone melding: geen badge.
+  return null;
 }
 
 /** Groene "opgeleverd"-badge, solid (industrieel D). */

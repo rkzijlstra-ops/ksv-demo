@@ -8,5 +8,8 @@ export function MeldingStaatBadge({
   spoed: boolean;
   spoed_verzonden_at: string | null;
 }) {
-  return <Badge config={meldingStaatConfig(spoed, spoed_verzonden_at)} />;
+  const config = meldingStaatConfig(spoed, spoed_verzonden_at);
+  // Gewone melding: geen badge (alleen spoed krijgt een label).
+  if (!config) return null;
+  return <Badge config={config} />;
 }
