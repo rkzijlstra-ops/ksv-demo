@@ -286,6 +286,10 @@ export async function genereerRapportPdf(
       y -= 4;
       await fotoGrid(m.foto_urls);
     }
+    if (m.video_url) {
+      y -= 6;
+      videoLink("Video bij deze melding", m.video_url);
+    }
     y -= 8;
     page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.6, color: LINE });
     y -= 12;

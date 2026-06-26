@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { PDFDocument, PDFName, PDFArray, PDFDict, PDFString } from "pdf-lib";
 import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport, interneFotosVoorRapport, interneVideoVoorRapport, toonHandtekeningInRapport, toonControleInRapport } from "./rapport";
 import type { Melding, Oplevering } from "./db";
 import type { ControlePunt } from "./oplever-controle";
@@ -127,6 +128,23 @@ function startsWithPdf(bytes: Uint8Array): boolean {
   return (
     bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
   );
+}
+
+/** Laadt de PDF en haalt alle URI's uit de link-annotaties (videolinks). pdf-lib decomprimeert bij load. */
+async function linkAnnotatieUrls(bytes: Uint8Array): Promise<string[]> {
+  const doc = await PDFDocument.load(bytes);
+  const urls: string[] = [];
+  for (const page of doc.getPages()) {
+    const annots = page.node.lookupMaybe(PDFName.of("Annots"), PDFArray);
+    if (!annots) continue;
+    for (let i = 0; i < annots.size(); i++) {
+      const annot = annots.lookupMaybe(i, PDFDict);
+      const actie = annot?.lookupMaybe(PDFName.of("A"), PDFDict);
+      const uri = actie?.lookupMaybe(PDFName.of("URI"), PDFString);
+      if (uri) urls.push(uri.asString());
+    }
+  }
+  return urls;
 }
 
 describe("rapportSamenvatting", () => {
@@ -284,6 +302,24 @@ describe("genereerRapportPdf", () => {
     const bytes = await genereerRapportPdf(opdracht, meldingen, opl);
     expect(startsWithPdf(bytes)).toBe(true);
     expect(bytes.length).toBeGreaterThan(100);
+  });
+
+  it("zet een videolink-annotatie in de PDF voor een melding met video_url", async () => {
+    const opdracht = maakMelding({});
+    const meldingen = [
+      maakMelding({ id: "m1", opdracht_id: "x", ruwe_tekst: "Front kapot", video_url: "https://x/melding-video-uniek.mp4" }),
+    ];
+    const bytes = await genereerRapportPdf(opdracht, meldingen);
+    const urls = await linkAnnotatieUrls(bytes);
+    expect(urls).toContain("https://x/melding-video-uniek.mp4");
+  });
+
+  it("zet geen videolink-annotatie als de melding geen video heeft", async () => {
+    const opdracht = maakMelding({});
+    const meldingen = [maakMelding({ id: "m1", opdracht_id: "x", ruwe_tekst: "Geen video", video_url: null })];
+    const bytes = await genereerRapportPdf(opdracht, meldingen);
+    const urls = await linkAnnotatieUrls(bytes);
+    expect(urls).toEqual([]);
   });
 
   it("laat het rapport niet crashen als een foto-fetch faalt", async () => {
