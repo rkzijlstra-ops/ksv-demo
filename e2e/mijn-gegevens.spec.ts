@@ -16,14 +16,15 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
 
   let opdrachtId = "";
   test.afterEach(async () => {
-    // Profiel terugzetten (incl. naam) en de geseede klus opruimen, zodat andere tests schoon starten.
+    // Profiel terugzetten naar de COMPLETE standaard (gelijk aan global-setup) en de geseede klus
+    // opruimen. Compleet i.p.v. leeg, anders stuurt de onboarding-gate andere monteur-tests naar /welkom.
     await admin
       .from("profielen")
       .update({
         naam: "E2E Monteur",
-        bedrijfsnaam: null,
-        telefoon: null,
-        contact_email: null,
+        bedrijfsnaam: "E2E Montage",
+        telefoon: "0612345678",
+        contact_email: "monteur@e2e.test",
         sms_werk_kritiek: true,
         sms_overig: true,
       })
@@ -96,7 +97,8 @@ test.describe("monteur beheert zijn afzender-gegevens", () => {
     const overig = page.locator("label", { hasText: "Herinneringen en overig" }).getByRole("checkbox");
 
     await page.goto("/mijn-gegevens");
-    // Zonder geldig mobiel nummer staan beide schakelaars uit (disabled).
+    // Leeg het nummer eerst: zonder geldig mobiel nummer staan beide schakelaars uit (disabled).
+    await page.getByLabel("Telefoon").fill("");
     await expect(werkKritiek).toBeDisabled();
     await expect(overig).toBeDisabled();
 

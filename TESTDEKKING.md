@@ -79,6 +79,9 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Klant-mailadres uit de PDF (voorinvulwaarde, aanpasbaar) | U | claude-client.test (komt door de keten), parser-schema.test | groen |
 | Privacy: kantoor ziet de oplevering pas na de zaak-versie | E | (nog te dekken, zie gaten) | open |
 | Afzender-gegevens monteur (eigen profiel; op rapport, mail-ondertekening én From-naam i.p.v. keukenzaak/hardcoded BKM) | U, E | afzender→rapport.test (rapportAfzenderWeergave), oplever-mail.test (ondertekening + afzenderHeader), mijn-gegevens/route.test, mijn-gegevens.spec | groen |
+| Reply-To op de oplever-mail = de monteur die opleverde (profiel contact_email), vangnet RESEND_REPLY_TO; afzender blijft RESEND_FROM | U | email.test (geldigEmail), reply-to.test (bepaalReplyTo), mail.test (monteur-mail wint, vangnet erachter) | groen |
+| Eerste-verzending-waarschuwing per domein op de klus (monteur + kantoor): inklapbaar blok, kopieerbare WhatsApp-tekst, "Opnieuw versturen" met adres-correctie | U, E | verzend-domein.test (domein + eerste-contact), oplever-mail.test (bouwWhatsappTekst), rapport/route.test (naar-override); E op omgeving-test | U groen; E door Rein |
+| Onboarding-gate: monteur met onvolledig profiel → /welkom (afzendergegevens verplicht bij eerste gebruik); niet in demo; welkom-stap met handleiding-knop | U, E | profiel.test (profielVolledig), toegang.test (onvolledig→/welkom, volledig door, demo uit, skipOnboarding, beheerder vrij); E op omgeving-test | U groen; E door Rein |
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
 
