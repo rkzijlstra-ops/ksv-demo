@@ -8,6 +8,7 @@ import {
   Plus,
   Pencil,
   PackageCheck,
+  ClipboardCheck,
   FileBarChart,
   ChevronLeft,
   ChevronRight,
@@ -18,6 +19,7 @@ import { domeinVanAdres, isEersteContactMetDomein } from "@/lib/verzend-domein";
 import { VerzendInfoBlok } from "@/components/VerzendInfoBlok";
 import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
+import { ActieKaart } from "@/components/ActieKaart";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { DocumentRij } from "@/components/DocumentRij";
@@ -294,7 +296,22 @@ export default async function OpdrachtDetailPage({
         )}
       </section>
 
-      {/* Vaste onderbalk: navigatie tussen de pagina's */}
+      {/* Aan het einde van de klus: afsluiten als gelabeld blok in de pagina, zodat de pagina van boven
+          naar onder het verhaal vertelt (tijdens de klus melden, aan het eind afsluiten). */}
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Aan het einde van de klus</h2>
+        <p className="mb-3 mt-1 text-sm text-ink-muted">Klus klaar? Sluit hem af en maak het rapport.</p>
+        <ActieKaart
+          href={`/opdracht/${id}/afronden`}
+          accent="actie"
+          subAccent
+          icoon={<ClipboardCheck size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Klus afsluiten"
+          sub="Daarna kies je: snel of volledig opleveren."
+        />
+      </section>
+
+      {/* Vaste onderbalk: alleen terug naar de kluspool (afsluiten staat nu als blok in de pagina). */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-line bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto flex w-full max-w-2xl gap-3">
           <Link
@@ -302,14 +319,7 @@ export default async function OpdrachtDetailPage({
             className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
           >
             <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />
-            Kluspool
-          </Link>
-          <Link
-            href={`/opdracht/${id}/afronden`}
-            className="relative inline-flex min-h-[48px] flex-1 items-center justify-center gap-1.5 bg-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-accent after:content-['']"
-          >
-            Klus afsluiten
-            <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" />
+            Terug naar kluspool
           </Link>
         </div>
       </div>
