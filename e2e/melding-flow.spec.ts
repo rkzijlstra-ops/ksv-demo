@@ -119,9 +119,13 @@ test("melding-formulier heeft een video-invoer; een opgeslagen video komt terug 
 });
 
 test("snel afsluiten: meldingen-overzicht + begeleidend bericht, geen media-invoer, ontsnap-knop", async ({ page }) => {
+  // Foto-URL's op een geconfigureerde host (*.supabase.co/storage/**), anders weigert next/image ze
+  // bij het renderen van de thumbnails. De afbeeldingen bestaan niet (404), dat geeft alleen een lege
+  // tegel; het gaat hier om de lay-out en de telling.
+  const fotoUrl = (n: string) => `${SUPABASE_URL}/storage/v1/object/public/oplever/mf-${n}.jpg`;
   const id = await maakKlus("MF-SNEL");
   await seedMelding(id, { spoed: true, tekst: "Kraan ontbreekt", video_url: "https://x/v.mp4" });
-  await seedMelding(id, { spoed: false, tekst: "Greep nabestellen", foto_urls: ["https://x/a.jpg", "https://x/b.jpg"] });
+  await seedMelding(id, { spoed: false, tekst: "Greep nabestellen", foto_urls: [fotoUrl("a"), fotoUrl("b")] });
 
   await page.goto(`/opdracht/${id}/afronden/snel`);
 
@@ -137,10 +141,25 @@ test("snel afsluiten: meldingen-overzicht + begeleidend bericht, geen media-invo
   await expect(page.getByText(/Begeleidend bericht/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 
-  // Ontsnap-knop naar de volledige oplevering.
-  const ontsnap = page.getByRole("link", { name: /Toch foto, video of handtekening/ });
+  // Ontsnap-knop naar de volledige oplevering (staat nu bovenaan, duidelijker tekst).
+  const ontsnap = page.getByRole("link", { name: /Liever uitgebreid opleveren/ });
   await expect(ontsnap).toBeVisible();
   await expect(ontsnap).toHaveAttribute("href", `/opdracht/${id}/opleveren`);
+});
+
+test("melding-concept blijft bewaard na weg-navigeren en terugkomen (vangnet)", async ({ page }) => {
+  const id = await maakKlus("MF-CONCEPT");
+
+  await page.goto(`/opdracht/${id}/melding`);
+  const tekst = `Vangnet-test ${Date.now()}`;
+  await page.getByLabel("Wat is er aan de hand?").fill(tekst);
+
+  // Weg-navigeren zonder op te slaan (zoals de telefoon-terugknop), dan terug naar het formulier.
+  await page.goto(`/opdracht/${id}`);
+  await page.goto(`/opdracht/${id}/melding`);
+
+  // De invoer is hersteld uit het lokale vangnet.
+  await expect(page.getByLabel("Wat is er aan de hand?")).toHaveValue(tekst);
 });
 
 test("snel afsluiten zonder meldingen: lege staat + bevestiging 'Versturen zonder melding?'", async ({ page }) => {

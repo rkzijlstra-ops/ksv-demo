@@ -236,7 +236,7 @@ export default async function OpdrachtDetailPage({
 
       <section className="mt-6">
         <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Meldingen tijdens de klus</h2>
-        <p className="mb-3 mt-1 text-sm text-ink-muted">Iets kapot of ontbrekend? Meld het, per stuk.</p>
+        <p className="mb-3 mt-1 text-sm text-ink-muted">Is iets beschadigd of manco? Meld het hier.</p>
 
         <Link
           href={`/opdracht/${id}/melding`}

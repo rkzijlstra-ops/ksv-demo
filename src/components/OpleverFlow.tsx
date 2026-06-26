@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, ChevronRight, Eye, CloudOff, Lock, Send, Check, Users, Clock, Camera } from "lucide-react";
+import { AlertCircle, PackageCheck, PenLine, CheckCircle2, Mic, ChevronLeft, ChevronRight, Eye, CloudOff, Lock, Send, Check, Users, Clock } from "lucide-react";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { useOpleverUpload } from "@/lib/oplever-upload-status";
 import { OpleverFotos } from "@/components/OpleverFotos";
@@ -470,6 +470,19 @@ export function OpleverFlow({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Snel afsluiten: de afslag naar de volledige oplevering staat bovenaan (de keuze maak je vóóraf,
+          niet ná het versturen). Het verschil met snel afsluiten is de handtekening + akkoord, niet
+          foto/video (die heb je bij de melding al). */}
+      {verkort && (
+        <ActieKaart
+          href={`/opdracht/${opdrachtId}/opleveren`}
+          accent="neutraal"
+          icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
+          titel="Liever uitgebreid opleveren?"
+          sub="Met klant-handtekening en akkoord"
+        />
+      )}
+
       {/* Klant-kant: schakelaar bovenaan. Aan = de blokken eronder klappen open (pijl draait + oranje). */}
       {magKlantLeveren && (
         <button
@@ -1054,18 +1067,6 @@ export function OpleverFlow({
           </p>
         )}
       </section>
-
-      {/* Ontsnap-knop: snel afsluiten dekt geen foto/video/handtekening. Wie dat wel wil, gaat hier
-          naar de volledige oplevering. Geen doodlopend pad. */}
-      {verkort && (
-        <ActieKaart
-          href={`/opdracht/${opdrachtId}/opleveren`}
-          accent="neutraal"
-          icoon={<Camera size={22} strokeWidth={2.5} aria-hidden="true" />}
-          titel="Toch foto, video of handtekening?"
-          sub="Naar de volledige oplevering"
-        />
-      )}
 
       {modalOpen && (
         <HandtekeningModal

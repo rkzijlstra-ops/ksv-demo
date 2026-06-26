@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, FileCheck, AlertTriangle, AlertCircle, HelpCircle, Send } from "lucide-react";
 import { TerugKnop } from "@/components/TerugKnop";
@@ -9,6 +9,7 @@ import { VideoMaken } from "@/components/VideoMaken";
 import { SpraakOpname } from "./SpraakOpname";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
 import { voegToeAanQueue } from "@/lib/queue";
+import { leesMeldingConcept, bewaarMeldingConcept, wisMeldingConcept } from "@/lib/melding-concept";
 
 const LOCAL_PREFIX = "local:";
 
@@ -35,6 +36,7 @@ export function MeldingForm({
 }) {
   const router = useRouter();
   const isBewerken = Boolean(bestaand);
+  const meldingId = bestaand?.id;
   const initialTekst = bestaand?.ruwe_tekst ?? "";
   const initialFotoUrls = bestaand?.foto_urls ?? [];
   const initialVideoUrl = bestaand?.video_url ?? null;
@@ -59,8 +61,39 @@ export function MeldingForm({
   function handleTerugClick(e: React.MouseEvent) {
     if (isDirty && !window.confirm("Melding nog niet opgeslagen. Weggooien en terug?")) {
       e.preventDefault();
+      return;
     }
+    // Bewust weggegooid (of niets gewijzigd): het concept-vangnet ook wissen, zodat het niet terugkomt.
+    wisMeldingConcept(opdrachtId, meldingId);
   }
+
+  // Concept-vangnet: invoer automatisch lokaal bewaren zodat een per ongeluk weg-navigeren (ook de
+  // telefoon-terugknop) of het sluiten van de app niets wist. De opslaan-knop blijft leidend; dit is
+  // alleen een vangnet. Bij binnenkomst eerst een eventueel eerder bewaard concept terugzetten.
+  const eersteSchrijf = useRef(true);
+  useEffect(() => {
+    const concept = leesMeldingConcept(opdrachtId, meldingId);
+    if (concept) {
+      // Herstel uit het lokale vangnet. SSR-veilig: alleen na mount (localStorage bestaat niet op de
+      // server), daarom bewust setState in dit effect.
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setTekst(concept.tekst);
+      setSpoed(concept.spoed);
+      setFotoUrls(concept.fotoUrls);
+      setVideoUrl(concept.videoUrl);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    // De eerste run is de mount (met de begin-state); niet schrijven, anders zou een leeg concept de
+    // zojuist herstelde inhoud wissen. Vanaf de eerste echte wijziging wel bewaren.
+    if (eersteSchrijf.current) {
+      eersteSchrijf.current = false;
+      return;
+    }
+    bewaarMeldingConcept(opdrachtId, meldingId, { tekst, spoed, fotoUrls, videoUrl });
+  }, [opdrachtId, meldingId, tekst, spoed, fotoUrls, videoUrl]);
   // melding-id na opslaan, voor het opnieuw proberen van een mislukte spoed-mail
   const [retryId, setRetryId] = useState<string | null>(null);
 
@@ -107,6 +140,7 @@ export function MeldingForm({
           foto_urls: echteUrls,
           foto_local_ids: localIds,
         });
+        wisMeldingConcept(opdrachtId, meldingId);
         window.alert(
           "Opgeslagen op je telefoon. Wordt verstuurd zodra je weer netwerk hebt.",
         );
@@ -140,6 +174,8 @@ export function MeldingForm({
       if (!res.ok) throw new Error(body.error ?? `Opslaan mislukt (${res.status})`);
 
       const id: string = bestaand ? bestaand.id : body.id;
+      // De melding staat nu in de database; het lokale concept-vangnet is overbodig.
+      wisMeldingConcept(opdrachtId, meldingId);
       if (spoed) {
         const verstuurd = await spoedVersturen(id);
         if (!verstuurd) {

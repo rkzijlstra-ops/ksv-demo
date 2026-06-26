@@ -129,6 +129,7 @@ opdracht. Matrix per overgang (kolommen: Data | Monteur-UI | Bericht; kantoor zi
 | melding bewerken | `versie+1`, `aangepast=true`, velden incl. `video_url` bijgewerkt | "aangepast (vN)" naast de (eventuele) badge ✓ | n.v.t. |
 | melding verwijderen | soft/echte verwijdering (bestaand) | uit de lijst | n.v.t. |
 | melding offline aanmaken | IndexedDB-queue (foto's lokaal), **zonder video** (online-only) | "wacht op netwerk" (bestaand) | sync zodra online (bestaand) |
+| melding-invoer weg-navigeren vóór opslaan (ook telefoon-terugknop) | concept-vangnet in localStorage (tekst/spoed/foto's/video); gewist bij opslaan of bewust weggooien | invoer wordt hersteld bij terugkeer naar het formulier; opslaan-knop blijft leidend ✓ | n.v.t. | melding-concept.test, melding-flow.spec |
 
 ### Detailpagina (`/opdracht/[id]`) — leesvolgorde van de klus
 Documenten → "Meldingen tijdens de klus" (knop "Beschadiging of manco melden" → aparte pagina) →
@@ -138,7 +139,7 @@ Documenten → "Meldingen tijdens de klus" (knop "Beschadiging of manco melden" 
 ### Snel afsluiten (`/afronden/snel`) — ontdubbeld
 | Situatie | Data | Monteur-UI | Bericht |
 |---|---|---|---|
-| openen | meldingen van de klus opgehaald (server) | "Dit gaat mee in het rapport"-overzicht (read-only, spoed-only label) + "Begeleidend bericht" (= `opmerking`, typen/spraak); GEEN foto/video-invoer (die staat in de volledige oplevering); ontsnap-kaart → `/opleveren` ✓ | n.v.t. |
+| openen | meldingen van de klus opgehaald (server) | bovenaan ontsnap-kaart "Liever uitgebreid opleveren? (met klant-handtekening en akkoord)" → `/opleveren`; daaronder compact "Dit gaat mee in het rapport"-overzicht (thumbnails + tekst + telling, spoed-only label) + "Begeleidend bericht" (= `opmerking`, typen/spraak); GEEN foto/video-invoer (die staat in de volledige oplevering) ✓ | n.v.t. |
 | versturen met ≥1 melding | verkorte PDF (meldingen incl. videolink + begeleidend bericht), bestaand versturen-blok (klant/opdrachtgever/later) ongewijzigd | bestaand versturen-gedrag | mail naar gekozen ontvanger (bestaand) |
 | versturen met 0 meldingen | idem, maar eerst bevestiging | confirm "Versturen zonder melding?"; annuleren stopt, bevestigen verstuurt ✓ | idem na bevestiging |
 | "geen foto/video"-waarschuwing | n.v.t. in verkort | NIET getoond in verkort (media-invoer is daar bewust weg; de meldingen dragen het bewijs) ✓ | n.v.t. |
