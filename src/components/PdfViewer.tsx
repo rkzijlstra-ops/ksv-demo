@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, Loader2, AlertCircle, ExternalLink, ZoomIn, ZoomOut } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Loader2, AlertCircle, ExternalLink, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
 import { getPdfjs } from "@/lib/pdf-client";
 
 /**
@@ -22,6 +22,9 @@ export function PdfViewer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [volledig, setVolledig] = useState(false);
+  const [kanVolledig, setKanVolledig] = useState(false);
   // pdfjs PDFDocumentProxy; los getypeerd om de pdfjs-types niet door de hele app te trekken.
   const pdfRef = useRef<{ numPages: number; getPage: (n: number) => Promise<unknown> } | null>(null);
   const paginaKey = `pdfpag:${url}`;
@@ -45,6 +48,21 @@ export function PdfViewer({
       document.body.style.overflow = vorigeOverflow;
     };
   }, [onClose]);
+
+  // Echt-fullscreen (zoals een filmpje uitklappen): alleen tonen als de browser het ondersteunt.
+  useEffect(() => {
+    setKanVolledig(typeof document !== "undefined" && !!document.fullscreenEnabled);
+    const onFs = () => setVolledig(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  const toggleVolledig = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen?.();
+    else void el.requestFullscreen?.();
+  }, []);
 
   // PDF laden (alleen voor type pdf).
   useEffect(() => {
@@ -114,13 +132,27 @@ export function PdfViewer({
   const volgende = () => setPagina((p) => Math.min(numPages || 1, p + 1));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label={bestandsnaam}>
+    <div ref={wrapRef} className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label={bestandsnaam}>
       <div className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
         {/* kop */}
         <div className="flex items-center gap-2 border-b-2 border-line px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-ink">{bestandsnaam}</span>
           {type === "pdf" && numPages > 0 && (
             <span className="shrink-0 font-mono text-xs text-ink-muted">pag. {pagina} / {numPages}</span>
+          )}
+          {kanVolledig && (
+            <button
+              type="button"
+              onClick={toggleVolledig}
+              aria-label={volledig ? "Verklein" : "Volledig scherm"}
+              className="grid h-9 w-9 shrink-0 place-items-center border-[1.5px] border-line text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+            >
+              {volledig ? (
+                <Minimize2 size={18} strokeWidth={2.5} aria-hidden="true" />
+              ) : (
+                <Maximize2 size={18} strokeWidth={2.5} aria-hidden="true" />
+              )}
+            </button>
           )}
           <button
             type="button"
