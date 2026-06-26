@@ -52,6 +52,26 @@ export function DocumentenBlok({
     perGroep.set(groep, lijst);
   }
 
+  // Openen vanuit de tik: meteen echt-fullscreen waar de browser het ondersteunt (Android/desktop),
+  // zoals een filmpje dat uitklapt. Op iPhone-Safari niet ondersteund; daar vult de overlay het scherm
+  // (en in de geïnstalleerde PWA is dat sowieso schermvullend). Stil falen als het niet mag.
+  function openen(doc: Document) {
+    try {
+      if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.();
+    } catch {
+      /* niet ondersteund: overlay vult het scherm */
+    }
+    setOpen(doc);
+  }
+  function sluiten() {
+    try {
+      if (document.fullscreenElement) void document.exitFullscreen?.();
+    } catch {
+      /* noop */
+    }
+    setOpen(null);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {GROEP_VOLGORDE.filter((g) => perGroep.has(g)).map((groep) => (
@@ -61,7 +81,7 @@ export function DocumentenBlok({
           </p>
           <div className="flex flex-col gap-2">
             {perGroep.get(groep)!.map((doc) => (
-              <DocumentKaart key={doc.id} doc={doc} onOpen={setOpen} actie={actieVoorDoc?.(doc)} />
+              <DocumentKaart key={doc.id} doc={doc} onOpen={openen} actie={actieVoorDoc?.(doc)} />
             ))}
           </div>
         </div>
@@ -74,7 +94,7 @@ export function DocumentenBlok({
           url={open.publieke_url}
           bestandsnaam={open.bestandsnaam}
           type={open.type}
-          onClose={() => setOpen(null)}
+          onClose={sluiten}
         />
       )}
     </div>
