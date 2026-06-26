@@ -411,4 +411,17 @@ describe("verkorte rapport-variant", () => {
     const bytes = await genereerRapportPdf(maakMelding({}), [], opl, null, "zaak", "verkorting");
     expect(startsWithPdf(bytes)).toBe(true);
   });
+
+  it("verkorte PDF bevat de meldingen incl. melding-videolink (begeleidend bericht = opmerking, onvoorwaardelijk gerenderd)", async () => {
+    // De verkorte variant verbergt handtekening + controle, maar NIET de meldingen-sectie en het
+    // begeleidend bericht (opmerking). Hier: een melding met video moet als videolink in de verkorte PDF staan.
+    const opl = maakOplevering({ opmerking: "Klant belt nog over de smetplint." });
+    const meldingen = [
+      maakMelding({ id: "m1", opdracht_id: "x", ruwe_tekst: "Front kapot", video_url: "https://x/verkort-melding-video.mp4" }),
+    ];
+    const bytes = await genereerRapportPdf(maakMelding({}), meldingen, opl, null, "zaak", "verkorting");
+    expect(startsWithPdf(bytes)).toBe(true);
+    const urls = await linkAnnotatieUrls(bytes);
+    expect(urls).toContain("https://x/verkort-melding-video.mp4");
+  });
 })
