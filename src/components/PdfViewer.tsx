@@ -73,7 +73,8 @@ export function PdfViewer({
     };
   }, [url, type, paginaKey]);
 
-  // Een pagina renderen naar het canvas, passend op de breedte, maal de zoom.
+  // Een pagina renderen: de HELE pagina passend tonen (contain), gecentreerd, maal de zoom. Zo
+  // verschijnt een liggende tekening niet als smal bandje; draaien of zoomen maakt hem groter.
   const renderPagina = useCallback(async () => {
     const pdf = pdfRef.current;
     const canvas = canvasRef.current;
@@ -85,8 +86,12 @@ export function PdfViewer({
         render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void> };
       };
       const basis = page.getViewport({ scale: 1 });
-      const beschikbaar = container.clientWidth - 16;
-      const cssSchaal = (beschikbaar / basis.width) * zoom;
+      const bw = container.clientWidth - 16;
+      const bh = container.clientHeight - 16;
+      if (bw <= 0 || bh <= 0) return;
+      // Bij zoom 1 past de hele pagina in beeld; daarna schaalt zoom hem groter (scrollen kan dan).
+      const fit = Math.min(bw / basis.width, bh / basis.height);
+      const cssSchaal = Math.max(0.05, fit * zoom);
       // Scherp op retina/telefoon: render op de echte schermdichtheid en toon op CSS-formaat.
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       const viewport = page.getViewport({ scale: cssSchaal * dpr });
@@ -104,6 +109,17 @@ export function PdfViewer({
 
   useEffect(() => {
     if (type === "pdf" && !bezig && !fout) void renderPagina();
+  }, [type, bezig, fout, renderPagina]);
+
+  // Opnieuw renderen bij draaien/resize, zodat een liggende tekening in landscape het scherm vult.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || type !== "pdf") return;
+    const obs = new ResizeObserver(() => {
+      if (!bezig && !fout) void renderPagina();
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, [type, bezig, fout, renderPagina]);
 
   useEffect(() => {
@@ -169,7 +185,11 @@ export function PdfViewer({
               style={{ width: `${zoom * 100}%`, maxWidth: zoom <= 1 ? "100%" : "none", height: "auto" }}
             />
           )}
-          {!fout && type === "pdf" && <canvas ref={canvasRef} className="mx-auto block bg-white shadow" />}
+          {!fout && type === "pdf" && (
+            <div className="flex min-h-full min-w-full items-center justify-center">
+              <canvas ref={canvasRef} className="block bg-white shadow" />
+            </div>
+          )}
         </div>
 
         {/* onderbalk */}
