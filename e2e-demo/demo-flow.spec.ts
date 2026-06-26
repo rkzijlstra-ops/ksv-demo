@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 /**
  * De demo-reis (uitstalraam), end-to-end tegen een DEMO_MODE-server: de beheerder meldt zich aan en
- * komt op het dashboard; een monteur meldt zich via de QR-pagina aan en komt in de werkpool; het
+ * komt op het dashboard; een monteur meldt zich via de QR-pagina aan en komt in de kluspool; het
  * planbord toont de voorbeeld-monteurs; en "Speel opnieuw" houdt de beheerder ingelogd. Elke test
  * begint uitgelogd (geen storageState). De bevestig-dialoog van de reset accepteren we automatisch.
  */
@@ -28,14 +28,14 @@ test("beheerder meldt zich aan en komt op het dashboard", async ({ page }) => {
   await expect(page.getByText(/zo werkt de demo/i)).toBeVisible();
 });
 
-test("monteur meldt zich via de QR-pagina aan en komt in de werkpool", async ({ page }) => {
+test("monteur meldt zich via de QR-pagina aan en komt in de kluspool", async ({ page }) => {
   await page.goto("/demo/word-monteur");
   await page.getByPlaceholder("Bijv. Jan").fill(MONTEUR.naam);
   await page.getByPlaceholder("06...").fill(MONTEUR.tel);
   await page.getByPlaceholder("jij@voorbeeld.nl").fill(MONTEUR.mail);
   await page.getByRole("button", { name: /doe mee/i }).click();
   await page.waitForURL((url) => url.pathname === "/");
-  await expect(page.getByText(/werkpool/i)).toBeVisible();
+  await expect(page.getByText(/kluspool/i)).toBeVisible();
 });
 
 test("planbord toont de voorbeeld-monteurs na aanmelden als beheerder", async ({ page }) => {
