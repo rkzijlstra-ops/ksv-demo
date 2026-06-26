@@ -86,12 +86,16 @@ export function PdfViewer({
       };
       const basis = page.getViewport({ scale: 1 });
       const beschikbaar = container.clientWidth - 16;
-      const schaal = (beschikbaar / basis.width) * zoom;
-      const viewport = page.getViewport({ scale: schaal });
+      const cssSchaal = (beschikbaar / basis.width) * zoom;
+      // Scherp op retina/telefoon: render op de echte schermdichtheid en toon op CSS-formaat.
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const viewport = page.getViewport({ scale: cssSchaal * dpr });
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.style.width = `${Math.floor(viewport.width / dpr)}px`;
+      canvas.style.height = `${Math.floor(viewport.height / dpr)}px`;
       await page.render({ canvasContext: ctx, viewport }).promise;
     } catch {
       setFout("Kon deze pagina niet tonen.");
@@ -110,8 +114,8 @@ export function PdfViewer({
   const volgende = () => setPagina((p) => Math.min(numPages || 1, p + 1));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-ink/60" role="dialog" aria-modal="true" aria-label={bestandsnaam}>
-      <div className="mx-auto mt-12 flex w-full max-w-3xl flex-1 flex-col overflow-hidden border-2 border-ink bg-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label={bestandsnaam}>
+      <div className="flex h-full w-full flex-1 flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
         {/* kop */}
         <div className="flex items-center gap-2 border-b-2 border-line px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-ink">{bestandsnaam}</span>
@@ -169,7 +173,7 @@ export function PdfViewer({
         </div>
 
         {/* onderbalk */}
-        <div className="flex items-center justify-between gap-2 border-t-2 border-line px-3 py-2">
+        <div className="flex items-center justify-between gap-2 border-t-2 border-line px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <div className="flex gap-2">
             {type === "pdf" && (
               <>
