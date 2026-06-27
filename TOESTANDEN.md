@@ -144,6 +144,13 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   oplever-readonly.spec. De **opleveraar** (oplevering.user_id) kan een read-only opdrachtgever-klus toch
   bijwerken via **"Toch aanpassen"** (?aanpassen=1 -> bewerkbare flow met waarschuwing); een andere monteur
   ziet die knop niet. ✓ oplever-readonly.spec ("Toch aanpassen").
+- **Detailpagina per ronde + opgeschoond** (2026-06-27). Meldingen zijn inklapbaar (dicht als standaard,
+  MeldingRegel) en de lijst toont alleen de HUIDIGE ronde (gemaakt na het laatste `heropend_at`). Een
+  "Vorige ronde"-blok toont de eerdere meldingen + vorig rapport **alleen-lezen** (geen bewerken/opnieuw
+  versturen). "Eerder op deze referentie" is geschrapt (verwarrend, ving vooral dubbel-ingeschoten orders;
+  terugkomers lopen via heropenen). "Oplevering verstuurd / Opnieuw versturen" verschijnt alleen bij een in
+  DEZE ronde opgeleverde klus. ✓ melding-flow.spec, afgerond-zaak.spec; detail-opmaak visueel door Rein.
+  Open: duplicaat-waarschuwing bij inschieten als de referentie al bestaat (volgende ronde).
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded

@@ -92,8 +92,9 @@ test("meldingenlijst: alleen spoed krijgt een label; gewone melding zonder label
   await seedMelding(id, { spoed: false, tekst: "Zijwand beschadigd" });
 
   await page.goto(`/opdracht/${id}`);
-  await expect(page.getByText("Kraan ontbreekt")).toBeVisible();
-  await expect(page.getByText("Zijwand beschadigd")).toBeVisible();
+  // De melding-tekst staat in de (inklapbare) regel; .first() want hij komt ook in de dichte body voor.
+  await expect(page.getByText("Kraan ontbreekt").first()).toBeVisible();
+  await expect(page.getByText("Zijwand beschadigd").first()).toBeVisible();
 
   // Eén spoed-badge (voor de spoed-melding), geen oude "Open"/"Achteraf"-labels.
   await expect(page.getByText("Spoed", { exact: true })).toHaveCount(1);

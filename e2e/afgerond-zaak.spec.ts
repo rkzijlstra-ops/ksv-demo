@@ -28,9 +28,17 @@ async function seedVoltooid(): Promise<string> {
     toegewezen_aan: MONTEUR_ACC.uid,
     opdrachtgever_id: zaak?.id ?? null,
   });
+  const nu = new Date().toISOString();
   await admin
     .from("meldingen")
-    .update({ afgerond_door_monteur_at: new Date().toISOString(), afgerond_toelichting: "Alles getest, klant tevreden." })
+    .update({
+      afgerond_door_monteur_at: nu,
+      afgerond_toelichting: "Alles getest, klant tevreden.",
+      // Opgeleverd: de verwerk-status (Te verwerken / Verwerkt) triggert op status 'opgeleverd'.
+      opdracht_status: "opgeleverd",
+      dashboard_status: "opgeleverd",
+      opgeleverd_at: nu,
+    })
     .eq("id", id);
   return id;
 }
@@ -39,11 +47,11 @@ test.afterEach(async () => {
   if (opdrachtId) await admin.from("meldingen").delete().eq("id", opdrachtId);
 });
 
-test("zaak keurt een voltooid gemelde klus goed", async ({ page }) => {
+test("zaak markeert een opgeleverde klus als verwerkt", async ({ page }) => {
   opdrachtId = await seedVoltooid();
   await page.goto(`/dashboard/opdracht/${opdrachtId}`);
-  await expect(page.getByRole("heading", { name: /door de monteur voltooid gemeld/i })).toBeVisible();
-  await page.getByRole("button", { name: /akkoord, klaar/i }).click();
+  await expect(page.getByRole("heading", { name: "Te verwerken" })).toBeVisible();
+  await page.getByRole("button", { name: /markeer als verwerkt/i }).click();
   await expect
     .poll(async () => {
       const { data } = await admin.from("meldingen").select("afgerond_akkoord_at").eq("id", opdrachtId).single();
@@ -52,10 +60,11 @@ test("zaak keurt een voltooid gemelde klus goed", async ({ page }) => {
     .not.toBeNull();
 });
 
-test("zaak heropent een voltooid gemelde klus naar te plannen", async ({ page }) => {
+test("zaak heropent een opgeleverde klus naar te plannen", async ({ page }) => {
   opdrachtId = await seedVoltooid();
   await page.goto(`/dashboard/opdracht/${opdrachtId}`);
-  await page.getByRole("button", { name: /toch nog open/i }).click();
+  await page.getByRole("button", { name: "Heropenen" }).click(); // trigger
+  await page.getByRole("dialog", { name: "Klus heropenen" }).getByRole("button", { name: "Heropenen" }).click();
   await expect
     .poll(async () => {
       const { data } = await admin
