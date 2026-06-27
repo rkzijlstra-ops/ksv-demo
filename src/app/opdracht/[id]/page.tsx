@@ -6,28 +6,24 @@ import {
   Truck,
   MapPin,
   Plus,
-  Pencil,
   PackageCheck,
   ClipboardCheck,
   FileBarChart,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 import { domeinVanAdres, isEersteContactMetDomein } from "@/lib/verzend-domein";
 import { VerzendInfoBlok } from "@/components/VerzendInfoBlok";
 import { uitvoerdatumVoorMonteur } from "@/lib/opdracht-status";
-import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { ActieKaart } from "@/components/ActieKaart";
 import { DocumenttypeBadge } from "@/components/DocumenttypeBadge";
 import { DocumentToevoegen } from "@/components/DocumentToevoegen";
 import { DocumentenBlok } from "@/components/DocumentenBlok";
-import { MeldingVerwijderKnop } from "@/components/MeldingVerwijderKnop";
+import { MeldingRegel } from "@/components/MeldingRegel";
 import { NavKnop } from "@/components/NavKnop";
 import { BelKnop } from "@/components/BelKnop";
 import { WhatsAppKnop } from "@/components/WhatsAppKnop";
-import { FotoGalerij } from "@/components/FotoGalerij";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
 import { BevestigOntvangstKnop } from "@/components/BevestigOntvangstKnop";
 import { WerkomschrijvingBlok } from "@/components/WerkomschrijvingBlok";
@@ -51,19 +47,23 @@ export default async function OpdrachtDetailPage({
   if (!opdracht) notFound();
   const opgeleverd = opdracht.opdracht_status === "opgeleverd";
 
-  // Eerste-contact-met-domein voor de waarschuwing op het verzendblok (kans op spam bij een nieuwe zaak).
-  const laatsteZaakVerz = verzendingen.find((v) => v.doelgroep === "zaak") ?? verzendingen[0];
+  // Rondes: na heropenen begint een nieuwe ronde. Wat vóór het laatste heropen-moment is gemaakt, hoort
+  // bij de vorige ronde (alleen-lezen ter referentie); daarna bij de huidige ronde.
+  const heropendOp = opdracht.heropend_at;
+  const huidigeMeldingen = heropendOp ? meldingen.filter((m) => m.created_at >= heropendOp) : meldingen;
+  const vorigeMeldingen = heropendOp ? meldingen.filter((m) => m.created_at < heropendOp) : [];
+  const huidigeVerzendingen = heropendOp
+    ? verzendingen.filter((v) => v.created_at >= heropendOp)
+    : verzendingen;
+  const vorigeRapporten = heropendOp
+    ? verzendingen.filter((v) => v.created_at < heropendOp && v.rapport_url)
+    : [];
+
+  // Eerste-contact-met-domein voor de spam-waarschuwing op het verzendblok (alleen de huidige ronde).
+  const laatsteZaakVerz = huidigeVerzendingen.find((v) => v.doelgroep === "zaak") ?? huidigeVerzendingen[0];
   const verzDomein = laatsteZaakVerz ? domeinVanAdres(laatsteZaakVerz.naar) : null;
   const verzNaarDomein = verzDomein ? await dbi.eerdereVerzendingenNaarDomein(verzDomein) : [];
   const eersteContact = isEersteContactMetDomein(opdracht.id, verzNaarDomein);
-
-  // Eerdere klussen op dezelfde referentie (vervolg-bezoeken aan dezelfde keuken), zodat de historie
-  // meereist. RLS toont de monteur alleen zijn eigen klussen; voor KSV (één monteur) is dat zijn eerdere
-  // bezoeken. Niet-blokkerend: bij geen referentie of geen treffers gewoon leeg.
-  const historieRuw = opdracht.referentienummer
-    ? await dbi.zoekOpReferentie(opdracht.referentienummer)
-    : [];
-  const referentieHistorie = historieRuw.filter((h) => h.id !== opdracht.id);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-28">
@@ -149,10 +149,12 @@ export default async function OpdrachtDetailPage({
         </div>
       )}
 
-      {verzendingen.length > 0 && (
+      {/* "Oplevering verstuurd" + opnieuw versturen: alleen voor een in DEZE ronde opgeleverde klus. Op
+          een open (heropende) klus zijn de vorige rapporten alleen-lezen, zie "Vorige ronde" onderaan. */}
+      {opgeleverd && huidigeVerzendingen.length > 0 && (
         <VerzendInfoBlok
           opdrachtId={opdracht.id}
-          verzendingen={verzendingen.map((v) => ({
+          verzendingen={huidigeVerzendingen.map((v) => ({
             id: v.id,
             created_at: v.created_at,
             doelgroep: v.doelgroep,
@@ -165,37 +167,6 @@ export default async function OpdrachtDetailPage({
       )}
 
       <WerkomschrijvingBlok opdrachtId={id} initieel={opdracht.werkomschrijving} />
-
-      {referentieHistorie.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
-            Eerder op deze referentie ({referentieHistorie.length})
-          </h2>
-          <p className="mb-2 text-sm text-ink-muted">Eerdere bezoeken aan deze keuken.</p>
-          <ul className="flex flex-col gap-2">
-            {referentieHistorie.map((h) => (
-              <li key={h.id}>
-                <Link
-                  href={`/opdracht/${h.id}`}
-                  className="flex items-center gap-3 border border-line bg-white p-3 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-                >
-                  <span className="w-20 shrink-0 font-mono text-xs font-bold text-ink-muted">
-                    {formatDatumKort(h.opgeleverd_at ?? h.startdatum ?? h.created_at)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
-                    {h.opdracht_status === "opgeleverd"
-                      ? "Opgeleverd"
-                      : h.teruggemeld_at
-                        ? "Teruggemeld"
-                        : "Bezoek"}
-                  </span>
-                  <ChevronRight size={18} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between gap-2">
@@ -238,55 +209,50 @@ export default async function OpdrachtDetailPage({
 
         <PendingMeldingen opdrachtId={id} />
 
-        {meldingen.length === 0 ? (
+        {huidigeMeldingen.length === 0 ? (
           <p className="rounded-none border border-line bg-surface p-4 text-sm text-ink-muted">
             Nog geen meldingen op deze klus. Maak er een met de knop hierboven.
           </p>
         ) : (
-          <ul className="flex flex-col gap-4">
-            {meldingen.map((m) => (
-              <li key={m.id} className="rounded-none border border-line bg-white p-4">
-                {(m.spoed || m.versie > 1) && (
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
-                    {m.versie > 1 && (
-                      <span className="text-sm font-semibold text-ink-muted">aangepast (v{m.versie})</span>
-                    )}
-                  </div>
-                )}
-                {m.spoed && m.spoed_verzonden_at && (
-                  <p className="mt-1 text-xs font-semibold text-urgent-rood">
-                    Spoed verstuurd op {formatDatumKort(m.spoed_verzonden_at)}
-                  </p>
-                )}
-                {m.ruwe_tekst && (
-                  <p className="mt-2 font-[family-name:var(--font-body)] text-base text-ink">
-                    {m.ruwe_tekst}
-                  </p>
-                )}
-                {m.foto_urls.length > 0 && (
-                  <div className="mt-3">
-                    <FotoGalerij urls={m.foto_urls} />
-                  </div>
-                )}
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/opdracht/${id}/melding/${m.id}`}
-                      className="inline-flex min-h-[40px] cursor-pointer items-center gap-1 border border-ink px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-                    >
-                      <Pencil size={15} strokeWidth={2.5} aria-hidden="true" />
-                      Bewerken
-                    </Link>
-                    <MeldingVerwijderKnop meldingId={m.id} />
-                  </div>
-                </div>
+          <ul className="flex flex-col gap-2">
+            {huidigeMeldingen.map((m) => (
+              <li key={m.id}>
+                <MeldingRegel melding={m} opdrachtId={id} />
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {/* Vorige ronde (na heropenen): de eerder gemelde punten + het vorige rapport, alleen-lezen ter
+          referentie. Standaard dichtgeklapt zodat de pagina rustig blijft. */}
+      {(vorigeMeldingen.length > 0 || vorigeRapporten.length > 0) && (
+        <section className="mt-6">
+          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Vorige ronde</h2>
+          <p className="mb-3 mt-1 text-sm text-ink-muted">Wat er eerder gebeurde, ter referentie. Alleen-lezen.</p>
+          <ul className="flex flex-col gap-2">
+            {vorigeMeldingen.map((m) => (
+              <li key={m.id}>
+                <MeldingRegel melding={m} opdrachtId={id} readOnly />
+              </li>
+            ))}
+            {vorigeRapporten.map((v) => (
+              <li key={v.id}>
+                <a
+                  href={v.rapport_url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 border border-line bg-white p-3 hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+                >
+                  <FileBarChart size={16} strokeWidth={2.2} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">Vorig rapport bekijken</span>
+                  <span className="shrink-0 font-mono text-xs text-ink-muted">{formatDatumKort(v.created_at)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Aan het einde van de klus: afsluiten als gelabeld blok in de pagina, zodat de pagina van boven
           naar onder het verhaal vertelt (tijdens de klus melden, aan het eind afsluiten). */}

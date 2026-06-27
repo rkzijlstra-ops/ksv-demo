@@ -46,4 +46,28 @@ describe("schoonOmschrijving", () => {
   it("comprimeert overtollige lege regels", () => {
     expect(schoonOmschrijving("Regel een.\n\n\n\nRegel twee.")).toBe("Regel een.\n\nRegel twee.");
   });
+
+  it("doorgestuurde mail zonder notitie: houdt de body over, niet alleen de marker", () => {
+    const t =
+      "---------- Forwarded message ---------\n" +
+      "Van: Keukensale <info@keukensale.com>\n" +
+      "Datum: do 27 jun 2026\n" +
+      "Aan: rk <r.k.zijlstra@gmail.com>\n" +
+      "Onderwerp: De heer Donker\n\n" +
+      "Graag de lade onder de oven nastellen en het werkblad afkitten.";
+    expect(schoonOmschrijving(t)).toBe(
+      "Graag de lade onder de oven nastellen en het werkblad afkitten.",
+    );
+  });
+
+  it("doorgestuurde mail met eigen notitie bovenaan: houdt de notitie", () => {
+    const t =
+      "Kun je dit oppakken?\n\n---------- Forwarded message ---------\nVan: Klant\nOnderwerp: keuken\n\noude inhoud";
+    expect(schoonOmschrijving(t)).toBe("Kun je dit oppakken?");
+  });
+
+  it("forward zonder marker maar met leidend header-blok: pakt de body", () => {
+    const t = "Van: Klant\nDatum: maandag\nAan: ons\nOnderwerp: keuken\n\nWerkblad vervangen graag.";
+    expect(schoonOmschrijving(t)).toBe("Werkblad vervangen graag.");
+  });
 });

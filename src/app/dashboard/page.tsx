@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { teDoenTelling } from "@/lib/te-doen";
+import { verwerkStatus } from "@/lib/afrond-status";
 import { DashboardLijst } from "@/components/DashboardLijst";
 import { InschietZone } from "@/components/InschietZone";
 import { KlusInvoer } from "@/components/KlusInvoer";
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
   const dbi = await db();
   const opdrachten = await dbi.getOpdrachtenVoorDashboard();
   const telling = teDoenTelling(opdrachten);
+  const teVerwerken = opdrachten.filter((o) => verwerkStatus(o) === "te-verwerken").length;
 
   return (
     <main className="mx-auto w-full max-w-3xl p-4 pb-24">
@@ -34,6 +36,11 @@ export default async function DashboardPage() {
               {opdrachten.length} {opdrachten.length === 1 ? "klus" : "klussen"}
               {telling.aandacht > 0 && ` · ${telling.aandacht} ${telling.aandacht === 1 ? "vraagt" : "vragen"} aandacht`}
             </p>
+            {teVerwerken > 0 && (
+              <span className="mt-2 inline-flex items-center gap-1.5 border-[1.5px] border-bevestigd bg-bevestigd px-2.5 py-1 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+                {teVerwerken} {teVerwerken === 1 ? "oplevering" : "opleveringen"} te verwerken
+              </span>
+            )}
           </div>
           {email && <UserMenu email={email} isBeheerder={profiel.rol === "beheerder"} />}
         </div>

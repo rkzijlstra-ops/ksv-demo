@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, dbAdmin } from "@/lib/db";
+import { db } from "@/lib/db";
 import { storage } from "@/lib/storage";
 import { genereerRapportPdf, type RapportDoelgroep, type RapportVariant } from "@/lib/rapport";
 import { verstuurOpleverRapport } from "@/lib/mail";
@@ -93,6 +93,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
     rapportUrl = publieke_url;
 
+    // Voor de mailtekst: alleen foto's/video noemen die er echt zijn. Een video of foto kan ook bij
+    // een melding zitten (snel afsluiten), niet alleen op de oplevering zelf.
+    const heeftFotos =
+      (oplevering.eindstaat_foto_urls?.length ?? 0) > 0 ||
+      meldingen.some((m) => m.foto_urls.length > 0);
+    const heeftVideo =
+      !!oplevering.video_url?.trim() || meldingen.some((m) => !!m.video_url?.trim());
+
     // Mail vóór het registreren: mislukt de mail, dan blijft de stand 'niet verstuurd' (kan opnieuw).
     await verstuurOpleverRapport({
       naar,
@@ -100,6 +108,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       pdf,
       bestandsnaam,
       videoUrl: oplevering.video_url,
+      heeftFotos,
+      heeftVideo,
       afzender,
       doelgroep,
       klantOok,
@@ -115,11 +125,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (doelgroep === "klant") {
       await dbi.registreerKlantRapport(id, rapportUrl, naar);
     } else if (vervolg) {
-      // Vervolg-keten: rapport vastleggen, NIET opgeleverd, en terug naar kantoor om opnieuw te plannen
-      // (ontplannen met service-rechten; een ad-hoc klus zonder kantoor blijft bij de monteur met de
-      // "Vervolg plannen"-markering).
+      // "Klus is niet af": gewoon opleveren (groen, in de te-verwerken lijst) mét het label
+      // 'vervolg nodig'. NIET meer automatisch terug naar de pool; de zaak beslist zelf en heropent
+      // indien nodig (zelfde mechaniek als elke opgeleverde klus die terug moet).
       await dbi.registreerVerkortRapportVervolg(id, rapportUrl);
-      if (opdracht.opdrachtgever_id) await dbAdmin().ontplanOpdracht(id);
     } else {
       // Zet de opdracht pas nu op opgeleverd (kantoor ziet het oplevermoment nu pas).
       await dbi.registreerZaakRapport(id, rapportUrl);

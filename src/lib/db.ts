@@ -935,10 +935,10 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async registreerVerkortRapportVervolg(opdrachtId, rapportUrl) {
-      // Snel afsluiten MET vervolg: de verkorte PDF is naar de opdrachtgever gegaan (zaak heeft het
-      // oplever-blok gehad), maar de klus is NIET opgeleverd: er komt nog iets. We leggen het rapport
-      // vast op de oplevering en zetten de "Vervolg plannen"-markering (afgerond_vervolg_nodig). De
-      // eventuele ontplanning naar kantoor doet de route met service-rechten (zoals bij snel afronden).
+      // Snel afsluiten MET "klus is niet af": de klus wordt gewoon OPGELEVERD (groen, in de te-verwerken
+      // lijst), net als een normale oplevering, met daarbij het label afgerond_vervolg_nodig als seintje
+      // aan de zaak dat er nog werk nodig is. De zaak beslist zelf: verwerken (akkoord) of HEROPENEN voor
+      // het vervolg (heropenen zet de klus terug naar te plannen, met behoud van de volledige historie).
       const nu = new Date().toISOString();
       const { error: opErr } = await client
         .from("opleveringen")
@@ -948,9 +948,16 @@ function createDbFromClient(client: SupabaseClient): Db {
       const { error: mErr } = await client
         .from("meldingen")
         .update({
+          opdracht_status: "opgeleverd",
+          dashboard_status: "opgeleverd",
+          opgeleverd_at: nu,
+          rapport_url: rapportUrl,
           afgerond_door_monteur_at: nu,
           afgerond_vervolg_nodig: true,
-          rapport_url: rapportUrl,
+          teruggemeld_at: null,
+          teruggemeld_reden: null,
+          teruggemeld_toelichting: null,
+          heropend_at: null,
         })
         .eq("id", opdrachtId);
       if (mErr) throw new Error(`DB update mislukt: ${mErr.message}`);
@@ -1322,6 +1329,27 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (typeof instructie === "string" && instructie.trim()) patch.werkomschrijving = instructie.trim();
       const { error } = await client.from("meldingen").update(patch).eq("id", id);
       if (error) throw new Error(`DB heropenen mislukt: ${error.message}`);
+      // De oplevering terug naar een schone nieuwe ronde: werkvelden + verzonden-tijdstippen leeg, zodat
+      // de oplever-flow niet de vorige inhoud of "Verzonden"-staat toont. De verstuurde rapporten (PDF's)
+      // blijven bewaard in de verzendgeschiedenis (rapport_verzendingen) als read-only historie.
+      const { error: opErr } = await client
+        .from("opleveringen")
+        .update({
+          eindstaat_foto_urls: [],
+          video_url: null,
+          opmerking: null,
+          handtekening_url: null,
+          controle: [],
+          interne_opmerking: null,
+          interne_foto_urls: [],
+          interne_video_url: null,
+          rapport_url: null,
+          klant_rapport_url: null,
+          zaak_rapport_verzonden_at: null,
+          klant_rapport_verzonden_at: null,
+        })
+        .eq("opdracht_id", id);
+      if (opErr) throw new Error(`DB heropenen (oplevering) mislukt: ${opErr.message}`);
     },
 
     async akkoordAfgerond(id) {

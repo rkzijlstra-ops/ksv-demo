@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { afrondStatus, afrondStatusLabel } from "./afrond-status";
+import {
+  afrondStatus,
+  afrondStatusLabel,
+  verwerkStatus,
+  verwerkStatusLabel,
+} from "./afrond-status";
 
 const basis = {
   afgerond_door_monteur_at: null as string | null,
@@ -29,5 +34,23 @@ describe("afrondStatus", () => {
     expect(afrondStatusLabel("voltooid")).toBe("Voltooid");
     expect(afrondStatusLabel("vervolg-plannen")).toBe("Vervolg plannen");
     expect(afrondStatusLabel("voltooid-akkoord")).toBe("Voltooid");
+  });
+});
+
+describe("verwerkStatus", () => {
+  it("null als de klus niet opgeleverd is", () => {
+    expect(verwerkStatus({ opdracht_status: "open", afgerond_akkoord_at: null })).toBeNull();
+  });
+  it("'te-verwerken' als opgeleverd maar nog niet afgehandeld", () => {
+    expect(verwerkStatus({ opdracht_status: "opgeleverd", afgerond_akkoord_at: null })).toBe("te-verwerken");
+  });
+  it("'verwerkt' als de zaak akkoord gaf", () => {
+    expect(
+      verwerkStatus({ opdracht_status: "opgeleverd", afgerond_akkoord_at: "2026-06-27T11:00:00Z" }),
+    ).toBe("verwerkt");
+  });
+  it("labels kloppen", () => {
+    expect(verwerkStatusLabel("te-verwerken")).toBe("Te verwerken");
+    expect(verwerkStatusLabel("verwerkt")).toBe("Verwerkt");
   });
 });

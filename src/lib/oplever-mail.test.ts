@@ -76,6 +76,21 @@ describe("opleverMailTekst", () => {
     expect(zonder.text).not.toMatch(/video/i);
   });
 
+  it("noemt foto's alleen als er foto's zijn, en niets bij geen media", () => {
+    const fotos = opleverMailTekst({ klantNaam: "x", referentienummer: null, afzender: null, heeftFotos: true, heeftVideo: false });
+    const niets = opleverMailTekst({ klantNaam: "x", referentienummer: null, afzender: null, heeftFotos: false, heeftVideo: false });
+    expect(fotos.text).toMatch(/foto/i);
+    expect(fotos.text).not.toMatch(/video/i);
+    expect(niets.text).not.toMatch(/foto/i);
+    expect(niets.text).not.toMatch(/in het rapport in de bijlage/i);
+  });
+
+  it("noemt foto's en video samen als beide er zijn", () => {
+    const beide = opleverMailTekst({ klantNaam: "x", referentienummer: null, afzender: null, heeftFotos: true, heeftVideo: true });
+    expect(beide.text).toMatch(/foto/i);
+    expect(beide.text).toMatch(/video/i);
+  });
+
   it("bevat geen rauwe link en geen interne opmerking", () => {
     const { text } = opleverMailTekst({
       klantNaam: "van Dijk",

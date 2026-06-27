@@ -79,13 +79,12 @@ test("monteur meldt een klus niet doorgegaan via het keuzescherm", async ({ page
   expect(data?.teruggemeld_at).not.toBeNull();
 });
 
-test("vervolg op een opdrachtgever-klus: rapport vastgelegd, NIET opgeleverd, terug naar kantoor", async () => {
+test("vervolg op een opdrachtgever-klus: opgeleverd met label 'vervolg nodig', blijft toegewezen", async () => {
   await seedOpleveringConcept(opdrachtId);
   const url = `https://x/opdracht-documenten/${opdrachtId}-verkort.pdf`;
 
-  // Dit is exact wat de route in de vervolg-tak doet (opdrachtgever_id gevuld -> ook ontplannen).
+  // Dit is exact wat de route in de vervolg-tak doet: gewoon opleveren + het label. Geen ontplannen meer.
   await db.registreerVerkortRapportVervolg(opdrachtId, url);
-  await db.ontplanOpdracht(opdrachtId);
 
   const { data: opl } = await admin
     .from("opleveringen")
@@ -100,10 +99,10 @@ test("vervolg op een opdrachtgever-klus: rapport vastgelegd, NIET opgeleverd, te
     .select("afgerond_vervolg_nodig, opdracht_status, dashboard_status, toegewezen_aan")
     .eq("id", opdrachtId)
     .single();
-  expect(m?.afgerond_vervolg_nodig).toBe(true); // badge "Vervolg plannen"
-  expect(m?.opdracht_status).not.toBe("opgeleverd"); // blijft open
-  expect(m?.dashboard_status).toBe("binnen"); // terug in de pool bij kantoor
-  expect(m?.toegewezen_aan).toBeNull(); // niet meer toegewezen
+  expect(m?.afgerond_vervolg_nodig).toBe(true); // label "Vervolg nodig"
+  expect(m?.opdracht_status).toBe("opgeleverd"); // gewoon opgeleverd (groen, te verwerken)
+  expect(m?.dashboard_status).toBe("opgeleverd");
+  expect(m?.toegewezen_aan).toBe(RK); // blijft toegewezen, niet teruggeworpen naar de pool
 });
 
 test("vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async () => {
@@ -122,7 +121,7 @@ test("vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async ()
   });
   try {
     await seedOpleveringConcept(adhocId);
-    // Ad-hoc: geen opdrachtgever_id, dus de route ontplant NIET. Alleen de vervolg-markering.
+    // Vervolg levert nu gewoon op (groen) + het label; blijft bij de monteur (toegewezen).
     await db.registreerVerkortRapportVervolg(adhocId, `https://x/${adhocId}-verkort.pdf`);
 
     const { data } = await admin
@@ -131,8 +130,8 @@ test("vervolg op een ad-hoc klus (geen kantoor) blijft bij de monteur", async ()
       .eq("id", adhocId)
       .single();
     expect(data?.afgerond_vervolg_nodig).toBe(true);
-    expect(data?.toegewezen_aan).toBe(RK); // bleef bij de monteur, niet weg-geontplanned
-    expect(data?.opdracht_status).not.toBe("opgeleverd");
+    expect(data?.toegewezen_aan).toBe(RK); // bleef bij de monteur
+    expect(data?.opdracht_status).toBe("opgeleverd");
   } finally {
     await admin.from("opleveringen").delete().eq("opdracht_id", adhocId);
     await admin.from("meldingen").delete().eq("id", adhocId);

@@ -113,6 +113,51 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   status blijft OPEN (niet opgeleverd), klus terug naar kantoor (`ontplanOpdracht`) + `afgerond_vervolg_nodig`
   → badge "Vervolg plannen". Ad-hoc klus (geen kantoor): blijft bij de monteur mét de markering.
   ✓ afgerond.spec (UI-smoke + db-keten via registreerVerkortRapportVervolg).
+- **Snel afsluiten: GEEN klant-levering** (2026-06-27). Klant-levering gaf hier een verwarrende
+  interne-notitie-waarschuwing; nu alleen via "uitgebreid opleveren" (escape-kaart bovenaan, met uitleg
+  wat daar kan: handtekening, akkoord, klant-levering, interne notitie). ✓ melding-flow.spec.
+- **Verkort rapport zonder volledige-oplever-termen** (2026-06-27). Geen "eindstaat-foto's",
+  "video van de oplevering", handtekening of controle in de verkorte variant; de meldingen dragen het
+  bewijs (foto's + videolink per melding). Wél een eigen opsomming bovenaan met alleen wat in verkort kan
+  bestaan: Meldingen, Foto's (bij meldingen), Video (bij melding). Melding-video nu ook zichtbaar in het
+  meldingen-overzicht op beide detailpagina's. Visueel door Rein.
+- **Snel afsluiten "Later versturen" -> kluspool** (2026-06-27). Ging naar de detailpagina; nu naar de
+  monteur-home (kluspool), waar het rapport als "nog te versturen" klaarstaat. ✓ afgerond/melding-flow.spec.
+- **Video-knop in het rapport** (2026-06-27). De videolink is een omlijnde knop (play-vak + label +
+  "openen ›") i.p.v. onderstreepte tekst. Alle drie de videolinks (melding/oplevering/intern), verkort én
+  volledig. Visueel door Rein.
+- **Al verstuurd rapport opnieuw openen** (2026-06-27). "Verstuurd" = minstens één rapport-verzending
+  (oplever-toegang). Eigen klus: bewerken mag, met een app-dialoog "Bestaand rapport aanpassen?"
+  (Annuleren = terug naar de klus) bij het openen van de oplever-flow. Opdrachtgever-klus: read-only,
+  een alleen-lezen weergave (opsomming + meldingen + "Rapport-PDF openen", geen invoer/verstuurknoppen);
+  de afsluit-hub toont dan "Rapport bekijken" i.p.v. snel/volledig. ✓ oplever-toegang.test,
+  oplever-readonly.spec.
+- **Vervolg-herontwerp + dashboard "Te verwerken/Verwerkt"** (2026-06-27). "Klus is niet af" levert nu
+  gewoon OP (groen) met label **"Vervolg nodig"** i.p.v. terug-naar-pool; de zaak beslist zelf: verwerken
+  (akkoord) of **heropenen** voor het vervolg. Read-only/waarschuwing triggeren nu op status **opgeleverd**
+  (niet meer op "een keer verstuurd"), zodat een heropende klus weer bewerkbaar is. **Heropenen** zet de
+  oplevering schoon (nieuwe ronde); de eerdere rapporten blijven in de verzendgeschiedenis als read-only
+  historie. **Dashboard:** een opgeleverde klus is **"Te verwerken"** (blauw) tot de zaak hem afhandelt
+  (akkoord) = **"Verwerkt"** (groen); + teller "X te verwerken" en een "Vervolg nodig"-label. (Vervangt de
+  eerdere vervolg-404-navigatie en de verzending-gebaseerde read-only.) ✓ afrond-status.test
+  (verwerkStatus), oplever-toegang.test (opgeleverd-trigger), afgerond.spec (vervolg = opgeleverd),
+  oplever-readonly.spec. De **opleveraar** (oplevering.user_id) kan een read-only opdrachtgever-klus toch
+  bijwerken via **"Toch aanpassen"** (?aanpassen=1 -> bewerkbare flow met waarschuwing); een andere monteur
+  ziet die knop niet. ✓ oplever-readonly.spec ("Toch aanpassen").
+- **Detailpagina per ronde + opgeschoond** (2026-06-27). Meldingen zijn inklapbaar (dicht als standaard,
+  MeldingRegel) en de lijst toont alleen de HUIDIGE ronde (gemaakt na het laatste `heropend_at`). Een
+  "Vorige ronde"-blok toont de eerdere meldingen + vorig rapport **alleen-lezen** (geen bewerken/opnieuw
+  versturen). "Eerder op deze referentie" is geschrapt (verwarrend, ving vooral dubbel-ingeschoten orders;
+  terugkomers lopen via heropenen). "Oplevering verstuurd / Opnieuw versturen" verschijnt alleen bij een in
+  DEZE ronde opgeleverde klus. ✓ melding-flow.spec, afgerond-zaak.spec; detail-opmaak visueel door Rein.
+- **Duplicaat-waarschuwing bij inschieten** (2026-06-27). Bestaat het referentienummer al (niet-verwijderde
+  klus), dan waarschuwt het inschiet-formulier (KlusInvoer) vóór aanmaken: "ref X bestaat al (klant ·
+  status), toch aanmaken?" Voorkomt dubbele orders aan de bron. Check via `/api/opdrachten/ref-bestaat`
+  (service-rechten, vindt ook dubbelen van een ander). ✓ zelf-invoer.spec.
+- **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
+  ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
+  zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded
+  message"-regel). ✓ oplever-mail.test, mail-schoon.test, rapport/route.test.
 - **kluspool-hernoeming.** Puur naamgeving (werkpool → kluspool), geen statusgedrag gewijzigd; legacy
   `?werkpool=1` blijft werken (backward-compat).
 

@@ -92,8 +92,9 @@ test("meldingenlijst: alleen spoed krijgt een label; gewone melding zonder label
   await seedMelding(id, { spoed: false, tekst: "Zijwand beschadigd" });
 
   await page.goto(`/opdracht/${id}`);
-  await expect(page.getByText("Kraan ontbreekt")).toBeVisible();
-  await expect(page.getByText("Zijwand beschadigd")).toBeVisible();
+  // De melding-tekst staat in de (inklapbare) regel; .first() want hij komt ook in de dichte body voor.
+  await expect(page.getByText("Kraan ontbreekt").first()).toBeVisible();
+  await expect(page.getByText("Zijwand beschadigd").first()).toBeVisible();
 
   // Eén spoed-badge (voor de spoed-melding), geen oude "Open"/"Achteraf"-labels.
   await expect(page.getByText("Spoed", { exact: true })).toHaveCount(1);
@@ -148,7 +149,7 @@ test("snel afsluiten: meldingen-overzicht + begeleidend bericht, geen media-invo
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 
   // Ontsnap-knop naar de volledige oplevering (staat nu bovenaan, duidelijker tekst).
-  const ontsnap = page.getByRole("link", { name: /Liever uitgebreid opleveren/ });
+  const ontsnap = page.getByRole("link", { name: /Uitgebreid opleveren/ });
   await expect(ontsnap).toBeVisible();
   await expect(ontsnap).toHaveAttribute("href", `/opdracht/${id}/opleveren`);
 });
@@ -168,20 +169,21 @@ test("melding-concept blijft bewaard na weg-navigeren en terugkomen (vangnet)", 
   await expect(page.getByLabel("Wat is er aan de hand?")).toHaveValue(tekst);
 });
 
-test("snel afsluiten: klant-levering is een directe verstuur-optie (geen schakelaar), en opent het klant-adresveld", async ({ page }) => {
-  const id = await maakKlus("MF-KLANT", { eigen: true }); // eigen klus => klant-levering toegestaan
+test("snel afsluiten: geen 'Naar de klant'-optie; klant-levering loopt via uitgebreid opleveren", async ({ page }) => {
+  const id = await maakKlus("MF-KLANT", { eigen: true }); // eigen klus => klant-levering zou toegestaan zijn
   await seedMelding(id, { spoed: false, tekst: "Iets gemeld" });
 
   await page.goto(`/opdracht/${id}/afronden/snel`);
 
-  // Geen schakelaar, wél een directe "Naar de klant"-verstuuroptie.
+  // Klant-levering is bewust uit snel afsluiten gehaald (gaf een verwarrende interne-notitie-waarschuwing).
+  await expect(page.getByRole("button", { name: "Naar de klant" })).toHaveCount(0);
   await expect(page.getByText("Ook aan de klant opleveren")).toHaveCount(0);
-  const klant = page.getByRole("button", { name: "Naar de klant" });
-  await expect(klant).toBeVisible();
 
-  // Klikken opent het klant-adresveld (de verstuur-stap werkt).
-  await klant.click();
-  await expect(page.getByLabel("E-mailadres van de klant")).toBeVisible();
+  // Wel een verwijzing naar uitgebreid opleveren (daar kan klant-levering met handtekening/akkoord).
+  await expect(page.getByText("Uitgebreid opleveren")).toBeVisible();
+
+  // De opdrachtgever-optie bestaat wél in snel afsluiten.
+  await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 });
 
 test("snel afsluiten zonder meldingen: lege staat + bevestiging 'Versturen zonder melding?'", async ({ page }) => {

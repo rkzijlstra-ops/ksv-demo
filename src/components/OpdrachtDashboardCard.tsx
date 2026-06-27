@@ -7,7 +7,7 @@ import { planningTijd, duurLabel } from "@/lib/opdracht-weergave";
 import { DocumenttypeBadge } from "./DocumenttypeBadge";
 import { OpdrachtStatusBadge } from "./OpdrachtStatusBadge";
 import { MailMonteurKnop } from "./MailMonteurKnop";
-import { afrondStatus, afrondStatusLabel } from "@/lib/afrond-status";
+import { verwerkStatus, verwerkStatusLabel } from "@/lib/afrond-status";
 import { redenLabel } from "@/lib/terugmeld-mail";
 
 /** Kleur van de linker strip (8px) per status. Literal Tailwind-classes (JIT-veilig). */
@@ -25,7 +25,7 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
   const status = melding.dashboard_status;
   const titel = melding.klant_naam ?? "Onbekende klant";
   const geannuleerd = status === "geannuleerd";
-  const afStat = afrondStatus(melding);
+  const verwStat = verwerkStatus(melding);
   const gepland = status === "concept_gepland" || status === "gepland" || status === "bevestigd";
   const geenRef = isActief(status) && !melding.referentienummer;
   // "Te versturen"-oranje alleen voor ACTIEVE klussen. Een opgeleverde/geannuleerde klus is klaar en
@@ -72,13 +72,18 @@ export function OpdrachtDashboardCard({ melding }: { melding: Melding }) {
               Heropend
             </span>
           )}
-          {afStat && (
+          {verwStat && (
             <span
               className={`inline-flex items-center gap-1.5 border-[1.5px] px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white ${
-                afStat === "vervolg-plannen" ? "border-accent bg-accent" : "border-success bg-success"
+                verwStat === "verwerkt" ? "border-success bg-success" : "border-bevestigd bg-bevestigd"
               }`}
             >
-              {afrondStatusLabel(afStat)}
+              {verwerkStatusLabel(verwStat)}
+            </span>
+          )}
+          {melding.afgerond_vervolg_nodig && melding.opdracht_status === "opgeleverd" && (
+            <span className="inline-flex items-center gap-1.5 border-[1.5px] border-accent bg-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+              Vervolg nodig
             </span>
           )}
           {geenRef && (
