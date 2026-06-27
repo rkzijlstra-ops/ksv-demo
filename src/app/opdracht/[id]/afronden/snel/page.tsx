@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { vereisRol } from "@/lib/toegang";
 import { magKlantLeveren } from "@/lib/klant-levering";
+import { opleverToegang } from "@/lib/oplever-toegang";
 import { OpleverFlow } from "@/components/OpleverFlow";
+import { OpleverReadOnly } from "@/components/OpleverReadOnly";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +19,11 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
   await vereisRol(["monteur", "beheerder"]);
   const { id } = await params;
   const dbi = await db();
-  const [opdracht, userId, meldingen] = await Promise.all([
+  const [opdracht, userId, meldingen, verzendingen] = await Promise.all([
     dbi.getMeldingById(id),
     getAuthenticatedUserId(),
     dbi.getMeldingenVoorOpdracht(id),
+    dbAdmin().getRapportVerzendingen(id), // service-rechten: RLS blokkeert dit anders soms voor de monteur
   ]);
   if (!opdracht) notFound();
   const profiel = userId ? await dbi.getProfiel(userId) : null;
@@ -29,6 +32,12 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
     ? await dbi.getOpdrachtgever(opdracht.opdrachtgever_id)
     : null;
   const magKlant = magKlantLeveren(opdracht, opdrachtgever);
+  // Al verstuurd rapport opnieuw openen: eigen klus mag (mét waarschuwing), opdrachtgever-klus = read-only.
+  const toegang = opleverToegang({ opdrachtgeverId: opdracht.opdrachtgever_id, verzendingen });
+  const rapportUrl =
+    [...verzendingen]
+      .filter((v) => v.rapport_url)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.rapport_url ?? null;
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -52,22 +61,38 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
         />
       </header>
       <div className="mt-6">
-        <OpleverFlow
-          opdrachtId={id}
-          klantEmailVoorstel={opdracht.klant_email}
-          waarschuwKlantZicht={waarschuwKlantZicht}
-          magKlantLeveren={magKlant}
-          verkort
-          meldingen={meldingen.map((m) => ({
-            id: m.id,
-            spoed: m.spoed,
-            spoed_verzonden_at: m.spoed_verzonden_at,
-            ruwe_tekst: m.ruwe_tekst,
-            foto_urls: m.foto_urls,
-            video_url: m.video_url,
-            created_at: m.created_at,
-          }))}
-        />
+        {toegang.readOnly ? (
+          <OpleverReadOnly
+            meldingen={meldingen.map((m) => ({
+              id: m.id,
+              spoed: m.spoed,
+              ruwe_tekst: m.ruwe_tekst,
+              foto_urls: m.foto_urls,
+              video_url: m.video_url,
+              created_at: m.created_at,
+            }))}
+            rapportUrl={rapportUrl}
+            verstuurdOp={toegang.verstuurdOp}
+          />
+        ) : (
+          <OpleverFlow
+            opdrachtId={id}
+            klantEmailVoorstel={opdracht.klant_email}
+            waarschuwKlantZicht={waarschuwKlantZicht}
+            magKlantLeveren={magKlant}
+            verkort
+            waarschuwBestaand={toegang.waarschuwBestaand}
+            meldingen={meldingen.map((m) => ({
+              id: m.id,
+              spoed: m.spoed,
+              spoed_verzonden_at: m.spoed_verzonden_at,
+              ruwe_tekst: m.ruwe_tekst,
+              foto_urls: m.foto_urls,
+              video_url: m.video_url,
+              created_at: m.created_at,
+            }))}
+          />
+        )}
       </div>
     </main>
   );

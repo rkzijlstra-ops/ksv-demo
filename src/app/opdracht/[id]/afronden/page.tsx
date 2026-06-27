@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Zap, ClipboardCheck } from "lucide-react";
+import { ChevronLeft, Zap, ClipboardCheck, Lock } from "lucide-react";
 import { db, dbAdmin } from "@/lib/db";
 import { vereisRol } from "@/lib/toegang";
+import { opleverToegang } from "@/lib/oplever-toegang";
+import { formatDatumKort } from "@/lib/datum";
 import { NietDoorgegaanKnop } from "@/components/NietDoorgegaanKnop";
 import { ActieKaart } from "@/components/ActieKaart";
 import { KlusActiviteit } from "@/components/KlusActiviteit";
@@ -24,6 +26,9 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
     adm.getGebeurtenissenVoor(id),
     adm.getRapportVerzendingen(id),
   ]);
+  // Al verstuurd? Opdrachtgever-klus = read-only (alleen rapport bekijken); eigen klus blijft te bewerken
+  // (de waarschuwing zit in de oplever-flow zelf).
+  const toegang = opleverToegang({ opdrachtgeverId: opdracht.opdrachtgever_id, verzendingen });
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -46,25 +51,43 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
         />
       </header>
 
-      <div className="flex flex-col gap-3">
-        <ActieKaart
-          href={`/opdracht/${id}/afronden/snel`}
-          accent="neutraal"
-          icoon={<Zap size={22} strokeWidth={2.5} aria-hidden="true" />}
-          titel="Snel afsluiten"
-          sub="Voor service of een kleine klus. Een verkort rapport naar de opdrachtgever, zonder handtekening."
-        />
+      {toegang.readOnly ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 border-2 border-line bg-surface px-3 py-2.5 text-sm font-bold text-ink">
+            <Lock size={16} strokeWidth={2.5} className="shrink-0 text-ink-muted" aria-hidden="true" />
+            {toegang.verstuurdOp
+              ? `Al verstuurd op ${formatDatumKort(toegang.verstuurdOp)} aan de opdrachtgever, alleen-lezen.`
+              : "Al verstuurd aan de opdrachtgever, alleen-lezen."}
+          </div>
+          <ActieKaart
+            href={`/opdracht/${id}/opleveren`}
+            accent="neutraal"
+            icoon={<ClipboardCheck size={22} strokeWidth={2.5} aria-hidden="true" />}
+            titel="Rapport bekijken"
+            sub="Bekijk het verstuurde rapport en wat er is gedaan."
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <ActieKaart
+            href={`/opdracht/${id}/afronden/snel`}
+            accent="neutraal"
+            icoon={<Zap size={22} strokeWidth={2.5} aria-hidden="true" />}
+            titel="Snel afsluiten"
+            sub="Voor service of een kleine klus. Een verkort rapport naar de opdrachtgever, zonder handtekening."
+          />
 
-        <ActieKaart
-          href={`/opdracht/${id}/opleveren`}
-          accent="actie"
-          icoon={<ClipboardCheck size={22} strokeWidth={2.5} aria-hidden="true" />}
-          titel="Afsluiten + rapport"
-          sub="Volledige oplevering, optioneel met foto, video en handtekening."
-        />
+          <ActieKaart
+            href={`/opdracht/${id}/opleveren`}
+            accent="actie"
+            icoon={<ClipboardCheck size={22} strokeWidth={2.5} aria-hidden="true" />}
+            titel="Afsluiten + rapport"
+            sub="Volledige oplevering, optioneel met foto, video en handtekening."
+          />
 
-        <NietDoorgegaanKnop opdrachtId={id} klantNaam={klantNaam} />
-      </div>
+          <NietDoorgegaanKnop opdrachtId={id} klantNaam={klantNaam} />
+        </div>
+      )}
 
       <KlusActiviteit gebeurtenissen={gebeurtenissen} verzendingen={verzendingen} />
     </main>

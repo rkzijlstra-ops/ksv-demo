@@ -148,7 +148,7 @@ test("snel afsluiten: meldingen-overzicht + begeleidend bericht, geen media-invo
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 
   // Ontsnap-knop naar de volledige oplevering (staat nu bovenaan, duidelijker tekst).
-  const ontsnap = page.getByRole("link", { name: /Liever uitgebreid opleveren/ });
+  const ontsnap = page.getByRole("link", { name: /Uitgebreid opleveren/ });
   await expect(ontsnap).toBeVisible();
   await expect(ontsnap).toHaveAttribute("href", `/opdracht/${id}/opleveren`);
 });
@@ -179,7 +179,7 @@ test("snel afsluiten: geen 'Naar de klant'-optie; klant-levering loopt via uitge
   await expect(page.getByText("Ook aan de klant opleveren")).toHaveCount(0);
 
   // Wel een verwijzing naar uitgebreid opleveren (daar kan klant-levering met handtekening/akkoord).
-  await expect(page.getByText("Liever uitgebreid opleveren?")).toBeVisible();
+  await expect(page.getByText("Uitgebreid opleveren")).toBeVisible();
 
   // De opdrachtgever-optie bestaat wél in snel afsluiten.
   await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();

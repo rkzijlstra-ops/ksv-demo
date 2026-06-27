@@ -126,6 +126,12 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
 - **Video-knop in het rapport** (2026-06-27). De videolink is een omlijnde knop (play-vak + label +
   "openen ›") i.p.v. onderstreepte tekst. Alle drie de videolinks (melding/oplevering/intern), verkort én
   volledig. Visueel door Rein.
+- **Al verstuurd rapport opnieuw openen** (2026-06-27). "Verstuurd" = minstens één rapport-verzending
+  (oplever-toegang). Eigen klus: bewerken mag, met een app-dialoog "Bestaand rapport aanpassen?"
+  (Annuleren = terug naar de klus) bij het openen van de oplever-flow. Opdrachtgever-klus: read-only,
+  een alleen-lezen weergave (opsomming + meldingen + "Rapport-PDF openen", geen invoer/verstuurknoppen);
+  de afsluit-hub toont dan "Rapport bekijken" i.p.v. snel/volledig. ✓ oplever-toegang.test,
+  oplever-readonly.spec.
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded

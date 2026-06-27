@@ -28,6 +28,7 @@ export function OpleverFlow({
   magKlantLeveren = true,
   verkort = false,
   meldingen = [],
+  waarschuwBestaand = false,
 }: {
   opdrachtId: string;
   /** Klant-mailadres uit de PDF; voorinvulwaarde voor de klant-versie. Aanpasbaar. */
@@ -40,8 +41,14 @@ export function OpleverFlow({
   verkort?: boolean;
   /** Meldingen van de klus; alleen gebruikt in de verkort-modus voor het read-only overzicht. */
   meldingen?: OverzichtMelding[];
+  /** Eigen klus waarvan het rapport al verstuurd is: toon eerst een waarschuwing dat je een bestaand
+   * rapport aanpast (annuleren = terug). Bij opdrachtgever-klussen is bewerken helemaal niet mogelijk
+   * (dan toont de pagina de read-only weergave i.p.v. deze flow). */
+  waarschuwBestaand?: boolean;
 }) {
   const router = useRouter();
+  // Waarschuwing bij het opnieuw openen van een al verstuurd rapport (eigen klus).
+  const [toonWaarschuwing, setToonWaarschuwing] = useState(waarschuwBestaand);
   const { online } = useOfflineState();
   const { ietsBezig: uploadBezig } = useOpleverUpload();
   const [fotoUrls, setFotoUrls] = useState<string[]>([]);
@@ -470,6 +477,39 @@ export function OpleverFlow({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Waarschuwing bij het opnieuw openen van een al verstuurd rapport (eigen klus). In lijn met de
+          andere app-dialogen (zie NietDoorgegaanKnop). Annuleren = terug naar de klus. */}
+      {toonWaarschuwing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Bestaand rapport aanpassen"
+        >
+          <div className="w-full max-w-md border-2 border-ink bg-white p-5">
+            <h2 className="font-mono text-lg font-extrabold text-ink">Bestaand rapport aanpassen?</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Dit rapport is al verstuurd. Je wijzigingen overschrijven het bestaande rapport.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setToonWaarschuwing(false)}
+                className="inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center bg-primary px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-white hover:opacity-90 focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                Ga door
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/opdracht/${opdrachtId}`)}
+                className="inline-flex min-h-[44px] cursor-pointer items-center justify-center border-2 border-ink px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+              >
+                Annuleren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Snel afsluiten: de afslag naar de volledige oplevering staat bovenaan (de keuze maak je vóóraf,
           niet ná het versturen). Het verschil met snel afsluiten is de handtekening + akkoord, niet
           foto/video (die heb je bij de melding al). */}
@@ -478,8 +518,8 @@ export function OpleverFlow({
           href={`/opdracht/${opdrachtId}/opleveren`}
           accent="neutraal"
           icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
-          titel="Liever uitgebreid opleveren?"
-          sub="Daar kan extra: klant laten tekenen, akkoord vastleggen, het rapport naar de klant sturen en een interne notitie voor de opdrachtgever."
+          titel="Uitgebreid opleveren"
+          sub="Met handtekening, akkoord en klant-levering."
         />
       )}
 
