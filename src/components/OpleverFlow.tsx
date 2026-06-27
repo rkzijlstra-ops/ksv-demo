@@ -20,6 +20,7 @@ import { KEUKENZAKEN } from "@/lib/keukenzaken";
 import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
 import { formatDatumKort } from "@/lib/datum";
 import type { Adres, RapportVerzending } from "@/lib/db";
+import { bestemmingNaZaakVerzending } from "@/lib/oplever-toegang";
 
 export function OpleverFlow({
   opdrachtId,
@@ -431,11 +432,12 @@ export function OpleverFlow({
         setKlantVerzondenAt(nu);
         setKlantBezig(false);
       } else {
-        // Zaak gehad: de klus is opgeleverd. Belonend "klaar"-moment, dan terug naar de opdracht.
+        // Zaak gehad. Bestemming hangt af van vervolg: bij een vervolg is de klus teruggegeven aan kantoor
+        // (ontplanned) en niet meer leesbaar voor de monteur -> kluspool i.p.v. de detailpagina (die 404't).
         setZaakVerzondenAt(nu);
         setKlaar(true);
         setTimeout(() => {
-          router.push(`/opdracht/${opdrachtId}`);
+          router.push(bestemmingNaZaakVerzending({ verkort, vervolgNodig, opdrachtId }));
           router.refresh();
         }, 1400);
       }

@@ -18,6 +18,20 @@ export type OpleverToegang = {
   verstuurdOp: string | null;
 };
 
+/**
+ * Waar de monteur heen gaat ná het versturen naar de opdrachtgever. Pure functie, los te testen.
+ * Bij een vervolg (snel afsluiten + "klus is niet af") is de klus teruggegeven aan kantoor (ontplanned)
+ * en dus niet meer leesbaar voor de monteur (RLS): ga naar de kluspool, niet naar de detailpagina (die
+ * zou 404'en). Anders is de klus opgeleverd en blijft de detailpagina bereikbaar.
+ */
+export function bestemmingNaZaakVerzending(opts: {
+  verkort: boolean;
+  vervolgNodig: boolean;
+  opdrachtId: string;
+}): string {
+  return opts.verkort && opts.vervolgNodig ? "/" : `/opdracht/${opts.opdrachtId}`;
+}
+
 export function opleverToegang(opts: {
   opdrachtgeverId: string | null | undefined;
   verzendingen: { created_at: string }[];

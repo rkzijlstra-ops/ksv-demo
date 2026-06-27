@@ -83,6 +83,23 @@ test("opdrachtgever-klus met verstuurd rapport: read-only, geen verstuurknoppen,
   await expect(page.getByText("Snel afsluiten")).toHaveCount(0);
 });
 
+test("opgeleverde klus blijft bereikbaar op de monteur-detailpagina (geen 404 na versturen)", async ({ page }) => {
+  const id = await maakKlus("RO-DETAIL");
+  await seedMelding(id);
+  await db.upsertOpleveringConcept({
+    opdracht_id: id,
+    eindstaat_foto_urls: [],
+    video_url: null,
+    opmerking: "Opgeleverd via snel afsluiten.",
+    user_id: RK,
+  });
+  await db.registreerZaakRapport(id, "https://test.supabase.co/storage/v1/object/public/oplever/r.pdf");
+
+  await page.goto(`/opdracht/${id}`);
+  // De detailpagina moet laden (geen 404): de "Opgeleverd"-staat is zichtbaar.
+  await expect(page.getByText("Opgeleverd op")).toBeVisible();
+});
+
 test("eigen klus met verstuurd rapport: waarschuwing bij openen, Ga door maakt bewerkbaar", async ({ page }) => {
   const id = await maakKlus("RO-EIGEN", { eigen: true });
   await seedMelding(id);

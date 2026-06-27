@@ -132,6 +132,10 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   een alleen-lezen weergave (opsomming + meldingen + "Rapport-PDF openen", geen invoer/verstuurknoppen);
   de afsluit-hub toont dan "Rapport bekijken" i.p.v. snel/volledig. ✓ oplever-toegang.test,
   oplever-readonly.spec.
+- **Snel afsluiten + vervolg: navigatie ná versturen** (2026-06-27, bugfix). Bij een vervolg gaat de klus
+  terug naar kantoor (ontplanned, toegewezen_aan = null), waardoor de monteur hem niet meer mag lezen
+  (RLS). De flow navigeerde tóch naar de detailpagina → 404 blanco. Nu: bij vervolg naar de kluspool,
+  anders naar de detailpagina. ✓ oplever-toegang.test (bestemmingNaZaakVerzending).
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded

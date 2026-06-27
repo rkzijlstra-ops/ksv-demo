@@ -1,5 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { opleverToegang } from "./oplever-toegang";
+import { opleverToegang, bestemmingNaZaakVerzending } from "./oplever-toegang";
+
+describe("bestemmingNaZaakVerzending", () => {
+  it("vervolg (verkort + vervolgNodig): naar de kluspool (klus is teruggegeven aan kantoor)", () => {
+    expect(bestemmingNaZaakVerzending({ verkort: true, vervolgNodig: true, opdrachtId: "abc" })).toBe("/");
+  });
+  it("snel afsluiten zonder vervolg: naar de detailpagina (opgeleverd, blijft bereikbaar)", () => {
+    expect(bestemmingNaZaakVerzending({ verkort: true, vervolgNodig: false, opdrachtId: "abc" })).toBe(
+      "/opdracht/abc",
+    );
+  });
+  it("volledige oplevering: naar de detailpagina", () => {
+    expect(bestemmingNaZaakVerzending({ verkort: false, vervolgNodig: false, opdrachtId: "abc" })).toBe(
+      "/opdracht/abc",
+    );
+  });
+});
 
 describe("opleverToegang", () => {
   it("niets verstuurd: gewoon bewerken, geen waarschuwing, geen read-only", () => {
