@@ -296,6 +296,16 @@ export default async function OpdrachtgeverDetailPage({
                   )}
                 </div>
                 {m.foto_urls.length > 0 && <FotoGalerij urls={m.foto_urls} />}
+                {m.video_url && (
+                  <a
+                    href={m.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+                  >
+                    <Video size={16} strokeWidth={2.2} aria-hidden="true" /> Video bij deze melding
+                  </a>
+                )}
               </li>
             ))}
           </ul>

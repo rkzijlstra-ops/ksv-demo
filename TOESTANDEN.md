@@ -113,6 +113,17 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   status blijft OPEN (niet opgeleverd), klus terug naar kantoor (`ontplanOpdracht`) + `afgerond_vervolg_nodig`
   → badge "Vervolg plannen". Ad-hoc klus (geen kantoor): blijft bij de monteur mét de markering.
   ✓ afgerond.spec (UI-smoke + db-keten via registreerVerkortRapportVervolg).
+- **Snel afsluiten: GEEN klant-levering** (2026-06-27). Klant-levering gaf hier een verwarrende
+  interne-notitie-waarschuwing; nu alleen via "uitgebreid opleveren" (escape-kaart bovenaan, met uitleg
+  wat daar kan: handtekening, akkoord, klant-levering, interne notitie). ✓ melding-flow.spec.
+- **Verkort rapport zonder volledige-oplever-termen** (2026-06-27). Geen "eindstaat-foto's",
+  "video van de oplevering", handtekening of controle in de verkorte variant; de meldingen dragen het
+  bewijs (foto's + videolink per melding). Melding-video nu ook zichtbaar in het meldingen-overzicht op
+  beide detailpagina's. Visueel door Rein.
+- **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
+  ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
+  zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded
+  message"-regel). ✓ oplever-mail.test, mail-schoon.test, rapport/route.test.
 - **kluspool-hernoeming.** Puur naamgeving (werkpool → kluspool), geen statusgedrag gewijzigd; legacy
   `?werkpool=1` blijft werken (backward-compat).
 

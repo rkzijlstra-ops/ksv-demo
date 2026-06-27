@@ -12,6 +12,8 @@ export function opleverMailTekst(opts: {
   klantNaam: string | null;
   referentienummer: string | null;
   afzender: RapportAfzender | null;
+  /** Zit er minstens één foto in het rapport (eindstaat of bij een melding)? */
+  heeftFotos?: boolean;
   heeftVideo: boolean;
   /** Voor wie de mail is. "zaak" (default) = kantoor; "klant" = de eindklant. */
   doelgroep?: "klant" | "zaak";
@@ -24,9 +26,14 @@ export function opleverMailTekst(opts: {
   const klant = opts.klantNaam?.trim() || "de klant";
   const ref = opts.referentienummer ? ` (ref ${opts.referentienummer})` : "";
   const { kop } = rapportAfzenderWeergave(opts.afzender);
-  const mediaZin = opts.heeftVideo
-    ? "De foto's en de video van de oplevering vindt u in het rapport in de bijlage."
-    : "De foto's van de oplevering vindt u in het rapport in de bijlage.";
+  // Alleen noemen wat er echt is: foto's en/of video. Niets erbij als er geen van beide is.
+  const mediaDelen: string[] = [];
+  if (opts.heeftFotos) mediaDelen.push("de foto's");
+  if (opts.heeftVideo) mediaDelen.push("de video");
+  const mediaJoin = mediaDelen.join(" en ");
+  const mediaZin = mediaJoin
+    ? `${mediaJoin.charAt(0).toUpperCase()}${mediaJoin.slice(1)} van de oplevering vindt u in het rapport in de bijlage.`
+    : "";
   // Alleen in de zaak-mail, en alleen als de klant zijn versie ook kreeg.
   const klantOokZin =
     opts.doelgroep !== "klant" && opts.klantOok
@@ -52,7 +59,7 @@ export function opleverMailTekst(opts: {
   const subject = `Opleverrapport ${klant}${ref}`;
   const text = `Beste,
 
-Hierbij het opleverrapport van de montage bij ${klant}${ref}. ${mediaZin}${klantOokZin}
+Hierbij het opleverrapport van de montage bij ${klant}${ref}.${mediaZin ? ` ${mediaZin}` : ""}${klantOokZin}
 
 Met vriendelijke groet,
 ${ondertekening}`;

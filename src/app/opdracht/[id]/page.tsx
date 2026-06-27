@@ -12,6 +12,7 @@ import {
   FileBarChart,
   ChevronLeft,
   ChevronRight,
+  Video,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
@@ -268,6 +269,16 @@ export default async function OpdrachtDetailPage({
                   <div className="mt-3">
                     <FotoGalerij urls={m.foto_urls} />
                   </div>
+                )}
+                {m.video_url && (
+                  <a
+                    href={m.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline focus-visible:outline-3 focus-visible:outline-accent"
+                  >
+                    <Video size={16} strokeWidth={2.2} aria-hidden="true" /> Video bij deze melding
+                  </a>
                 )}
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="font-mono text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>

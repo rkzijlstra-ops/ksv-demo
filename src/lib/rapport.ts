@@ -38,7 +38,7 @@ export function rapportSamenvatting(
   oplevering: Oplevering | null,
 ): RapportSamenvatting {
   return {
-    zaaknaam: opdracht.keukenzaak?.trim() || "Keukenzaak onbekend",
+    zaaknaam: opdracht.keukenzaak?.trim() || "Opdrachtgever onbekend",
     videoUrl: oplevering?.video_url ?? null,
     ondertekend: Boolean(oplevering?.handtekening_url),
     opmerking: oplevering?.opmerking?.trim() || null,
@@ -197,7 +197,7 @@ export async function genereerRapportPdf(
   if (opdracht.klant_adres?.trim()) tabelRij("Adres", opdracht.klant_adres.trim());
   if (opdracht.referentienummer?.trim()) tabelRij("Referentienummer", opdracht.referentienummer.trim());
   if (opdracht.leverweek?.trim()) tabelRij("Leverweek", opdracht.leverweek.trim());
-  tabelRij("Keukenzaak", samenvatting.zaaknaam);
+  tabelRij("Opdrachtgever", samenvatting.zaaknaam);
   y -= 16;
 
   // ---- sectie 1: Oplevering ----
@@ -207,27 +207,30 @@ export async function genereerRapportPdf(
   const toonControle = toonControleInRapport(controle, variant);
   const toonHandtekening = toonHandtekeningInRapport(oplevering, variant);
   sectieKop(1, "Oplevering");
+  // De samenvattings-regels (ondertekend / video van de oplevering / eindstaat-foto's / controle) horen
+  // bij de VOLLEDIGE oplevering. Snel afsluiten (verkorting) kent geen eindstaat: daar dragen de
+  // meldingen het bewijs (foto's + video per melding). Toon die regels dus niet in de verkorte variant.
   if (variant !== "verkorting") {
     leaderRegel(
       "Ondertekend door klant",
       samenvatting.ondertekend ? "Ja" : "Nee",
       samenvatting.ondertekend ? SUCCESS : MUTED,
     );
-  }
-  leaderRegel(
-    "Video van de oplevering",
-    samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
-    samenvatting.videoUrl ? ACCENT : MUTED,
-  );
-  leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
-  leaderRegel("Meldingen", String(meldingen.length), INK);
-  // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
-  if (toonControle) {
     leaderRegel(
-      "Controle bij oplevering",
-      controleNietAkkoord === 0 ? "Akkoord" : `${controleNietAkkoord} niet akkoord`,
-      controleNietAkkoord === 0 ? SUCCESS : ROOD,
+      "Video van de oplevering",
+      samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
+      samenvatting.videoUrl ? ACCENT : MUTED,
     );
+    leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
+    leaderRegel("Meldingen", String(meldingen.length), INK);
+    // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
+    if (toonControle) {
+      leaderRegel(
+        "Controle bij oplevering",
+        controleNietAkkoord === 0 ? "Akkoord" : `${controleNietAkkoord} niet akkoord`,
+        controleNietAkkoord === 0 ? SUCCESS : ROOD,
+      );
+    }
   }
   y -= 6;
 
@@ -248,11 +251,15 @@ export async function genereerRapportPdf(
     videoLink("Interne video · alleen opdrachtgever", interneVideo);
   }
 
-  if (fotos.length > 0) {
-    subKop("EINDSTAAT-FOTO'S");
-    await fotoGrid(fotos);
-  } else {
-    tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
+  // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen (ook niet de
+  // "geen eindstaat-foto's"-regel, want het begrip bestaat daar niet).
+  if (variant !== "verkorting") {
+    if (fotos.length > 0) {
+      subKop("EINDSTAAT-FOTO'S");
+      await fotoGrid(fotos);
+    } else {
+      tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
+    }
   }
   y -= 10;
 

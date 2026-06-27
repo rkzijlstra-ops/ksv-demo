@@ -168,20 +168,21 @@ test("melding-concept blijft bewaard na weg-navigeren en terugkomen (vangnet)", 
   await expect(page.getByLabel("Wat is er aan de hand?")).toHaveValue(tekst);
 });
 
-test("snel afsluiten: klant-levering is een directe verstuur-optie (geen schakelaar), en opent het klant-adresveld", async ({ page }) => {
-  const id = await maakKlus("MF-KLANT", { eigen: true }); // eigen klus => klant-levering toegestaan
+test("snel afsluiten: geen 'Naar de klant'-optie; klant-levering loopt via uitgebreid opleveren", async ({ page }) => {
+  const id = await maakKlus("MF-KLANT", { eigen: true }); // eigen klus => klant-levering zou toegestaan zijn
   await seedMelding(id, { spoed: false, tekst: "Iets gemeld" });
 
   await page.goto(`/opdracht/${id}/afronden/snel`);
 
-  // Geen schakelaar, wél een directe "Naar de klant"-verstuuroptie.
+  // Klant-levering is bewust uit snel afsluiten gehaald (gaf een verwarrende interne-notitie-waarschuwing).
+  await expect(page.getByRole("button", { name: "Naar de klant" })).toHaveCount(0);
   await expect(page.getByText("Ook aan de klant opleveren")).toHaveCount(0);
-  const klant = page.getByRole("button", { name: "Naar de klant" });
-  await expect(klant).toBeVisible();
 
-  // Klikken opent het klant-adresveld (de verstuur-stap werkt).
-  await klant.click();
-  await expect(page.getByLabel("E-mailadres van de klant")).toBeVisible();
+  // Wel een verwijzing naar uitgebreid opleveren (daar kan klant-levering met handtekening/akkoord).
+  await expect(page.getByText("Liever uitgebreid opleveren?")).toBeVisible();
+
+  // De opdrachtgever-optie bestaat wél in snel afsluiten.
+  await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 });
 
 test("snel afsluiten zonder meldingen: lege staat + bevestiging 'Versturen zonder melding?'", async ({ page }) => {

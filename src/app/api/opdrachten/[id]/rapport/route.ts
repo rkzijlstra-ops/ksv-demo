@@ -93,6 +93,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
     rapportUrl = publieke_url;
 
+    // Voor de mailtekst: alleen foto's/video noemen die er echt zijn. Een video of foto kan ook bij
+    // een melding zitten (snel afsluiten), niet alleen op de oplevering zelf.
+    const heeftFotos =
+      (oplevering.eindstaat_foto_urls?.length ?? 0) > 0 ||
+      meldingen.some((m) => m.foto_urls.length > 0);
+    const heeftVideo =
+      !!oplevering.video_url?.trim() || meldingen.some((m) => !!m.video_url?.trim());
+
     // Mail vóór het registreren: mislukt de mail, dan blijft de stand 'niet verstuurd' (kan opnieuw).
     await verstuurOpleverRapport({
       naar,
@@ -100,6 +108,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       pdf,
       bestandsnaam,
       videoUrl: oplevering.video_url,
+      heeftFotos,
+      heeftVideo,
       afzender,
       doelgroep,
       klantOok,

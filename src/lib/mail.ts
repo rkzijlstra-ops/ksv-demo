@@ -23,6 +23,10 @@ export interface OpleverMailInput {
   bestandsnaam: string;
   /** Of er een oplever-video is. Bepaalt of de mailtekst de video noemt; de link zelf staat in de PDF. */
   videoUrl?: string | null;
+  /** Of het rapport minstens één foto bevat (eindstaat of bij een melding). Voor de mailtekst. */
+  heeftFotos?: boolean;
+  /** Of het rapport een video bevat (oplevering of bij een melding). Overschrijft de videoUrl-afleiding. */
+  heeftVideo?: boolean;
   /** Afzender uit het monteur-profiel; bepaalt zowel de From-naam als de ondertekening. */
   afzender?: RapportAfzender | null;
   /** Voor wie de mail is. "zaak" (default) = kantoor; "klant" = de eindklant. */
@@ -184,7 +188,8 @@ export async function verstuurOpleverRapport(input: OpleverMailInput): Promise<v
     klantNaam: input.opdracht.klant_naam,
     referentienummer: input.opdracht.referentienummer,
     afzender: input.afzender ?? null,
-    heeftVideo: !!input.videoUrl?.trim(),
+    heeftFotos: input.heeftFotos ?? false,
+    heeftVideo: input.heeftVideo ?? !!input.videoUrl?.trim(),
     doelgroep: input.doelgroep ?? "zaak",
     klantOok: input.klantOok ?? null,
   });

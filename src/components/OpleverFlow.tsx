@@ -479,7 +479,7 @@ export function OpleverFlow({
           accent="neutraal"
           icoon={<PenLine size={22} strokeWidth={2.5} aria-hidden="true" />}
           titel="Liever uitgebreid opleveren?"
-          sub="Met klant-handtekening en akkoord"
+          sub="Daar kan extra: klant laten tekenen, akkoord vastleggen, het rapport naar de klant sturen en een interne notitie voor de opdrachtgever."
         />
       )}
 
@@ -766,9 +766,10 @@ export function OpleverFlow({
               sub={zaakVerzondenAt ? `Verzonden · ${formatDatumKort(zaakVerzondenAt)}` : "Nog te versturen"}
               onClick={() => setVerstuurKeuze("zaak")}
             />
-            {/* Klant-optie: in de volledige oplevering via de schakelaar (klantLeveringAan); in snel
-                afsluiten direct als die klus klant-levering toestaat (geen schakelaar daar). */}
-            {(klantLeveringAan || (verkort && magKlantLeveren)) && (
+            {/* Klant-optie: alleen in de volledige oplevering via de schakelaar (klantLeveringAan).
+                Bewust NIET in snel afsluiten: daar leidde het tot een verwarrende interne-notitie-
+                waarschuwing; klant-levering loopt via "uitgebreid opleveren". */}
+            {klantLeveringAan && !verkort && (
               <ActieKaart
                 accent={klantVerzondenAt ? "klaar" : "actie"}
                 subAccent
