@@ -1,4 +1,5 @@
-import { Lock, Video, FileBarChart } from "lucide-react";
+import Link from "next/link";
+import { Lock, Video, FileBarChart, Pencil } from "lucide-react";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { formatDatumKort } from "@/lib/datum";
 
@@ -20,10 +21,16 @@ export function OpleverReadOnly({
   meldingen,
   rapportUrl,
   verstuurdOp,
+  magBijwerken = false,
+  aanpassenHref,
 }: {
   meldingen: ReadOnlyMelding[];
   rapportUrl: string | null;
   verstuurdOp: string | null;
+  /** Mag deze gebruiker (de opleveraar) de oplevering toch nog bijwerken? */
+  magBijwerken?: boolean;
+  /** Waar de "Toch aanpassen"-knop heen gaat (zet de flow in bewerk-modus). */
+  aanpassenHref?: string;
 }) {
   const fotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
   const heeftVideo = meldingen.some((m) => !!m.video_url?.trim());
@@ -98,6 +105,20 @@ export function OpleverReadOnly({
         >
           <FileBarChart size={18} strokeWidth={2.5} aria-hidden="true" /> Rapport-PDF openen
         </a>
+      )}
+
+      {magBijwerken && aanpassenHref && (
+        <div className="border-t-2 border-line pt-4">
+          <Link
+            href={aanpassenHref}
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 border-2 border-ink px-4 text-sm font-extrabold uppercase tracking-[0.04em] text-ink hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
+          >
+            <Pencil size={18} strokeWidth={2.5} aria-hidden="true" /> Toch aanpassen
+          </Link>
+          <p className="mt-2 text-xs text-ink-muted">
+            Iets vergeten? Pas de oplevering aan en lever opnieuw op. De opdrachtgever krijgt dan een nieuw rapport.
+          </p>
+        </div>
       )}
     </div>
   );

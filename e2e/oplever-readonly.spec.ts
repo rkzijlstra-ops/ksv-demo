@@ -51,7 +51,15 @@ const RAPPORT_URL = "https://test.supabase.co/storage/v1/object/public/oplever/r
 
 async function seedOpgeleverd(opdrachtId: string): Promise<void> {
   // Zet de klus op opgeleverd (read-only triggert nu op 'opgeleverd', niet op 'een keer verstuurd')
-  // en log de verzending voor de geschiedenis + de rapport-link.
+  // en log de verzending voor de geschiedenis + de rapport-link. De oplevering krijgt user_id RK, zodat
+  // RK als opleveraar "Toch aanpassen" mag.
+  await db.upsertOpleveringConcept({
+    opdracht_id: opdrachtId,
+    eindstaat_foto_urls: [],
+    video_url: null,
+    opmerking: null,
+    user_id: RK,
+  });
   await db.registreerZaakRapport(opdrachtId, RAPPORT_URL);
   await db.logRapportVerzending({
     opdracht_id: opdrachtId,
@@ -86,6 +94,23 @@ test("opdrachtgever-klus met verstuurd rapport: read-only, geen verstuurknoppen,
   await page.goto(`/opdracht/${id}/afronden`);
   await expect(page.getByText("Rapport bekijken")).toBeVisible();
   await expect(page.getByText("Snel afsluiten")).toHaveCount(0);
+});
+
+test("opdrachtgever-klus, de opleveraar kan 'Toch aanpassen' (read-only -> bewerkbaar met waarschuwing)", async ({ page }) => {
+  const id = await maakKlus("RO-AANPASSEN");
+  await seedMelding(id);
+  await seedOpgeleverd(id);
+
+  await page.goto(`/opdracht/${id}/opleveren`);
+  const aanpassen = page.getByRole("link", { name: "Toch aanpassen" });
+  await expect(aanpassen).toBeVisible();
+  await aanpassen.click();
+
+  // Waarschuwing-dialoog, daarna is de flow bewerkbaar.
+  const dialog = page.getByRole("dialog", { name: "Bestaand rapport aanpassen" });
+  await expect(dialog).toBeVisible();
+  await page.getByRole("button", { name: "Ga door" }).click();
+  await expect(page.getByRole("button", { name: "Naar de opdrachtgever" })).toBeVisible();
 });
 
 test("opgeleverde klus blijft bereikbaar op de monteur-detailpagina (geen 404 na versturen)", async ({ page }) => {

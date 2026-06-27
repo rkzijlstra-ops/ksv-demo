@@ -11,21 +11,24 @@ export const dynamic = "force-dynamic";
 
 export default async function OpleverenPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ aanpassen?: string }>;
 }) {
   const { id } = await params;
   const dbi = await db();
   // Onafhankelijke gegevens tegelijk ophalen i.p.v. in een rij (sneller).
-  // Verzendingen met service-rechten (RLS blokkeert dit lezen anders soms voor de monteur).
-  const [opdracht, meldingen, userId, verzendingen] = await Promise.all([
+  // Verzendingen + oplevering met service-rechten (RLS blokkeert dit lezen anders soms voor de monteur).
+  const [opdracht, meldingen, userId, verzendingen, oplevering] = await Promise.all([
     dbi.getMeldingById(id),
     dbi.getMeldingenVoorOpdracht(id),
     getAuthenticatedUserId(),
     dbAdmin().getRapportVerzendingen(id),
+    dbAdmin().getOpleveringVoorOpdracht(id),
   ]);
   if (!opdracht) notFound();
-  // Al verstuurd rapport opnieuw openen: eigen klus mag (mét waarschuwing), opdrachtgever-klus = read-only.
+  // Al opgeleverd opnieuw openen: eigen klus mag (mét waarschuwing), opdrachtgever-klus = read-only.
   const toegang = opleverToegang({
     opdrachtgeverId: opdracht.opdrachtgever_id,
     opgeleverd: opdracht.opdracht_status === "opgeleverd",
@@ -35,6 +38,11 @@ export default async function OpleverenPage({
     [...verzendingen]
       .filter((v) => v.rapport_url)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.rapport_url ?? null;
+  // "Toch aanpassen" op een read-only opdrachtgever-klus mag alleen de monteur die zelf opleverde.
+  const magBijwerken = !!userId && oplevering?.user_id === userId;
+  const aanpassen = (await searchParams).aanpassen === "1" && magBijwerken;
+  const toonReadOnly = toegang.readOnly && !aanpassen;
+  const waarschuw = toegang.waarschuwBestaand || (toegang.readOnly && aanpassen);
   // Privacy-voorkeur van de monteur: waarschuwen bij versturen naar de klant (standaard aan).
   const profiel = userId ? await dbi.getProfiel(userId) : null;
   const waarschuwKlantZicht = profiel?.waarschuw_klant_zicht ?? true;
@@ -63,7 +71,7 @@ export default async function OpleverenPage({
         />
       </header>
 
-      {!toegang.readOnly && meldingen.length > 0 && (
+      {!toonReadOnly && meldingen.length > 0 && (
         <div className="mt-6 rounded-none border border-accent/40 bg-accent/10 p-3">
           <p className="text-sm font-semibold text-ink">
             Meldingen in dit rapport ({meldingen.length})
@@ -80,7 +88,7 @@ export default async function OpleverenPage({
       )}
 
       <div className="mt-6">
-        {toegang.readOnly ? (
+        {toonReadOnly ? (
           <OpleverReadOnly
             meldingen={meldingen.map((m) => ({
               id: m.id,
@@ -92,6 +100,8 @@ export default async function OpleverenPage({
             }))}
             rapportUrl={rapportUrl}
             verstuurdOp={toegang.verstuurdOp}
+            magBijwerken={magBijwerken}
+            aanpassenHref={`/opdracht/${id}/opleveren?aanpassen=1`}
           />
         ) : (
           <OpleverFlow
@@ -99,7 +109,7 @@ export default async function OpleverenPage({
             klantEmailVoorstel={opdracht.klant_email}
             waarschuwKlantZicht={waarschuwKlantZicht}
             magKlantLeveren={magKlant}
-            waarschuwBestaand={toegang.waarschuwBestaand}
+            waarschuwBestaand={waarschuw}
           />
         )}
       </div>

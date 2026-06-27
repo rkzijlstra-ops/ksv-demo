@@ -15,15 +15,22 @@ export const dynamic = "force-dynamic";
  * Snel afsluiten = een uitgeklede oplevering: dezelfde flow als opleveren, maar zonder handtekening en
  * zonder de voorvertoon-stap, en met de "er komt nog een vervolg"-optie. Levert een verkorte PDF op.
  */
-export default async function AfgerondSnelPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AfgerondSnelPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ aanpassen?: string }>;
+}) {
   await vereisRol(["monteur", "beheerder"]);
   const { id } = await params;
   const dbi = await db();
-  const [opdracht, userId, meldingen, verzendingen] = await Promise.all([
+  const [opdracht, userId, meldingen, verzendingen, oplevering] = await Promise.all([
     dbi.getMeldingById(id),
     getAuthenticatedUserId(),
     dbi.getMeldingenVoorOpdracht(id),
     dbAdmin().getRapportVerzendingen(id), // service-rechten: RLS blokkeert dit anders soms voor de monteur
+    dbAdmin().getOpleveringVoorOpdracht(id),
   ]);
   if (!opdracht) notFound();
   const profiel = userId ? await dbi.getProfiel(userId) : null;
@@ -42,6 +49,11 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
     [...verzendingen]
       .filter((v) => v.rapport_url)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.rapport_url ?? null;
+  // "Toch aanpassen" op een read-only opdrachtgever-klus mag alleen de monteur die zelf opleverde.
+  const magBijwerken = !!userId && oplevering?.user_id === userId;
+  const aanpassen = (await searchParams).aanpassen === "1" && magBijwerken;
+  const toonReadOnly = toegang.readOnly && !aanpassen;
+  const waarschuw = toegang.waarschuwBestaand || (toegang.readOnly && aanpassen);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
@@ -65,7 +77,7 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
         />
       </header>
       <div className="mt-6">
-        {toegang.readOnly ? (
+        {toonReadOnly ? (
           <OpleverReadOnly
             meldingen={meldingen.map((m) => ({
               id: m.id,
@@ -77,6 +89,8 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
             }))}
             rapportUrl={rapportUrl}
             verstuurdOp={toegang.verstuurdOp}
+            magBijwerken={magBijwerken}
+            aanpassenHref={`/opdracht/${id}/afronden/snel?aanpassen=1`}
           />
         ) : (
           <OpleverFlow
@@ -85,7 +99,7 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
             waarschuwKlantZicht={waarschuwKlantZicht}
             magKlantLeveren={magKlant}
             verkort
-            waarschuwBestaand={toegang.waarschuwBestaand}
+            waarschuwBestaand={waarschuw}
             meldingen={meldingen.map((m) => ({
               id: m.id,
               spoed: m.spoed,

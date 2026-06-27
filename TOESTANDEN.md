@@ -141,7 +141,9 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   (akkoord) = **"Verwerkt"** (groen); + teller "X te verwerken" en een "Vervolg nodig"-label. (Vervangt de
   eerdere vervolg-404-navigatie en de verzending-gebaseerde read-only.) ✓ afrond-status.test
   (verwerkStatus), oplever-toegang.test (opgeleverd-trigger), afgerond.spec (vervolg = opgeleverd),
-  oplever-readonly.spec. Open: monteur-"Toch aanpassen" op een read-only opdrachtgever-klus (volgende ronde).
+  oplever-readonly.spec. De **opleveraar** (oplevering.user_id) kan een read-only opdrachtgever-klus toch
+  bijwerken via **"Toch aanpassen"** (?aanpassen=1 -> bewerkbare flow met waarschuwing); een andere monteur
+  ziet die knop niet. ✓ oplever-readonly.spec ("Toch aanpassen").
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded
