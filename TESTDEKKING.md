@@ -94,6 +94,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Onboarding-gate: monteur met onvolledig profiel → /welkom (afzendergegevens verplicht bij eerste gebruik); niet in demo; welkom-stap met handleiding-knop | U, E | profiel.test (profielVolledig), toegang.test (onvolledig→/welkom, volledig door, demo uit, skipOnboarding, beheerder vrij); E op omgeving-test | U groen; E door Rein |
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
+| App-versie automatisch uit build-id: `prebuild` zet de SW-versie uit `VERCEL_GIT_COMMIT_SHA` (eerste 8 tekens, terugval "dev"), zodat de "Nieuwe versie"-balk vanzelf werkt zonder handmatige `sw.js`-bump | U | genereer-sw-versie.test (vervangVersie) | groen |
 
 ## Oplever-herinrichting + snel afsluiten (2026-06-24)
 

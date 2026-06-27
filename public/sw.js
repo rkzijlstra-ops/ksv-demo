@@ -1,11 +1,14 @@
 // KSV Service Worker
-// Versie: v3 - PDF-viewer/documenten-blok; cache-bump dwingt verse code af + ruimt oude caches op
+// Versie: wordt automatisch gezet uit het build-id (Vercel: VERCEL_GIT_COMMIT_SHA) door
+//   scripts/genereer-sw-versie.mjs in het `prebuild`-script. In git staat hieronder altijd de
+//   placeholder; de echte versie ontstaat pas bij de build, zodat elke deploy de cache vernieuwt
+//   en de "Nieuwe versie"-balk vanzelf werkt. Niet met de hand bumpen.
 // Drie cache-strategieen:
 //   1. app-shell + Next static chunks (cache-first, langere TTL)
 //   2. HTML/RSC-navigatie (stale-while-revalidate, snel + actueel)
 //   3. Supabase Storage assets + next/image (cache-first, lange TTL)
 
-const VERSION = "ksv-v19";
+const VERSION = "ksv-__BUILD_ID__";
 const CACHE_SHELL = `${VERSION}-shell`;
 const CACHE_PAGES = `${VERSION}-pages`;
 const CACHE_STORAGE = `${VERSION}-storage`;
