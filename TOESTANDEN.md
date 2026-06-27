@@ -150,7 +150,10 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   versturen). "Eerder op deze referentie" is geschrapt (verwarrend, ving vooral dubbel-ingeschoten orders;
   terugkomers lopen via heropenen). "Oplevering verstuurd / Opnieuw versturen" verschijnt alleen bij een in
   DEZE ronde opgeleverde klus. ✓ melding-flow.spec, afgerond-zaak.spec; detail-opmaak visueel door Rein.
-  Open: duplicaat-waarschuwing bij inschieten als de referentie al bestaat (volgende ronde).
+- **Duplicaat-waarschuwing bij inschieten** (2026-06-27). Bestaat het referentienummer al (niet-verwijderde
+  klus), dan waarschuwt het inschiet-formulier (KlusInvoer) vóór aanmaken: "ref X bestaat al (klant ·
+  status), toch aanmaken?" Voorkomt dubbele orders aan de bron. Check via `/api/opdrachten/ref-bestaat`
+  (service-rechten, vindt ook dubbelen van een ander). ✓ zelf-invoer.spec.
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded

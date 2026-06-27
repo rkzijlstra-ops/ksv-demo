@@ -249,6 +249,33 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
     return body.aangemaakt as Array<{ id: string; klant_naam: string | null }>;
   }
 
+  /** Waarschuwt als een referentienummer al bestaat (mogelijke dubbele order). False = gebruiker stopt. */
+  async function bevestigGeenDubbel(refs: Array<string | null | undefined>): Promise<boolean> {
+    const unieke = [...new Set(refs.map((r) => r?.trim()).filter(Boolean) as string[])];
+    for (const r of unieke) {
+      try {
+        const res = await fetch(`/api/opdrachten/ref-bestaat?ref=${encodeURIComponent(r)}`);
+        if (!res.ok) continue;
+        const { klussen } = await res.json();
+        if (Array.isArray(klussen) && klussen.length > 0) {
+          const k = klussen[0];
+          const detail = [k.klant_naam, k.opdracht_status].filter(Boolean).join(" · ");
+          if (
+            !window.confirm(
+              `Let op: er bestaat al een klus met referentie ${r}${detail ? ` (${detail})` : ""}. ` +
+                "Mogelijk een dubbele. Toch aanmaken?",
+            )
+          ) {
+            return false;
+          }
+        }
+      } catch {
+        // Check faalt: niet blokkeren, liever doorlaten dan het inschieten tegenhouden.
+      }
+    }
+    return true;
+  }
+
   async function opslaan(e: React.FormEvent) {
     e.preventDefault();
     if (bezigRef.current) return;
@@ -272,6 +299,13 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       if (klussen.length === 0) {
         setStatus("error");
         setMessage("Wijs minstens één bestand aan een klus toe.");
+        return;
+      }
+      if (
+        !(await bevestigGeenDubbel(
+          klussen.map((k) => (k.velden as { referentienummer?: string | null }).referentienummer),
+        ))
+      ) {
         return;
       }
       bezigRef.current = true;
@@ -311,6 +345,7 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
       setMessage("Kies eerst de montagelocatie; er staan meerdere adressen op de order.");
       return;
     }
+    if (!(await bevestigGeenDubbel([velden.referentienummer]))) return;
     bezigRef.current = true;
     setStatus("saving");
     setMessage("");
