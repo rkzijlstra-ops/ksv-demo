@@ -231,6 +231,14 @@ export async function genereerRapportPdf(
         controleNietAkkoord === 0 ? SUCCESS : ROOD,
       );
     }
+  } else {
+    // Verkort (snel afsluiten): een opsomming van wat DIT rapport bevat, met alleen wat in de verkorte
+    // variant kan bestaan. De meldingen dragen het bewijs; geen eindstaat/handtekening/controle.
+    const meldingFotos = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+    const heeftMeldingVideo = meldingen.some((m) => !!m.video_url?.trim());
+    leaderRegel("Meldingen", String(meldingen.length), INK);
+    leaderRegel("Foto's", String(meldingFotos), INK);
+    leaderRegel("Video", heeftMeldingVideo ? "Bijgevoegd" : "Geen", heeftMeldingVideo ? ACCENT : MUTED);
   }
   y -= 6;
 
@@ -607,15 +615,45 @@ export async function genereerRapportPdf(
     annots.push(ref);
   }
 
-  /** Klikbare videolink: accentkleurig label met onderstreping, betrouwbaar via een link-annotatie. */
+  /**
+   * Klikbare video-KNOP (omlijnd, met een gekleurd play-vak links en "openen ›" rechts), zodat in de
+   * PDF meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie (opent de
+   * video in de browser).
+   */
   function videoLink(label: string, url: string) {
-    const size = 10.5;
-    ruimte(size + 7);
-    page.drawText(label, { x: MARGE, y, size, font: bold, color: ACCENT });
-    const w = bold.widthOfTextAtSize(label, size);
-    page.drawRectangle({ x: MARGE, y: y - 2, width: w, height: 0.6, color: ACCENT });
-    linkAnnotatie(MARGE, y - 3, w, size + 5, url);
-    y -= size + 7;
+    const h = 22;
+    const labelSize = 10;
+    const openenSize = 8.5;
+    const openenLabel = "openen ›";
+    const playW = 20;
+    const padX = 10;
+    const gap = 10;
+    const triH = 11;
+    const triW = 9;
+    const labelW = bold.widthOfTextAtSize(label, labelSize);
+    const openenW = helv.widthOfTextAtSize(openenLabel, openenSize);
+    const totaalW = playW + padX + labelW + gap + openenW + padX;
+    ruimte(h + 8);
+    const by = y - h; // onderkant van de knop
+    // Witte knop met accent-rand.
+    page.drawRectangle({ x: MARGE, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
+    // Play-vak links (accent) met witte play-driehoek, verticaal gecentreerd.
+    page.drawRectangle({ x: MARGE, y: by, width: playW, height: h, color: ACCENT });
+    const triX = MARGE + (playW - triW) / 2;
+    const triTop = by + h / 2 + triH / 2; // anker = bovenpunt (drawSvgPath rekent y naar beneden)
+    page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: triTop, color: WIT });
+    // Label (accent, vet) + "openen ›" (grijs), verticaal gecentreerd.
+    page.drawText(label, { x: MARGE + playW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
+    page.drawText(openenLabel, {
+      x: MARGE + playW + padX + labelW + gap,
+      y: by + (h - openenSize) / 2 + 1,
+      size: openenSize,
+      font: helv,
+      color: MUTED,
+    });
+    // De hele knop is klikbaar.
+    linkAnnotatie(MARGE, by, totaalW, h, url);
+    y = by - 9;
   }
 
   async function tekenHandtekening(url: string) {

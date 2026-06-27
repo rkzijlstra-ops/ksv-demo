@@ -792,7 +792,9 @@ export function OpleverFlow({
               sub="Zet klaar in je kluspool"
               onClick={() => {
                 if (!bevestigVerlaten()) return;
-                router.push(`/opdracht/${opdrachtId}`);
+                // Naar de kluspool (monteur-home), niet terug naar de detailpagina: het rapport staat
+                // daar klaar als "nog te versturen".
+                router.push("/");
                 router.refresh();
               }}
             />

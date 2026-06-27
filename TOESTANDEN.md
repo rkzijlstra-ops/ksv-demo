@@ -118,8 +118,14 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   wat daar kan: handtekening, akkoord, klant-levering, interne notitie). ✓ melding-flow.spec.
 - **Verkort rapport zonder volledige-oplever-termen** (2026-06-27). Geen "eindstaat-foto's",
   "video van de oplevering", handtekening of controle in de verkorte variant; de meldingen dragen het
-  bewijs (foto's + videolink per melding). Melding-video nu ook zichtbaar in het meldingen-overzicht op
-  beide detailpagina's. Visueel door Rein.
+  bewijs (foto's + videolink per melding). Wél een eigen opsomming bovenaan met alleen wat in verkort kan
+  bestaan: Meldingen, Foto's (bij meldingen), Video (bij melding). Melding-video nu ook zichtbaar in het
+  meldingen-overzicht op beide detailpagina's. Visueel door Rein.
+- **Snel afsluiten "Later versturen" -> kluspool** (2026-06-27). Ging naar de detailpagina; nu naar de
+  monteur-home (kluspool), waar het rapport als "nog te versturen" klaarstaat. ✓ afgerond/melding-flow.spec.
+- **Video-knop in het rapport** (2026-06-27). De videolink is een omlijnde knop (play-vak + label +
+  "openen ›") i.p.v. onderstreepte tekst. Alle drie de videolinks (melding/oplevering/intern), verkort én
+  volledig. Visueel door Rein.
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded
