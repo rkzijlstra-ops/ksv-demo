@@ -33,7 +33,11 @@ export default async function AfgerondSnelPage({ params }: { params: Promise<{ i
     : null;
   const magKlant = magKlantLeveren(opdracht, opdrachtgever);
   // Al verstuurd rapport opnieuw openen: eigen klus mag (mét waarschuwing), opdrachtgever-klus = read-only.
-  const toegang = opleverToegang({ opdrachtgeverId: opdracht.opdrachtgever_id, verzendingen });
+  const toegang = opleverToegang({
+    opdrachtgeverId: opdracht.opdrachtgever_id,
+    opgeleverd: opdracht.opdracht_status === "opgeleverd",
+    verzendingen,
+  });
   const rapportUrl =
     [...verzendingen]
       .filter((v) => v.rapport_url)

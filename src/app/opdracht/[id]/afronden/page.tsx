@@ -28,7 +28,11 @@ export default async function AfrondenPage({ params }: { params: Promise<{ id: s
   ]);
   // Al verstuurd? Opdrachtgever-klus = read-only (alleen rapport bekijken); eigen klus blijft te bewerken
   // (de waarschuwing zit in de oplever-flow zelf).
-  const toegang = opleverToegang({ opdrachtgeverId: opdracht.opdrachtgever_id, verzendingen });
+  const toegang = opleverToegang({
+    opdrachtgeverId: opdracht.opdrachtgever_id,
+    opgeleverd: opdracht.opdracht_status === "opgeleverd",
+    verzendingen,
+  });
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">

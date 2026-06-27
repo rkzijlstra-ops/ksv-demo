@@ -47,12 +47,17 @@ async function seedMelding(opdrachtId: string, video_url: string | null = null):
   });
 }
 
-async function seedVerzending(opdrachtId: string): Promise<void> {
+const RAPPORT_URL = "https://test.supabase.co/storage/v1/object/public/oplever/rapport-readonly-test.pdf";
+
+async function seedOpgeleverd(opdrachtId: string): Promise<void> {
+  // Zet de klus op opgeleverd (read-only triggert nu op 'opgeleverd', niet op 'een keer verstuurd')
+  // en log de verzending voor de geschiedenis + de rapport-link.
+  await db.registreerZaakRapport(opdrachtId, RAPPORT_URL);
   await db.logRapportVerzending({
     opdracht_id: opdrachtId,
     doelgroep: "zaak",
     naar: "opdrachtgever@kluslus.test",
-    rapport_url: "https://test.supabase.co/storage/v1/object/public/oplever/rapport-readonly-test.pdf",
+    rapport_url: RAPPORT_URL,
     door_id: RK,
   });
 }
@@ -69,7 +74,7 @@ test.afterEach(async () => {
 test("opdrachtgever-klus met verstuurd rapport: read-only, geen verstuurknoppen, wel het rapport", async ({ page }) => {
   const id = await maakKlus("RO-OG");
   await seedMelding(id, "https://example.com/video-melding.mp4");
-  await seedVerzending(id);
+  await seedOpgeleverd(id);
 
   await page.goto(`/opdracht/${id}/opleveren`);
   await expect(page.getByText(/alleen-lezen/i)).toBeVisible();
@@ -103,7 +108,7 @@ test("opgeleverde klus blijft bereikbaar op de monteur-detailpagina (geen 404 na
 test("eigen klus met verstuurd rapport: waarschuwing bij openen, Ga door maakt bewerkbaar", async ({ page }) => {
   const id = await maakKlus("RO-EIGEN", { eigen: true });
   await seedMelding(id);
-  await seedVerzending(id);
+  await seedOpgeleverd(id);
 
   await page.goto(`/opdracht/${id}/opleveren`);
   const dialog = page.getByRole("dialog", { name: "Bestaand rapport aanpassen" });

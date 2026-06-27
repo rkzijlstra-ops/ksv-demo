@@ -25,8 +25,8 @@ import { DocumentBeheer } from "@/components/DocumentBeheer";
 import { Logboek } from "@/components/Logboek";
 import { AnnuleerKnop } from "@/components/AnnuleerKnop";
 import { vereisRol } from "@/lib/toegang";
-import { afrondStatus } from "@/lib/afrond-status";
-import { AfgerondKeuren } from "@/components/AfgerondKeuren";
+import { verwerkStatus } from "@/lib/afrond-status";
+import { VerwerktKnop } from "@/components/VerwerktKnop";
 import { HeropenKnop } from "@/components/HeropenKnop";
 
 export const dynamic = "force-dynamic";
@@ -90,7 +90,7 @@ export default async function OpdrachtgeverDetailPage({
     opdracht.startdatum && opdracht.starttijd === null
       ? `${planningTijd(opdracht)} · ${duurLabel(opdracht.duur_dagen)}`
       : planningTijd(opdracht);
-  const afStat = afrondStatus(opdracht);
+  const verwStat = verwerkStatus(opdracht);
 
   return (
     <main className="mx-auto w-full max-w-3xl p-4 pb-24">
@@ -122,9 +122,27 @@ export default async function OpdrachtgeverDetailPage({
         <AdresControleBlok opdrachtId={opdracht.id} kandidaten={opdracht.adres_kandidaten ?? []} />
       )}
 
-      {afStat === "voltooid" && (
-        <section className="mt-6 border-2 border-success bg-success/5 p-4">
-          <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">Door de monteur voltooid gemeld</h2>
+      {verwStat && (
+        <section
+          className={`mt-6 border-2 p-4 ${
+            verwStat === "verwerkt" ? "border-success bg-success/5" : "border-bevestigd bg-bevestigd/5"
+          }`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
+              {verwStat === "verwerkt" ? "Verwerkt" : "Te verwerken"}
+            </h2>
+            {opdracht.afgerond_vervolg_nodig && (
+              <span className="inline-flex items-center border-[1.5px] border-accent bg-accent px-2 py-0.5 text-xs font-extrabold uppercase tracking-[0.04em] text-white">
+                Vervolg nodig
+              </span>
+            )}
+          </div>
+          {opdracht.afgerond_vervolg_nodig && (
+            <p className="mt-2 text-sm text-ink-muted">
+              De monteur gaf aan dat er nog werk nodig is. Plan een vervolg in via &quot;Heropenen&quot; hieronder, of verwerk als er niets meer hoeft.
+            </p>
+          )}
           {opdracht.afgerond_toelichting && (
             <p className="mt-2 border border-line border-l-[3px] border-l-success bg-white px-3 py-2 text-base text-ink">
               {opdracht.afgerond_toelichting}
@@ -135,7 +153,15 @@ export default async function OpdrachtgeverDetailPage({
               <FotoGalerij urls={opdracht.afgerond_foto_urls} />
             </div>
           )}
-          <AfgerondKeuren opdrachtId={opdracht.id} />
+          {verwStat === "te-verwerken" ? (
+            <VerwerktKnop opdrachtId={opdracht.id} />
+          ) : (
+            opdracht.afgerond_akkoord_at && (
+              <p className="mt-3 text-sm font-semibold text-success">
+                Verwerkt op {formatDatumKort(opdracht.afgerond_akkoord_at)}
+              </p>
+            )
+          )}
         </section>
       )}
 

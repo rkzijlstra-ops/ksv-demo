@@ -24,3 +24,22 @@ export function afrondStatusLabel(s: AfrondStatus): string {
       return "Voltooid";
   }
 }
+
+/**
+ * Verwerk-status voor de ZAAK: een opgeleverde klus moet de zaak nog nakijken/verwerken (moet er iets
+ * besteld worden?) en daarna afvinken. Pure functie. Null = de klus is (nog) niet opgeleverd.
+ * - "te-verwerken": opgeleverd, nog niet afgehandeld door de zaak.
+ * - "verwerkt": de zaak heeft 'm afgehandeld (afgerond_akkoord_at gezet).
+ */
+export type VerwerkStatus = "te-verwerken" | "verwerkt";
+
+export function verwerkStatus(
+  m: Pick<Melding, "opdracht_status" | "afgerond_akkoord_at">,
+): VerwerkStatus | null {
+  if (m.opdracht_status !== "opgeleverd") return null;
+  return m.afgerond_akkoord_at ? "verwerkt" : "te-verwerken";
+}
+
+export function verwerkStatusLabel(s: VerwerkStatus): string {
+  return s === "verwerkt" ? "Verwerkt" : "Te verwerken";
+}

@@ -26,7 +26,11 @@ export default async function OpleverenPage({
   ]);
   if (!opdracht) notFound();
   // Al verstuurd rapport opnieuw openen: eigen klus mag (mét waarschuwing), opdrachtgever-klus = read-only.
-  const toegang = opleverToegang({ opdrachtgeverId: opdracht.opdrachtgever_id, verzendingen });
+  const toegang = opleverToegang({
+    opdrachtgeverId: opdracht.opdrachtgever_id,
+    opgeleverd: opdracht.opdracht_status === "opgeleverd",
+    verzendingen,
+  });
   const rapportUrl =
     [...verzendingen]
       .filter((v) => v.rapport_url)

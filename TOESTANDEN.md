@@ -132,10 +132,16 @@ Nieuwe/aangepaste overgangen rond opleveren, afsluiten en klant-levering:
   een alleen-lezen weergave (opsomming + meldingen + "Rapport-PDF openen", geen invoer/verstuurknoppen);
   de afsluit-hub toont dan "Rapport bekijken" i.p.v. snel/volledig. ✓ oplever-toegang.test,
   oplever-readonly.spec.
-- **Snel afsluiten + vervolg: navigatie ná versturen** (2026-06-27, bugfix). Bij een vervolg gaat de klus
-  terug naar kantoor (ontplanned, toegewezen_aan = null), waardoor de monteur hem niet meer mag lezen
-  (RLS). De flow navigeerde tóch naar de detailpagina → 404 blanco. Nu: bij vervolg naar de kluspool,
-  anders naar de detailpagina. ✓ oplever-toegang.test (bestemmingNaZaakVerzending).
+- **Vervolg-herontwerp + dashboard "Te verwerken/Verwerkt"** (2026-06-27). "Klus is niet af" levert nu
+  gewoon OP (groen) met label **"Vervolg nodig"** i.p.v. terug-naar-pool; de zaak beslist zelf: verwerken
+  (akkoord) of **heropenen** voor het vervolg. Read-only/waarschuwing triggeren nu op status **opgeleverd**
+  (niet meer op "een keer verstuurd"), zodat een heropende klus weer bewerkbaar is. **Heropenen** zet de
+  oplevering schoon (nieuwe ronde); de eerdere rapporten blijven in de verzendgeschiedenis als read-only
+  historie. **Dashboard:** een opgeleverde klus is **"Te verwerken"** (blauw) tot de zaak hem afhandelt
+  (akkoord) = **"Verwerkt"** (groen); + teller "X te verwerken" en een "Vervolg nodig"-label. (Vervangt de
+  eerdere vervolg-404-navigatie en de verzending-gebaseerde read-only.) ✓ afrond-status.test
+  (verwerkStatus), oplever-toegang.test (opgeleverd-trigger), afgerond.spec (vervolg = opgeleverd),
+  oplever-readonly.spec. Open: monteur-"Toch aanpassen" op een read-only opdrachtgever-klus (volgende ronde).
 - **Mail-tekst + inbound (2026-06-27).** De begeleidende mail noemt alleen aanwezige foto's/video (telt
   ook melding-media); rapport-label "Opdrachtgever" i.p.v. "Keukenzaak". Inbound: een doorgestuurde mail
   zonder eigen notitie levert nu de body eronder als werkomschrijving (was: alleen de "Forwarded

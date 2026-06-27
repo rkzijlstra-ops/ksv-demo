@@ -20,7 +20,6 @@ import { KEUKENZAKEN } from "@/lib/keukenzaken";
 import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
 import { formatDatumKort } from "@/lib/datum";
 import type { Adres, RapportVerzending } from "@/lib/db";
-import { bestemmingNaZaakVerzending } from "@/lib/oplever-toegang";
 
 export function OpleverFlow({
   opdrachtId,
@@ -432,12 +431,12 @@ export function OpleverFlow({
         setKlantVerzondenAt(nu);
         setKlantBezig(false);
       } else {
-        // Zaak gehad. Bestemming hangt af van vervolg: bij een vervolg is de klus teruggegeven aan kantoor
-        // (ontplanned) en niet meer leesbaar voor de monteur -> kluspool i.p.v. de detailpagina (die 404't).
+        // Zaak gehad: de klus is opgeleverd (ook bij een vervolg; die krijgt enkel het label
+        // 'vervolg nodig' en blijft van deze monteur). Terug naar de detailpagina.
         setZaakVerzondenAt(nu);
         setKlaar(true);
         setTimeout(() => {
-          router.push(bestemmingNaZaakVerzending({ verkort, vervolgNodig, opdrachtId }));
+          router.push(`/opdracht/${opdrachtId}`);
           router.refresh();
         }, 1400);
       }
@@ -457,12 +456,10 @@ export function OpleverFlow({
           aria-hidden="true"
         />
         <CheckCircle2 size={72} strokeWidth={2.5} className="-mt-[84px] text-success" aria-hidden="true" />
-        <p className="mt-2 font-mono text-2xl font-extrabold text-ink">
-          {verkort && vervolgNodig ? "Doorgegeven!" : "Opgeleverd!"}
-        </p>
+        <p className="mt-2 font-mono text-2xl font-extrabold text-ink">Opgeleverd!</p>
         <p className="text-sm text-ink-muted">
           {verkort && vervolgNodig
-            ? "De opdrachtgever heeft het rapport. De klus staat klaar voor een vervolg."
+            ? "De opdrachtgever heeft het rapport en ziet dat er nog werk nodig is."
             : "Het rapport is naar de opdrachtgever verstuurd."}
         </p>
       </div>
