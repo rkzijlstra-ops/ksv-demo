@@ -4,6 +4,7 @@ import { createDb, type Db } from "@/lib/db";
 import { historieVoorMonteur } from "@/lib/monteur-mail";
 import { vindDubbeleBoekingen } from "@/lib/planbord";
 import { SUPABASE_URL, SUPABASE_SECRET, BEHEERDER } from "../e2e/test-env";
+import { INT_PREFIX, getIntZaakId, ruimIntDataOp } from "./int-harnas";
 
 // Creds uit test-env: .env.test (zijspoor) als die bestaat, anders .env.local.
 const URL_ = SUPABASE_URL;
@@ -28,12 +29,14 @@ const MONTEURS = [
 const PEIL = new Date("2026-06-15T12:00:00Z");
 // Het beheerder-account; meldingen.user_id is NOT NULL en heeft een auth-koppeling.
 const SEED_USER = BEHEERDER.uid;
+// De eigen integratie-zaak (INT). Alle kantoor-klussen hieronder vallen onder deze zaak, zodat
+// de opruiming én de dashboard-asserties op precies deze scope kunnen filteren.
 let zaakId: string;
 
+// Gescopte opruiming: alleen de eigen integratiedata (INT-zaak + INT-prefix), NOOIT de hele tabel.
+// Zo blijft handmatige keuringsdata op de gedeelde test-DB staan. Zie integration/int-harnas.ts.
 async function wipe() {
-  await admin.from("opleveringen").delete().not("id", "is", null);
-  await admin.from("documenten").delete().not("id", "is", null);
-  await admin.from("meldingen").delete().not("id", "is", null);
+  await ruimIntDataOp(admin, zaakId);
 }
 
 async function maakOpdracht(over: {
@@ -44,7 +47,8 @@ async function maakOpdracht(over: {
 }): Promise<string> {
   const { id } = await db.createOpdracht({
     documenttype: over.type ?? "orderbevestiging",
-    klant_naam: over.klant ?? "Testklant",
+    // INT-prefix op elke naam, zodat ook ad-hoc (zaakloze) test-klussen door de gescopte wipe vallen.
+    klant_naam: `${INT_PREFIX}${over.klant ?? "Testklant"}`,
     klant_adres: "Teststraat 1",
     referentienummer: over.ref ?? null,
     adviseur: null,
@@ -58,9 +62,8 @@ async function maakOpdracht(over: {
 }
 
 beforeAll(async () => {
-  const zaak = await db.getStandaardOpdrachtgever();
-  if (!zaak) throw new Error("Geen zaak (opdrachtgever) gevonden; draai de 6a/6e-migraties eerst.");
-  zaakId = zaak.id;
+  // Eigen integratie-zaak (get-or-create), bewust NIET de standaard-zaak waaronder Reinier keurt.
+  zaakId = await getIntZaakId(admin);
 });
 
 beforeEach(wipe);
@@ -84,8 +87,11 @@ describe("Volume: 7 monteurs, veel montages over meerdere dagen", () => {
       perMonteur[monteur.id] = (perMonteur[monteur.id] ?? 0) + 1;
     }
 
+    // Het dashboard toont alle zaken; scope op de eigen INT-zaak zodat eventuele andere (keuring)data
+    // de telling niet beïnvloedt nu de wipe niet langer de hele tabel leegt.
     const dashboard = await db.getOpdrachtenVoorDashboard(PEIL);
-    expect(dashboard).toHaveLength(14);
+    const eigen = dashboard.filter((o) => o.opdrachtgever_id === zaakId);
+    expect(eigen).toHaveLength(14);
 
     // Kluspool van M(1): alleen zijn eigen toegewezen klussen.
     const kluspoolM1 = await db.getKluspoolVoor(M(1));
@@ -100,7 +106,8 @@ describe("Zaak-scheiding: ad-hoc (KKS) blijft uit het dashboard", () => {
     // Ad-hoc: geen zaak, direct toegewezen aan de monteur (zoals zelf-inschieten).
     const { id } = await db.createOpdracht({
       documenttype: "werkbon_service",
-      klant_naam: "KKS klant",
+      // INT-prefix zodat deze zaakloze ad-hoc klus toch onder de gescopte wipe valt.
+      klant_naam: `${INT_PREFIX}KKS klant`,
       klant_adres: "Katwijk 1",
       referentienummer: "KKS1",
       adviseur: null,
@@ -183,7 +190,9 @@ describe("Annuleren", () => {
 
 describe("Vervolgservice: eerdere rapporten op referentie", () => {
   it("een tweede klus op dezelfde referentie krijgt het rapport van de eerste mee", async () => {
-    const ref = "9001";
+    // Run-unieke referentie: zoekOpReferentie kijkt over de hele tabel, dus voorkom botsing met
+    // eventuele (keuring)data die toevallig dezelfde referentie draagt nu de wipe gescoped is.
+    const ref = `INT9001-${Date.now()}`;
     const eersteId = await maakOpdracht({ klant: "Keuken X", ref, type: "orderbevestiging" });
     await db.markeerOpgeleverd(eersteId, "https://storage/rapport-9001.pdf");
 
@@ -254,7 +263,9 @@ describe("Dubbele-boeking detectie tegen echte data", () => {
         duur_dagen: 1,
       });
     }
-    const dashboard = await db.getOpdrachtenVoorDashboard(PEIL);
+    // Scope op de eigen INT-zaak: het dashboard toont alle zaken, en de detectie levert een set ids
+    // over de hele lijst. Filteren houdt de test stabiel nu de wipe niet meer de hele tabel leegt.
+    const dashboard = (await db.getOpdrachtenVoorDashboard(PEIL)).filter((o) => o.opdrachtgever_id === zaakId);
     const conflicten = vindDubbeleBoekingen(dashboard);
     expect(conflicten.has(a)).toBe(true);
     expect(conflicten.has(b)).toBe(true);
@@ -265,7 +276,8 @@ describe("Dubbele-boeking detectie tegen echte data", () => {
     const b = await maakOpdracht({ klant: "Service 13u", ref: "S2", type: "werkbon_service" });
     await db.planOpdracht(a, { toegewezen_aan: M(4), monteur_naam: "Dani", startdatum: "2026-06-18", starttijd: "09:00", duur_dagen: 1 });
     await db.planOpdracht(b, { toegewezen_aan: M(4), monteur_naam: "Dani", startdatum: "2026-06-18", starttijd: "13:00", duur_dagen: 1 });
-    const conflicten = vindDubbeleBoekingen(await db.getOpdrachtenVoorDashboard(PEIL));
+    const eigenDashboard = (await db.getOpdrachtenVoorDashboard(PEIL)).filter((o) => o.opdrachtgever_id === zaakId);
+    const conflicten = vindDubbeleBoekingen(eigenDashboard);
     expect(conflicten.size).toBe(0);
   });
 });
