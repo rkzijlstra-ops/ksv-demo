@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { createDb } from "@/lib/db";
-import { HANDLEIDING_STAPPEN } from "@/lib/handleiding-stappen";
+import { HANDLEIDING_ONDERWERPEN } from "@/lib/handleiding-stappen";
 import { WELKOM_WEG_KEY } from "@/lib/onboarding";
 import { SUPABASE_URL, SUPABASE_SECRET, MONTEUR } from "../e2e/test-env";
 
@@ -56,7 +56,8 @@ test("genereer handleiding-screenshots", async ({ page }) => {
 
   const fouten: string[] = [];
   try {
-    for (const stap of HANDLEIDING_STAPPEN) {
+    for (const stap of HANDLEIDING_ONDERWERPEN) {
+      if (stap.nieuw) continue; // nog geen seedbaar scherm; pagina toont placeholder
       try {
         await page.goto(stap.route.replace(":id", id));
         // Niet op "networkidle" wachten: deze app pollt de database, dus dat moment komt nooit en
@@ -74,7 +75,7 @@ test("genereer handleiding-screenshots", async ({ page }) => {
           // De knop "Klant laten tekenen" opent de teken-popup (HandtekeningModal). Wacht tot de
           // popup-titel zichtbaar is, dan staat de popup gegarandeerd op de screenshot.
           await page.getByRole("button", { name: /klant laten tekenen/i }).click({ timeout: 6000 });
-          await page.getByText("Handtekening klant").waitFor({ state: "visible", timeout: 6000 });
+          await page.getByText(/laat de klant hier tekenen/i).waitFor({ state: "visible", timeout: 6000 });
           await page.waitForTimeout(400);
         } else if (stap.interactie === "interne-notitie") {
           // Scroll naar het (dichtgeklapte) interne-notitie-blok zodat het op de screenshot staat.
@@ -83,8 +84,35 @@ test("genereer handleiding-screenshots", async ({ page }) => {
         } else if (stap.interactie === "scroll-onder") {
           await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
           await page.waitForTimeout(400);
+        } else if (stap.interactie === "spoed-aan") {
+          // Zet de spoed-schakelaar aan zodat de spoed-uitleg op de screenshot staat.
+          const spoed = page.getByRole("switch", { name: /spoed/i }).or(page.getByLabel(/spoed/i));
+          await spoed.first().click({ timeout: 6000 }).catch(() => {});
+          await page.waitForTimeout(400);
+        } else if (stap.interactie === "documenten-blok") {
+          await page
+            .getByText(/document/i)
+            .first()
+            .scrollIntoViewIfNeeded({ timeout: 6000 })
+            .catch(() => {});
+          await page.waitForTimeout(400);
         }
-        await page.screenshot({ path: path.join(UIT, stap.bestand) });
+        // De handtekening-modal is een volledig-scherm-overlay: die leggen we als heel viewport vast.
+        // Alle andere schermen snijden we bij op de hoofd-inhoud, zodat er geen lege witruimte
+        // onder de schermafbeelding staat.
+        if (stap.interactie === "handtekening-modal") {
+          await page.screenshot({ path: path.join(UIT, stap.bestand) });
+        } else {
+          const hoogte = await page.evaluate(() => {
+            const main = document.querySelector("main") ?? document.body;
+            return Math.min(Math.ceil(main.getBoundingClientRect().height), 2200);
+          });
+          const breedte = page.viewportSize()?.width ?? 390;
+          await page.screenshot({
+            path: path.join(UIT, stap.bestand),
+            clip: { x: 0, y: 0, width: breedte, height: Math.max(hoogte, 200) },
+          });
+        }
       } catch (e) {
         fouten.push(`${stap.bestand} (route ${stap.route}): ${(e as Error).message}`);
       }

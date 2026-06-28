@@ -1,13 +1,20 @@
 # Handleiding voor monteurs - onderhoud
 
-De handleiding zit in de app op `/handleiding` (menu-knop "Handleiding"). Drie losse delen:
+De handleiding zit in de app op `/handleiding` (menu-knop "Handleiding"). De onderwerpen staan
+gegroepeerd (vier groepen) en zijn inklapbaar; standaard alles dicht, met een knop "Alles
+openklappen". Drie losse delen:
 
-1. **De teksten** staan in `src/lib/handleiding-stappen.ts`. Een zin aanpassen of een stap
-   toevoegen doe je daar. Een nieuwe stap = een nieuw object met `bestand`, `titel`, `uitleg`,
-   `route` (en eventueel `interactie`).
-2. **De screenshots** staan in `public/handleiding/`. Die maak je niet met de hand, maar met
-   de generator.
-3. **De pagina** (`src/app/handleiding/page.tsx`) toont alles automatisch.
+1. **De inhoud** staat in `src/lib/handleiding-stappen.ts` als `HANDLEIDING_GROEPEN` (groepen met
+   onderwerpen), plus de afgeleide platte lijst `HANDLEIDING_ONDERWERPEN` (voor de generator en de
+   tests). Een zin aanpassen of een onderwerp toevoegen doe je daar. Een nieuw onderwerp = een
+   object met `id`, `titel`, `punten`, `bestand`, `route` (en eventueel `intro`, `interactie`,
+   `nieuw`). Zet `nieuw: true` zolang er nog geen screenshot/feature voor is; de pagina toont dan
+   een placeholder en de generator slaat het over.
+2. **De screenshots** staan in `public/handleiding/` (formaat `NN-naam.png`). Die maak je niet met
+   de hand, maar met de generator; ze worden bijgesneden zodat er geen lege witruimte onder staat.
+3. **De pagina** (`src/app/handleiding/page.tsx` + de client-component
+   `src/components/HandleidingWeergave.tsx`) toont alles automatisch uit de databron. Bij het
+   toevoegen van een onderwerp hoef je de pagina dus niet aan te raken.
 
 ## Screenshots opnieuw maken (na een appwijziging)
 
@@ -36,9 +43,10 @@ test-database, schiet de screenshots en ruimt de demo-opdracht weer op. Daarna i
 
 - De generator heeft de monteur-sessie nodig (`e2e/.auth/monteur.json`). De aparte config draait
   daarvoor zelf de `global-setup`, dus `npm run screenshots:handleiding` regelt dit.
-- Faalt stap 05 (handtekening) op de knop-selector, controleer de exacte knoptekst op de
-  oplever-pagina en pas de regex `name: /handtekening/i` in
-  `e2e-handleiding/genereer-screenshots.spec.ts` aan.
+- Faalt een onderwerp met een `interactie` (bv. `handtekening-modal`, `spoed-aan`,
+  `documenten-blok`) op de selector, controleer de exacte tekst/rol op het echte scherm en pas de
+  betreffende tak in `e2e-handleiding/genereer-screenshots.spec.ts` aan. Lukt een betrouwbare
+  screenshot niet, zet het onderwerp dan op `nieuw: true` (placeholder) tot het wel kan.
 
-Zie `DESIGN-HANDLEIDING-MONTEUR.md` voor het ontwerp en `PLAN-HANDLEIDING-MONTEUR.md` voor het
-bouwplan.
+Zie `DESIGN-HANDLEIDING-HERONTWERP.md` voor het huidige ontwerp (de eerste versie staat in
+`DESIGN-HANDLEIDING-MONTEUR.md`).

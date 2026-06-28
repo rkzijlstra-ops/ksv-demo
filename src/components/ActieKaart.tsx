@@ -24,6 +24,8 @@ export function ActieKaart({
   accent = "neutraal",
   subAccent = false,
   href,
+  target,
+  rel,
   onClick,
   ariaLabel,
 }: {
@@ -36,6 +38,9 @@ export function ActieKaart({
   /** Subtekst in de accent-kleur tonen (bv. statuskleur bij versturen). */
   subAccent?: boolean;
   href?: string;
+  /** Voor een externe link in een nieuw tabblad (bv. een video-bijlage). */
+  target?: string;
+  rel?: string;
   onClick?: (e: MouseEvent) => void;
   ariaLabel?: string;
 }) {
@@ -63,7 +68,7 @@ export function ActieKaart({
 
   if (href) {
     return (
-      <Link href={href} onClick={onClick} aria-label={ariaLabel} className={buiten}>
+      <Link href={href} target={target} rel={rel} onClick={onClick} aria-label={ariaLabel} className={buiten}>
         {inhoud}
       </Link>
     );

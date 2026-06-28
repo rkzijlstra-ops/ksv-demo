@@ -25,8 +25,13 @@ export default async function VoorbeeldRapportPage() {
     .filter((naam) => existsSync(path.join(voorbeeldDir, naam)))
     .map((naam) => `/handleiding/voorbeeld/${naam}`);
 
+  // Demo-video: toon de afspeelknop alleen als het bestand er echt staat (geen kapotte link).
+  const videoUrl = existsSync(path.join(voorbeeldDir, "oplevering.mp4"))
+    ? "/handleiding/voorbeeld/oplevering.mp4"
+    : null;
+
   const opleverdatum = new Date().toISOString();
-  const data = voorbeeldRapportData(opleverdatum, fotos, meldingFotos);
+  const data = voorbeeldRapportData(opleverdatum, fotos, meldingFotos, videoUrl);
 
   return (
     <main className="mx-auto w-full max-w-2xl p-4 pb-24">
