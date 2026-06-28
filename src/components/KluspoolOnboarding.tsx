@@ -77,7 +77,7 @@ export function KluspoolOnboarding({ leeg }: { leeg: boolean }) {
             className="mt-4 inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-4 text-sm font-extrabold uppercase tracking-[0.05em] text-ink transition-[filter] duration-150 hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary"
           >
             <BookOpen size={18} strokeWidth={2.5} aria-hidden="true" />
-            Bekijk de handleiding (6 stappen)
+            Bekijk de handleiding
           </Link>
           <div className="mt-3 flex items-center justify-between gap-3">
             <button
@@ -112,7 +112,7 @@ export function KluspoolOnboarding({ leeg }: { leeg: boolean }) {
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <p className="text-sm text-ink">Bekijk hoe Kluslus werkt in 6 korte stappen.</p>
+        <p className="text-sm text-ink">Bekijk hoe Kluslus werkt, stap voor stap.</p>
         <Link
           href="/handleiding"
           className="inline-flex min-h-[40px] cursor-pointer items-center justify-center gap-2 border-2 border-primary px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-primary transition-colors hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
