@@ -63,6 +63,15 @@ Niet in demo-modus (scripted uitstalraam). De gate zit in `vereisRol` (alleen ro
 skipOnboarding op de /welkom-pagina zelf). Gedekt: profiel.test (profielVolledig), toegang.test (gate),
 e2e-monteur staat compleet in global-setup; de visuele flow keurt Rein op omgeving-test.
 
+### Handleiding (UI-toestanden, geen opdracht-status)
+De handleiding-pagina (`/handleiding`) toont onderwerpen in vier groepen. UI-toestanden:
+alles ingeklapt (begintoestand, snel scannen) → "Alles openklappen" → alles open → "Alles
+inklappen" terug; daarnaast één onderwerp los open/dicht. Per onderwerp twee plaatje-toestanden:
+screenshot aanwezig (telefoon-frame, bijgesneden) of ontbrekend/`nieuw` (placeholder "Schermafbeelding
+volgt" + nieuw-label). Geen verborgen browser-geheugen: het gedrag is altijd hetzelfde. Gedekt:
+handleiding-stappen.test (databron-structuur), handleiding.spec (toggle + los openklappen); de
+visuele check op telefoonformaat keurt Rein.
+
 ## Gaten (status)
 
 1. **✅ OPGELOST. Wijziging na versturen (datum), monteur-kant.** De monteur houdt de afgesproken
