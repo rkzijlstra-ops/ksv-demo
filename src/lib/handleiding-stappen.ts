@@ -17,7 +17,10 @@ export type Interactie =
   | "scroll-onder"
   | "interne-notitie"
   | "spoed-aan"
-  | "documenten-blok";
+  | "documenten-blok"
+  | "klus-toevoegen-open"
+  | "niet-doorgegaan-dialog"
+  | "klant-toggle-scroll";
 
 export type HandleidingOnderwerp = {
   id: string;
@@ -62,7 +65,7 @@ export const HANDLEIDING_GROEPEN: HandleidingGroep[] = [
           "Of maak een klus zonder document aan.",
         ],
         route: "/",
-        nieuw: true,
+        interactie: "klus-toevoegen-open",
       },
       {
         id: "klus-openen",
@@ -115,7 +118,6 @@ export const HANDLEIDING_GROEPEN: HandleidingGroep[] = [
         ],
         route: "/opdracht/:id",
         interactie: "documenten-blok",
-        nieuw: true,
       },
     ],
   },
@@ -164,7 +166,6 @@ export const HANDLEIDING_GROEPEN: HandleidingGroep[] = [
           "Een vervolg sluit je af als 'opgeleverd' en krijgt een label.",
         ],
         route: "/opdracht/:id",
-        nieuw: true,
       },
       {
         id: "niet-doorgegaan",
@@ -175,7 +176,7 @@ export const HANDLEIDING_GROEPEN: HandleidingGroep[] = [
           "De opdrachtgever ziet dat de klus niet is doorgegaan, met jouw reden.",
         ],
         route: "/opdracht/:id/afronden",
-        nieuw: true,
+        interactie: "niet-doorgegaan-dialog",
       },
     ],
   },
@@ -203,8 +204,7 @@ export const HANDLEIDING_GROEPEN: HandleidingGroep[] = [
           "Vul het mailadres in; de interne notitie gaat niet mee.",
         ],
         route: "/opdracht/:id/opleveren",
-        interactie: "scroll-onder",
-        nieuw: true,
+        interactie: "klant-toggle-scroll",
       },
     ],
   },
