@@ -83,7 +83,7 @@
 <body>
 <div class="wrap">
 
-  <h1>Kluslus / KSV — Systeemkaart <span class="stamp">bijgewerkt 2026-06-27</span></h1>
+  <h1>Kluslus / KSV — Systeemkaart <span class="stamp">bijgewerkt 2026-06-28</span></h1>
   <p class="sub">Welke diensten je gebruikt, hoe ze aan elkaar hangen, en waar je moet zijn als er iets stuk is. Klik onderaan op een dienst voor de details.</p>
 
   <div class="legend">
@@ -126,7 +126,7 @@
     <div class="env prod">
       <h3><span class="dot d-prod"></span>Productie</h3>
       <div class="url">mijn.kluslus.nl</div>
-      <div class="db">Supabase <code>qbynjfscdxhwdkzfqjjg</code><br>Deploy: <code>master</code> · <code>DEMO_MODE</code> uit<br>Migraties: <span class="pill hand">met de hand</span> door jou</div>
+      <div class="db">Project <code>kluslus-productie</code> · Supabase <code>qbynjfscdxhwdkzfqjjg</code><br>Deploy: <code>master</code> · <code>DEMO_MODE</code> uit<br>Migraties: <span class="pill hand">met de hand</span> door jou</div>
     </div>
     <div class="env test">
       <h3><span class="dot d-test"></span>Test / CI</h3>
@@ -152,16 +152,25 @@
 
   <!-- ============ D: MAIL + DOMEIN ============ -->
   <h2>4 · Mail in &amp; uit + domein</h2>
-  <p class="lead">Drie mailstromen op één domein. Verwar de app-inbound (<code>klus.</code>) niet met je gewone mailbox (<code>info@</code>).</p>
+  <p class="lead">Mailstromen op één domein: app-inbound voor <b>productie</b> (<code>klus.</code>) én voor <b>test</b> (<code>klus-test.</code>), plus je gewone mailbox (<code>info@</code>). Verwar de app-inbound niet met de mailbox.</p>
   <div class="flow" style="flex-direction:column;align-items:stretch;gap:14px">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
-      <div class="box"><div class="t">Klant mailt</div><div class="s">naar de app</div></div>
+      <div class="box"><div class="t">Klant mailt</div><div class="s">naar de app (prod)</div></div>
       <div class="arrow">→ <b>MX klus.</b></div>
       <div class="box acc-ext"><div class="t">AWS SES inbound</div><div class="s">inbound-smtp eu-west-1</div></div>
       <div class="arrow">→</div>
-      <div class="box acc-ext"><div class="t">Resend inbound</div><div class="s">webhook</div></div>
+      <div class="box acc-ext"><div class="t">Resend inbound</div><div class="s">webhook → mijn.kluslus.nl/api/inbound</div></div>
       <div class="arrow">→</div>
-      <div class="box acc-prod"><div class="t">App maakt melding/klus</div></div>
+      <div class="box acc-prod"><div class="t">Prod-app maakt melding/klus</div></div>
+    </div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="box"><div class="t">Mail naar test</div><div class="s">klus-test.kluslus.nl</div></div>
+      <div class="arrow side">→ <b>MX klus-test.</b></div>
+      <div class="box acc-ext"><div class="t">AWS SES inbound</div><div class="s">zelfde inbound-host · DKIM+SPF</div></div>
+      <div class="arrow side">→</div>
+      <div class="box acc-ext"><div class="t">Resend inbound</div><div class="s">2e webhook</div></div>
+      <div class="arrow side">→</div>
+      <div class="box acc-test"><div class="t">Test-app maakt klus</div><div class="s">INBOUND_DOMAIN=klus-test.kluslus.nl</div></div>
     </div>
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
       <div class="box"><div class="t">Mens mailt</div><div class="s">info@kluslus.nl</div></div>
@@ -173,10 +182,10 @@
       <div class="arrow">stuurt</div>
       <div class="box"><div class="t">CNAME mijn → Vercel</div></div>
       <div class="box"><div class="t">MX @ → Google</div></div>
-      <div class="box"><div class="t">MX klus/send → AWS SES</div></div>
+      <div class="box"><div class="t">MX klus/klus-test/send → AWS SES</div></div>
     </div>
   </div>
-  <p class="lead" style="margin-top:10px"><span class="warnline">DMARC staat op <code>p=reject</code> (streng).</span> Daarom geen forwarders en moet uitgaande mail netjes via Resend/SES uitlijnen. De <code>klus.</code>- en <code>send.</code>-MX <b>niet aanraken</b>.</p>
+  <p class="lead" style="margin-top:10px"><span class="warnline">DMARC staat op <code>p=reject</code> (streng).</span> Daarom geen forwarders en moet uitgaande mail netjes via Resend/SES uitlijnen. De <code>klus.</code>-, <code>klus-test.</code>- en <code>send.</code>-MX <b>niet aanraken</b>.</p>
 
   <!-- ============ E: DIENST-BLOKKEN ============ -->
   <h2>5 · Per dienst: wat het doet &amp; naslag bij storing</h2>
@@ -194,8 +203,8 @@
   <details class="svc">
     <summary><span class="car">▸</span> Vercel <span class="badge">host de app · 3 projecten</span></summary>
     <div class="body">
-      <div class="row"><div class="k">Wat</div><div>Bouwt en host de app. Drie projecten: <b>prod</b> (mijn.kluslus.nl), <b>demo</b> (kluslus-demo), <b>test</b> (kluslus-test). Team <code>bkm-s-projects</code>.</div></div>
-      <div class="row"><div class="k">Koppeling</div><div><code>master</code> → prod + demo. Branch → preview. Cron-jobs draaien hier. Alle keys staan als <b>Environment Variables</b> per project.</div></div>
+      <div class="row"><div class="k">Wat</div><div>Bouwt en host de app. Drie projecten: <b>prod</b> <code>kluslus-productie</code> (mijn.kluslus.nl, default <code>kluslus-productie.vercel.app</code>), <b>demo</b> <code>kluslus-demo</code>, <b>test</b> <code>kluslus-test</code>. Team <code>bkm-s-projects</code>.</div></div>
+      <div class="row"><div class="k">Koppeling</div><div><code>master</code> → prod + demo. Branch → preview. Cron-jobs draaien hier. Alle keys staan als <b>Environment Variables</b> per project. De PWA-service-worker krijgt zijn versie automatisch uit het git-commit (<code>VERCEL_GIT_COMMIT_SHA</code>) via een <code>prebuild</code>-script (<code>scripts/genereer-sw-versie.mjs</code>); geen handmatige <code>VERSION</code>-bump meer.</div></div>
       <div class="row"><div class="k">Bij storing</div><div>Deploy faalt → <b>Deployments</b>-log. Iets werkt niet maar build is groen → meestal een ontbrekende of foute <b>env-var</b> (Project Settings → Environment Variables). Feature staat niet op publieke test-URL → <b>promoten</b> (zie OMGEVINGEN.md).</div></div>
     </div>
   </details>
@@ -212,8 +221,8 @@
   <details class="svc">
     <summary><span class="car">▸</span> Resend <span class="badge">uitgaande mail · via AWS SES</span></summary>
     <div class="body">
-      <div class="row"><div class="k">Wat</div><div>Verstuurt de mails uit de app (rapport, melding). Draait onder water op AWS SES; DKIM via <code>resend._domainkey</code>.</div></div>
-      <div class="row"><div class="k">Koppeling</div><div>Key <code>RESEND_API_KEY</code> in Vercel. <code>RESEND_FROM</code> / <code>RESEND_REPLY_TO</code> bepalen afzender en antwoordadres. Grendel: <code>MAIL_DRY_RUN</code> + <code>MAIL_ALLOWLIST</code>.</div></div>
+      <div class="row"><div class="k">Wat</div><div>Verstuurt de mails uit de app (rapport, melding) én ontvangt de inbound-mail (Resend Receiving). Draait onder water op AWS SES; DKIM via <code>resend._domainkey</code>.</div></div>
+      <div class="row"><div class="k">Koppeling</div><div>Key <code>RESEND_API_KEY</code> in Vercel. <code>RESEND_FROM</code> / <code>RESEND_REPLY_TO</code> bepalen afzender en antwoordadres. Grendel: <code>MAIL_DRY_RUN</code> + <code>MAIL_ALLOWLIST</code>. Inbound via twee Receiving-webhooks: prod → <code>https://mijn.kluslus.nl/api/inbound</code>, test → de kluslus-test-app (<code>INBOUND_DOMAIN=klus-test.kluslus.nl</code>).</div></div>
       <div class="row"><div class="k">Bij storing</div><div>Mail komt niet aan → <b>resend.com → Logs</b>. Let op de strenge <code>DMARC p=reject</code>: afzender en SPF/DKIM moeten uitlijnen. Reply-To staat per monteur ingesteld.</div></div>
     </div>
   </details>
@@ -240,8 +249,8 @@
     <summary><span class="car">▸</span> Vimexx <span class="badge">domein + DNS</span></summary>
     <div class="body">
       <div class="row"><div class="k">Wat</div><div>Registrar van <code>kluslus.nl</code> en de plek waar alle DNS-records staan (nameservers = zxcs).</div></div>
-      <div class="row"><div class="k">Koppeling</div><div><code>CNAME mijn → Vercel</code> (de app), <code>MX @ → Google</code> (mailbox), <code>MX klus/send → AWS SES</code> (app-mail in/uit). SPF/DKIM/DMARC als TXT.</div></div>
-      <div class="row"><div class="k">Bij storing</div><div>DNS aanpassen in het Vimexx-paneel (DirectAdmin). <span class="warnline">De <code>klus.</code>- en <code>send.</code>-MX niet aanraken</span>, anders breekt app-mail.</div></div>
+      <div class="row"><div class="k">Koppeling</div><div><code>CNAME mijn → Vercel</code> (de app), <code>MX @ → Google</code> (mailbox), <code>MX klus/klus-test/send → AWS SES</code> (app-mail in/uit, prod + test). SPF/DKIM/DMARC als TXT.</div></div>
+      <div class="row"><div class="k">Bij storing</div><div>DNS aanpassen in het Vimexx-paneel (DirectAdmin). <span class="warnline">De <code>klus.</code>-, <code>klus-test.</code>- en <code>send.</code>-MX niet aanraken</span>, anders breekt app-mail.</div></div>
     </div>
   </details>
 
@@ -264,6 +273,7 @@
   </details>
 
   <footer>
+    Deze kaart gaat over de infrastructuur en diensten. Voor <b>wie waar werkt</b> (accounts en rollen per omgeving) is er een aparte kaart: <code>docs/systeemkaart/omgevingskaart.html</code>.<br>
     Deze kaart is met de hand opgebouwd uit de echte repo-bestanden (<code>.env.example</code>, <code>vercel.json</code>, <code>.github/workflows/ci.yml</code>, <code>docs/OMGEVINGEN.md</code>, <code>supabase/</code>) en de infra-docs.
     Zeg tegen Claude <b>"werk de systeemkaart bij"</b> om hem opnieuw te laten kloppen. Procedure: <code>docs/systeemkaart/BIJWERKEN.md</code>.
   </footer>
