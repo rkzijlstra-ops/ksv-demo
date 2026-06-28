@@ -2,7 +2,7 @@
 
 Per feature/flow welke testlagen en welk(e) testbestand(en) hem dekken. Werk dit bij in dezelfde
 commit als elke nieuwe feature of wijziging (afrond-check uit de skill projectstart-discipline).
-Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-26.
+Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-28.
 
 Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = browser-e2e (Playwright),
 **M** = e2e-mail (echt versturen achter `E2E_MAIL=1`).
@@ -12,6 +12,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Feature / flow | Lagen | Testbestand(en) | Status |
 |---|---|---|---|
 | **Volledige levenscyclus-keten** (inschieten→plannen→versturen→bevestigen→opleveren→dashboard), cross-rol, één doorloop, status-check per overgang | E | levenscyclus.spec | groen |
+| **Hele keten zonder browser** (INBOUND mail→klus via de echte inbound-route, plannen, bevestigen mét mail+sms-poging, opleveren mét rapport-mailpoging), één doorloop, status-check per overgang, mail/sms gecontroleerd op ontvanger+inhoud via dry-run-log | I | keten.int.test | groen |
 | Inschieten PDF, parsing, groepering op referentie | U, E | parser-schema.test, claude-client.test, opdrachtgever.spec | groen |
 | Dashboard + "Te doen"-overzicht + statusfilter | U | te-doen.test, dashboard-scope.test, dashboard-lijst | groen |
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
@@ -173,6 +174,7 @@ Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zel
 ## Hoe draaien
 
 - `npm test` — alle unit/route (laag U), snel, geen browser.
+- `npm run test:int` — integratie (laag I), echte db-logica + de inbound-route tegen de test-DB via `.env.test` (incl. de hele-keten-test `keten.int.test`).
 - `npm run test:e2e` — Playwright (laag E), tegen de test-DB via `.env.test`.
 - `npm run test:mail` — e2e-mail (laag M), verstuurt echt naar de test-mailbox.
 - `npm run test:all` — U + I + E in één keer.
