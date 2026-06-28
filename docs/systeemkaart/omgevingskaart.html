@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kluslus — Omgeving- &amp; accountkaart</title>
+<style>
+  :root{
+    --bg:#0f1320; --panel:#171c2c; --panel2:#1e2438; --ink:#e8ecf5; --muted:#9aa6c2;
+    --line:#2c3550; --prod:#3ecf8e; --test:#f5a623; --demo:#8b7bf0; --extern:#5aa9ff;
+    --warn:#ff6b6b; --jij:#ffd166; --ok:#3ecf8e; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b0f1a,#0f1320);color:var(--ink);
+    font:15px/1.55 system-ui,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .stamp{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);
+    border-radius:999px;padding:3px 10px;margin-left:8px;vertical-align:middle}
+  h2{font-size:18px;margin:34px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .lead{color:var(--muted);margin:-6px 0 14px;font-size:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .d-prod{background:var(--prod)} .d-test{background:var(--test)} .d-demo{background:var(--demo)}
+
+  .tip{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--extern);
+    border-radius:10px;padding:11px 14px;font-size:13.5px;color:var(--muted);margin:12px 0}
+  .tip b{color:var(--ink)}
+  .klaar{border-left-color:var(--ok)}
+  .klaar b{color:var(--ok)}
+
+  /* ====== boompjes (organigram per omgeving) ====== */
+  .bomen{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.bomen{grid-template-columns:1fr}}
+  .boomkaart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 6px 16px}
+  .boomkaart.prod{border-top:3px solid var(--prod)}
+  .boomkaart.demo{border-top:3px solid var(--demo)}
+  .boomkaart.test{border-top:3px solid var(--test)}
+  .tree ul{position:relative;padding:16px 0 0;display:flex;justify-content:center;margin:0;list-style:none}
+  .tree li{display:flex;flex-direction:column;align-items:center;list-style:none;position:relative;padding:16px 4px 0}
+  .tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;width:50%;height:16px;border-top:2px solid var(--line)}
+  .tree li::after{right:auto;left:50%;border-left:2px solid var(--line)}
+  .tree li:only-child::after,.tree li:only-child::before{display:none}
+  .tree li:only-child{padding-top:0}
+  .tree li:first-child::before,.tree li:last-child::after{border:0 none}
+  .tree li:last-child::before{border-right:2px solid var(--line)}
+  .tree ul ul::before{content:'';position:absolute;top:0;left:50%;border-left:2px solid var(--line);width:0;height:16px}
+  .node{display:inline-flex;flex-direction:column;align-items:center;background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;min-width:96px}
+  .node .rol{font-weight:700}
+  .node small{color:var(--muted);font-size:11.5px;margin-top:1px}
+  .node.root{font-weight:700;font-size:14px;padding:9px 16px}
+  .node.root.prod{background:rgba(62,207,142,.14);border-color:rgba(62,207,142,.5)}
+  .node.root.demo{background:rgba(139,123,240,.14);border-color:rgba(139,123,240,.5)}
+  .node.root.test{background:rgba(245,166,35,.13);border-color:rgba(245,166,35,.5)}
+  .node.beh{border-left:3px solid var(--extern)}
+  .boomvoet{text-align:center;color:var(--muted);font-size:12px;margin-top:10px;padding:0 8px}
+
+  .chiprow{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{display:flex;flex-direction:column;gap:2px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;padding:9px 13px;font-size:13px;min-width:150px}
+  .chip .a{font-weight:700}
+  .chip .r{font-size:12px;color:var(--muted)}
+  .chip.c-prod{border-left:4px solid var(--prod)} .chip.c-test{border-left:4px solid var(--test)}
+  .chip.c-demo{border-left:4px solid var(--demo)}
+
+  .rrow{display:grid;grid-template-columns:200px 1fr;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .rrow:last-child{border-bottom:none}
+  .rrow .k{color:var(--muted);font-size:13px}
+  code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#cfe3ff;
+    background:#0d1322;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr}}
+  .env{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+  .env h3{margin:0 0 6px;font-size:14px}
+  .env.prod{border-top:3px solid var(--prod)} .env.test{border-top:3px solid var(--test)} .env.demo{border-top:3px solid var(--demo)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0}
+  ol.steps>li{counter-increment:s;position:relative;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px 12px 50px;margin:9px 0;font-size:14px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:11px;width:26px;height:26px;
+    border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  ol.steps>li.done{opacity:.75}
+  ol.steps>li.done::before{content:'✓';background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.5);color:var(--ok)}
+  .who{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 9px;margin-right:8px;vertical-align:middle}
+  .who.jij{background:rgba(255,209,102,.16);color:var(--jij);border:1px solid rgba(255,209,102,.45)}
+  .who.cl{background:rgba(90,169,255,.14);color:var(--extern);border:1px solid rgba(90,169,255,.4)}
+  .phase{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 6px}
+  .pill{display:inline-block;font-size:11px;border-radius:999px;padding:1px 9px}
+  .pill.echt{background:rgba(62,207,142,.15);color:var(--prod);border:1px solid rgba(62,207,142,.4)}
+  .pill.afg{background:rgba(245,166,35,.13);color:var(--test);border:1px solid rgba(245,166,35,.4)}
+  .keuze{background:rgba(255,209,102,.13);border:1px solid rgba(255,209,102,.4);border-radius:8px;padding:1px 7px;color:var(--jij);font-size:12.5px}
+  footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Kluslus — Omgeving- &amp; accountkaart <span class="stamp">bijgewerkt 2026-06-28</span></h1>
+  <p class="sub">Wie werkt waar, met welk account, en wat staat er per omgeving ingesteld. Geheugensteun én inrichtings-gids.</p>
+
+  <div class="tip klaar">
+    <b>Schone lei gezet (28-06-2026):</b> productie en test zijn geleegd, de 9 opdrachtgever-rapporten staan veilig in je zakelijke Drive, en de accounts zijn opnieuw ingericht: <b>beheer@kluslus.nl</b> = beheerder (master), <b>bkm</b> = monteur (jij).
+  </div>
+
+  <div class="legend">
+    <span><span class="dot d-prod"></span><b>Productie</b> (echte opdrachtgevers)</span>
+    <span><span class="dot d-test"></span><b>Test</b> (bouwen, alleen jij)</span>
+    <span><span class="dot d-demo"></span><b>Demo</b> (tonen)</span>
+    <span><span class="who jij">JIJ</span> jij doet dit</span>
+    <span><span class="who cl">CLAUDE</span> ik doe dit</span>
+  </div>
+
+  <!-- ====== PRINCIPE ====== -->
+  <h2>1 · Het idee in één zin</h2>
+  <p class="lead">Scheid de <b>omgevingen</b> met grendels (gaat mail/sms echt naar buiten?), en de <b>rollen</b> met je accounts. Opleveren kan alleen een <b>monteur</b>; de beheerder is alleen voor uitnodigen en overzicht.</p>
+  <div class="tip"><b>Belangrijk:</b> accounts en rollen zijn <b>per omgeving</b>, want elke omgeving heeft zijn eigen database. Hetzelfde mailadres kan in test een andere rol hebben dan in productie.</div>
+  <div class="tip"><b>Inlog-mail ≠ werk-mail.</b> Waarmee je inlogt staat los van waar je werk-mail heen gaat; dat laatste is het veld <b>contact_email</b>. Opdrachtgevers zien je inlog nooit: de afzender is altijd <code>planning@kluslus.nl</code>.</div>
+
+  <!-- ====== DE DRIE BOMEN ====== -->
+  <h2>2 · Wie werkt waar (per omgeving)</h2>
+  <p class="lead">Drie omgevingen, elk een eigen database en eigen accounts. De wortel is de omgeving, de takken zijn de rollen.</p>
+  <div class="bomen">
+
+    <div class="boomkaart prod">
+      <div class="tree"><ul><li>
+        <span class="node root prod"><span class="dot d-prod"></span>Productie</span>
+        <ul>
+          <li><span class="node beh"><span class="rol">Beheerder</span><small>beheer@kluslus.nl</small></span></li>
+          <li><span class="node"><span class="rol">Monteur</span><small>bkm — jij</small></span></li>
+          <li><span class="node"><span class="rol">Monteur</span><small>Minko</small></span></li>
+        </ul>
+      </li></ul></div>
+      <div class="boomvoet">Echt werk, naar echte opdrachtgevers. Mail + sms gaan echt de deur uit.</div>
+    </div>
+
+    <div class="boomkaart demo">
+      <div class="tree"><ul><li>
+        <span class="node root demo"><span class="dot d-demo"></span>Demo</span>
+        <ul>
+          <li><span class="node beh"><span class="rol">Beheerder</span><small>per sessie</small></span></li>
+          <li><span class="node"><span class="rol">Monteur</span><small>per sessie (QR)</small></span></li>
+        </ul>
+      </li></ul></div>
+      <div class="boomvoet">Tonen aan bekenden / KSV. Geen vaste accounts: meld je per keer aan. Reset met "Speel opnieuw".</div>
+    </div>
+
+    <div class="boomkaart test">
+      <div class="tree"><ul><li>
+        <span class="node root test"><span class="dot d-test"></span>Test</span>
+        <ul>
+          <li><span class="node beh"><span class="rol">Beheerder</span><small>rk</small></span></li>
+          <li><span class="node"><span class="rol">Monteur</span><small>shift</small></span></li>
+          <li><span class="node"><span class="rol">Monteur</span><small>mind</small></span></li>
+        </ul>
+      </li></ul></div>
+      <div class="boomvoet">Bouwen en testen. Alles afgeschermd: mail + sms komen alleen bij jou.</div>
+    </div>
+
+  </div>
+
+  <!-- ====== ACCOUNTS ====== -->
+  <h2>3 · Je accounts en hun vaste plek</h2>
+  <p class="lead">Eén account = één rol per omgeving.</p>
+  <div class="chiprow">
+    <div class="chip c-prod"><span class="a">bkm</span><span class="r">zakelijk → <b>productie-monteur</b> (jij). Dagelijks: invoeren + opleveren.</span></div>
+    <div class="chip c-prod"><span class="a">beheer@kluslus.nl</span><span class="r">alias (gratis) → <b>productie-beheerder</b>. Zelden: uitnodigen + overzicht.</span></div>
+    <div class="chip c-prod"><span class="a">Minko</span><span class="r">eigen mail/06 → <b>productie-monteur</b>. <span class="keuze">nog uitnodigen</span></span></div>
+    <div class="chip c-test"><span class="a">rk</span><span class="r">r.k.zijlstra@gmail.com → <b>test-beheerder</b></span></div>
+    <div class="chip c-test"><span class="a">shift</span><span class="r">trc.the.reality.check@gmail.com → <b>test-monteur</b></span></div>
+    <div class="chip c-test"><span class="a">mind</span><span class="r">mentaleapk@gmail.com → <b>test-monteur</b></span></div>
+    <div class="chip c-demo"><span class="a">demo</span><span class="r">geen vast account — per sessie aanmelden</span></div>
+  </div>
+
+  <!-- ====== MAIL/SMS ====== -->
+  <h2>4 · Waar gaat welk bericht heen</h2>
+  <div class="rrow"><div class="k">Klus-mail naar monteur</div><div>naar zijn <code>contact_email</code> (werk-mail, niet de inlog)</div></div>
+  <div class="rrow"><div class="k">Klus-sms naar monteur</div><div>naar zijn <code>telefoon</code> (als sms-werk aanstaat)</div></div>
+  <div class="rrow"><div class="k">Opleverrapport</div><div>naar de opdrachtgever (per klus ingevuld, of <code>RAPPORT_EMAIL</code>)</div></div>
+  <div class="rrow"><div class="k">Afzender naar buiten</div><div>altijd <code>planning@kluslus.nl</code>, antwoordadres = monteur z'n werk-mail</div></div>
+
+  <!-- ====== GRENDELS ====== -->
+  <h2>5 · De grendels per omgeving (in Vercel)</h2>
+  <p class="lead">Deze bepalen of berichten echt naar buiten gaan. <span class="who cl">CLAUDE</span> kan ze zetten.</p>
+  <div class="grid3">
+    <div class="env prod"><h3><span class="dot d-prod"></span>Productie</h3>
+      <div class="rrow"><div class="k">mail/sms</div><div><span class="pill echt">echt</span> (allowlist leeg)</div></div></div>
+    <div class="env demo"><h3><span class="dot d-demo"></span>Demo</h3>
+      <div class="rrow"><div class="k">mail/sms</div><div><span class="pill echt">echt</span> (allowlist leeg)</div></div></div>
+    <div class="env test"><h3><span class="dot d-test"></span>Test</h3>
+      <div class="rrow"><div class="k">mail/sms</div><div><span class="pill afg">alleen jou</span> (bkm, rk, shift, mind + jouw 06)</div></div></div>
+  </div>
+
+  <!-- ====== INSTELLEN ====== -->
+  <h2>6 · Inrichten — wat is gedaan en wat rest</h2>
+
+  <div class="phase">Productie</div>
+  <ol class="steps">
+    <li class="done"><span class="who cl">CLAUDE</span> Productie + test geleegd, rapporten veiliggesteld in Drive.</li>
+    <li class="done"><span class="who jij">JIJ</span> + <span class="who cl">CLAUDE</span> beheer@kluslus.nl aangemaakt en als <b>beheerder (master)</b> gezet; bkm op <b>monteur</b>; overige accounts opgeruimd.</li>
+    <li><span class="who jij">JIJ</span> Log in als <b>bkm</b> → <b>Mijn gegevens</b>: telefoon = jouw 06, sms-werk aan. (Je inbound-adres voor doorgestuurde order-mails staat daar ook: <code>klus-…@klus.kluslus.nl</code>.)</li>
+    <li><span class="who jij">JIJ</span> <b>Minko uitnodigen</b> zodra je zijn mail + 06 hebt: via beheer@ → <b>Mensen</b> → uitnodigen als monteur. <span class="keuze">Minko's gegevens nodig</span></li>
+  </ol>
+
+  <div class="phase">Test</div>
+  <ol class="steps">
+    <li class="done"><span class="who cl">CLAUDE</span> Grendel staat: mail-allowlist = bkm, rk, shift, mind · sms = jouw 06 · dry-run uit.</li>
+    <li><span class="who jij">JIJ</span> Op kluslus-test: nodig <b>shift</b> en <b>mind</b> uit als monteur en <b>rk</b> als beheerder. Geef shift + mind jouw 06.</li>
+  </ol>
+
+  <div class="phase">Demo</div>
+  <ol class="steps">
+    <li><span class="who jij">JIJ</span> Geen vaste inrichting. Per sessie aanmelden (word-beheerder of QR). Vóór je het aan KSV toont: eerst je intro maken (staat los, nog te doen).</li>
+  </ol>
+
+  <footer>
+    Bijgewerkt na het zetten van de schone lei (28-06-2026). Geel = nog te kiezen of in te vullen.
+    Zeg <b>"werk de omgevingskaart bij"</b> om hem aan te passen.
+  </footer>
+
+</div>
+</body>
+</html>
