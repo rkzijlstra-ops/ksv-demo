@@ -2,6 +2,7 @@ import { Play, Lock, PenLine } from "lucide-react";
 import { formatDatumKort } from "@/lib/datum";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
+import { ActieKaart } from "@/components/ActieKaart";
 
 // Kleuren overgenomen van de PDF-generator (rapport.ts) zodat de preview hetzelfde oogt: blauw accent.
 const BLAUW = "#335775";
@@ -255,15 +256,18 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
             Tik een foto aan om hem groot te openen, op te slaan en zelf door te sturen.
           </p>
           {data.videoUrl && (
-            <a
-              href={data.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex min-h-[44px] items-center gap-2 border-2 border-primary px-4 text-sm font-extrabold uppercase tracking-[0.05em] text-primary hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
-            >
-              <Play size={16} strokeWidth={2.5} aria-hidden="true" />
-              Video van de oplevering
-            </a>
+            <div className="mt-3">
+              <ActieKaart
+                accent="neutraal"
+                icoon={<Play size={20} strokeWidth={2.5} aria-hidden="true" />}
+                titel="Video van de oplevering"
+                sub="Tik om te bekijken"
+                href={data.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                ariaLabel="Video van de oplevering openen"
+              />
+            </div>
           )}
         </>
       )}
