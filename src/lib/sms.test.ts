@@ -46,6 +46,34 @@ describe("verstuurSms", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // Test-omgeving-grendel (FASE 2): echt versturen aan (SMS_DRY_RUN=0), maar de allowlist
+  // beperkt tot ALLEEN Reiniers eigen 06. Een vreemd nummer mag nooit een sms krijgen.
+  describe("test-omgeving: SMS_DRY_RUN=0 + allowlist = alleen Reinier", () => {
+    const REINIER = "+31631665814";
+
+    it("verstuurt NIET naar een ander nummer dan dat op de allowlist", async () => {
+      vi.stubEnv("SMS_DRY_RUN", "0");
+      vi.stubEnv("SMS_ALLOWLIST", REINIER);
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      await verstuurSms({ naar: "+31611112222", tekst: "niet sturen", afzender: "Kluslus" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("doet WEL de verzendpoging naar Reiniers eigen nummer", async () => {
+      vi.stubEnv("SMS_DRY_RUN", "0");
+      vi.stubEnv("SMS_ALLOWLIST", REINIER);
+      const fetchMock = vi.fn<(url: string | URL, init?: RequestInit) => Promise<Response>>(
+        async () => new Response("{}", { status: 200 }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      await verstuurSms({ naar: REINIER, tekst: "wel sturen", afzender: "Kluslus" });
+      expect(fetchMock).toHaveBeenCalledOnce();
+      const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.messages.msg[0].to[0].number).toBe(REINIER);
+    });
+  });
+
   it("gooit bij een HTTP-fout", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("nee", { status: 500 })));
     await expect(
