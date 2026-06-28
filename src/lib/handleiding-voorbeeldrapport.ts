@@ -1,17 +1,22 @@
 import type { RapportWeergaveData } from "@/components/RapportWeergave";
+import { CONTROLE_PUNTEN } from "@/lib/oplever-controle";
 
 /**
  * Bouwt nep-rapportdata voor de demo in de handleiding. Pure functie: geen Date.now(), geen DB,
- * geen side-effects. De opleverdatum en foto-urls komen van de aanroeper (de pagina).
+ * geen side-effects. De opleverdatum, foto-urls en video-url komen van de aanroeper (de pagina).
+ * Volgt exact het echte rapport (rapport.ts / RapportWeergave): het controle-deel is het ene
+ * algemene akkoord dat de klant bij de handtekening aftekent, niet een verzonnen checklist.
  *
  * @param opleverdatum  ISO-datumstring, bijv. new Date().toISOString() in de pagina
  * @param fotos         Url-lijst van eindstaat-foto's (mag leeg zijn)
  * @param meldingFotos  Url-lijst van foto's bij de demo-melding (mag leeg zijn)
+ * @param videoUrl      Url van de oplever-video (null = geen video; dan geen afspeelknop)
  */
 export function voorbeeldRapportData(
   opleverdatum: string,
   fotos: string[],
   meldingFotos: string[],
+  videoUrl: string | null,
 ): RapportWeergaveData {
   return {
     afzenderKop: "Keukenmontage Jansen",
@@ -24,16 +29,13 @@ export function voorbeeldRapportData(
     keukenzaak: "Keukenstudio Voorschoten",
     ondertekend: true,
     handtekeningUrl: "/handleiding/voorbeeld/handtekening.svg",
-    videoUrl: null,
+    videoUrl,
     fotos,
     opmerking: "Keuken compleet gemonteerd en getest, klant tevreden.",
-    controle: [
-      { punt: "Keuken waterpas gesteld en bevestigd", akkoord: true },
-      { punt: "Apparatuur aangesloten en getest", akkoord: true },
-      { punt: "Werkblad en spoelbak afgekit", akkoord: true },
-      { punt: "Lade onder de spoelbak loopt stroef", akkoord: false },
-    ],
-    interneNotitie: "Lade-rail bij de spoelbak vervangen, onderdeel nabestellen. Klant is op de hoogte.",
+    // Het echte rapport heeft één algemeen akkoord (CONTROLE_PUNTEN[0]) dat de klant bij de
+    // handtekening aftekent, geen losse checklist. Hier op akkoord.
+    controle: [{ punt: CONTROLE_PUNTEN[0], akkoord: true }],
+    interneNotitie: "Afzuigkap-melding nagekeken; onderdeel nabesteld. Klant is op de hoogte.",
     meldingen: [
       {
         id: "demo-1",
