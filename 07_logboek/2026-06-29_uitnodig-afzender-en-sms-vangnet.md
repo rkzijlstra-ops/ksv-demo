@@ -27,11 +27,18 @@ Test-first. 928 unit groen, typecheck 0, lint 0. Nieuw/uitgebreid: uitnodig-mail
 (nieuw), mail.test (From-naam uitnodiging + afmelding), uitnodigen/route.test (06-paden). TESTDEKKING.md
 en TOESTANDEN.md bijgewerkt in dezelfde wijziging.
 
+## Gelijktrekken (zelfde sessie, op verzoek Rein)
+Alle app-mails namens de zaak gebruiken nu dezelfde afzender "&lt;zaak&gt; via Kluslus" via de
+gegeneraliseerde helper `appAfzender` in `mail.ts`: uitnodiging, afmelding, annulering, ontplanning,
+nieuw document, herinnering, terugmelding, afgerond-melding, spoed (zaaknaam uit de opdracht) en de
+monteur-bundel (zaaknaam). Het **opleverrapport** blijft bewust de identiteit van de monteur die
+opleverde (eigen From-naam + reply-to), dus dat is geen gat. Tests toegevoegd voor de drie zaaknaam-bronnen
+(organisatie, zaaknaam, keukenzaak). 931 unit groen.
+
 ## Bewust open
-- Overige opdracht-mails (annulering/ontplanning/herinnering/document/terugmelding) gebruiken nog de kale
-  afzender; later gelijktrekken indien gewenst.
 - Spam-headers van Thu's mail nog niet ingezien (Rein had ze niet); de diagnose staat los daarvan al hard
   op de DNS.
+- Rein hermonitort bij de volgende echte uitnodiging.
 
 ## Status
-Op de test-omgeving gezet voor Reins visuele keuring. NIET naar master (STOP-poort = Rein).
+Naar test-omgeving (kluslus-test) en, na groene CI, naar productie gemerged (Rein gaf push+merge-toestemming).

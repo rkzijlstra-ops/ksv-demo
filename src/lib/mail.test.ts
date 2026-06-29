@@ -15,6 +15,8 @@ import {
   verstuurSpoedMelding,
   verstuurAfmelding,
   verstuurUitnodiging,
+  verstuurMonteurMail,
+  verstuurAnnulering,
 } from "./mail";
 
 function opdracht(over: Partial<Melding> = {}): Melding {
@@ -156,6 +158,18 @@ describe("verstuurSpoedMelding", () => {
     expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 
+  it("zet de From-naam op '<keukenzaak> via Kluslus' (afzender uit de opdracht)", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurSpoedMelding({
+      naar: "rein@example.com",
+      opdracht: opdracht({ keukenzaak: "Keukenstudio Voorschoten" }),
+      melding,
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+
   it("gooit een error als RESEND_API_KEY ontbreekt", async () => {
     delete process.env.RESEND_API_KEY;
     await expect(
@@ -266,5 +280,45 @@ describe("MAIL_ALLOWLIST (grendel, gelijk aan SMS_ALLOWLIST)", () => {
     process.env.MAIL_ALLOWLIST = "";
     await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
     expect(mockSend).toHaveBeenCalledOnce();
+  });
+});
+
+describe("appAfzender op de overige app-mails (zaaknaam vooraan, domein-merk erachter)", () => {
+  it("annulering: From = '<organisatie> via Kluslus' (zelfde pad als ontplanning/document/herinnering/terugmelding)", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurAnnulering({
+      naar: "thu@example.com",
+      monteurNaam: "Thu",
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+
+  it("monteur-bundel: From = '<zaaknaam> via Kluslus'", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurMonteurMail({
+      naar: "thu@example.com",
+      monteurNaam: "Thu",
+      zaaknaam: "Keukenstudio Voorschoten",
+      opdrachten: [
+        {
+          klant_naam: "van Dijk",
+          klant_adres: "Dorpsstraat 1",
+          referentienummer: "7407",
+          documenttype: null,
+          startdatum: "2026-07-01",
+          starttijd: null,
+          duur_dagen: 1,
+          meldingen: [],
+        },
+      ] as unknown as Parameters<typeof verstuurMonteurMail>[0]["opdrachten"],
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
   });
 });
