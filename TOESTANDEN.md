@@ -70,9 +70,10 @@ staan): (1) **mail** met afzender "&lt;zaak&gt; via Kluslus", zaaknaam vooraan i
 het profiel). De SMS draagt geen inloglink (gevoelig), alleen de duw naar `/login` waar de monteur zelf
 een magic link aanvraagt; die magic link blijft via Supabase lopen en komt betrouwbaar in de inbox.
 Toestanden van de respons: mailVerstuurd, smsGevraagd (was er een geldig 06), smsVerstuurd. Tegenhanger
-afmelding deelt de afzender "&lt;zaak&gt; via Kluslus". Gat (bewust open): de overige opdracht-mails
-(annulering/ontplanning/herinnering/document/terugmelding) gebruiken nog de kale afzender; later
-gelijktrekken indien gewenst.
+afmelding deelt de afzender "&lt;zaak&gt; via Kluslus". Gelijkgetrokken 2026-06-29: ALLE app-mails namens
+de zaak (uitnodiging, afmelding, annulering, ontplanning, document, herinnering, terugmelding, afgerond,
+spoed, monteur-bundel) gebruiken nu dezelfde afzender via `appAfzender`. Het opleverrapport houdt bewust
+de identiteit van de monteur die opleverde (eigen From-naam + reply-to), dat is geen gat maar opzet.
 
 ### Handleiding (UI-toestanden, geen opdracht-status)
 De handleiding-pagina (`/handleiding`) toont onderwerpen in vier groepen. UI-toestanden:

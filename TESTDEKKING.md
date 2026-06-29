@@ -46,7 +46,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Annuleren + mail naar monteur bij verstuurd | U, E, M | annuleren/route.test, annuleren.spec, mail-flows.spec | groen |
 | Gebruikersbeheer, rollen, uitnodigen/afmelden | U, M | mail-flows.spec (uitnodiging/afmelding) | grotendeels |
 | Uitnodig-mail: zaaknaam-prominent (onderwerp + opening + uitlegzin Kluslus), neutrale terugval zonder zaak | U | uitnodig-mail.test | groen |
-| Afzender lidmaatschap-mails = "&lt;zaak&gt; via Kluslus &lt;adres&gt;" (uitnodiging + afmelding), terugval "Kluslus" | U | mail.test (verstuurUitnodiging + verstuurAfmelding From-naam) | groen |
+| Afzender ALLE app-mails namens de zaak = "&lt;zaak&gt; via Kluslus &lt;adres&gt;" (uitnodiging, afmelding, annulering, ontplanning, document, herinnering, terugmelding, afgerond, spoed, monteur-bundel), terugval "Kluslus". Opleverrapport NIET (houdt monteur-identiteit) | U | mail.test (uitnodiging/afmelding/annulering/monteur-bundel/spoed From-naam via appAfzender; oplever-From blijft monteur) | groen |
 | SMS-vangnet bij uitnodigen (optioneel 06): tekst met zaaknaam/Kluslus/login-URL, geen inloglink in SMS | U | uitnodig-sms.test (uitnodigingSmsTekst) | groen |
 | Uitnodig-route met 06: normaliseert naar +31, schrijft telefoon op profiel, stuurt SMS best-effort; ongeldig/leeg nummer → geen SMS, telefoon ongemoeid | U | uitnodigen/route.test (telefoon-paden) | groen; live SMS-pad handmatig op test-omgeving (Reins eigen 06, allowlist) |
 | 06-veld + uitleg in uitnodig-formulier, SMS-status in bevestiging | (E later) | UitnodigForm.tsx | bewust later/handmatig: optioneel veld, logica gedekt door route/unit-tests |
