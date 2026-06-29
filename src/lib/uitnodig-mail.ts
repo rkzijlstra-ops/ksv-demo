@@ -16,13 +16,22 @@ export function uitnodigingTekst(
   appUrl: string,
   organisatie = "",
 ): { subject: string; text: string } {
-  const subject = "Je bent toegevoegd aan de planning-app";
+  const zaak = organisatie.trim();
+  // Onderwerp en opening beginnen met de herkenbare zaaknaam: de monteur kent "Kluslus" niet, wel
+  // de keukenzaak. Zonder zaak een neutrale terugval.
+  const subject = zaak
+    ? `${zaak} heeft je toegevoegd aan de planning-app`
+    : "Je bent toegevoegd aan de planning-app";
   // Afsluiter = de keukenzaak namens wie gemaild wordt (komt uit de database), zodat hij klopt
   // met de afzender. Geen zaak bekend: neutrale terugval.
-  const afzender = organisatie.trim() || "Het planning-team";
+  const afzender = zaak || "Het planning-team";
+  // Eén uitlegzin over Kluslus, zodat de afzender "<zaak> via Kluslus" niet vaag overkomt.
+  const opening = zaak
+    ? `${zaak} heeft je toegevoegd aan de planning-app als ${rolLabel(rol)}. Kluslus is de app waarmee ${zaak} de montages plant en je op de hoogte houdt.`
+    : `Je bent toegevoegd aan de planning-app als ${rolLabel(rol)}.`;
   const text = `Hoi ${naam},
 
-Je bent toegevoegd aan de planning-app als ${rolLabel(rol)}.
+${opening}
 
 Inloggen:
 1. Ga naar ${appUrl}/login

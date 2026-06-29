@@ -10,7 +10,14 @@ vi.mock("resend", () => ({
   },
 }));
 
-import { verstuurOpleverRapport, verstuurSpoedMelding, verstuurAfmelding } from "./mail";
+import {
+  verstuurOpleverRapport,
+  verstuurSpoedMelding,
+  verstuurAfmelding,
+  verstuurUitnodiging,
+  verstuurMonteurMail,
+  verstuurAnnulering,
+} from "./mail";
 
 function opdracht(over: Partial<Melding> = {}): Melding {
   return {
@@ -151,6 +158,18 @@ describe("verstuurSpoedMelding", () => {
     expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
   });
 
+  it("zet de From-naam op '<keukenzaak> via Kluslus' (afzender uit de opdracht)", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurSpoedMelding({
+      naar: "rein@example.com",
+      opdracht: opdracht({ keukenzaak: "Keukenstudio Voorschoten" }),
+      melding,
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+
   it("gooit een error als RESEND_API_KEY ontbreekt", async () => {
     delete process.env.RESEND_API_KEY;
     await expect(
@@ -178,6 +197,49 @@ describe("verstuurAfmelding", () => {
     process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
     await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
     expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
+  });
+
+  it("zet de From-naam op '<zaak> via Kluslus', met het adres uit RESEND_FROM", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurAfmelding({
+      naar: "piet@example.com",
+      naam: "Piet",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+});
+
+describe("verstuurUitnodiging", () => {
+  it("verstuurt de uitnodiging met de From-naam '<zaak> via Kluslus'", async () => {
+    process.env.RESEND_FROM = "Oude Naam <planning@kluslus.nl>";
+    await verstuurUitnodiging({
+      naar: "thu@example.com",
+      naam: "Thu",
+      rol: "monteur",
+      appUrl: "https://mijn.kluslus.nl",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend).toHaveBeenCalledOnce();
+    const arg = mockSend.mock.calls[0][0];
+    expect(arg.to).toBe("thu@example.com");
+    // De herkenbare zaaknaam staat vooraan, het domein-merk erachter (lost naam/domein-mismatch op).
+    expect(arg.from).toBe("Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>");
+    expect(arg.subject).toMatch(/Keukenstudio Voorschoten/);
+    expect(arg.html).toBeTruthy();
+  });
+
+  it("valt voor de From-naam terug op 'Kluslus' zonder organisatie", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurUitnodiging({
+      naar: "thu@example.com",
+      naam: "Thu",
+      rol: "monteur",
+      appUrl: "https://x",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe("Kluslus <planning@kluslus.nl>");
   });
 });
 
@@ -218,5 +280,45 @@ describe("MAIL_ALLOWLIST (grendel, gelijk aan SMS_ALLOWLIST)", () => {
     process.env.MAIL_ALLOWLIST = "";
     await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
     expect(mockSend).toHaveBeenCalledOnce();
+  });
+});
+
+describe("appAfzender op de overige app-mails (zaaknaam vooraan, domein-merk erachter)", () => {
+  it("annulering: From = '<organisatie> via Kluslus' (zelfde pad als ontplanning/document/herinnering/terugmelding)", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurAnnulering({
+      naar: "thu@example.com",
+      monteurNaam: "Thu",
+      klantNaam: "van Dijk",
+      referentienummer: "7407",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+
+  it("monteur-bundel: From = '<zaaknaam> via Kluslus'", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurMonteurMail({
+      naar: "thu@example.com",
+      monteurNaam: "Thu",
+      zaaknaam: "Keukenstudio Voorschoten",
+      opdrachten: [
+        {
+          klant_naam: "van Dijk",
+          klant_adres: "Dorpsstraat 1",
+          referentienummer: "7407",
+          documenttype: null,
+          startdatum: "2026-07-01",
+          starttijd: null,
+          duur_dagen: 1,
+          meldingen: [],
+        },
+      ] as unknown as Parameters<typeof verstuurMonteurMail>[0]["opdrachten"],
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
   });
 });

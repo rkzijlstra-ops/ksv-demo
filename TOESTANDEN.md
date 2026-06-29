@@ -63,6 +63,18 @@ Niet in demo-modus (scripted uitstalraam). De gate zit in `vereisRol` (alleen ro
 skipOnboarding op de /welkom-pagina zelf). Gedekt: profiel.test (profielVolledig), toegang.test (gate),
 e2e-monteur staat compleet in global-setup; de visuele flow keurt Rein op omgeving-test.
 
+Uitnodiging (kantoor → nieuwe gebruiker), bijgewerkt 2026-06-29. Bij toevoegen stuurt de route twee
+kanalen, beide best-effort en los van elkaar (een fout op het een laat het ander en de account-aanmaak
+staan): (1) **mail** met afzender "&lt;zaak&gt; via Kluslus", zaaknaam vooraan in onderwerp en opening;
+(2) **SMS-vangnet** alleen als er een geldig 06 is meegegeven (genormaliseerd naar +31, ook opgeslagen op
+het profiel). De SMS draagt geen inloglink (gevoelig), alleen de duw naar `/login` waar de monteur zelf
+een magic link aanvraagt; die magic link blijft via Supabase lopen en komt betrouwbaar in de inbox.
+Toestanden van de respons: mailVerstuurd, smsGevraagd (was er een geldig 06), smsVerstuurd. Tegenhanger
+afmelding deelt de afzender "&lt;zaak&gt; via Kluslus". Gelijkgetrokken 2026-06-29: ALLE app-mails namens
+de zaak (uitnodiging, afmelding, annulering, ontplanning, document, herinnering, terugmelding, afgerond,
+spoed, monteur-bundel) gebruiken nu dezelfde afzender via `appAfzender`. Het opleverrapport houdt bewust
+de identiteit van de monteur die opleverde (eigen From-naam + reply-to), dat is geen gat maar opzet.
+
 ### Handleiding (UI-toestanden, geen opdracht-status)
 De handleiding-pagina (`/handleiding`) toont onderwerpen in vier groepen. UI-toestanden:
 alles ingeklapt (begintoestand, snel scannen) → "Alles openklappen" → alles open → "Alles

@@ -396,6 +396,11 @@ export interface ProfielInput {
   rol: Rol;
   naam: string;
   opdrachtgever_id: string | null;
+  /**
+   * Optioneel mobiel nummer (al genormaliseerd, +31...). Alleen meeschrijven als het is meegegeven;
+   * weglaten laat een bestaand nummer ongemoeid (de upsert raakt alleen de aangeleverde kolommen).
+   */
+  telefoon?: string | null;
 }
 
 /** Een opgeslagen ontvanger in het persoonlijke adresboek van een gebruiker (blok 13). */
@@ -1488,15 +1493,16 @@ function createDbFromClient(client: SupabaseClient): Db {
     },
 
     async upsertProfiel(input) {
-      const { error } = await client.from("profielen").upsert(
-        {
-          id: input.id,
-          rol: input.rol,
-          naam: input.naam,
-          opdrachtgever_id: input.opdrachtgever_id,
-        },
-        { onConflict: "id" },
-      );
+      const rij: Record<string, unknown> = {
+        id: input.id,
+        rol: input.rol,
+        naam: input.naam,
+        opdrachtgever_id: input.opdrachtgever_id,
+      };
+      // Alleen meeschrijven als er een nummer is meegegeven; zo overschrijft een uitnodiging zonder
+      // 06 nooit een nummer dat de gebruiker zelf al had ingevuld.
+      if (input.telefoon !== undefined) rij.telefoon = input.telefoon;
+      const { error } = await client.from("profielen").upsert(rij, { onConflict: "id" });
       if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
     },
 

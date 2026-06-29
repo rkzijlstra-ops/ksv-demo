@@ -29,4 +29,25 @@ describe("uitnodigingTekst", () => {
     const { text } = uitnodigingTekst("Piet", "monteur", "https://x", "");
     expect(text.trimEnd().endsWith("Het planning-team")).toBe(true);
   });
+
+  it("zet de zaaknaam vooraan in onderwerp en tekst als er een organisatie is", () => {
+    const { subject, text } = uitnodigingTekst(
+      "Thu",
+      "monteur",
+      "https://x",
+      "Keukenstudio Voorschoten",
+    );
+    // Onderwerp begint met de herkenbare zaaknaam (de ontvanger kent Kluslus niet).
+    expect(subject).toBe("Keukenstudio Voorschoten heeft je toegevoegd aan de planning-app");
+    // De opening noemt de zaak die uitnodigt, niet een kale "je bent toegevoegd".
+    expect(text).toContain("Keukenstudio Voorschoten heeft je toegevoegd");
+    // Eén zin legt uit wat Kluslus is, zodat de naam in de afzender niet vaag overkomt.
+    expect(text).toContain("Kluslus");
+    expect(text).toContain("als monteur");
+  });
+
+  it("houdt het neutrale onderwerp zonder organisatie", () => {
+    const { subject } = uitnodigingTekst("Piet", "monteur", "https://x", "");
+    expect(subject).toBe("Je bent toegevoegd aan de planning-app");
+  });
 });
