@@ -227,6 +227,17 @@ export async function verstuurMonteurMail(input: MonteurMailInput): Promise<void
   );
 }
 
+/**
+ * From-naam voor de lidmaatschap-mails (uitnodiging/afmelding): de herkenbare zaaknaam met het
+ * domein-merk erachter, bv. "Keukenstudio Voorschoten via Kluslus". Zo ziet de ontvanger de zaak
+ * die hij kent, terwijl naam en verzenddomein (kluslus.nl) bij elkaar passen. Dat haalt het
+ * naam/domein-mismatch-signaal weg dat spamfilters als phishing lezen. Zonder zaak: "Kluslus".
+ */
+function lidmaatschapAfzender(from: string, organisatie?: string): string {
+  const zaak = organisatie?.trim();
+  return afzenderHeader(from, zaak ? `${zaak} via Kluslus` : "Kluslus");
+}
+
 /** Verstuurt een uitnodiging aan een nieuwe gebruiker (monteur/opdrachtgever) via Resend. */
 export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<void> {
   const { apiKey, from, replyTo } = mailConfig();
@@ -235,7 +246,14 @@ export async function verstuurUitnodiging(input: UitnodigingMailInput): Promise<
 
   await verzendMail(
     resend,
-    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    {
+      from: lidmaatschapAfzender(from, input.organisatie),
+      to: input.naar,
+      replyTo,
+      subject,
+      text,
+      html: htmlVanTekst(text),
+    },
     "Uitnodiging versturen mislukt",
   );
 }
@@ -248,7 +266,14 @@ export async function verstuurAfmelding(input: AfmeldingMailInput): Promise<void
 
   await verzendMail(
     resend,
-    { from, to: input.naar, replyTo, subject, text, html: htmlVanTekst(text) },
+    {
+      from: lidmaatschapAfzender(from, input.organisatie),
+      to: input.naar,
+      replyTo,
+      subject,
+      text,
+      html: htmlVanTekst(text),
+    },
     "Afmelding versturen mislukt",
   );
 }

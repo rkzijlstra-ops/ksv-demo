@@ -8,6 +8,7 @@ export function UitnodigForm() {
   const router = useRouter();
   const [naam, setNaam] = useState("");
   const [email, setEmail] = useState("");
+  const [telefoon, setTelefoon] = useState("");
   const [rol, setRol] = useState<"monteur" | "opdrachtgever">("monteur");
   const [bezig, setBezig] = useState(false);
   const [bericht, setBericht] = useState("");
@@ -22,20 +23,25 @@ export function UitnodigForm() {
       const res = await fetch("/api/mensen/uitnodigen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ naam, email, rol }),
+        body: JSON.stringify({ naam, email, rol, telefoon }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setFout(body.error ?? `Uitnodigen mislukt (${res.status})`);
         return;
       }
-      setBericht(
-        body.mailVerstuurd
-          ? `${naam} uitgenodigd. Uitnodigingsmail verstuurd naar ${email}.`
-          : `${naam} toegevoegd, maar de mail kon niet verstuurd worden. Laat ${email} zelf inloggen op /login.`,
-      );
+      const mailDeel = body.mailVerstuurd
+        ? `Uitnodigingsmail verstuurd naar ${email}.`
+        : `De mail kon niet verstuurd worden, laat ${email} zelf inloggen op /login.`;
+      const smsDeel = body.smsGevraagd
+        ? body.smsVerstuurd
+          ? " SMS-vangnet verstuurd."
+          : " SMS kon niet verstuurd worden."
+        : "";
+      setBericht(`${naam} uitgenodigd. ${mailDeel}${smsDeel}`);
       setNaam("");
       setEmail("");
+      setTelefoon("");
       setRol("monteur");
       router.refresh();
     } catch {
@@ -63,6 +69,20 @@ export function UitnodigForm() {
           className={veld}
           placeholder="piet@bedrijf.nl"
         />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+        06-nummer (aanbevolen)
+        <input
+          type="tel"
+          inputMode="tel"
+          value={telefoon}
+          onChange={(e) => setTelefoon(e.target.value)}
+          className={veld}
+          placeholder="06 12345678"
+        />
+        <span className="text-xs font-normal text-ink-muted">
+          Stuurt er een SMS bij, voor het geval de mail in de spam belandt. Optioneel.
+        </span>
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
         Rol

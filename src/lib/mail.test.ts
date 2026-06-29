@@ -10,7 +10,12 @@ vi.mock("resend", () => ({
   },
 }));
 
-import { verstuurOpleverRapport, verstuurSpoedMelding, verstuurAfmelding } from "./mail";
+import {
+  verstuurOpleverRapport,
+  verstuurSpoedMelding,
+  verstuurAfmelding,
+  verstuurUitnodiging,
+} from "./mail";
 
 function opdracht(over: Partial<Melding> = {}): Melding {
   return {
@@ -178,6 +183,49 @@ describe("verstuurAfmelding", () => {
     process.env.RESEND_REPLY_TO = "antwoord@kluslus.nl";
     await verstuurAfmelding({ naar: "piet@example.com", naam: "Piet" });
     expect(mockSend.mock.calls[0][0].replyTo).toBe("antwoord@kluslus.nl");
+  });
+
+  it("zet de From-naam op '<zaak> via Kluslus', met het adres uit RESEND_FROM", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurAfmelding({
+      naar: "piet@example.com",
+      naam: "Piet",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe(
+      "Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>",
+    );
+  });
+});
+
+describe("verstuurUitnodiging", () => {
+  it("verstuurt de uitnodiging met de From-naam '<zaak> via Kluslus'", async () => {
+    process.env.RESEND_FROM = "Oude Naam <planning@kluslus.nl>";
+    await verstuurUitnodiging({
+      naar: "thu@example.com",
+      naam: "Thu",
+      rol: "monteur",
+      appUrl: "https://mijn.kluslus.nl",
+      organisatie: "Keukenstudio Voorschoten",
+    });
+    expect(mockSend).toHaveBeenCalledOnce();
+    const arg = mockSend.mock.calls[0][0];
+    expect(arg.to).toBe("thu@example.com");
+    // De herkenbare zaaknaam staat vooraan, het domein-merk erachter (lost naam/domein-mismatch op).
+    expect(arg.from).toBe("Keukenstudio Voorschoten via Kluslus <planning@kluslus.nl>");
+    expect(arg.subject).toMatch(/Keukenstudio Voorschoten/);
+    expect(arg.html).toBeTruthy();
+  });
+
+  it("valt voor de From-naam terug op 'Kluslus' zonder organisatie", async () => {
+    process.env.RESEND_FROM = "planning@kluslus.nl";
+    await verstuurUitnodiging({
+      naar: "thu@example.com",
+      naam: "Thu",
+      rol: "monteur",
+      appUrl: "https://x",
+    });
+    expect(mockSend.mock.calls[0][0].from).toBe("Kluslus <planning@kluslus.nl>");
   });
 });
 
