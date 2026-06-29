@@ -108,12 +108,14 @@ export function HandleidingWeergave({ groepen }: { groepen: GroepView[] }) {
                     )}
 
                     {o.bestaat ? (
-                      <div className="mx-auto mt-3.5 w-full max-w-[240px] overflow-hidden rounded-[26px] border-8 border-ink bg-ink">
+                      <div className="mx-auto mt-3.5 w-full max-w-[260px] overflow-hidden rounded-[26px] border-8 border-ink bg-ink">
+                        {/* Volledige schermafbeelding op natuurlijke verhouding: zo komt het plaatje
+                            exact overeen met het echte scherm (geen bijsnijden/uitzoomen). */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/handleiding/${o.bestand}`}
                           alt={`Schermafbeelding: ${o.titel}`}
-                          className="block h-[330px] w-full object-cover object-top"
+                          className="block h-auto w-full"
                         />
                       </div>
                     ) : (
