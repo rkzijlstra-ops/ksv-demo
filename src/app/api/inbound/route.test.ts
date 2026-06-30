@@ -10,6 +10,8 @@ const {
   mockUpload,
   mockParse,
   mockStandaard,
+  mockBewaarSplits,
+  mockBeoordeel,
 } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockAttGet: vi.fn(),
@@ -20,6 +22,8 @@ const {
   mockUpload: vi.fn(),
   mockParse: vi.fn(),
   mockStandaard: vi.fn(),
+  mockBewaarSplits: vi.fn(),
+  mockBeoordeel: vi.fn(),
 }));
 
 vi.mock("resend", () => ({
@@ -35,10 +39,14 @@ vi.mock("@/lib/db", () => ({
     createOpdracht: mockCreateOpdracht,
     addDocument: mockAddDocument,
     getStandaardOpdrachtgever: mockStandaard,
+    bewaarSplitsVoorstel: mockBewaarSplits,
   }),
 }));
 vi.mock("@/lib/storage", () => ({ storage: () => ({ uploadOpdrachtDocument: mockUpload }) }));
-vi.mock("@/lib/claude-client", () => ({ parseOrderWithClaude: mockParse }));
+vi.mock("@/lib/claude-client", () => ({
+  parseOrderWithClaude: mockParse,
+  beoordeelMeerdereOpdrachten: mockBeoordeel,
+}));
 
 import { POST } from "./route";
 
@@ -91,7 +99,10 @@ describe("POST /api/inbound", () => {
     vi.stubEnv("INBOUND_DOMAIN", "kluslus.nl");
     mockMarkeerVerwerkt.mockResolvedValue(true); // standaard: eerste keer dat deze mail binnenkomt
     mockCreateOpdracht.mockResolvedValue({ id: "opdr-1" });
-    mockAddDocument.mockResolvedValue({ id: "doc-1" });
+    let docTeller = 0;
+    mockAddDocument.mockImplementation(async () => ({ id: `doc-${++docTeller}` }));
+    mockBewaarSplits.mockResolvedValue(undefined);
+    mockBeoordeel.mockResolvedValue({ meerdere: false, reden: "", delen: [] }); // standaard: één opdracht
     mockUpload.mockResolvedValue({ pad: "p.pdf", publieke_url: "https://x/p.pdf" });
     mockAttGet.mockResolvedValue({ data: { download_url: "https://x/att" } });
     mockStandaard.mockResolvedValue({ id: "zaak-ksv" });
@@ -236,5 +247,50 @@ describe("POST /api/inbound", () => {
     const kop = mockCreateOpdracht.mock.calls[0][0];
     expect(kop.adres_keuze_nodig).toBe(false);
     expect(kop.klant_adres).toBe("Dorpsstraat 14");
+  });
+
+  it("2 PDF's met verschillende klanten (zelfde/geen ref): één klus + splits-waarschuwing met 2 delen", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockParse
+      .mockResolvedValueOnce({ ...parsed(null), klant_naam: "Jansen", klant_adres: "Dorpsstraat 12" })
+      .mockResolvedValueOnce({ ...parsed(null), klant_naam: "De Vries", klant_adres: "Molenweg 8" });
+
+    await POST(webhook([pdf("a1"), pdf("a2")]));
+
+    expect(mockCreateOpdracht).toHaveBeenCalledOnce(); // nog niet gesplitst: één voorstel met waarschuwing
+    expect(mockBewaarSplits).toHaveBeenCalledOnce();
+    const [opdrachtId, reden, voorstel] = mockBewaarSplits.mock.calls[0];
+    expect(opdrachtId).toBe("opdr-1");
+    expect(reden).toMatch(/verschillende klanten/i);
+    expect(voorstel).toHaveLength(2);
+    expect(voorstel[0].document_ids.length).toBeGreaterThan(0);
+    expect(mockBeoordeel).not.toHaveBeenCalled(); // heuristiek volstond, geen LLM nodig
+  });
+
+  it("geen PDF, body beschrijft meerdere opdrachten: splits-waarschuwing uit de Claude-beoordeling", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockBeoordeel.mockResolvedValue({
+      meerdere: true,
+      reden: "Twee keukens in de mail.",
+      delen: [
+        { klant_naam: "Jansen", klant_adres: "Dorpsstraat 12", referentienummer: null, werkomschrijving: null },
+        { klant_naam: "De Vries", klant_adres: "Molenweg 8", referentienummer: null, werkomschrijving: null },
+      ],
+    });
+
+    await POST(webhook([]));
+
+    expect(mockCreateOpdracht).toHaveBeenCalledOnce();
+    expect(mockBewaarSplits).toHaveBeenCalledOnce();
+    expect(mockBewaarSplits.mock.calls[0][2]).toHaveLength(2);
+  });
+
+  it("één PDF, één klant, geen body-vermoeden: geen splits-waarschuwing", async () => {
+    mockGetProfielByToken.mockResolvedValue({ id: "m1", rol: "monteur" });
+    mockParse.mockResolvedValue(parsed("R1"));
+
+    await POST(webhook([pdf("a1")]));
+
+    expect(mockBewaarSplits).not.toHaveBeenCalled();
   });
 });

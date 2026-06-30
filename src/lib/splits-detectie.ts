@@ -13,6 +13,28 @@ export interface SplitsDeel {
 /** De door de AI/heuristiek voorgestelde splitsing van één binnengekomen mail in meerdere klussen. */
 export type SplitsVoorstel = SplitsDeel[];
 
+/**
+ * Haalt alleen de inhoud-velden (geen routing zoals user_id/toegewezen_aan/te_verwerken) uit een kop,
+ * voor opslag in een SplitsDeel. De splits-API zet de routing-velden zelf op basis van de bron-melding.
+ */
+export function kopVelden(kop: Partial<OpdrachtInput>): Partial<OpdrachtInput> {
+  return {
+    documenttype: kop.documenttype ?? "onbekend",
+    klant_naam: kop.klant_naam ?? null,
+    klant_adres: kop.klant_adres ?? null,
+    referentienummer: kop.referentienummer ?? null,
+    adviseur: kop.adviseur ?? null,
+    klant_telefoon: kop.klant_telefoon ?? null,
+    klant_email: kop.klant_email ?? null,
+    leverweek: kop.leverweek ?? null,
+    keukenzaak: kop.keukenzaak ?? null,
+    meldingen: kop.meldingen ?? [],
+    werkomschrijving: kop.werkomschrijving ?? null,
+    adres_kandidaten: kop.adres_kandidaten ?? null,
+    adres_keuze_nodig: kop.adres_keuze_nodig ?? false,
+  };
+}
+
 /** Eén geparste PDF-kop met zijn positie in de bijlagenlijst, voor de klant-heuristiek. */
 export interface KopMetIndex {
   klant_naam: string | null;
