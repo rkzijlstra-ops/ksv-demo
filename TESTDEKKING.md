@@ -50,6 +50,10 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | SMS-vangnet bij uitnodigen (optioneel 06): tekst met zaaknaam/Kluslus/login-URL, geen inloglink in SMS | U | uitnodig-sms.test (uitnodigingSmsTekst) | groen |
 | Uitnodig-route met 06: normaliseert naar +31, schrijft telefoon op profiel, stuurt SMS best-effort; ongeldig/leeg nummer → geen SMS, telefoon ongemoeid | U | uitnodigen/route.test (telefoon-paden) | groen; live SMS-pad handmatig op test-omgeving (Reins eigen 06, allowlist) |
 | 06-veld + uitleg in uitnodig-formulier, SMS-status in bevestiging | (E later) | UitnodigForm.tsx | bewust later/handmatig: optioneel veld, logica gedekt door route/unit-tests |
+| Opdrachtgever aanmaken (beheer): naam, beheer-gate (401/403/400) | U | opdrachtgevers/route.test | groen |
+| Uitnodigen met zaak-keuze: gekozen opdrachtgever_id stuurt koppeling + branding; onbekende zaak = 400 vóór account; geen keuze = terugval standaard | U | uitnodigen/route.test (zaak-keuze) | groen |
+| Multi-opdrachtgever UI (aanmaak-form + zaak-dropdown bij uitnodigen) | (E later) | NieuweOpdrachtgeverForm.tsx, UitnodigForm.tsx | bewust later/handmatig; logica gedekt door route/unit |
+| Zaak-afscherming RLS (laag 2): opdrachtgever ziet ALLEEN eigen zaak, beheer alles, monteur alleen toegewezen | E/I (poort vóór prod) | afscherming.spec uitbreiden (negatieve test: zaak A ziet zaak B niet) | NOG TE BOUWEN |
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
 | Rol-gates per pagina (dashboard/planbord/kluspool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |

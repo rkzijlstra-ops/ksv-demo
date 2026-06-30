@@ -44,7 +44,19 @@ export async function POST(req: Request) {
   const telefoonRaw = typeof body.telefoon === "string" ? body.telefoon : "";
   const telefoon = normaliseerNlMobiel(telefoonRaw);
 
-  const zaak = await dbi.getStandaardOpdrachtgever();
+  // Zaak waaronder de persoon valt: expliciet gekozen (multi-opdrachtgever), anders de standaard-zaak
+  // (achterwaarts compatibel). Een gekozen-maar-onbekende zaak is een 400 vóór we een account aanmaken,
+  // zodat we nooit iemand aan de verkeerde of geen zaak hangen.
+  const gekozenZaakId = typeof body.opdrachtgever_id === "string" ? body.opdrachtgever_id.trim() : "";
+  let zaak;
+  if (gekozenZaakId) {
+    zaak = await dbi.getOpdrachtgever(gekozenZaakId);
+    if (!zaak) {
+      return NextResponse.json({ error: "Onbekende opdrachtgever gekozen" }, { status: 400 });
+    }
+  } else {
+    zaak = await dbi.getStandaardOpdrachtgever();
+  }
 
   // Account aanmaken of, als het al bestaat, opzoeken.
   const admin = supabaseAdmin();
