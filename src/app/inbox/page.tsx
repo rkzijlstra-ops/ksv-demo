@@ -48,6 +48,8 @@ export default async function InboxPage() {
               titel={v.klant_naam?.trim() || "Naamloos voorstel"}
               referentie={v.referentienummer}
               adres={v.klant_adres}
+              controleerSplitsing={v.controleer_splitsing}
+              splitsReden={v.controleer_splitsing_reden}
             />
           ))}
         </ul>

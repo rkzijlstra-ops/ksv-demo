@@ -13,8 +13,10 @@ import {
   Image as ImageIcon,
   Paperclip,
   Camera,
+  Mail,
 } from "lucide-react";
 import { vernieuwOfflineCache } from "@/lib/sw-cache";
+import { KopieerKnop } from "@/components/KopieerKnop";
 import { useOfflineState } from "@/lib/use-offline-state";
 import { HydratieKlaar } from "@/components/HydratieKlaar";
 import { SpraakOpname } from "@/components/SpraakOpname";
@@ -46,7 +48,13 @@ function groepLabel(velden: ParsedPdf, i: number): string {
  * zitten er meerdere in (per ongeluk twee orders samen), dan toont de app de groepen en wijst de invoerder
  * elk bestand toe.
  */
-export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kantoor" }) {
+export function KlusInvoer({
+  context = "monteur",
+  inboundAdres = null,
+}: {
+  context?: "monteur" | "kantoor";
+  inboundAdres?: string | null;
+}) {
   const kantoor = context === "kantoor";
   const router = useRouter();
   const { online } = useOfflineState();
@@ -422,6 +430,24 @@ export function KlusInvoer({ context = "monteur" }: { context?: "monteur" | "kan
                   <Camera size={18} strokeWidth={2.5} aria-hidden="true" />
                   Order fotograferen
                 </button>
+              </div>
+            )}
+
+            {inboundAdres && (
+              <div className="border-2 border-dashed border-line bg-surface p-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Mail size={18} strokeWidth={2.5} aria-hidden="true" />
+                  Of mail de opdracht door
+                </p>
+                <p className="mt-1.5 text-xs text-ink-muted">
+                  Stuur een opdracht naar dit adres, dan staat de klus vanzelf in je kluspool.
+                </p>
+                <div className="mt-2 flex items-stretch gap-2">
+                  <span className="min-w-0 flex-1 select-all truncate border border-ink bg-white px-2.5 py-2 font-mono text-sm font-bold text-ink">
+                    {inboundAdres}
+                  </span>
+                  <KopieerKnop tekst={inboundAdres} />
+                </div>
               </div>
             )}
 

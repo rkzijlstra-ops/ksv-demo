@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { dbAdmin, type Db, type OpdrachtInput } from "@/lib/db";
 import { storage } from "@/lib/storage";
-import { parseOrderWithClaude } from "@/lib/claude-client";
+import { parseOrderWithClaude, beoordeelMeerdereOpdrachten } from "@/lib/claude-client";
 import { adresKeuzeNodig } from "@/lib/adres-keuze";
 import { tokenUitAdressen } from "@/lib/inbound";
 import { verifyResendSignature } from "@/lib/webhook-handtekening";
 import { groepeerInboundOrder } from "@/lib/inbound-groep";
 import { schoonOmschrijving } from "@/lib/mail-schoon";
 import { bestemmingVoor, type Rol } from "@/lib/invoer-bestemming";
+import { detecteerMeerdereKlanten, kopVelden, type SplitsVoorstel } from "@/lib/splits-detectie";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,7 @@ async function bewaarBijlage(
   userId: string,
   referentienummer: string | null,
   isPrimair: boolean,
-): Promise<void> {
+): Promise<string> {
   const isPdf = (att.content_type ?? "").includes("pdf");
   const naam = att.filename ?? (isPdf ? "bijlage.pdf" : "bijlage");
   const { pad, publieke_url } = await storage().uploadOpdrachtDocument(
@@ -44,7 +45,7 @@ async function bewaarBijlage(
     naam,
     att.content_type || "application/octet-stream",
   );
-  await adm.addDocument({
+  const { id } = await adm.addDocument({
     opdracht_id: opdrachtId,
     type: isPdf ? "pdf" : "afbeelding",
     bestandsnaam: naam,
@@ -54,6 +55,76 @@ async function bewaarBijlage(
     is_primair: isPrimair,
     user_id: userId,
   });
+  return id;
+}
+
+/** Index van de meest complete kop binnen een groep PDF-indexen (ref > naam > adres). */
+function besteKopIndex(pdfIndexen: number[], koppen: OpdrachtInput[]): number {
+  const score = (k: OpdrachtInput) =>
+    (k.referentienummer ? 4 : 0) + (k.klant_naam ? 2 : 0) + (k.klant_adres ? 1 : 0);
+  let best = pdfIndexen[0];
+  for (const i of pdfIndexen) if (score(koppen[i]) > score(koppen[best])) best = i;
+  return best;
+}
+
+/**
+ * Bepaalt of een binnengekomen mail mogelijk meerdere opdrachten bevat, en zo ja hoe te splitsen.
+ * Eerst de gratis klant-heuristiek op de PDF-koppen (twee verschillende klanten in één samengevoegde
+ * klus); anders een lichte Claude-beoordeling van de mailtekst (bv. twee opdrachten in de body zonder
+ * aparte PDF). Geeft null als er geen vermoeden is.
+ */
+async function bepaalSplits(
+  koppen: OpdrachtInput[],
+  docIdPerPdfIndex: (string | null)[],
+  alleDocIds: string[],
+  mailtekst: string | null,
+): Promise<{ reden: string; voorstel: SplitsVoorstel } | null> {
+  if (koppen.length >= 2) {
+    const h = detecteerMeerdereKlanten(
+      koppen.map((k, i) => ({
+        klant_naam: k.klant_naam,
+        klant_adres: k.klant_adres,
+        referentienummer: k.referentienummer,
+        pdfIndex: i,
+      })),
+    );
+    if (h.vermoeden) {
+      const voorstel: SplitsVoorstel = h.groepen.map((groep) => {
+        const indexen = groep.map((g) => g.pdfIndex);
+        return {
+          velden: kopVelden(koppen[besteKopIndex(indexen, koppen)]),
+          document_ids: indexen
+            .map((i) => docIdPerPdfIndex[i])
+            .filter((x): x is string => Boolean(x)),
+        };
+      });
+      return { reden: h.reden, voorstel };
+    }
+  }
+
+  if (mailtekst) {
+    const oordeel = await beoordeelMeerdereOpdrachten(
+      mailtekst,
+      koppen.map((k) => ({ klant_naam: k.klant_naam, referentienummer: k.referentienummer })),
+    );
+    if (oordeel.meerdere && oordeel.delen.length >= 2) {
+      const voorstel: SplitsVoorstel = oordeel.delen.map((deel, i) => ({
+        velden: kopVelden({
+          documenttype: "onbekend",
+          klant_naam: deel.klant_naam,
+          klant_adres: deel.klant_adres,
+          referentienummer: deel.referentienummer,
+          werkomschrijving: deel.werkomschrijving,
+        }),
+        // We weten niet per deel welk document erbij hoort; hang alle bestaande documenten aan het
+        // eerste deel zodat er niets verloren gaat. De monteur kan er desnoods één verschuiven.
+        document_ids: i === 0 ? alleDocIds : [],
+      }));
+      return { reden: oordeel.reden, voorstel };
+    }
+  }
+
+  return null;
 }
 
 export async function POST(req: Request) {
@@ -201,6 +272,12 @@ export async function POST(req: Request) {
   const overige = bijlagen.filter((a) => !(a.content_type ?? "").includes("pdf"));
   const voorstellen: string[] = [];
 
+  // Voor de splits-detectie achteraf (alleen zinvol als er precies één klus ontstond).
+  let enkeleOpdrachtId: string | null = null;
+  let detectieKoppen: OpdrachtInput[] = [];
+  let docIdPerPdfIndex: (string | null)[] = [];
+  const losseDocIds: string[] = [];
+
   try {
     if (pdfs.length > 0) {
       // Parse elke PDF, groepeer dan op referentienummer (zelfde keuken = één voorstel met meerdere
@@ -235,6 +312,7 @@ export async function POST(req: Request) {
       // een tweede PDF (bijv. een leidingadvies of een leeg-geparste order). De meest complete kop
       // wordt de kop van de klus.
       const groepen = groepeerInboundOrder(koppen);
+      docIdPerPdfIndex = new Array(pdfs.length).fill(null);
       for (let g = 0; g < groepen.length; g++) {
         const groep = groepen[g];
         const kop = koppen[groep.kopIndex];
@@ -243,7 +321,7 @@ export async function POST(req: Request) {
         for (const idx of groep.indexen) {
           const bytes = bytesPerPdf[idx];
           if (bytes) {
-            await bewaarBijlage(
+            docIdPerPdfIndex[idx] = await bewaarBijlage(
               adm, opdrachtId, pdfs[idx], bytes, userId, kop.referentienummer ?? null,
               idx === groep.kopIndex,
             );
@@ -253,9 +331,19 @@ export async function POST(req: Request) {
         if (g === 0) {
           for (const img of overige) {
             const imgBytes = await haalBytes(img.id);
-            if (imgBytes) await bewaarBijlage(adm, opdrachtId, img, imgBytes, userId, kop.referentienummer ?? null, false);
+            if (imgBytes) {
+              losseDocIds.push(
+                await bewaarBijlage(adm, opdrachtId, img, imgBytes, userId, kop.referentienummer ?? null, false),
+              );
+            }
           }
         }
+      }
+      // Splits-detectie is alleen zinvol als alles in één klus belandde (bij meerdere refs splitste de
+      // app al correct, geen waarschuwing nodig).
+      if (groepen.length === 1) {
+        enkeleOpdrachtId = voorstellen[0];
+        detectieKoppen = koppen;
       }
     } else {
       // Geen PDF: één voorstel met het onderwerp als hint, de mailtekst in het werk-veld, bijlagen erbij.
@@ -264,11 +352,31 @@ export async function POST(req: Request) {
       voorstellen.push(opdrachtId);
       for (const img of overige) {
         const imgBytes = await haalBytes(img.id);
-        if (imgBytes) await bewaarBijlage(adm, opdrachtId, img, imgBytes, userId, null, false);
+        if (imgBytes) losseDocIds.push(await bewaarBijlage(adm, opdrachtId, img, imgBytes, userId, null, false));
       }
+      enkeleOpdrachtId = opdrachtId;
+      detectieKoppen = [kop];
     }
   } catch (err) {
     return NextResponse.json({ error: `Verwerken mislukt: ${(err as Error).message}` }, { status: 503 });
+  }
+
+  // Bevat deze mail mogelijk meerdere opdrachten? Best-effort: een fout hier (bv. de Claude-call) mag
+  // de al-aangemaakte klus nooit ongedaan maken. Bij een vermoeden bewaren we de voorgestelde splitsing
+  // en zetten we de waarschuwingsvlag; er wordt nog niets uitgesplitst (dat doet de monteur met één tik).
+  if (enkeleOpdrachtId) {
+    try {
+      const alleDocIds = [
+        ...docIdPerPdfIndex.filter((x): x is string => Boolean(x)),
+        ...losseDocIds,
+      ];
+      const detectie = await bepaalSplits(detectieKoppen, docIdPerPdfIndex, alleDocIds, mailtekst);
+      if (detectie) {
+        await adm.bewaarSplitsVoorstel(enkeleOpdrachtId, detectie.reden, detectie.voorstel);
+      }
+    } catch (e) {
+      console.error("[inbound] splits-detectie faalde (klus blijft staan):", JSON.stringify(e));
+    }
   }
 
   return NextResponse.json({ ok: true, voorstellen: voorstellen.length });

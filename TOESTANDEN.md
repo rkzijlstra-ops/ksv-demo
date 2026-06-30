@@ -238,3 +238,26 @@ document-weergave.test, pdf-documenten.spec.
 
 De **volledige oplevering** (`/opleveren`) is ongewijzigd: foto/video/handtekening + akkoord blijven daar.
 Gedekt: melding-flow.spec (layout, lege staat, 0-meldingen-confirm), rapport.test (verkorte PDF).
+
+### Doormailen: mogelijk meerdere opdrachten (splits-waarschuwing, blok 30)
+Een binnengekomen mail kan twee keukens bevatten zonder onderscheidende refs, of meerdere opdrachten in
+de mailtekst. De inbound-route detecteert dat: eerst de gratis klant-heuristiek op de PDF-koppen
+(`detecteerMeerdereKlanten`, twee verschillende `naamKern`-en), anders een lichte Claude-beoordeling van
+de mailtekst (`beoordeelMeerdereOpdrachten`). Bij een vermoeden wordt NIET stil gesplitst: er ontstaat één
+voorstel met `controleer_splitsing=true`, `controleer_splitsing_reden` en een bewaarde `splits_voorstel`
+(delen + document-id's). Geen blokkade, alleen een waarschuwing.
+
+| Situatie | te_verwerken | controleer_splitsing | splits_voorstel | UI |
+|---|---|---|---|---|
+| monteur-mail, één opdracht | true | false | null | gewoon voorstel in /inbox |
+| monteur-mail, vermoeden meerdere | true | true | [delen] | /inbox + klusdetail: gele band + "Splits in aparte klussen" / "Het is er één" |
+| monteur tikt "Splits" | (nieuwe delen) true | false | null | losse voorstellen in /inbox, documenten meeverhuisd, origineel weg |
+| monteur tikt "Het is er één" / "Bevestigen" | false | false | null | gewone klus in de kluspool |
+| kantoor-mail, vermoeden meerdere | n.v.t. (false) | true | [delen] | dashboard-klusdetail: zelfde band; opdrachtgever van de zaak mag splitsen/bevestigen |
+| 2 PDF's met verschillende refs | (ongewijzigd) | false | null | splitst al automatisch, geen waarschuwing nodig |
+
+Splitsen (`api/inbound/[id]/splitsen`) maakt per deel een klus, verhuist de documenten (`verplaatsDocument`)
+en soft-delete het origineel. De detectie is best-effort: een fout (bv. de Claude-call) laat de al-aangemaakte
+klus staan, zonder waarschuwing. Daarnaast staat het inbound-adres kopieerbaar in het klus-toevoegen-venster
+(`KlusInvoer`, variant A: derde manier onder de bestand-knoppen). Gedekt: splits-detectie.test, claude-client.test,
+inbound/route.test, inbound/[id]/splitsen/route.test, splits-voorstel.spec (e2e splitsen + bevestigen + adres).
