@@ -33,7 +33,7 @@ test.afterEach(async () => {
 
 test("beheerder zet klant-levering voor een opdrachtgever uit en weer aan", async ({ page }) => {
   await page.goto("/gebruikers");
-  await expect(page.getByRole("heading", { name: "Klant-levering per opdrachtgever" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Opdrachtgevers/ })).toBeVisible();
 
   const knop = page.getByRole("button", {
     name: new RegExp(`klant-levering voor ${zaakNaam}`, "i"),
