@@ -21,7 +21,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Geen rechten om te bevestigen" }, { status: 403 });
   }
   try {
-    await dbAdmin().markeerVerwerkt(id);
+    const adm = dbAdmin();
+    await adm.markeerVerwerkt(id);
+    // "Bevestig als één": een eventuele splits-waarschuwing vervalt, het wordt gewoon één klus.
+    await adm.wisSplitsWaarschuwing(id);
   } catch (err) {
     return NextResponse.json({ error: `Bevestigen mislukt: ${(err as Error).message}` }, { status: 503 });
   }
