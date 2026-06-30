@@ -143,3 +143,120 @@ export function parseOrderWithClaude(
 export function parsePdfWithClaude(pdf: Buffer): Promise<ParsedPdf> {
   return parseOrderWithClaude(pdf, "application/pdf");
 }
+
+// ── Beoordeling: bevat één mail mogelijk meerdere opdrachten? ───────────────────────────────────
+// Vangnet voor de inbound-flow: een mailtekst kan twee keukens beschrijven, of een tweede order
+// die niet als aparte PDF binnenkomt. We laten Claude dit licht inschatten (tekst-only, geen PDF).
+
+const TELLER_TOOL = "beoordeel_opdrachten";
+
+const TELLER_SYSTEM = `Je beoordeelt of een doorgestuurde e-mail één of meerdere afzonderlijke keuken-opdrachten bevat.
+Eén opdracht hoort bij één klant op één montage-adres. Bijlagen of tekst die bij DEZELFDE keuken horen (een leidingadvies, een tekening, een toelichting) tellen NIET als aparte opdracht.
+Het zijn er meerdere als de mail twee of meer verschillende klanten beschrijft, of twee duidelijk losse opdrachten op verschillende adressen.
+Bij twijfel: kies meerdere = true; een onterechte waarschuwing kost de monteur één tik, een gemiste splitsing kost hem gezichtsverlies bij de klant.
+Geef per herkende opdracht een kort kop-record (klant_naam, klant_adres, referentienummer, werkomschrijving), met null waar je het niet weet. Bij meerdere = false geef je een lege of eenkoppige lijst.
+Roep ALTIJD de tool beoordeel_opdrachten aan, geef nooit een vrij tekstantwoord.`;
+
+const TELLER_SCHEMA = {
+  type: "object",
+  properties: {
+    meerdere: { type: "boolean", description: "True als de mail mogelijk meer dan één afzonderlijke opdracht bevat." },
+    reden: { type: "string", description: "Korte uitleg voor de monteur waarom (in het Nederlands)." },
+    delen: {
+      type: "array",
+      description: "Per herkende opdracht een kop-record.",
+      items: {
+        type: "object",
+        properties: {
+          klant_naam: { type: ["string", "null"] },
+          klant_adres: { type: ["string", "null"] },
+          referentienummer: { type: ["string", "null"] },
+          werkomschrijving: { type: ["string", "null"] },
+        },
+        required: ["klant_naam", "klant_adres", "referentienummer", "werkomschrijving"],
+      },
+    },
+  },
+  required: ["meerdere", "reden", "delen"],
+};
+
+export interface MeerdereOpdrachtenDeel {
+  klant_naam: string | null;
+  klant_adres: string | null;
+  referentienummer: string | null;
+  werkomschrijving: string | null;
+}
+
+export interface MeerdereOpdrachtenOordeel {
+  meerdere: boolean;
+  reden: string;
+  delen: MeerdereOpdrachtenDeel[];
+}
+
+export type BeoordeelFn = (
+  mailtekst: string,
+  bekendeKoppen: Array<{ klant_naam: string | null; referentienummer: string | null }>,
+) => Promise<MeerdereOpdrachtenOordeel>;
+
+export function createBeoordelaar(config: ClaudeClientConfig): BeoordeelFn {
+  const client = new Anthropic({ apiKey: config.apiKey });
+
+  return async function beoordeel(mailtekst, bekendeKoppen) {
+    const koppenTekst = bekendeKoppen.length
+      ? "Reeds herkende koppen uit de bijlagen:\n" +
+        bekendeKoppen.map((k) => `- ${k.klant_naam ?? "(geen naam)"} (ref ${k.referentienummer ?? "?"})`).join("\n")
+      : "Er zijn geen bijlagen herkend; beoordeel alleen de mailtekst.";
+
+    const response = await client.messages.create({
+      model: config.model,
+      max_tokens: 1024,
+      system: TELLER_SYSTEM,
+      tools: [
+        {
+          name: TELLER_TOOL,
+          description: "Bepaal of een doorgestuurde mail één of meerdere afzonderlijke keuken-opdrachten bevat.",
+          input_schema: TELLER_SCHEMA as unknown as Anthropic.Tool.InputSchema,
+        },
+      ],
+      tool_choice: { type: "tool", name: TELLER_TOOL },
+      messages: [{ role: "user", content: `${koppenTekst}\n\nMailtekst:\n${mailtekst || "(leeg)"}` }],
+    });
+
+    const toolUse = response.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
+    );
+    if (!toolUse) {
+      throw new Error("Claude gaf geen tool_use response bij het beoordelen van meerdere opdrachten.");
+    }
+
+    const input = toolUse.input as Partial<MeerdereOpdrachtenOordeel> & {
+      delen?: Array<Partial<MeerdereOpdrachtenDeel>>;
+    };
+    return {
+      meerdere: Boolean(input.meerdere),
+      reden: typeof input.reden === "string" ? input.reden : "",
+      delen: Array.isArray(input.delen)
+        ? input.delen.map((d) => ({
+            klant_naam: d.klant_naam ?? null,
+            klant_adres: d.klant_adres ?? null,
+            referentienummer: d.referentienummer ?? null,
+            werkomschrijving: d.werkomschrijving ?? null,
+          }))
+        : [],
+    };
+  };
+}
+
+let cachedBeoordelaar: BeoordeelFn | null = null;
+
+/** Schat in of een binnengekomen mail mogelijk meerdere afzonderlijke opdrachten bevat (tekst-only). */
+export function beoordeelMeerdereOpdrachten(
+  mailtekst: string,
+  bekendeKoppen: Array<{ klant_naam: string | null; referentienummer: string | null }>,
+): Promise<MeerdereOpdrachtenOordeel> {
+  if (!cachedBeoordelaar) {
+    const e = env();
+    cachedBeoordelaar = createBeoordelaar({ apiKey: e.ANTHROPIC_API_KEY, model: e.ANTHROPIC_MODEL });
+  }
+  return cachedBeoordelaar(mailtekst, bekendeKoppen);
+}

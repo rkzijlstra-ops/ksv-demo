@@ -10,7 +10,7 @@ vi.mock("@anthropic-ai/sdk", () => ({
 }));
 
 // Pas importeren NA vi.mock zodat de mock wordt opgepikt
-import { createParser, buildOrderContent } from "./claude-client";
+import { createParser, buildOrderContent, createBeoordelaar } from "./claude-client";
 
 const dummyPdf = Buffer.from("%PDF-1.4 fake pdf bytes", "utf-8");
 
@@ -210,5 +210,60 @@ describe("buildOrderContent", () => {
     expect(tekst.type).toBe("text");
     // @ts-expect-error text bestaat op text-block
     expect(tekst.text).toBe("lees dit");
+  });
+});
+
+describe("createBeoordelaar", () => {
+  beforeEach(() => {
+    mockCreate.mockReset();
+  });
+
+  it("herkent meerdere opdrachten en geeft de delen terug", async () => {
+    mockCreate.mockResolvedValue({
+      content: [
+        {
+          type: "tool_use",
+          name: "beoordeel_opdrachten",
+          input: {
+            meerdere: true,
+            reden: "Twee verschillende klanten.",
+            delen: [
+              { klant_naam: "Jansen", klant_adres: "Dorpsstraat 12", referentienummer: "1187", werkomschrijving: null },
+              { klant_naam: "De Vries", klant_adres: "Molenweg 8", referentienummer: "1190", werkomschrijving: null },
+            ],
+          },
+        },
+      ],
+    });
+    const beoordeel = createBeoordelaar({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    const r = await beoordeel("Twee keukens: Jansen en De Vries.", [{ klant_naam: "Jansen", referentienummer: "1187" }]);
+
+    expect(r.meerdere).toBe(true);
+    expect(r.delen).toHaveLength(2);
+    expect(r.delen[1].klant_naam).toBe("De Vries");
+    const callArg = mockCreate.mock.calls[0][0];
+    expect(callArg.model).toBe("claude-sonnet-4-6");
+    expect(callArg.tool_choice).toEqual({ type: "tool", name: "beoordeel_opdrachten" });
+    expect(callArg.messages[0].content).toContain("Twee keukens");
+  });
+
+  it("geeft meerdere=false met lege delen wanneer het er één is", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "tool_use", name: "beoordeel_opdrachten", input: { meerdere: false, reden: "Eén klant." } }],
+    });
+    const beoordeel = createBeoordelaar({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    const r = await beoordeel("Keuken bij Jansen.", []);
+
+    expect(r.meerdere).toBe(false);
+    expect(r.delen).toEqual([]);
+  });
+
+  it("gooit als Claude geen tool_use teruggeeft", async () => {
+    mockCreate.mockResolvedValue({ content: [{ type: "text", text: "..." }] });
+    const beoordeel = createBeoordelaar({ apiKey: "sk-ant-test", model: "claude-sonnet-4-6" });
+
+    await expect(beoordeel("x", [])).rejects.toThrow(/tool_use/);
   });
 });
