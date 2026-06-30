@@ -514,6 +514,8 @@ export interface Db {
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
   getOpdrachtgevers(): Promise<Opdrachtgever[]>;
   getOpdrachtgever(id: string): Promise<Opdrachtgever | null>;
+  /** Maakt een nieuwe opdrachtgever (zaak) aan met alleen een naam; geeft de aangemaakte rij terug. */
+  insertOpdrachtgever(naam: string): Promise<Opdrachtgever>;
   updateOpdrachtgever(id: string, input: { klant_levering_toegestaan: boolean }): Promise<void>;
   upsertProfiel(input: ProfielInput): Promise<void>;
   /** Werkt de eigen afzender-velden bij (via SECURITY DEFINER, kan de rol niet raken). */
@@ -1481,6 +1483,17 @@ function createDbFromClient(client: SupabaseClient): Db {
         .maybeSingle();
       if (error) throw new Error(`DB lezen mislukt: ${error.message}`);
       return (data as Opdrachtgever | null) ?? null;
+    },
+
+    /** Maakt een nieuwe opdrachtgever (zaak) aan; klant-levering staat standaard aan (DB-default). */
+    async insertOpdrachtgever(naam) {
+      const { data, error } = await client
+        .from("opdrachtgevers")
+        .insert({ naam })
+        .select("*")
+        .single();
+      if (error) throw new Error(`DB opdrachtgever aanmaken mislukt: ${error.message}`);
+      return data as Opdrachtgever;
     },
 
     /** Instellingen van een opdrachtgever bijwerken (nu: klant-levering aan/uit). */
