@@ -27,6 +27,7 @@ import { WhatsAppKnop } from "@/components/WhatsAppKnop";
 import { PendingMeldingen } from "@/components/PendingMeldingen";
 import { BevestigOntvangstKnop } from "@/components/BevestigOntvangstKnop";
 import { WerkomschrijvingBlok } from "@/components/WerkomschrijvingBlok";
+import { SplitsWaarschuwing } from "@/components/SplitsWaarschuwing";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,12 @@ export default async function OpdrachtDetailPage({
           className={`absolute inset-x-0 bottom-0 h-1.5 ${opgeleverd ? "bg-success" : "bg-accent"}`}
         />
       </header>
+
+      {opdracht.controleer_splitsing && (
+        <div className="mt-3">
+          <SplitsWaarschuwing id={opdracht.id} reden={opdracht.controleer_splitsing_reden} />
+        </div>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <DocumenttypeBadge type={opdracht.documenttype} />

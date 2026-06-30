@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox, ChevronRight, AlertTriangle } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
+import { inboundAdres } from "@/lib/inbound";
 import { groepeerMeldingen } from "@/lib/kluspool";
 import { OpdrachtCard } from "@/components/OpdrachtCard";
 import { HistorySection } from "@/components/HistorySection";
@@ -33,6 +34,7 @@ export default async function KluspoolPage({
   }
 
   const dbi = await db();
+  const inboundAdresStr = inboundAdres(await dbAdmin().ensureInboundToken(profiel.id));
   // Oplever-kluspool = alleen je eigen toegewezen klussen (KSV-klussen aan jou + je eigen
   // zelf-ingeschoten klussen, bv. KKS). Het volledige overzicht staat op het dashboard.
   const [meldingen, tellingen, inbox, pogingen] = await Promise.all([
@@ -113,7 +115,7 @@ export default async function KluspoolPage({
       )}
 
       <div className="mb-4">
-        <KlusInvoer context="monteur" />
+        <KlusInvoer context="monteur" inboundAdres={inboundAdresStr} />
       </div>
 
       <KluspoolOnboarding leeg={actief.length === 0} />

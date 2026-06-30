@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { db, dbAdmin } from "@/lib/db";
+import { inboundAdres } from "@/lib/inbound";
 import { teDoenTelling } from "@/lib/te-doen";
 import { verwerkStatus } from "@/lib/afrond-status";
 import { DashboardLijst } from "@/components/DashboardLijst";
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
   const { email, profiel } = await vereisRol(["opdrachtgever", "beheerder"]);
 
   const dbi = await db();
+  const inboundAdresStr = inboundAdres(await dbAdmin().ensureInboundToken(profiel.id));
   const opdrachten = await dbi.getOpdrachtenVoorDashboard();
   const telling = teDoenTelling(opdrachten);
   const teVerwerken = opdrachten.filter((o) => verwerkStatus(o) === "te-verwerken").length;
@@ -53,7 +55,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-4">
-        <KlusInvoer context="kantoor" />
+        <KlusInvoer context="kantoor" inboundAdres={inboundAdresStr} />
       </div>
 
       <div className="mb-4">

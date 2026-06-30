@@ -17,11 +17,20 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const eigen = await dbi.getProfiel(userId);
   const magMonteur = eigen?.rol === "monteur" && opdracht.toegewezen_aan === userId;
   const magBeheerder = eigen?.rol === "beheerder";
-  if (!magMonteur && !magBeheerder) {
+  // Kantoor (opdrachtgever van de zaak) mag een splits-waarschuwing op zijn dashboard-klus ook als
+  // "één klus" afdoen; voor zo'n klus staat te_verwerken al af, dus dit wist enkel de waarschuwing.
+  const magOpdrachtgever =
+    eigen?.rol === "opdrachtgever" &&
+    opdracht.opdrachtgever_id != null &&
+    opdracht.opdrachtgever_id === eigen.opdrachtgever_id;
+  if (!magMonteur && !magBeheerder && !magOpdrachtgever) {
     return NextResponse.json({ error: "Geen rechten om te bevestigen" }, { status: 403 });
   }
   try {
-    await dbAdmin().markeerVerwerkt(id);
+    const adm = dbAdmin();
+    await adm.markeerVerwerkt(id);
+    // "Bevestig als één": een eventuele splits-waarschuwing vervalt, het wordt gewoon één klus.
+    await adm.wisSplitsWaarschuwing(id);
   } catch (err) {
     return NextResponse.json({ error: `Bevestigen mislukt: ${(err as Error).message}` }, { status: 503 });
   }
