@@ -2,7 +2,7 @@
 
 Datum: 2026-06-30
 Branch: `feature/doormail-invoer`
-Status: ontwerp, wacht op akkoord Reinier
+Status: ontwerp, wacht op finaal akkoord Reinier
 
 ## Aanleiding
 
@@ -20,12 +20,17 @@ inschieten kwijtraakt. Twee dingen staan die weg nu in de weg:
 
 ## Beslissingen (vastgelegd met Reinier)
 
-- Feature 1: **alleen waarschuwen** bij vermoeden van meerdere opdrachten. Niet automatisch
-  splitsen. Een verkeerd gesplitste klus is erger dan een gemarkeerde; de monteur regelt de
-  splitsing zelf (bevestigen als één, of de tweede klus handmatig bijmaken).
-- Feature 2: het inbound-adres komt als kopieerbare regel in het **klus-toevoegen-venster**
-  (`KlusInvoer`), dat al óp de kluspool staat. Permanent zichtbaar, geen verberg-toggle.
-  Microcopy: *"Stuur een opdracht naar dit adres, dan staat de klus vanzelf in je kluspool."*
+- **Feature 1: hybride splitsing.** Bij een vermoeden van meerdere opdrachten splitst de app
+  niet stilletjes. Hij toont één voorstel met een gele waarschuwing en een knop "Splits in
+  aparte klussen". De voorgestelde splitsing is al door de AI bepaald en bewaard; één tik op
+  de knop levert de losse voorstellen op (per klus één). "Bevestig als één" houdt het één
+  klus. Zo heeft de monteur de controle, maar het splitsen kost één tik in plaats van
+  handmatig overtypen.
+- **Feature 2: variant A.** Het inbound-adres komt als kopieerbare regel als gelijkwaardige
+  derde manier in het klus-toevoegen-venster (`KlusInvoer`), direct onder de twee bestand-
+  knoppen ("Bestand kiezen" / "Order fotograferen"). Permanent zichtbaar, geen verberg-toggle.
+  Microcopy: *"Of mail de opdracht door — stuur een opdracht naar dit adres, dan staat de klus
+  vanzelf in je kluspool."*
 
 ## Huidige situatie (zoals de code nu werkt)
 
@@ -36,45 +41,46 @@ inschieten kwijtraakt. Twee dingen staan die weg nu in de weg:
   - Meerdere verschillende refs -> per ref een aparte klus (correct, geen waarschuwing nodig).
   - Geen PDF -> één klus met het onderwerp als hint en de mailtekst in het werk-veld.
 - Een **monteur**-mail wordt een voorstel met `te_verwerken = true` in zijn inbox
-  (`/inbox`), dat hij eerst bevestigt. Een **kantoor**-mail wordt direct een klus op het
-  dashboard.
-- Er bestaat al een vergelijkbaar vlag-patroon: `adres_keuze_nodig` + `adres_kandidaten`
-  blokkeren plannen tot een mens het juiste adres koos (`schema-compleet-20-adres-kandidaten.sql`).
-  De nieuwe waarschuwing volgt exact dat patroon.
+  (`/inbox`), dat hij bevestigt voor het een klus wordt (`InboxItem`, `inbound/[id]/bevestigen`).
+  Een **kantoor**-mail wordt direct een klus op het dashboard.
+- De upload-flow kan al meerdere klussen tonen en documenten per klus toewijzen
+  (`MeerKlussen` in `KlusInvoer.tsx`, `POST /api/opdrachten/aanmaken`). Die bouwsteen
+  hergebruiken we voor het uitsplitsen.
+- Vergelijkbaar vlag-patroon bestaat al: `adres_keuze_nodig` + `adres_kandidaten` (jsonb)
+  blokkeren plannen tot een mens het juiste adres koos (`schema-compleet-20`). De nieuwe
+  splits-data volgt dat jsonb-patroon.
 
-## Feature 1: waarschuwing "mogelijk meerdere opdrachten"
+## Feature 1: vermoeden meerdere opdrachten, met splits-knop
 
-### Detectie
+### Detectie (bij binnenkomst)
 
-Het vermoeden is alleen relevant wanneer de app **samenvoegt tot één klus** of een
-**geen-PDF-mail** verwerkt. Bij meerdere verschillende refs splitst de app al correct, dan
-is er niets te waarschuwen.
+Het vermoeden is alleen relevant wanneer de app zou **samenvoegen tot één klus** of een
+**geen-PDF-mail** verwerkt. Bij meerdere verschillende refs splitst de app al correct.
 
 Detectie als vangnet, in volgorde van zekerheid:
 
-1. **PDF-flow, samengevoegd tot één groep terwijl er 2+ PDF's met inhoud waren:** als die
-   PDF-koppen onderling verschillende klant-kernen of adressen hebben, is dat een vermoeden.
-   (De huidige samenvoeg-regel bestaat juist om leidingadvies-PDF's niet te splitsen; het
-   verschil tussen "tweede order" en "bijlage bij dezelfde order" is precies het twijfelgeval.)
+1. **PDF-flow, samengevoegd tot één groep terwijl er 2+ PDF's met inhoud waren:** verschillen
+   die PDF-koppen in klant-kern of adres, dan is dat een vermoeden.
 2. **Body-tekst, altijd:** een lichte Claude-inschatting over onderwerp + opgeschoonde body
-   (+ de al-geparste PDF-koppen) die één vraag beantwoordt: *bevat dit mogelijk meer dan één
-   afzonderlijke opdracht?* Geeft `{ vermoeden: boolean, reden: string }` terug.
+   (+ de al-geparste PDF-koppen) die antwoordt: *bevat dit mogelijk meer dan één afzonderlijke
+   opdracht, en zo ja welke?* Geeft `{ vermoeden, reden, delen[] }`.
 
 Afweging: stap 2 kost één extra lichte LLM-call per mail (de flow duurt al 10-30s, dat valt
-weg in de ruis). Dat is bewust: een vals-positief is goedkoop (monteur kijkt even en
-bevestigt), een gemist geval is juist wat we willen voorkomen. Een puur heuristische check
-zonder LLM is broos op vrije mailtekst. Daarom de LLM-inschatting als vangnet, met de
-goedkope heuristiek (stap 1) als versterkend signaal.
+weg in de ruis). Bewust: een vals-positief is goedkoop (je tikt "Bevestig als één"), een
+gemist geval is juist wat we willen voorkomen.
 
-Bij een vermoeden zetten we de nieuwe vlag op het aangemaakte voorstel/klus. De `reden`
-bewaren we kort zodat de waarschuwing kan tonen waaróm.
+Bij een vermoeden bewaart de app de **voorgestelde splitsing** (welke delen, met per deel de
+kop-velden en welke documenten erbij horen) plus de korte reden, en zet de vlag. Er wordt nog
+niets uitgesplitst: het blijft één voorstel.
 
 ### Datamodel
 
-Nieuwe migratie `supabase/schema-compleet-<n>-controleer-splitsing.sql`:
+Nieuwe migratie `supabase/schema-compleet-<n>-controleer-splitsing.sql` op `public.meldingen`:
 
-- `controleer_splitsing boolean not null default false` op `public.meldingen`.
-- `controleer_splitsing_reden text` (korte uitleg voor de UI, mag null).
+- `controleer_splitsing boolean not null default false` — de waarschuwingsvlag.
+- `controleer_splitsing_reden text` — korte uitleg voor de UI (mag null).
+- `splits_voorstel jsonb` — de door de AI voorgestelde delen: per deel de kop-velden en de
+  bijbehorende document-id's. Null als er geen splitsing voorgesteld is.
 - Partial index op `controleer_splitsing = true` (analoog aan `meldingen_te_verwerken_idx`).
 
 Draaien op alle drie de databases: test + demo via `npm run migrate:test`, productie doet
@@ -82,52 +88,71 @@ Reinier handmatig.
 
 ### UI en toestandsovergangen
 
-- **Monteur (inbox-voorstel):** het voorstel toont een duidelijke waarschuwingsregel
-  "Controleer: mogelijk meerdere opdrachten in deze mail" + de korte reden. Twee uitwegen:
-  - Bevestigen als één klus -> `te_verwerken = false`, `controleer_splitsing = false`. De
-    waarschuwing verdwijnt, het wordt een gewone klus.
-  - De tweede klus handmatig bijmaken via de bestaande invoer, daarna het voorstel bevestigen.
-- **Kantoor (klus op dashboard):** de klus krijgt een zichtbaar label "Controleer splitsing".
-  Een expliciete actie "Gecontroleerd / het is er één" wist de vlag.
-- De vlag blokkeert niets hard (anders dan `adres_keuze_nodig`); hij waarschuwt alleen. Reden:
-  de klus is bruikbaar, alleen mogelijk onvolledig. Hard blokkeren zou de simpele weg juist
-  weer omslachtig maken.
+Eén voorstel/klus met de vlag toont een gele waarschuwingsband ("Mogelijk meerdere
+opdrachten" + reden) en drie acties:
 
-### Toestandsmatrix (kort, voor TOESTANDEN.md)
+- **Splits in aparte klussen** -> de bewaarde delen worden losse voorstellen (monteur:
+  `te_verwerken = true`; kantoor: gewone klussen op het dashboard). De documenten verhuizen
+  mee naar het juiste deel. Het oorspronkelijke voorstel verdwijnt. Op de nieuwe delen staat
+  `controleer_splitsing = false`.
+- **Bevestig als één** -> `controleer_splitsing = false`. Voor een monteur-voorstel tevens
+  `te_verwerken = false` (wordt een gewone klus). De waarschuwing verdwijnt.
+- **Weggooien** -> bestaande soft-delete.
 
-| Situatie | te_verwerken | controleer_splitsing | Wat de gebruiker ziet |
-|---|---|---|---|
-| Monteur-mail, één opdracht | true | false | Gewoon voorstel in inbox |
-| Monteur-mail, vermoeden meerdere | true | true | Voorstel + waarschuwingsregel |
-| Monteur bevestigt voorstel | false | false | Gewone klus |
-| Kantoor-mail, vermoeden meerdere | false | true | Klus op dashboard + label |
-| Kantoor klikt "gecontroleerd" | false | false | Klus zonder label |
+De vlag blokkeert niets hard (anders dan `adres_keuze_nodig`); de klus blijft bruikbaar, hij
+waarschuwt alleen. Beide rollen krijgen de splits/bevestig-acties: monteur in zijn inbox,
+kantoor op het dashboard / de klusdetailpagina.
 
-## Feature 2: inbound-adres in het klus-toevoegen-venster
+### Toestandsmatrix (voor TOESTANDEN.md)
+
+| Situatie | te_verwerken | controleer_splitsing | splits_voorstel | Wat de gebruiker ziet |
+|---|---|---|---|---|
+| Monteur-mail, één opdracht | true | false | null | Gewoon voorstel in inbox |
+| Monteur-mail, vermoeden meerdere | true | true | [delen] | Voorstel + gele band + splits-knop |
+| Monteur tikt "Splits" | (nieuwe delen: true) | false | null | Losse voorstellen, zoals bij meerdere refs |
+| Monteur tikt "Bevestig als één" | false | false | null | Gewone klus |
+| Kantoor-mail, vermoeden meerdere | n.v.t. | true | [delen] | Klus op dashboard + label + splits-knop |
+| Kantoor tikt "Splits" | n.v.t. | false | null | Losse klussen op het dashboard |
+
+### API
+
+- `POST /api/inbound/[id]/splitsen` — maakt per bewaard deel een nieuwe melding (hergebruikt
+  `createOpdracht`), verplaatst de bijbehorende documenten (update `opdracht_id`), zet de vlag
+  op de delen uit en verwijdert het origineel. Idempotent / rol-bewust.
+- `POST /api/inbound/[id]/bevestigen` (bestaat) — uitbreiden zodat het ook
+  `controleer_splitsing` wist.
+- Een "bevestig als één / gecontroleerd"-pad voor kantoor (klus stond al op het dashboard):
+  wist alleen de vlag.
+
+## Feature 2: inbound-adres in het klus-toevoegen-venster (variant A)
 
 Hergebruik van bestaande bouwstenen, geen nieuw mechanisme:
 
 - `inboundAdres(token)` + `ensureInboundToken` (al gebruikt in `mijn-gegevens/page.tsx`).
-- `KopieerKnop` (`src/components/KopieerKnop.tsx`), met de `select-all`-regel ervoor.
+- `KopieerKnop` (`src/components/KopieerKnop.tsx`), ingetogen knopje.
 
 Aanpak:
 
 - `src/app/page.tsx` (kluspool) en `src/app/dashboard/page.tsx` halen het inbound-adres op
-  (zoals `mijn-gegevens` het doet) en geven het als prop `inboundAdres` mee aan `KlusInvoer`.
-- `src/components/KlusInvoer.tsx` toont, naast de bestaande opties (bestand kiezen, order
-  fotograferen, handmatig), een kopieerbare adresregel met de microcopy hierboven.
-- `mijn-gegevens` houdt het adres ook (blijft de "altijd terug te vinden"-plek). Geen toggle,
-  geen dubbele bron van waarheid: hetzelfde adres uit dezelfde functie.
+  (zoals `mijn-gegevens` doet) en geven het als prop `inboundAdres` mee aan `KlusInvoer`.
+- `src/components/KlusInvoer.tsx`: direct onder de rij met "Bestand kiezen" / "Order
+  fotograferen" een blok "Of mail de opdracht door" met de microcopy, de kopieerbare
+  adresregel (mono, `select-all`) en de `KopieerKnop`. Zelfde gestreepte/surface-stijl als de
+  bestand-knoppen, zodat het als gelijkwaardige derde manier leest.
+- Het adres blijft ook in Mijn gegevens staan (de "altijd terug te vinden"-plek). Eén bron,
+  dezelfde functie. Geen toggle.
 
 ## Testaanpak (4 lagen)
 
-1. **Unit:** de detectie-functie (heuristiek op PDF-koppen) en de body-inschatting (met de
-   LLM-call gemockt) -> juiste `vermoeden`-uitkomst op representatieve gevallen.
+1. **Unit:** de detectie (heuristiek op PDF-koppen) en de body-inschatting (LLM gemockt) ->
+   juiste `vermoeden` + `delen` op representatieve gevallen.
 2. **Integratie:** `POST /api/inbound` met een mail die meerdere opdrachten suggereert ->
-   `controleer_splitsing = true` op het aangemaakte voorstel; met één opdracht -> false.
-3. **E2e:** inbox toont de waarschuwingsregel; bevestigen wist de vlag en levert een gewone
-   klus. Voor kantoor: label op het dashboard, "gecontroleerd" wist het. Feature 2: het
-   adres + kopieerknop staan in het klus-toevoegen-venster op de kluspool.
+   `controleer_splitsing = true` + gevuld `splits_voorstel`; één opdracht -> false/null.
+   `POST /api/inbound/[id]/splitsen` -> juiste aantal nieuwe klussen, documenten correct
+   verdeeld, origineel weg.
+3. **E2e:** voorstel met gele band; "Splits" levert losse voorstellen; "Bevestig als één"
+   levert één gewone klus. Kantoor: label + splits op het dashboard. Feature 2: adres +
+   kopieerknop staan in het klus-toevoegen-venster op de kluspool.
 4. **Regressie:** een normale één-opdracht-mail (met leidingadvies-PDF erbij) blijft één klus
    zonder waarschuwing; de bestaande adres-keuze-flow blijft werken.
 
@@ -135,14 +160,16 @@ Aanpak:
 
 ## Scope / YAGNI
 
-- **Wel:** detectie + waarschuwing + handmatige afhandeling; adres kopieerbaar in het venster.
-- **Niet (nu):** automatisch splitsen, een splits-wizard, of het uit elkaar trekken van de
-  body in losse klussen. Pas bouwen als blijkt dat handmatig bijmaken te vaak voorkomt.
-- **Niet:** de verberg/terugzet-toggle voor het adres. Overbodig zodra het adres op de juiste
-  plek staat.
+- **Wel:** detectie + bewaarde splitsing + waarschuwing + splits-knop + "bevestig als één";
+  adres kopieerbaar in het venster (variant A).
+- **Niet (nu):** een handmatig sleep/verdeel-scherm bij het splitsen (de AI-verdeling is
+  leidend; klopt die niet, dan bevestig je als één of gooi je een fout deel weg). Pas bouwen
+  als de AI-verdeling te vaak misgaat.
+- **Niet:** de verberg/terugzet-toggle voor het adres.
 
-## Openstaand
+## Openstaand (voor het PLAN)
 
-- Exacte drempel van de heuristiek (stap 1) en de prompt van de body-inschatting (stap 2)
-  worden in het PLAN vastgelegd en met echte voorbeeldmails afgesteld.
-- Migratienummer `<n>` invullen op het eerstvolgende vrije nummer in `supabase/`.
+- Exacte drempel van de heuristiek (stap 1) en de prompt + het schema van de body-inschatting
+  (stap 2), af te stellen met echte voorbeeldmails.
+- Precieze vorm van `splits_voorstel` (welke kop-velden, hoe de documenten gekoppeld worden).
+- Migratienummer `<n>` op het eerstvolgende vrije nummer in `supabase/`.
