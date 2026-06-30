@@ -7,6 +7,7 @@ import type { ParsedPdf, MeldingItem, AdresKandidaat } from "./parser-schema";
 import { adresKeuzeNodig } from "./adres-keuze";
 import { genereerInboundToken } from "./inbound";
 import type { ControlePunt } from "./oplever-controle";
+import type { SplitsVoorstel } from "./splits-detectie";
 
 export interface DbConfig {
   url: string;
@@ -43,6 +44,11 @@ export interface Melding {
   // welke de montagelocatie is (zolang true: dashboard blokkeert plannen).
   adres_kandidaten: AdresKandidaat[] | null;
   adres_keuze_nodig: boolean;
+  // Splits-waarschuwing (blok 30): mail bevat mogelijk meerdere opdrachten. Vlag + reden voor de
+  // waarschuwingsband, en de door AI/heuristiek voorgestelde splitsing (delen + document-id's).
+  controleer_splitsing: boolean;
+  controleer_splitsing_reden: string | null;
+  splits_voorstel: SplitsVoorstel | null;
   meldingen: MeldingItem[];
   foto_urls: string[];
   // Video bij een monteur-melding (los van de oplever-video); null als er geen is.
@@ -279,6 +285,10 @@ export interface OpdrachtInput {
   adres_kandidaten?: AdresKandidaat[] | null;
   /** Adres-keuze (blok 20): true zolang er meerdere adressen zijn en nog niet gekozen is. */
   adres_keuze_nodig?: boolean;
+  /** Splits-waarschuwing (blok 30): mail bevat mogelijk meerdere opdrachten. */
+  controleer_splitsing?: boolean;
+  controleer_splitsing_reden?: string | null;
+  splits_voorstel?: SplitsVoorstel | null;
 }
 
 /** Corrigeerbare kop-gegevens van een opdracht (parser-fouten herstellen na inschieten). */
@@ -511,6 +521,12 @@ export interface Db {
   ensureInboundToken(userId: string): Promise<string>;
   getInboxVoor(userId: string): Promise<Melding[]>;
   markeerVerwerkt(id: string): Promise<void>;
+  /** Splits-waarschuwing (blok 30): bewaar de voorgestelde splitsing + reden en zet de vlag aan. */
+  bewaarSplitsVoorstel(id: string, reden: string, voorstel: SplitsVoorstel): Promise<void>;
+  /** Wist de splits-waarschuwing ("Bevestig als één" / gecontroleerd): vlag, reden en voorstel weg. */
+  wisSplitsWaarschuwing(id: string): Promise<void>;
+  /** Verplaatst een document naar een andere opdracht (gebruikt bij het uitsplitsen). */
+  verplaatsDocument(documentId: string, naarOpdrachtId: string): Promise<void>;
   getProfielen(): Promise<Profiel[]>;
   getMonteurs(): Promise<Profiel[]>;
   getStandaardOpdrachtgever(): Promise<Opdrachtgever | null>;
@@ -590,6 +606,9 @@ function createDbFromClient(client: SupabaseClient): Db {
           werkomschrijving: input.werkomschrijving ?? null,
           adres_kandidaten: input.adres_kandidaten ?? null,
           adres_keuze_nodig: input.adres_keuze_nodig ?? false,
+          controleer_splitsing: input.controleer_splitsing ?? false,
+          controleer_splitsing_reden: input.controleer_splitsing_reden ?? null,
+          splits_voorstel: input.splits_voorstel ?? null,
         })
         .select("id")
         .single();
@@ -1435,6 +1454,38 @@ function createDbFromClient(client: SupabaseClient): Db {
         .from("meldingen")
         .update({ te_verwerken: false })
         .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
+    },
+
+    async bewaarSplitsVoorstel(id: string, reden: string, voorstel: SplitsVoorstel) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          controleer_splitsing: true,
+          controleer_splitsing_reden: reden,
+          splits_voorstel: voorstel,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
+    },
+
+    async wisSplitsWaarschuwing(id: string) {
+      const { error } = await client
+        .from("meldingen")
+        .update({
+          controleer_splitsing: false,
+          controleer_splitsing_reden: null,
+          splits_voorstel: null,
+        })
+        .eq("id", id);
+      if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
+    },
+
+    async verplaatsDocument(documentId: string, naarOpdrachtId: string) {
+      const { error } = await client
+        .from("documenten")
+        .update({ opdracht_id: naarOpdrachtId })
+        .eq("id", documentId);
       if (error) throw new Error(`DB bijwerken mislukt: ${error.message}`);
     },
 
