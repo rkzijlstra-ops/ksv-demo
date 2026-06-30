@@ -172,6 +172,16 @@ Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zel
 
 **Nog te bouwen (volgende PR's):** botsing-UI bij een bijgevoegde order met afwijkend veld (leunt op echt parsen, daarom live door Rein), volledige `OpdrachtBewerken` → component-samensmelting (blok 7, lage prio), opruimen `InschietZone` (blok 7). De inbound end-to-end (echte Resend-webhook + parsen) bevestigt Rein live. Zie `PLAN-INVOER-UNIFICATIE-2.md`.
 
+## Doormailen robuust (splits-waarschuwing + adres in invoer)
+
+- **U (unit):** `splits-detectie.test` (klant-heuristiek `naamKern`), `claude-client.test` (beoordeling
+  meerdere opdrachten, tool gemockt), `inbound/route.test` (splits-vlag + `splits_voorstel` gezet bij
+  verschillende klanten / body-vermoeden, en NIET bij één klant), `inbound/[id]/splitsen/route.test`
+  (delen aangemaakt, documenten verplaatst, origineel verwijderd, autorisatie 401/403/400).
+- **E (e2e):** `splits-voorstel.spec` — "Splits in aparte klussen" levert losse voorstellen, "Het is er
+  één" levert één klus, en het inbound-adres + kopieerknop staan in het klus-toevoegen-venster.
+- Migratie `schema-compleet-30-controleer-splitsing.sql` (test+demo via `migrate:test`; productie handmatig).
+
 ## Bekende gaten (eerlijk, nog te dekken)
 
 - **✅ Verzend-flow (klant/zaak) e2e: gedekt sinds 2026-06-16.** `verzending.spec` dekt (1) klant-
