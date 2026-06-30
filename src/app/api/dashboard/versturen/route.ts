@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, type Melding } from "@/lib/db";
 import { meldVerstuurd } from "@/lib/verstuur-notificatie";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * Verstuur-poort: zet de opgegeven opdrachten op 'gepland' en meldt de monteurs (mail + SMS).
@@ -48,6 +49,19 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     return NextResponse.json({ error: `Versturen mislukt: ${(err as Error).message}` }, { status: 503 });
+  }
+
+  // Audit: per verstuurde klus loggen wie hem verstuurde (en naar welke monteur). Best-effort:
+  // mag de verstuur-actie nooit laten falen.
+  try {
+    const verzender = await dbi.getProfiel(userId);
+    for (const o of opdrachten) {
+      await logActie(dbi, o.id, "verstuurd", { id: userId, naam: verzender?.naam, rol: verzender?.rol }, {
+        monteur: o.monteur_naam,
+      });
+    }
+  } catch {
+    /* audit mislukt: stil door */
   }
 
   // Melden (mail + SMS) via de gedeelde helper: huidige monteur(s) krijgen nieuw/verzet, en de vorige

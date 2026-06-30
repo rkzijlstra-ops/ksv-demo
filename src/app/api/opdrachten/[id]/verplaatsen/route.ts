@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type PlanningInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * Verplaatst een al geplande opdracht naar een andere monteur/dag/tijd (slepen op het planbord).
@@ -76,6 +77,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { error: `Verplaatsen mislukt: ${(err as Error).message}` },
       { status: 503 },
     );
+  }
+  // Audit best-effort: mag het verplaatsen nooit laten falen.
+  try {
+    const eigen = await dbi.getProfiel(userId);
+    await logActie(dbi, id, "verzet", { id: userId, naam: eigen?.naam, rol: eigen?.rol }, {
+      monteur: planning.monteur_naam,
+      datum: planning.startdatum,
+    });
+  } catch {
+    /* audit mislukt: stil door */
   }
   return NextResponse.json({ ok: true }, { status: 200 });
 }

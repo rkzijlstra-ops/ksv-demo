@@ -15,6 +15,11 @@ const ACTIE_LABEL: Record<string, string> = {
   geannuleerd: "Geannuleerd",
   gewijzigd: "Gegevens gewijzigd",
   verwijderd: "Verwijderd",
+  ingeschoten: "Ingeschoten",
+  gepland: "Ingepland",
+  verzet: "Verzet",
+  ontplannen: "Van planning gehaald",
+  verstuurd: "Naar monteur verstuurd",
 };
 
 type Item = { id: string; when: string; titel: string; detail: string | null };

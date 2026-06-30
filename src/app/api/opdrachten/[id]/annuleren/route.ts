@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notificeerAnnulering } from "@/lib/notificaties";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * Annuleert een opdracht (status -> geannuleerd). Alleen kantoor. Was de klus al naar de monteur
@@ -37,6 +38,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       { status: 503 },
     );
   }
+  await logActie(dbi, id, "geannuleerd", { id: userId, naam: eigen.naam, rol: eigen.rol });
 
   // Automatisch gevolg: de monteur op de hoogte brengen (mail + SMS), maar alleen als hij de klus al had.
   let gemaild = false;

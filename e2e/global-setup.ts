@@ -86,7 +86,11 @@ async function ensureOpdrachtgever(url: string, secret: string): Promise<string>
   const zaakId = zaken?.[0]?.id ?? null;
   await admin
     .from("profielen")
-    .upsert({ id: uid, rol: "opdrachtgever", naam: "E2E Opdrachtgever", opdrachtgever_id: zaakId }, { onConflict: "id" });
+    .upsert(
+      // welkom_bevestigd: anders stuurt de gate de e2e-opdrachtgever naar /welkom-opdrachtgever.
+      { id: uid, rol: "opdrachtgever", naam: "E2E Opdrachtgever", opdrachtgever_id: zaakId, welkom_bevestigd: true },
+      { onConflict: "id" },
+    );
   return uid;
 }
 

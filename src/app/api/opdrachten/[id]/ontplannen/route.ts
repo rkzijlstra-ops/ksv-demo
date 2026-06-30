@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notificeerOntplanning } from "@/lib/notificaties";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * Haalt een opdracht van het planbord terug naar de pool (status binnen, planning leeg). Alleen
@@ -41,6 +42,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       { status: 503 },
     );
   }
+  await logActie(dbi, id, "ontplannen", { id: userId, naam: eigen.naam, rol: eigen.rol });
 
   // Automatisch gevolg: de monteur op de hoogte brengen (mail + SMS), maar alleen als hij de klus al had.
   let gemaild = false;
