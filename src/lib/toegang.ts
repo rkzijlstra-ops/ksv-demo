@@ -39,5 +39,16 @@ export async function vereisRol(
     redirect("/welkom");
   }
 
+  // Eerste gebruik van een opdrachtgever: een eenmalig welkomscherm waarin hij zijn naam (door beheer
+  // ingevuld) kan bevestigen of corrigeren. Daarna nooit meer (welkom_bevestigd). Niet in demo.
+  if (
+    profiel.rol === "opdrachtgever" &&
+    !opts?.skipOnboarding &&
+    !isDemoMode() &&
+    !profiel.welkom_bevestigd
+  ) {
+    redirect("/welkom-opdrachtgever");
+  }
+
   return { profiel, email: user.email ?? null };
 }

@@ -75,6 +75,22 @@ de zaak (uitnodiging, afmelding, annulering, ontplanning, document, herinnering,
 spoed, monteur-bundel) gebruiken nu dezelfde afzender via `appAfzender`. Het opleverrapport houdt bewust
 de identiteit van de monteur die opleverde (eigen From-naam + reply-to), dat is geen gat maar opzet.
 
+### Opdrachtgever-onboarding (eigen levenscyclus, 2026-06-30)
+Een nieuwe opdrachtgever krijgt bij de eerste login een eenmalig welkomscherm: zijn door beheer ingevulde
+naam staat klaar, hij corrigeert/bevestigt die (en optioneel telefoon) één keer. Overgangen: account +
+profiel door beheer (naam, rol, zaak) → eerste login, `welkom_bevestigd=false` → gate stuurt naar
+`/welkom-opdrachtgever` → bevestigen (SECURITY DEFINER `bevestig_welkom`, raakt alleen eigen naam/telefoon,
+nooit rol/zaak) → `welkom_bevestigd=true` → dashboard, daarna nooit meer. Niet in demo, en de pagina zelf
+slaat de gate over (skipOnboarding). Gedekt: toegang.test (gate), welkom-opdrachtgever/route.test.
+
+### Audit-log (wie deed wat) — uitgebreid 2026-06-30
+De `gebeurtenissen`-tabel logt per klus wie-wat-wanneer; het kantoor-detailscherm toont het als "Logboek".
+Naast de bestaande lifecycle-acties (afgerond, teruggemeld, heropend, akkoord, verwijderd) loggen nu ook de
+kantoor-acties: **ingeschoten, gepland, verzet, ontplannen, verstuurd, geannuleerd, gewijzigd** (met
+door-naam, en context als monteur/datum/veld). Zo is "de een schiet in, de ander past aan" herleidbaar.
+Loggen is overal best-effort: een log-fout mag de hoofdactie nooit breken. Let op accountabiliteit: één
+gedeeld e-mailaccount = één naam in het logboek; voor wie-deed-wat per persoon nodig je aparte adressen uit.
+
 ### Handleiding (UI-toestanden, geen opdracht-status)
 De handleiding-pagina (`/handleiding`) toont onderwerpen in vier groepen. UI-toestanden:
 alles ingeklapt (begintoestand, snel scannen) → "Alles openklappen" → alles open → "Alles

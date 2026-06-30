@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type PlanningInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 /**
  * Plant een opdracht in op het planbord: zet monteur, startdatum, optionele tijd en aantal dagen,
@@ -41,13 +42,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     weekend_telt_mee: body.weekend_telt_mee === true,
   };
 
+  const dbi = await db();
   try {
-    await (await db()).planOpdracht(id, planning);
+    await dbi.planOpdracht(id, planning);
   } catch (err) {
     return NextResponse.json(
       { error: `Inplannen mislukt: ${(err as Error).message}` },
       { status: 503 },
     );
+  }
+  // Audit best-effort: mag het inplannen nooit laten falen.
+  try {
+    const eigen = await dbi.getProfiel(userId);
+    await logActie(dbi, id, "gepland", { id: userId, naam: eigen?.naam, rol: eigen?.rol }, {
+      monteur: planning.monteur_naam,
+      datum: planning.startdatum,
+    });
+  } catch {
+    /* audit mislukt: stil door */
   }
   return NextResponse.json({ ok: true }, { status: 200 });
 }

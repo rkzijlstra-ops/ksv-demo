@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
+import { logActie } from "@/lib/gebeurtenis";
 
 function tekstOfNull(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
@@ -50,5 +51,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       { status: 503 },
     );
   }
+  await logActie(dbi, id, "gewijzigd", { id: userId, naam: eigen?.naam, rol: eigen?.rol }, { veld: "werk-omschrijving" });
   return NextResponse.json({ ok: true }, { status: 200 });
 }

@@ -73,6 +73,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       { status: 503 },
     );
   }
+  await logActie(dbi, id, "gewijzigd", { id: userId, naam: eigen?.naam, rol: eigen?.rol }, { veld: "gegevens" });
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 

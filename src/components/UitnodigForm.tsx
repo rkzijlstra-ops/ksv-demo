@@ -4,12 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus, Check, AlertCircle } from "lucide-react";
 
-export function UitnodigForm() {
+export function UitnodigForm({
+  opdrachtgevers,
+}: {
+  opdrachtgevers: { id: string; naam: string }[];
+}) {
   const router = useRouter();
   const [naam, setNaam] = useState("");
   const [email, setEmail] = useState("");
   const [telefoon, setTelefoon] = useState("");
   const [rol, setRol] = useState<"monteur" | "opdrachtgever">("monteur");
+  // Zaak waaronder de persoon valt. Eén zaak = voorgeselecteerd; meer zaken = echte keuze.
+  const [opdrachtgeverId, setOpdrachtgeverId] = useState(opdrachtgevers[0]?.id ?? "");
   const [bezig, setBezig] = useState(false);
   const [bericht, setBericht] = useState("");
   const [fout, setFout] = useState("");
@@ -23,7 +29,7 @@ export function UitnodigForm() {
       const res = await fetch("/api/mensen/uitnodigen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ naam, email, rol, telefoon }),
+        body: JSON.stringify({ naam, email, rol, telefoon, opdrachtgever_id: opdrachtgeverId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -91,6 +97,25 @@ export function UitnodigForm() {
           <option value="opdrachtgever">Opdrachtgever</option>
         </select>
       </label>
+      {opdrachtgevers.length > 0 && (
+        <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+          Opdrachtgever (zaak)
+          <select
+            value={opdrachtgeverId}
+            onChange={(e) => setOpdrachtgeverId(e.target.value)}
+            className={veld}
+          >
+            {opdrachtgevers.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.naam}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs font-normal text-ink-muted">
+            Bepaalt de afzender van de mail en onder welke zaak deze persoon valt.
+          </span>
+        </label>
+      )}
       <button
         type="submit"
         disabled={bezig || !naam.trim() || !email.trim()}
