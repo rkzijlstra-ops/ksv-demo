@@ -73,4 +73,28 @@ describe("vereisRol onboarding-gate", () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
     await expect(vereisRol(["monteur"])).rejects.toThrow("REDIRECT:/login");
   });
+
+  it("stuurt een opdrachtgever die nog niet bevestigde naar /welkom-opdrachtgever", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "u1", rol: "opdrachtgever", naam: "Sandra", welkom_bevestigd: false });
+    await expect(vereisRol(["opdrachtgever"])).rejects.toThrow("REDIRECT:/welkom-opdrachtgever");
+  });
+
+  it("laat een opdrachtgever die al bevestigde gewoon door", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "u1", rol: "opdrachtgever", naam: "Sandra", welkom_bevestigd: true });
+    const res = await vereisRol(["opdrachtgever"]);
+    expect(res.profiel.rol).toBe("opdrachtgever");
+  });
+
+  it("skipOnboarding voorkomt de welkom-opdrachtgever-redirect (de pagina zelf)", async () => {
+    mockGetProfiel.mockResolvedValue({ id: "u1", rol: "opdrachtgever", naam: "Sandra", welkom_bevestigd: false });
+    const res = await vereisRol(["opdrachtgever"], { skipOnboarding: true });
+    expect(res.profiel.id).toBe("u1");
+  });
+
+  it("in demo-modus geen welkom-redirect voor een opdrachtgever", async () => {
+    mockIsDemo.mockReturnValue(true);
+    mockGetProfiel.mockResolvedValue({ id: "u1", rol: "opdrachtgever", naam: "Sandra", welkom_bevestigd: false });
+    const res = await vereisRol(["opdrachtgever"]);
+    expect(res.profiel.rol).toBe("opdrachtgever");
+  });
 });

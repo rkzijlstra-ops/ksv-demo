@@ -378,6 +378,8 @@ export interface Profiel {
   waarschuw_klant_zicht: boolean;
   // blok 18: per-monteur ontvangsttoken voor mail-naar-app (klus-<token>@inbound-domein)
   inbound_token: string | null;
+  // blok 29: heeft de opdrachtgever zijn eenmalige welkomscherm al bevestigd?
+  welkom_bevestigd: boolean;
 }
 
 /** De velden die een gebruiker zelf mag bijwerken (naam + afzender, nooit zijn rol). */
@@ -518,6 +520,8 @@ export interface Db {
   insertOpdrachtgever(naam: string): Promise<Opdrachtgever>;
   updateOpdrachtgever(id: string, input: { klant_levering_toegestaan: boolean }): Promise<void>;
   upsertProfiel(input: ProfielInput): Promise<void>;
+  /** Opdrachtgever bevestigt eenmalig zijn welkomscherm: eigen naam + telefoon, zet welkom_bevestigd. */
+  bevestigWelkom(naam: string, telefoon: string | null): Promise<void>;
   /** Werkt de eigen afzender-velden bij (via SECURITY DEFINER, kan de rol niet raken). */
   updateEigenGegevens(input: EigenGegevensInput): Promise<void>;
   telBeheerders(): Promise<number>;
@@ -1517,6 +1521,14 @@ function createDbFromClient(client: SupabaseClient): Db {
       if (input.telefoon !== undefined) rij.telefoon = input.telefoon;
       const { error } = await client.from("profielen").upsert(rij, { onConflict: "id" });
       if (error) throw new Error(`DB upsert mislukt: ${error.message}`);
+    },
+
+    async bevestigWelkom(naam, telefoon) {
+      const { error } = await client.rpc("bevestig_welkom", {
+        p_naam: naam,
+        p_telefoon: telefoon,
+      });
+      if (error) throw new Error(`Welkom bevestigen mislukt: ${error.message}`);
     },
 
     async updateEigenGegevens(input) {

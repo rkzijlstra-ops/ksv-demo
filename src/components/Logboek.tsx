@@ -3,6 +3,11 @@ import type { Gebeurtenis } from "@/lib/db";
 import { formatDatumKort } from "@/lib/datum";
 
 const ACTIE_LABEL: Record<string, string> = {
+  ingeschoten: "Ingeschoten",
+  gepland: "Ingepland",
+  verzet: "Verzet",
+  ontplannen: "Van planning gehaald",
+  verstuurd: "Naar monteur verstuurd",
   verwijderd: "Verwijderd",
   teruggemeld: "Teruggemeld aan kantoor",
   gewijzigd: "Gegevens gewijzigd",
@@ -31,6 +36,14 @@ export function Logboek({ gebeurtenissen }: { gebeurtenissen: Gebeurtenis[] }) {
         {gebeurtenissen.map((g) => {
           const reden = typeof g.details?.reden === "string" ? g.details.reden : null;
           const toelichting = typeof g.details?.toelichting === "string" ? g.details.toelichting : null;
+          // Korte context bij plannen/verzetten/wijzigen: monteur + datum, of welk veld is gewijzigd.
+          const d = g.details ?? {};
+          const ctx = [
+            typeof d.veld === "string" ? d.veld : null,
+            typeof d.monteur === "string" ? d.monteur : null,
+            typeof d.datum === "string" ? d.datum : null,
+            typeof d.klant === "string" ? d.klant : null,
+          ].filter(Boolean).join(" · ");
           return (
             <li key={g.id} className="border border-line bg-white p-3 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-x-2">
@@ -40,6 +53,7 @@ export function Logboek({ gebeurtenissen }: { gebeurtenissen: Gebeurtenis[] }) {
               <div className="mt-0.5 text-ink-muted">
                 door {g.door_naam ?? "onbekend"}
                 {g.door_rol ? ` (${g.door_rol})` : ""}
+                {ctx ? ` — ${ctx}` : ""}
               </div>
               {(reden || toelichting) && (
                 <div className="mt-1 text-ink">

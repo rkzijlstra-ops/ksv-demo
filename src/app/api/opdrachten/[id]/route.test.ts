@@ -154,6 +154,13 @@ describe("PATCH /api/opdrachten/[id]", () => {
     expect(input.werkomschrijving).toBe("lade vervangen");
   });
 
+  it("logt een 'gewijzigd'-gebeurtenis met de uitvoerder", async () => {
+    await PATCH(patchReq({ klant_naam: "Fam. de Wit" }), params("opdr-1"));
+    expect(mockLog).toHaveBeenCalledWith(
+      expect.objectContaining({ opdracht_id: "opdr-1", actie: "gewijzigd", door_id: "beheerder-uid" }),
+    );
+  });
+
   it("Gat A: wijzigen NA versturen (gepland) zet de gewijzigd-markering", async () => {
     mockGetOpdrachtById.mockResolvedValue({ id: "opdr-1", dashboard_status: "gepland", documenttype: "onbekend" });
     await PATCH(patchReq({ klant_adres: "Nieuwstraat 1" }), params("opdr-1"));
