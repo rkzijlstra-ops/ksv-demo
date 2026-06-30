@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Trash2, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { SplitsWaarschuwing } from "@/components/SplitsWaarschuwing";
 
 /**
  * Eén voorstel in het "te verwerken"-bakje (binnengekomen per mail). De monteur kan het openen om de
@@ -15,11 +16,15 @@ export function InboxItem({
   titel,
   referentie,
   adres,
+  controleerSplitsing = false,
+  splitsReden = null,
 }: {
   id: string;
   titel: string;
   referentie: string | null;
   adres: string | null;
+  controleerSplitsing?: boolean;
+  splitsReden?: string | null;
 }) {
   const router = useRouter();
   const [bezig, setBezig] = useState<"" | "bevestig" | "weg">("");
@@ -64,6 +69,11 @@ export function InboxItem({
 
   return (
     <li className="border-2 border-ink bg-white">
+      {controleerSplitsing && (
+        <div className="p-3 pb-0">
+          <SplitsWaarschuwing id={id} reden={splitsReden} />
+        </div>
+      )}
       <Link
         href={`/opdracht/${id}`}
         className="flex items-center gap-3 border-b border-line p-4 transition-colors hover:bg-surface focus-visible:outline-3 focus-visible:outline-accent"
@@ -79,19 +89,21 @@ export function InboxItem({
       </Link>
 
       <div className="flex gap-2 p-3">
-        <button
-          type="button"
-          onClick={bevestig}
-          disabled={!!bezig}
-          className="inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink transition-[filter] hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
-        >
-          {bezig === "bevestig" ? (
-            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Check size={16} strokeWidth={2.75} aria-hidden="true" />
-          )}
-          Bevestigen
-        </button>
+        {!controleerSplitsing && (
+          <button
+            type="button"
+            onClick={bevestig}
+            disabled={!!bezig}
+            className="inline-flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-3 text-sm font-extrabold uppercase tracking-[0.04em] text-ink transition-[filter] hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:opacity-60"
+          >
+            {bezig === "bevestig" ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Check size={16} strokeWidth={2.75} aria-hidden="true" />
+            )}
+            Bevestigen
+          </button>
+        )}
         <button
           type="button"
           onClick={weggooien}

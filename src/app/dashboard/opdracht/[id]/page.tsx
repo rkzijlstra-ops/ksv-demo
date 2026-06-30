@@ -28,6 +28,7 @@ import { vereisRol } from "@/lib/toegang";
 import { verwerkStatus } from "@/lib/afrond-status";
 import { VerwerktKnop } from "@/components/VerwerktKnop";
 import { HeropenKnop } from "@/components/HeropenKnop";
+import { SplitsWaarschuwing } from "@/components/SplitsWaarschuwing";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,12 @@ export default async function OpdrachtgeverDetailPage({
         </div>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
+
+      {opdracht.controleer_splitsing && (
+        <div className="mt-4">
+          <SplitsWaarschuwing id={opdracht.id} reden={opdracht.controleer_splitsing_reden} />
+        </div>
+      )}
 
       {opdracht.adres_keuze_nodig && (
         <AdresControleBlok opdrachtId={opdracht.id} kandidaten={opdracht.adres_kandidaten ?? []} />
