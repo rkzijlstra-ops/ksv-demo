@@ -17,17 +17,20 @@ Kluslus is een af product, geen demo. Het moet vanaf de eerste klant naadloos dr
 
 Kort: niet "het zou moeten werken", maar "ik heb de hele keten nagelopen en gezien dat het werkt".
 
-## Vaste werkwijze: branch → preview → akkoord → merge
+## Vaste werkwijze: branch → TEST-omgeving → akkoord → productie
 
-Elke wijziging loopt deze weg; nooit direct op master bouwen. Veiligheid zit in de infrastructuur, niet in onthouden.
+Elke wijziging loopt deze weg; nooit direct op master bouwen. **Kernregel: de test-omgeving krijgt een wijziging ALTIJD vóór productie. Master (= prod + demo) mag nooit vooruitlopen op de test-omgeving.** Veiligheid zit in de infrastructuur én in deze volgorde, niet in onthouden.
 
-1. Werk op een feature-branch in een eigen worktree (zie `docs/OMGEVINGEN.md`). Bouw test-first.
-2. Werk in dezelfde commit `TESTDEKKING.md` en `TOESTANDEN.md` bij; loop de afrond-check (skill projectstart-discipline) langs vóór je iets "klaar" noemt.
-3. Push. De pre-push hook draait unit + typecheck (blokkeert bij rood). Daarna draait CI in de cloud de volle suite; master is branch-protected, dus mergen kan alleen als de CI-check `test` groen is.
-4. Het aparte test-project **kluslus-test** (eigen Vercel-project, tegen de TEST-DB, allowlist = alleen Reinier, beveiligd met Vercel Authentication) bouwt de branch. Inloggen zonder Google/magic-link via `/test-login` (aan door `TEST_LOGIN=1`). Reinier keurt daar in de browser, beide rollen.
-5. Akkoord? Merge de branch naar master. Prod-Vercel én demo-Vercel deployen automatisch dezelfde code.
+1. Werk op een feature-branch in een eigen worktree (zie `docs/OMGEVINGEN.md`). Bouw test-first. Werk in dezelfde commit `TESTDEKKING.md` en `TOESTANDEN.md` bij; loop de afrond-check (skill projectstart-discipline) langs vóór je iets "klaar" noemt.
+2. Push de branch en open een PR. De pre-push hook draait unit + typecheck (blokkeert bij rood); daarna draait CI in de cloud de volle suite. Master is branch-protected: mergen kan alleen als de CI-check `test` groen is. **Groene CI is een VOORWAARDE, geen startsein om te mergen.**
+3. **Eerst naar TEST, dan pas naar productie.** Het test-project **kluslus-test** (eigen Vercel-project, TEST-DB, allowlist = alleen Reinier, Vercel Authentication) bouwt van de branch **`omgeving-test`** — NIET van de feature-branch en NIET van master. Breng de feature dus naar `omgeving-test` (merge de feature-branch erin); kluslus-test deployt dat automatisch. Doe dit VÓÓR de merge naar master, anders staat het op productie terwijl test het mist (de omgekeerde wereld; gebeurd 2026-06-22 met de resize).
+4. **STOP-poort (niet aan Claude alleen).** Reinier keurt op `kluslus-test` (stabiele URL, inloggen via `/test-login`, aan door `TEST_LOGIN=1`; beide rollen). Claude mergt NOOIT zelf naar master. De volgorde is hard: CI groen → op `omgeving-test` gezet → Claude stopt en vraagt Reinier de visuele check → **pas na Reins expliciete "ga maar / merge"** gaat het verder. Bij twijfel: niet mergen, vragen.
+5. Na akkoord: merge naar `master`. Prod-Vercel (`mijn.kluslus.nl`) én demo-Vercel deployen dezelfde, al-op-test-gekeurde code.
+6. **Herstel bij scheefstand:** lopen test en prod uit de pas (feature wel op prod, niet op test, of omgekeerd), dan is deze volgorde overgeslagen. Trek `omgeving-test` bij naar de juiste staat (meestal fast-forward naar `master`) zodat test weer minstens gelijk loopt, en houd je daarna aan de volgorde.
 
 De poorten: pre-push + branch-protected CI, het losse kluslus-test-project op de test-DB, en de verzend-grendel (allowlist + `MAIL_DRY_RUN`/`SMS_DRY_RUN`). Zie `docs/OMGEVINGEN.md` (sectie test-omgeving) en `PLAN-TEST-OMGEVING.md` voor de opzet.
+
+> Let op (todo, laag 2): kluslus-test en de CI-e2e delen nu nog dezelfde TEST-DB. Een CI-run kan handmatige keuringsdata van Reinier raken. Tot die DB's gesplitst zijn: geen CI triggeren (push naar master of een open PR) terwijl Reinier op kluslus-test keurt.
 
 ## Logboek
 
