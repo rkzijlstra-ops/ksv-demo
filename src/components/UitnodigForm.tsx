@@ -4,11 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus, Check, AlertCircle } from "lucide-react";
 
-export function UitnodigForm() {
+export function UitnodigForm({
+  opdrachtgevers,
+}: {
+  opdrachtgevers: { id: string; naam: string }[];
+}) {
   const router = useRouter();
   const [naam, setNaam] = useState("");
   const [email, setEmail] = useState("");
+  const [telefoon, setTelefoon] = useState("");
   const [rol, setRol] = useState<"monteur" | "opdrachtgever">("monteur");
+  // Zaak waaronder de persoon valt. Eén zaak = voorgeselecteerd; meer zaken = echte keuze.
+  const [opdrachtgeverId, setOpdrachtgeverId] = useState(opdrachtgevers[0]?.id ?? "");
   const [bezig, setBezig] = useState(false);
   const [bericht, setBericht] = useState("");
   const [fout, setFout] = useState("");
@@ -22,20 +29,25 @@ export function UitnodigForm() {
       const res = await fetch("/api/mensen/uitnodigen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ naam, email, rol }),
+        body: JSON.stringify({ naam, email, rol, telefoon, opdrachtgever_id: opdrachtgeverId }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setFout(body.error ?? `Uitnodigen mislukt (${res.status})`);
         return;
       }
-      setBericht(
-        body.mailVerstuurd
-          ? `${naam} uitgenodigd. Uitnodigingsmail verstuurd naar ${email}.`
-          : `${naam} toegevoegd, maar de mail kon niet verstuurd worden. Laat ${email} zelf inloggen op /login.`,
-      );
+      const mailDeel = body.mailVerstuurd
+        ? `Uitnodigingsmail verstuurd naar ${email}.`
+        : `De mail kon niet verstuurd worden, laat ${email} zelf inloggen op /login.`;
+      const smsDeel = body.smsGevraagd
+        ? body.smsVerstuurd
+          ? " SMS-vangnet verstuurd."
+          : " SMS kon niet verstuurd worden."
+        : "";
+      setBericht(`${naam} uitgenodigd. ${mailDeel}${smsDeel}`);
       setNaam("");
       setEmail("");
+      setTelefoon("");
       setRol("monteur");
       router.refresh();
     } catch {
@@ -65,12 +77,45 @@ export function UitnodigForm() {
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+        06-nummer (aanbevolen)
+        <input
+          type="tel"
+          inputMode="tel"
+          value={telefoon}
+          onChange={(e) => setTelefoon(e.target.value)}
+          className={veld}
+          placeholder="06 12345678"
+        />
+        <span className="text-xs font-normal text-ink-muted">
+          Stuurt er een SMS bij, voor het geval de mail in de spam belandt. Optioneel.
+        </span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
         Rol
         <select value={rol} onChange={(e) => setRol(e.target.value as "monteur" | "opdrachtgever")} className={veld}>
           <option value="monteur">Monteur</option>
           <option value="opdrachtgever">Opdrachtgever</option>
         </select>
       </label>
+      {opdrachtgevers.length > 0 && (
+        <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+          Opdrachtgever (zaak)
+          <select
+            value={opdrachtgeverId}
+            onChange={(e) => setOpdrachtgeverId(e.target.value)}
+            className={veld}
+          >
+            {opdrachtgevers.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.naam}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs font-normal text-ink-muted">
+            Bepaalt de afzender van de mail en onder welke zaak deze persoon valt.
+          </span>
+        </label>
+      )}
       <button
         type="submit"
         disabled={bezig || !naam.trim() || !email.trim()}

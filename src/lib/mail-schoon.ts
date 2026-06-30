@@ -5,7 +5,9 @@
  *
  * Aanpak: (1) houd de menselijke boodschap bovenaan (tot het eerste citaat/handtekening/doorstuur-blok).
  * (2) Is daar niets zinnigs (bijv. een mail die meteen met "Forwarded message" begint), pak dan de
- * doorgestuurde BODY: sla de doorstuur-kop (marker + header-blok) over en houd de tekst eronder.
+ * DIEPSTE doorgestuurde body: bij meervoudig doorsturen (Fwd: Fwd: ...) staat het origineel onderaan,
+ * dus spring naar de LAATSTE doorstuur-marker, sla het aansluitende header-blok over en houd de tekst
+ * eronder. Zo vallen tussenliggende doorstuur-koppen en losse notities van tussenpersonen buiten beeld.
  */
 const KAP_PATRONEN: RegExp[] = [
   /^>/, // geciteerde regel
@@ -51,12 +53,21 @@ export function schoonOmschrijving(tekst: string | null | undefined): string | n
     .trim();
   if (bovenZonderMarker.length > 0) return bovenZonderMarker;
 
-  // 2) Geen boodschap bovenaan -> pak de doorgestuurde body. Sla de marker en het aansluitende
-  // header-blok (Van/Aan/Datum/Onderwerp ...) + lege regels over.
+  // 2) Geen boodschap bovenaan -> pak de DIEPSTE doorgestuurde body. Bij meervoudig doorsturen staat
+  // het origineel onderaan; spring daarom naar de LAATSTE doorstuur-marker en sla het aansluitende
+  // header-blok (Van/Aan/Datum/Onderwerp ...) + lege regels over. Filter daarna nog eventuele
+  // marker-regels uit de body, zodat een kale "Forwarded message"-regel nooit als omschrijving overblijft.
   let i = 0;
-  const markerIdx = regels.findIndex((r) => FORWARD_MARKER.test(r.trim()));
-  if (markerIdx !== -1) i = markerIdx + 1;
+  let laatsteMarker = -1;
+  for (let r = 0; r < regels.length; r++) {
+    if (FORWARD_MARKER.test(regels[r].trim())) laatsteMarker = r;
+  }
+  if (laatsteMarker !== -1) i = laatsteMarker + 1;
   while (i < regels.length && (HEADER_REGEL.test(regels[i].trim()) || regels[i].trim() === "")) i++;
-  const body = houdTopOver(regels.slice(i));
+  const body = houdTopOver(regels.slice(i))
+    .split("\n")
+    .filter((r) => !FORWARD_MARKER.test(r.trim()))
+    .join("\n")
+    .trim();
   return body.length > 0 ? body : null;
 }

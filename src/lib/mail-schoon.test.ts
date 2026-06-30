@@ -70,4 +70,29 @@ describe("schoonOmschrijving", () => {
     const t = "Van: Klant\nDatum: maandag\nAan: ons\nOnderwerp: keuken\n\nWerkblad vervangen graag.";
     expect(schoonOmschrijving(t)).toBe("Werkblad vervangen graag.");
   });
+
+  it("meervoudig doorgestuurd (Fwd: Fwd:) met tussennotitie: houdt de diepste oorspronkelijke boodschap over", () => {
+    // Zoals een mail die een paar keer is doorgestuurd: meerdere doorstuur-koppen, en halverwege
+    // een losse handtekening van een tussenpersoon. We willen het origineel onderaan, niet de
+    // kale "Forwarded message"-regel of de tussennotitie.
+    const t =
+      "---------- Forwarded message ---------\n" +
+      "Van: Reinier <bkmkeukenmontage@gmail.com>\n" +
+      "Date: zo 28 jun 2026\n" +
+      "Subject: Fwd: Dinsdag\n" +
+      "To: <klus-abc@klus-test.kluslus.nl>\n\n\n" +
+      "---------- Forwarded message ---------\n" +
+      "Van: Peter Keijzer <peetkeijzer@gmail.com>\n" +
+      "Date: di 23 jun 2026\n" +
+      "Subject: Fwd: Dinsdag\n" +
+      "To: <bkmkeukenmontage@gmail.com>\n\n\n" +
+      "MVG Peter Keijzer.\n\n" +
+      "---------- Forwarded message ---------\n" +
+      "Van: Ed de Jong <ed@keukenstudiovoorschoten.nl>\n" +
+      "Date: vr 19 jun 2026\n" +
+      "Subject: Dinsdag\n" +
+      "To: peetkeijzer@gmail.com\n\n" +
+      "Hoi Peter,\n\nPlanning dinsdag\n\n7.00h RVS";
+    expect(schoonOmschrijving(t)).toBe("Hoi Peter,\n\nPlanning dinsdag\n\n7.00h RVS");
+  });
 });

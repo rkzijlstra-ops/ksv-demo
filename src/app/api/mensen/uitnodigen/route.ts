@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db, type Rol } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verstuurUitnodiging } from "@/lib/mail";
+import { verstuurUitnodigingSms } from "@/lib/uitnodig-sms";
+import { normaliseerNlMobiel } from "@/lib/telefoon";
 import { getAuthenticatedUserId } from "@/lib/auth";
 
 const UIT_TE_NODIGEN_ROLLEN: Rol[] = ["monteur", "opdrachtgever"];
@@ -37,8 +39,24 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  // Optioneel 06-nummer voor het SMS-vangnet. Streng genormaliseerd: een ongeldig nummer wordt null
+  // (geen SMS, niets weggeschreven), zodat we nooit geld verbranden aan een onbereikbaar nummer.
+  const telefoonRaw = typeof body.telefoon === "string" ? body.telefoon : "";
+  const telefoon = normaliseerNlMobiel(telefoonRaw);
 
-  const zaak = await dbi.getStandaardOpdrachtgever();
+  // Zaak waaronder de persoon valt: expliciet gekozen (multi-opdrachtgever), anders de standaard-zaak
+  // (achterwaarts compatibel). Een gekozen-maar-onbekende zaak is een 400 vóór we een account aanmaken,
+  // zodat we nooit iemand aan de verkeerde of geen zaak hangen.
+  const gekozenZaakId = typeof body.opdrachtgever_id === "string" ? body.opdrachtgever_id.trim() : "";
+  let zaak;
+  if (gekozenZaakId) {
+    zaak = await dbi.getOpdrachtgever(gekozenZaakId);
+    if (!zaak) {
+      return NextResponse.json({ error: "Onbekende opdrachtgever gekozen" }, { status: 400 });
+    }
+  } else {
+    zaak = await dbi.getStandaardOpdrachtgever();
+  }
 
   // Account aanmaken of, als het al bestaat, opzoeken.
   const admin = supabaseAdmin();
@@ -70,13 +88,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    await dbi.upsertProfiel({ id: inviteeId, rol, naam, opdrachtgever_id: zaak?.id ?? null });
+    await dbi.upsertProfiel({
+      id: inviteeId,
+      rol,
+      naam,
+      opdrachtgever_id: zaak?.id ?? null,
+      // Alleen meegeven als er een geldig nummer is; weglaten laat een bestaand nummer ongemoeid.
+      ...(telefoon ? { telefoon } : {}),
+    });
   } catch (err) {
     return NextResponse.json(
       { error: `Profiel opslaan mislukt: ${(err as Error).message}` },
       { status: 503 },
     );
   }
+
+  const appUrl = new URL(req.url).origin;
 
   // Uitnodigingsmail; mislukt dit, dan staat het account er wel (Reinier kan handmatig melden).
   let mailVerstuurd = true;
@@ -85,12 +112,32 @@ export async function POST(req: Request) {
       naar: email,
       naam,
       rol,
-      appUrl: new URL(req.url).origin,
+      appUrl,
       organisatie: zaak?.naam ?? "",
     });
   } catch {
     mailVerstuurd = false;
   }
 
-  return NextResponse.json({ ok: true, mailVerstuurd }, { status: 200 });
+  // SMS-vangnet: alleen als er een geldig 06 is. Best-effort, los van de mail, zodat de uitnodiging
+  // als geheel niet klapt op een SMS-fout.
+  let smsVerstuurd = false;
+  if (telefoon) {
+    try {
+      await verstuurUitnodigingSms({
+        naar: telefoon,
+        naam,
+        appUrl,
+        organisatie: zaak?.naam ?? "",
+      });
+      smsVerstuurd = true;
+    } catch {
+      smsVerstuurd = false;
+    }
+  }
+
+  return NextResponse.json(
+    { ok: true, mailVerstuurd, smsGevraagd: !!telefoon, smsVerstuurd },
+    { status: 200 },
+  );
 }

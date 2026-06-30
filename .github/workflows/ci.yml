@@ -11,6 +11,15 @@ on:
     branches: [master]
   pull_request:
 
+# Eén gedeelde test-DB: nooit twee CI-runs tegelijk. Draaien er twee, dan wist de wipe van de
+# ene run (gescopte INT-data: klant_naam LIKE 'INT %' + de INT-zaak) de in-flight rijen van de
+# andere -> rijen verdwijnen, status komt undefined terug, 14 wordt 3. Een vaste group maakt CI
+# repo-breed serieel; cancel-in-progress: false laat een lopende run afmaken en zet de nieuwe in
+# de wachtrij i.p.v. die midden in een DB-operatie af te breken. (DB splitsen is bewust verworpen.)
+concurrency:
+  group: ci-gedeelde-testdb
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: ubuntu-latest

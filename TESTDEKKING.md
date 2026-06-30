@@ -2,7 +2,7 @@
 
 Per feature/flow welke testlagen en welk(e) testbestand(en) hem dekken. Werk dit bij in dezelfde
 commit als elke nieuwe feature of wijziging (afrond-check uit de skill projectstart-discipline).
-Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-26.
+Dit is het overzicht; de testbestanden zelf zijn de uitvoering. Laatst bijgewerkt: 2026-06-28.
 
 Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = browser-e2e (Playwright),
 **M** = e2e-mail (echt versturen achter `E2E_MAIL=1`).
@@ -12,6 +12,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Feature / flow | Lagen | Testbestand(en) | Status |
 |---|---|---|---|
 | **Volledige levenscyclus-keten** (inschieten→plannen→versturen→bevestigen→opleveren→dashboard), cross-rol, één doorloop, status-check per overgang | E | levenscyclus.spec | groen |
+| **Hele keten zonder browser** (INBOUND mail→klus via de echte inbound-route, plannen, bevestigen mét mail+sms-poging, opleveren mét rapport-mailpoging), één doorloop, status-check per overgang, mail/sms gecontroleerd op ontvanger+inhoud via dry-run-log | I | keten.int.test | groen |
 | Inschieten PDF, parsing, groepering op referentie | U, E | parser-schema.test, claude-client.test, opdrachtgever.spec | groen |
 | Dashboard + "Te doen"-overzicht + statusfilter | U | te-doen.test, dashboard-scope.test, dashboard-lijst | groen |
 | Planbord plaatsing/lanes/dubbele boeking | U | planbord.test | groen |
@@ -44,6 +45,17 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Bevestig-herinnering → mail + SMS (cron, gebundeld, idempotent) | U, I | herinnering-mail.test, notificaties.test (mail+SMS), herinnering.int.test (selectie/idempotentie), cron/bevestig-herinneringen/route.test (auth + bundeling + markeren) | groen; M nog handmatig |
 | Annuleren + mail naar monteur bij verstuurd | U, E, M | annuleren/route.test, annuleren.spec, mail-flows.spec | groen |
 | Gebruikersbeheer, rollen, uitnodigen/afmelden | U, M | mail-flows.spec (uitnodiging/afmelding) | grotendeels |
+| Uitnodig-mail: zaaknaam-prominent (onderwerp + opening + uitlegzin Kluslus), neutrale terugval zonder zaak | U | uitnodig-mail.test | groen |
+| Afzender ALLE app-mails namens de zaak = "&lt;zaak&gt; via Kluslus &lt;adres&gt;" (uitnodiging, afmelding, annulering, ontplanning, document, herinnering, terugmelding, afgerond, spoed, monteur-bundel), terugval "Kluslus". Opleverrapport NIET (houdt monteur-identiteit) | U | mail.test (uitnodiging/afmelding/annulering/monteur-bundel/spoed From-naam via appAfzender; oplever-From blijft monteur) | groen |
+| SMS-vangnet bij uitnodigen (optioneel 06): tekst met zaaknaam/Kluslus/login-URL, geen inloglink in SMS | U | uitnodig-sms.test (uitnodigingSmsTekst) | groen |
+| Uitnodig-route met 06: normaliseert naar +31, schrijft telefoon op profiel, stuurt SMS best-effort; ongeldig/leeg nummer → geen SMS, telefoon ongemoeid | U | uitnodigen/route.test (telefoon-paden) | groen; live SMS-pad handmatig op test-omgeving (Reins eigen 06, allowlist) |
+| 06-veld + uitleg in uitnodig-formulier, SMS-status in bevestiging | (E later) | UitnodigForm.tsx | bewust later/handmatig: optioneel veld, logica gedekt door route/unit-tests |
+| Opdrachtgever aanmaken (beheer): naam, beheer-gate (401/403/400) | U | opdrachtgevers/route.test | groen |
+| Uitnodigen met zaak-keuze: gekozen opdrachtgever_id stuurt koppeling + branding; onbekende zaak = 400 vóór account; geen keuze = terugval standaard | U | uitnodigen/route.test (zaak-keuze) | groen |
+| Multi-opdrachtgever UI (aanmaak-form + zaak-dropdown bij uitnodigen) | (E later) | NieuweOpdrachtgeverForm.tsx, UitnodigForm.tsx | bewust later/handmatig; logica gedekt door route/unit |
+| Zaak-afscherming RLS (laag 2): opdrachtgever ziet ALLEEN eigen zaak, beheer alles, monteur alleen toegewezen | E | afscherming.spec ("opdrachtgever ziet GEEN klus uit andere zaak" + monteur-tests) | groen (bestond al via 6e/7, geverifieerd 2026-06-30) |
+| Audit-log kantoor-acties: ingeschoten/gepland/verzet/ontplannen/verstuurd/geannuleerd/gewijzigd met naam, getoond in Logboek; loggen is best-effort (breekt de actie nooit) | U | opdrachten/[id]/route.test ("gewijzigd"-gebeurtenis); overige acties via logActie-helper, best-effort + zichtbaar op test-omgeving | groen |
+| Welkomstap opdrachtgever (eenmalig): gate stuurt onbevestigde opdrachtgever naar /welkom-opdrachtgever, daarna door; bevestig-route (naam + 06, beheer-velden onaangeroerd); demo/skip slaan over | U | toegang.test (opdrachtgever-gate), welkom-opdrachtgever/route.test | groen |
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
 | Rol-gates per pagina (dashboard/planbord/kluspool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |
@@ -92,7 +104,9 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Eerste-verzending-waarschuwing per domein op de klus (monteur + kantoor): inklapbaar blok, kopieerbare WhatsApp-tekst, "Opnieuw versturen" met adres-correctie | U, E | verzend-domein.test (domein + eerste-contact), oplever-mail.test (bouwWhatsappTekst), rapport/route.test (naar-override); E op omgeving-test | U groen; E door Rein |
 | Onboarding-gate: monteur met onvolledig profiel → /welkom (afzendergegevens verplicht bij eerste gebruik); niet in demo; welkom-stap met handleiding-knop | U, E | profiel.test (profielVolledig), toegang.test (onvolledig→/welkom, volledig door, demo uit, skipOnboarding, beheerder vrij); E op omgeving-test | U groen; E door Rein |
 | Naam beheren: monteur corrigeert eigen naam, beheerder hernoemt in lijst | U, E | mijn-gegevens/route.test, gebruikers/[id]/route.test (hernoemen), mijn-gegevens.spec | groen |
+| Handleiding (monteur): inklapbare onderwerpen in vier groepen, "Alles openklappen"/los openklappen, databron `HANDLEIDING_GROEPEN`/`HANDLEIDING_ONDERWERPEN`, placeholder bij ontbrekend plaatje | U, E | handleiding-stappen.test (structuur: 4 groepen, platte lijst, unieke id/bestand, routes), handleiding.spec (menu, alle onderwerp-titels, toggle open/dicht, los openklappen) | U groen; E door Rein |
 | PWA / offline-gedrag | E | monteur-pwa.spec | groen |
+| App-versie automatisch uit build-id: `prebuild` zet de SW-versie uit `VERCEL_GIT_COMMIT_SHA` (eerste 8 tekens, terugval "dev"), zodat de "Nieuwe versie"-balk vanzelf werkt zonder handmatige `sw.js`-bump | U | genereer-sw-versie.test (vervangVersie) | groen |
 
 ## Oplever-herinrichting + snel afsluiten (2026-06-24)
 
@@ -139,7 +153,7 @@ Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zel
 | Client-upload buiten de 413-grens (signed upload-URL) + validatie | U | upload-validatie.test (aantal/type/grootte); storage.signDocumentUpload/downloadDocument | U groen; live door Rein |
 | Inlezen-route (paden → groepen) + aanmaken-route (per groep een klus + documenten, rol-bewust) | U | opdrachten/inlezen/route.test (groep-passthrough), opdrachten/aanmaken/route.test (2 klussen, juiste docs/primair, 401/400) | groen |
 | Twee-klussen-keuze in `KlusInvoer` (voorgegroepeerd, invoerder wijst per bestand toe) | E | (live door Rein: vereist echt parsen, niet in CI met dummy-keys) | open (handmatig pad via zelf-invoer/dashboard-nieuwe-klus groen) |
-| Werkomschrijving uit mail opgeschoond (handtekening/citaat/disclaimer eraf), PDF-order laat 'm leeg; doorgestuurde mail zonder eigen notitie -> body onder de doorstuur-kop als werkomschrijving | U | mail-schoon.test (incl. forwarded-cases), inbound/route.test (mailtekst in werk-veld) | groen |
+| Werkomschrijving uit mail opgeschoond (handtekening/citaat/disclaimer eraf), PDF-order laat 'm leeg; doorgestuurde mail zonder eigen notitie -> body onder de doorstuur-kop als werkomschrijving; meervoudig doorgestuurd (Fwd: Fwd:) met tussennotitie -> diepste oorspronkelijke boodschap, niet de kale marker | U | mail-schoon.test (incl. forwarded- en geneste-forward-cases), inbound/route.test (mailtekst in werk-veld) | groen |
 | Verkort rapport (snel afsluiten) zonder volledige-oplever-termen + mail noemt alleen aanwezige foto's/video (telt ook melding-media) + rapport-label "Opdrachtgever"; melding-video zichtbaar in overzicht; geen klant-levering in snel afsluiten | U, E | oplever-mail.test (heeftFotos/heeftVideo), rapport/route.test, melding-flow.spec (geen klant-optie); verkort-rapport-opmaak + melding-video visueel door Rein | U+E groen; visueel door Rein |
 | Al opgeleverd rapport opnieuw openen (trigger = status opgeleverd): eigen klus = waarschuwing-dialoog, opdrachtgever-klus = read-only weergave + afsluit-hub "Rapport bekijken"; heropende klus weer bewerkbaar; de opleveraar kan "Toch aanpassen" (alleen wie zelf opleverde) | U, E | oplever-toegang.test (opgeleverd-trigger), oplever-readonly.spec (read-only, Toch aanpassen, geen 404, eigen waarschuwing) | groen |
 | Vervolg ("klus is niet af") = opgeleverd + label "Vervolg nodig" (niet meer terug-naar-pool); heropenen zet de oplevering schoon, rapporten blijven in de geschiedenis | U, E | afgerond.spec (vervolg = opgeleverd, blijft toegewezen); heropen-reset visueel door Rein | groen |
@@ -173,6 +187,7 @@ Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zel
 ## Hoe draaien
 
 - `npm test` — alle unit/route (laag U), snel, geen browser.
+- `npm run test:int` — integratie (laag I), echte db-logica + de inbound-route tegen de test-DB via `.env.test` (incl. de hele-keten-test `keten.int.test`).
 - `npm run test:e2e` — Playwright (laag E), tegen de test-DB via `.env.test`.
 - `npm run test:mail` — e2e-mail (laag M), verstuurt echt naar de test-mailbox.
 - `npm run test:all` — U + I + E in één keer.

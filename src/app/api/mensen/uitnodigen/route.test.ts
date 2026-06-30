@@ -1,19 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetProfiel, mockGetZaak, mockUpsert, mockCreateUser, mockListUsers, mockMail } =
+const { mockGetProfiel, mockGetZaak, mockGetOpdrachtgever, mockUpsert, mockCreateUser, mockListUsers, mockMail, mockSms } =
   vi.hoisted(() => ({
     mockGetProfiel: vi.fn(),
     mockGetZaak: vi.fn(),
+    mockGetOpdrachtgever: vi.fn(),
     mockUpsert: vi.fn(),
     mockCreateUser: vi.fn(),
     mockListUsers: vi.fn(),
     mockMail: vi.fn(),
+    mockSms: vi.fn(),
   }));
 
 vi.mock("@/lib/db", () => ({
   db: () => ({
     getProfiel: mockGetProfiel,
     getStandaardOpdrachtgever: mockGetZaak,
+    getOpdrachtgever: mockGetOpdrachtgever,
     upsertProfiel: mockUpsert,
   }),
 }));
@@ -21,6 +24,7 @@ vi.mock("@/lib/supabase-admin", () => ({
   supabaseAdmin: () => ({ auth: { admin: { createUser: mockCreateUser, listUsers: mockListUsers } } }),
 }));
 vi.mock("@/lib/mail", () => ({ verstuurUitnodiging: mockMail }));
+vi.mock("@/lib/uitnodig-sms", () => ({ verstuurUitnodigingSms: mockSms }));
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUserId: vi.fn().mockResolvedValue("beheerder-uid") }));
 
 import { POST } from "./route";
@@ -40,6 +44,9 @@ describe("POST /api/mensen/uitnodigen", () => {
     mockCreateUser.mockReset();
     mockListUsers.mockReset();
     mockMail.mockReset();
+    mockSms.mockReset();
+    mockSms.mockResolvedValue(undefined);
+    mockGetOpdrachtgever.mockReset();
     // Beller (beheerder-uid) = beheerder; een nieuw uitgenodigd account heeft nog geen profiel.
     mockGetProfiel.mockImplementation((id: string) =>
       Promise.resolve(id === "beheerder-uid" ? { id, rol: "beheerder" } : null),
@@ -98,5 +105,79 @@ describe("POST /api/mensen/uitnodigen", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.mailVerstuurd).toBe(false);
+  });
+
+  it("zonder telefoon: geen SMS en telefoon niet meegeschreven naar het profiel", async () => {
+    const res = await POST(req({ naam: "Piet", email: "piet@x.nl", rol: "monteur" }));
+    const body = await res.json();
+    expect(mockSms).not.toHaveBeenCalled();
+    expect(body.smsGevraagd).toBe(false);
+    // Profiel-upsert bevat geen telefoon-veld (een bestaand nummer mag niet leeggeschreven worden).
+    expect(mockUpsert.mock.calls[0][0]).not.toHaveProperty("telefoon");
+  });
+
+  it("met geldig 06-nummer: normaliseert naar +31, schrijft het op en stuurt SMS", async () => {
+    const res = await POST(
+      req({ naam: "Thu", email: "thu@x.nl", rol: "monteur", telefoon: "06-12345678" }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(mockUpsert.mock.calls[0][0]).toMatchObject({ telefoon: "+31612345678" });
+    expect(mockSms).toHaveBeenCalledOnce();
+    expect(mockSms.mock.calls[0][0]).toMatchObject({ naar: "+31612345678", naam: "Thu" });
+    expect(body.smsGevraagd).toBe(true);
+    expect(body.smsVerstuurd).toBe(true);
+  });
+
+  it("met ongeldig nummer (vast): geen SMS, geen telefoon op het profiel", async () => {
+    const res = await POST(
+      req({ naam: "Thu", email: "thu@x.nl", rol: "monteur", telefoon: "071-1234567" }),
+    );
+    const body = await res.json();
+    expect(mockSms).not.toHaveBeenCalled();
+    expect(mockUpsert.mock.calls[0][0]).not.toHaveProperty("telefoon");
+    expect(body.smsGevraagd).toBe(false);
+  });
+
+  it("SMS mislukt: uitnodiging slaagt nog steeds (smsVerstuurd false)", async () => {
+    mockSms.mockRejectedValue(new Error("cm kapot"));
+    const res = await POST(
+      req({ naam: "Thu", email: "thu@x.nl", rol: "monteur", telefoon: "0612345678" }),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.smsGevraagd).toBe(true);
+    expect(body.smsVerstuurd).toBe(false);
+  });
+
+  it("met gekozen opdrachtgever_id: koppelt aan die zaak en brandt de mail ermee", async () => {
+    mockGetOpdrachtgever.mockResolvedValue({ id: "z-ed", naam: "Keukenhal Lisse" });
+    const res = await POST(
+      req({ naam: "Sam", email: "sam@x.nl", rol: "monteur", opdrachtgever_id: "z-ed" }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockGetOpdrachtgever).toHaveBeenCalledWith("z-ed");
+    // Koppeling volgt de gekozen zaak, niet de standaard.
+    expect(mockUpsert.mock.calls[0][0].opdrachtgever_id).toBe("z-ed");
+    // En de mail wordt met die zaak gebrand.
+    expect(mockMail.mock.calls[0][0].organisatie).toBe("Keukenhal Lisse");
+    // De standaard-zaak wordt niet meer geraadpleegd als er een keuze is.
+    expect(mockGetZaak).not.toHaveBeenCalled();
+  });
+
+  it("onbekende opdrachtgever_id: 400, geen account aangemaakt", async () => {
+    mockGetOpdrachtgever.mockResolvedValue(null);
+    const res = await POST(
+      req({ naam: "Sam", email: "sam@x.nl", rol: "monteur", opdrachtgever_id: "bestaat-niet" }),
+    );
+    expect(res.status).toBe(400);
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it("zonder opdrachtgever_id: valt terug op de standaard-zaak (achterwaarts compatibel)", async () => {
+    const res = await POST(req({ naam: "Piet", email: "piet@x.nl", rol: "monteur" }));
+    expect(res.status).toBe(200);
+    expect(mockGetZaak).toHaveBeenCalled();
+    expect(mockUpsert.mock.calls[0][0].opdrachtgever_id).toBe("z1");
   });
 });

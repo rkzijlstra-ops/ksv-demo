@@ -5,6 +5,7 @@
   "scripts": {
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch(e){}\"",
     "dev": "next dev",
+    "prebuild": "node scripts/genereer-sw-versie.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

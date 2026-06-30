@@ -33,7 +33,7 @@ function appUrl(): string {
 }
 
 /** Afzendernaam voor de SMS: de zaaknaam (max 11 tekens alfanumeriek), met env-fallback. */
-function smsAfzender(zaaknaam: string | null): string {
+export function smsAfzender(zaaknaam: string | null): string {
   const basis = (zaaknaam ?? "").replace(/[^A-Za-z0-9]/g, "").slice(0, 11);
   return basis || process.env.SMS_AFZENDER?.trim() || "Kluslus";
 }

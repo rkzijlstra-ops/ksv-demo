@@ -1,5 +1,30 @@
-import { describe, it, expect } from "vitest";
-import { inboundAdres, tokenUitAdressen, genereerInboundToken } from "./inbound";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { inboundAdres, tokenUitAdressen, genereerInboundToken, inboundDomein } from "./inbound";
+
+describe("inbound-domein volgt de omgeving (INBOUND_DOMAIN)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("valt zonder env-var terug op kluslus.nl", () => {
+    vi.stubEnv("INBOUND_DOMAIN", "");
+    expect(inboundDomein()).toBe("kluslus.nl");
+    expect(inboundAdres("abc123")).toBe("klus-abc123@kluslus.nl");
+  });
+
+  it("bouwt het ontvangstadres op het ingestelde test-domein", () => {
+    vi.stubEnv("INBOUND_DOMAIN", "klus-test.kluslus.nl");
+    expect(inboundDomein()).toBe("klus-test.kluslus.nl");
+    expect(inboundAdres("abc123")).toBe("klus-abc123@klus-test.kluslus.nl");
+  });
+
+  it("herkent het token op het ingestelde test-domein (zonder expliciet domein-argument)", () => {
+    vi.stubEnv("INBOUND_DOMAIN", "klus-test.kluslus.nl");
+    expect(tokenUitAdressen(["klus-abc123@klus-test.kluslus.nl"])).toBe("abc123");
+    // Een adres op het oude productie-domein wordt op het test-domein juist NIET herkend.
+    expect(tokenUitAdressen(["klus-abc123@kluslus.nl"])).toBeNull();
+  });
+});
 
 describe("inbound adressering", () => {
   it("bouwt het adres uit een token", () => {

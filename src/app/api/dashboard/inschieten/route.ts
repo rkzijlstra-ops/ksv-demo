@@ -5,6 +5,7 @@ import { storage } from "@/lib/storage";
 import { db, type OpdrachtInput } from "@/lib/db";
 import { getAuthenticatedUserId } from "@/lib/auth";
 import { groepeerOpRef } from "@/lib/inschiet-groep";
+import { logActie } from "@/lib/gebeurtenis";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -141,6 +142,14 @@ export async function POST(req: Request) {
           user_id: userId,
         });
       }
+
+      await logActie(
+        dbi,
+        opdrachtId,
+        "ingeschoten",
+        { id: userId, naam: eigenProfiel?.naam, rol: eigenProfiel?.rol },
+        { klant: kop.klant_naam },
+      );
 
       aangemaakt.push({
         id: opdrachtId,

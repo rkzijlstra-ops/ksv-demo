@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { UitnodigForm } from "@/components/UitnodigForm";
+import { NieuweOpdrachtgeverForm } from "@/components/NieuweOpdrachtgeverForm";
 import { GebruikerRij } from "@/components/GebruikerRij";
 import { OpdrachtgeverInstelling } from "@/components/OpdrachtgeverInstelling";
 import { UserMenu } from "@/components/UserMenu";
@@ -33,7 +34,7 @@ export default async function GebruikersPage() {
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-accent" />
       </header>
 
-      <UitnodigForm />
+      <UitnodigForm opdrachtgevers={opdrachtgevers.map((o) => ({ id: o.id, naam: o.naam }))} />
 
       <section className="mt-6">
         <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
@@ -54,12 +55,15 @@ export default async function GebruikersPage() {
 
       <section className="mt-8">
         <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.16em] text-ink">
-          Klant-levering per opdrachtgever
+          Opdrachtgevers ({opdrachtgevers.length})
         </h2>
         <p className="mb-3 text-sm text-ink-muted">
-          Staat dit aan, dan kan de monteur de oplevering ook rechtstreeks aan de klant sturen. Staat het
-          uit, dan levert hij alleen aan de opdrachtgever.
+          De keukenzaken namens wie je werkt. Maak er een aan, kies hem bij het uitnodigen en het
+          inschieten. Per zaak kun je hieronder klant-levering aan- of uitzetten.
         </p>
+        <div className="mb-3">
+          <NieuweOpdrachtgeverForm />
+        </div>
         <ul className="flex flex-col gap-2">
           {opdrachtgevers.map((o) => (
             <OpdrachtgeverInstelling key={o.id} id={o.id} naam={o.naam} aan={o.klant_levering_toegestaan} />
