@@ -32,22 +32,29 @@ echte aparte klanten" koos hij **echte aparte klanten**: opdrachtgevers die elka
 4. **Beheer loskoppelen**: `Beheer.opdrachtgever_id` → null (platform-baas). Data-wijziging, veilig want
    de RLS is rol-gebaseerd en inschieten gebruikt dit veld niet voor een beheerder.
 
-### Laag 2, afscherming per zaak (security-kern, test + Reins review, daarna pas productie)
-Maak de RLS rol-EN-zaak-bewust. Nieuwe SECURITY DEFINER-helper `mijn_opdrachtgever()` (de zaak van de
-ingelogde gebruiker) en `opdracht_van_mijn_zaak(opdracht_id)` (parent-zaak via opdracht_id). Dan per
-tabel:
-- **beheerder**: blijft alles zien/doen.
-- **opdrachtgever**: alleen rijen van zijn eigen zaak. meldingen: `opdrachtgever_id = mijn_opdrachtgever()`
-  of (kind-melding) via parent. documenten/opleveringen: via `opdracht_van_mijn_zaak(opdracht_id)`.
-- **monteur**: ongewijzigd (alleen toegewezen klussen + kind-rijen).
-- **eigen klussen** (opdrachtgever_id null, door een monteur ingeschoten): alleen de eigen monteur.
-Migratie op alle drie de DB's (prod handmatig door Rein). Integratie-/e2e-test die BEWIJST dat
-opdrachtgever A de klussen van zaak B niet ziet, vóór dit naar productie gaat.
+### Laag 2, afscherming per zaak — BESTOND AL (correctie 2026-06-30)
+Bij het bouwen bleek de zaak-afscherming al in de codebase te zitten: `schema-compleet-6e-zaak.sql`
+definieert `mijn_opdrachtgever()`, `opdracht_van_mijn_zaak()` en `mag_melding`/`mag_opdracht`, en zet de
+meldingen/documenten/opleveringen-policies rol-EN-zaak-bewust. `schema-compleet-7` voegt daar de
+werkpool-vasthouden-clause aan toe. De afscherming was alleen niet zichtbaar omdat er één zaak was. De
+e2e `afscherming.spec` bewijst het (o.a. "opdrachtgever ziet GEEN klus uit een andere zaak") en is groen.
+Ik hoefde laag 2 dus NIET te bouwen.
 
-## Veiligheidsregel (hard)
-Zolang laag 2 niet af en niet door Rein gekeurd is, gaat het aanmaken van opdrachtgevers NIET naar
-productie. Anders kan een tweede zaak KSV's klussen zien. Alles blijft op de test-omgeving tot de
-afscherming bewezen is.
+Gedrag dat al klopt:
+- **beheerder**: ziet/doet alles (rol-gebaseerd), dus al platform-breed. De decouple (opdrachtgever_id op
+  null) was niet nodig en is niet doorgevoerd; beheer's zaak-veld is vestigiaal (inschieten gebruikt voor
+  beheer de gekozen/standaard zaak, niet dit veld).
+- **opdrachtgever**: ziet alleen zijn eigen zaak.
+- **monteur**: alleen toegewezen klussen + de werkpool-vasthouden-uitzondering.
+
+Valkuil die ik maakte en herstelde: ik schreef een migratie 29 die dit dubbelde (en de policies inline
+zette + beheer nullde), draaide hem op test+demo, en draaide hem daarna terug door 6e en 7 opnieuw te
+draaien. afscherming.spec bevestigt dat test weer canoniek is.
+
+## Veiligheidsregel
+De afscherming bestaat en is bewezen, dus het aanmaken van opdrachtgevers + de zaak-keuze kan veilig
+naar productie. Wel eerst op de test-omgeving keuren (de normale weg). Vóór een echte tweede klant
+aansluit: nog even de afscherming end-to-end naleven met een tweede zaak in de praktijk.
 
 ## Bewuste sub-keuzes
 - Monteurs zijn niet zaak-exclusief: ze zien klussen die aan hen zijn toegewezen, ongeacht zaak (een

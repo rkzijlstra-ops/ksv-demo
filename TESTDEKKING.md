@@ -53,7 +53,7 @@ Lagen: **U** = unit (vitest, gemockt), **I** = integratie (test-DB), **E** = bro
 | Opdrachtgever aanmaken (beheer): naam, beheer-gate (401/403/400) | U | opdrachtgevers/route.test | groen |
 | Uitnodigen met zaak-keuze: gekozen opdrachtgever_id stuurt koppeling + branding; onbekende zaak = 400 vóór account; geen keuze = terugval standaard | U | uitnodigen/route.test (zaak-keuze) | groen |
 | Multi-opdrachtgever UI (aanmaak-form + zaak-dropdown bij uitnodigen) | (E later) | NieuweOpdrachtgeverForm.tsx, UitnodigForm.tsx | bewust later/handmatig; logica gedekt door route/unit |
-| Zaak-afscherming RLS (laag 2): opdrachtgever ziet ALLEEN eigen zaak, beheer alles, monteur alleen toegewezen | E/I (poort vóór prod) | afscherming.spec uitbreiden (negatieve test: zaak A ziet zaak B niet) | NOG TE BOUWEN |
+| Zaak-afscherming RLS (laag 2): opdrachtgever ziet ALLEEN eigen zaak, beheer alles, monteur alleen toegewezen | E | afscherming.spec ("opdrachtgever ziet GEEN klus uit andere zaak" + monteur-tests) | groen (bestond al via 6e/7, geverifieerd 2026-06-30) |
 | RLS-afscherming (data-laag): documenten/oplevering/mutatie/profielen per rol | E | afscherming.spec (rol-clients, negatieve tests) | groen |
 | Rol-gates per pagina (dashboard/planbord/kluspool/gebruikers) | E | monteur.spec, opdrachtgever.spec | groen |
 | Documentbeheer: bijvoegen + verwijderen (kantoor, rol-check, storage-opruiming) | U, E | opdrachten/[id]/documenten/route.test, documenten/[id]/route.test, documentbeheer.spec | groen |
