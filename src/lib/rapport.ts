@@ -20,6 +20,7 @@ import type { Melding, Oplevering } from "./db";
 import type { ControlePunt } from "./oplever-controle";
 import { formatDatumKort, formatDatumLang } from "./datum";
 import { rapportAfzenderWeergave, type RapportAfzender } from "./afzender";
+import { meldingenBalk, type MeldingBalk } from "./rapport-indeling";
 
 export interface RapportSamenvatting {
   zaaknaam: string;
@@ -84,11 +85,16 @@ const SUCCESS = rgb(0.16, 0.5, 0.3);
 const SUCCESS_SOFT = rgb(0.93, 0.97, 0.94);
 const ROOD = rgb(0.7, 0.2, 0.2);
 const ROOD_SOFT = rgb(0.99, 0.95, 0.95);
+// Oranje voor gewone meldingen (merk-accent uit het design-system, #F97316). Bewust naast het
+// staalblauwe rapport-accent: alleen voor de meldingen-signalering, niet voor de rest van het rapport.
+const ORANJE = rgb(0.976, 0.451, 0.086);
+const ORANJE_SOFT = rgb(1, 0.965, 0.925);
 const WIT = rgb(1, 1, 1);
-// Interne notitie (alleen zaak-versie): amber, opvallend genoeg om niet met de openbare opmerking
+// Interne notitie (alleen zaak-versie): geel kader met zwarte letters, exact zoals de in-app weergave
+// (design-token urgent-geel #FBBF24 met ink-tekst). Opvallend genoeg om niet met de openbare opmerking
 // verward te worden.
-const INTERN = rgb(0.6, 0.33, 0.04);
-const INTERN_SOFT = rgb(1, 0.97, 0.9);
+const GEEL = rgb(0.984, 0.749, 0.141); // #FBBF24 (urgent-geel)
+const INTERN_SOFT = rgb(0.999, 0.976, 0.925); // urgent-geel op ~10% over wit
 
 /**
  * Genereert het opleverrapport als PDF (bytes) in de "Inspectierapport"-opmaak: briefhoofd met
@@ -200,17 +206,21 @@ export async function genereerRapportPdf(
   tabelRij("Opdrachtgever", samenvatting.zaaknaam);
   y -= 16;
 
-  // ---- sectie 1: Oplevering ----
+  // ---- afgeleide gegevens ----
   const fotos = oplevering?.eindstaat_foto_urls ?? [];
   const controle = oplevering?.controle ?? [];
   const controleNietAkkoord = controle.filter((c) => !c.akkoord).length;
   const toonControle = toonControleInRapport(controle, variant);
   const toonHandtekening = toonHandtekeningInRapport(oplevering, variant);
-  sectieKop(1, "Oplevering");
-  // De samenvattings-regels (ondertekend / video van de oplevering / eindstaat-foto's / controle) horen
-  // bij de VOLLEDIGE oplevering. Snel afsluiten (verkorting) kent geen eindstaat: daar dragen de
-  // meldingen het bewijs (foto's + video per melding). Toon die regels dus niet in de verkorte variant.
+  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+
+  // ---- meldingen-balk bovenaan: kleur + icoon + tekst (rood spoed / oranje gewoon / groen geen) ----
+  meldingenBalkBlok(meldingenBalk(meldingen));
+
+  // ---- overzicht in dezelfde volgorde als de secties (meldingen eerst) ----
   if (variant !== "verkorting") {
+    leaderRegel("Meldingen", String(meldingen.length), INK);
+    leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
     leaderRegel(
       "Ondertekend door klant",
       samenvatting.ondertekend ? "Ja" : "Nee",
@@ -221,9 +231,6 @@ export async function genereerRapportPdf(
       samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
       samenvatting.videoUrl ? ACCENT : MUTED,
     );
-    leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
-    leaderRegel("Meldingen", String(meldingen.length), INK);
-    // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
     if (toonControle) {
       leaderRegel(
         "Controle bij oplevering",
@@ -232,35 +239,109 @@ export async function genereerRapportPdf(
       );
     }
   } else {
-    // Verkort (snel afsluiten): een opsomming van wat DIT rapport bevat, met alleen wat in de verkorte
-    // variant kan bestaan. De meldingen dragen het bewijs; geen eindstaat/handtekening/controle.
-    const meldingFotos = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+    // Verkort (snel afsluiten): de meldingen dragen het bewijs; geen eindstaat/handtekening/controle.
     const heeftMeldingVideo = meldingen.some((m) => !!m.video_url?.trim());
     leaderRegel("Meldingen", String(meldingen.length), INK);
-    leaderRegel("Foto's", String(meldingFotos), INK);
+    leaderRegel("Foto's", String(meldingFotoAantal), INK);
     leaderRegel("Video", heeftMeldingVideo ? "Bijgevoegd" : "Geen", heeftMeldingVideo ? ACCENT : MUTED);
   }
-  y -= 6;
+  y -= 10;
 
+  // ---- actie-knoppen (tussen overzicht en meldingen): foto's downloaden (alleen zaak) + video ----
+  const heeftDownloadbareFotos = meldingFotoAantal > 0 || fotos.length > 0;
+  const fotoDownloadUrl =
+    bedoeldVoor === "zaak" && heeftDownloadbareFotos ? fotoDownloadLink(opdracht.id) : null;
+  if (fotoDownloadUrl) knopLink("Foto's downloaden", fotoDownloadUrl, "download");
+  if (samenvatting.videoUrl) knopLink("Video van de oplevering", samenvatting.videoUrl, "play");
+  if (fotoDownloadUrl || samenvatting.videoUrl) {
+    y -= 8; // lucht tussen de knoppen en de uitleg-zin eronder
+    tekst("Klik op een foto in het rapport om hem groot te openen; via de knop hierboven haal je de foto's op vol formaat op.", {
+      size: 9,
+      kleur: MUTED,
+      gap: 4,
+    });
+    y -= 16;
+  }
+
+  // ---- sectie 1: Meldingen ----
+  sectieKop(1, meldingenKop(meldingen.length, meldingFotoAantal));
+
+  if (meldingen.length === 0) {
+    tekst("Geen meldingen op deze klus.", { size: 10, kleur: MUTED });
+  }
+
+  // Elke melding als kaart (zoals de mockup): witte achtergrond, dunne rand rondom, volledige gekleurde
+  // linkerbalk (rood spoed / oranje gewoon), nette binnenmarges. Hoogte vooraf gemeten zodat de rand
+  // om de inhoud sluit; de foto's/video-knop tekenen binnen de kaart (geen eigen page-break).
+  const PAD_L = 16; // ná de 4px linkerbalk
+  const PAD_R = 14;
+  const PAD_Y = 12;
+  const innerX = MARGE + PAD_L;
+  const innerW = CONTENT - PAD_L - PAD_R;
+  const txtSize = 10;
+  const lineH = 13.5;
+  for (const m of meldingen) {
+    const mkleur = m.spoed ? ROOD : ORANJE;
+    const tekstRegels = m.ruwe_tekst ? wikkel(helv, txtSize, m.ruwe_tekst, innerW) : [];
+    const fotoH = fotoBlokHoogte(m.foto_urls.length, innerW);
+    const spoedVerz = Boolean(m.spoed && m.spoed_verzonden_at);
+
+    let contentH = 14; // chip-rij
+    if (spoedVerz) contentH += 4 + 10;
+    if (tekstRegels.length) contentH += 6 + tekstRegels.length * lineH;
+    if (fotoH) contentH += 10 + fotoH;
+    if (m.video_url) contentH += 10 + 22;
+    const h = PAD_Y + contentH + PAD_Y;
+
+    ruimte(h + 12);
+    const top = y;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: WIT, borderColor: LINE, borderWidth: 0.8 });
+    page.drawRectangle({ x: MARGE, y: by, width: 4, height: h, color: mkleur });
+
+    const contentTop = top - PAD_Y;
+    const chipBottom = contentTop - 14;
+    meldingChip(m.spoed, innerX, chipBottom);
+    const dt = formatDatumKort(m.created_at);
+    const dw = helv.widthOfTextAtSize(dt, 9);
+    page.drawText(dt, { x: MARGE + CONTENT - PAD_R - dw, y: chipBottom + 3, size: 9, font: helv, color: MUTED });
+    y = chipBottom;
+
+    if (spoedVerz) {
+      y -= 4 + 10;
+      page.drawText(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at!)}`, { x: innerX, y: y + 3, size: 9, font: helv, color: ROOD });
+    }
+    if (tekstRegels.length) {
+      y -= 6;
+      for (const regel of tekstRegels) {
+        y -= lineH;
+        page.drawText(regel, { x: innerX, y: y + 3, size: txtSize, font: helv, color: rgb(0.2, 0.23, 0.27) });
+      }
+    }
+    if (fotoH) {
+      y -= 10;
+      await fotoGrid(m.foto_urls, { x0: innerX, breedte: innerW, paginate: false });
+      y += 10; // fotoGrid trekt na de laatste rij een gap af; binnen de kaart corrigeren
+    }
+    if (m.video_url) {
+      y -= 10;
+      knopLink("Video bij deze melding", m.video_url, "play", { x0: innerX, paginate: false });
+      y += 9; // knopLink trekt zelf 9 af
+    }
+    y = by - 12; // onder de kaart, met tussenruimte naar de volgende
+  }
+
+  // ---- sectie 2: Oplevering ----
+  y -= 18;
+  sectieKop(2, "Oplevering");
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
 
-  // Interne blok: alleen in de ZAAK-versie. De klant-helpers leveren leeg/null, dus interne notitie
-  // én media kunnen structureel niet in de klant-PDF terechtkomen (zie tests "... lekt niet").
+  // Interne notitie (tekst) direct na de opmerking, in de volgorde van de mockup. Alleen ZAAK-versie:
+  // de klant-helper levert null, dus de notitie kan structureel niet in de klant-PDF komen.
   const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
   if (intern) interneNotitieBlok(intern);
-  const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
-  if (interneFotos.length > 0) {
-    subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
-    await fotoGrid(interneFotos);
-  }
-  const interneVideo = interneVideoVoorRapport(oplevering, bedoeldVoor);
-  if (interneVideo) {
-    y -= 4;
-    videoLink("Interne video · alleen opdrachtgever", interneVideo);
-  }
 
-  // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen (ook niet de
-  // "geen eindstaat-foto's"-regel, want het begrip bestaat daar niet).
+  // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen.
   if (variant !== "verkorting") {
     if (fotos.length > 0) {
       subKop("EINDSTAAT-FOTO'S");
@@ -269,74 +350,26 @@ export async function genereerRapportPdf(
       tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
     }
   }
+
+  // Interne FOTO'S/video (zaak) bewust NÁ de eindstaat: zo blijft de doorlopende foto-nummering
+  // (meldingen + eindstaat) gelijk aan de foto-downloadpagina. De klant-helpers leveren leeg/null.
+  const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
+  if (interneFotos.length > 0) {
+    subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
+    await fotoGrid(interneFotos);
+  }
+  const interneVideo = interneVideoVoorRapport(oplevering, bedoeldVoor);
+  if (interneVideo) {
+    y -= 4;
+    knopLink("Interne video · alleen opdrachtgever", interneVideo, "play");
+  }
   y -= 10;
-
-  // ---- sectie 2: Meldingen ----
-  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
-  sectieKop(2, meldingenKop(meldingen.length, meldingFotoAantal));
-
-  if (meldingen.length === 0) {
-    tekst("Geen meldingen op deze klus.", { size: 10, kleur: MUTED });
-  }
-
-  for (const m of meldingen) {
-    ruimte(40);
-    const kop = m.spoed ? "Spoed" : "Melding";
-    page.drawText(kop, { x: MARGE, y, size: 11, font: bold, color: m.spoed ? ROOD : INK });
-    rechts(formatDatumKort(m.created_at), { size: 9, font: helv, kleur: MUTED, dy: 1 });
-    y -= 16;
-    if (m.spoed && m.spoed_verzonden_at) {
-      tekst(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at)}`, {
-        size: 9,
-        kleur: ROOD,
-        gap: 5,
-      });
-    }
-    if (m.ruwe_tekst) {
-      for (const regel of wikkel(helv, 10, m.ruwe_tekst, CONTENT)) {
-        tekst(regel, { size: 10, kleur: rgb(0.2, 0.23, 0.27), gap: 4 });
-      }
-    }
-    if (m.foto_urls.length > 0) {
-      y -= 4;
-      await fotoGrid(m.foto_urls);
-    }
-    if (m.video_url) {
-      y -= 6;
-      videoLink("Video bij deze melding", m.video_url);
-    }
-    y -= 8;
-    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.6, color: LINE });
-    y -= 12;
-  }
 
   // ---- sectie 3: Controle bij oplevering (niet in de verkorte variant) ----
   if (toonControle) {
-    y -= 4;
+    y -= 14;
     sectieKop(3, "Controle bij oplevering");
     for (const c of controle) controleRegel(c.punt, c.akkoord);
-  }
-
-  // ---- sectie 4: Bijlagen (foto's zijn zelf klikbaar; hier de hint + de videolink) ----
-  if (fotoTeller > 0 || samenvatting.videoUrl) {
-    y -= 4;
-    sectieKop(toonControle ? 4 : 3, "Bijlagen");
-    for (const regel of wikkel(
-      helv,
-      9.5,
-      "Klik op een foto in het rapport om hem op groot formaat te openen, op te slaan en zelf door te sturen (bijvoorbeeld naar een leverancier)." +
-        (samenvatting.videoUrl
-          ? " De video opent via onderstaande link en is op dezelfde manier te bewaren."
-          : ""),
-      CONTENT,
-    )) {
-      tekst(regel, { size: 9.5, kleur: MUTED, gap: 3 });
-    }
-    if (samenvatting.videoUrl) {
-      y -= 6;
-      videoLink("Video van de oplevering", samenvatting.videoUrl);
-    }
-    y -= 8;
   }
 
   // ---- afsluiting onderaan: klant-handtekening in kader (niet in de verkorte variant) ----
@@ -430,65 +463,75 @@ export async function genereerRapportPdf(
     y -= 18;
   }
 
-  /** Opmerking in een zacht vlak met accent-streep links en een klein kopje. */
-  function opmerkingBlok(s: string) {
-    const regels = wikkel(helv, 10, s, CONTENT - 24);
-    const hoogte = regels.length * 14 + 18;
-    ruimte(hoogte + 6);
+  /**
+   * Getint tekstvlak met een accent-streep links, een klein kopje en de tekst eronder. Eén vorm voor de
+   * openbare opmerking en de interne notitie (verschillen alleen in kleur/label). Ruime binnenmarges en
+   * regelafstand voor een nette verhouding; hoogte vooraf berekend zodat de rand om de inhoud sluit.
+   */
+  function tekstVlak(
+    s: string,
+    label: string,
+    kl: {
+      bg: RGB;
+      rand: RGB;
+      streep: RGB;
+      label: RGB;
+      tekst: RGB;
+      randBreedte?: number;
+      streepBreedte?: number;
+    },
+  ) {
+    const padX = 14;
+    const padY = 12;
+    const labelSize = 8.5;
+    const size = 10.5;
+    const lh = 15;
+    const streepBreedte = kl.streepBreedte ?? 3;
+    const regels = wikkel(helv, size, s, CONTENT - padX * 2);
+    const contentH = labelSize + 8 + regels.length * lh;
+    const h = padY + contentH + padY;
+    ruimte(h + 8);
     const top = y;
-    page.drawRectangle({
-      x: MARGE,
-      y: top - hoogte + 8,
-      width: CONTENT,
-      height: hoogte,
-      color: SURFACE,
-      borderColor: LINE,
-      borderWidth: 0.6,
-    });
-    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: ACCENT });
-    let ty = top - 6;
-    page.drawText("Opmerking", { x: MARGE + 12, y: ty, size: 8, font: bold, color: MUTED });
-    ty -= 13;
-    for (const regel of regels) {
-      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.2, 0.23, 0.27) });
-      ty -= 14;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: kl.bg, borderColor: kl.rand, borderWidth: kl.randBreedte ?? 0.6 });
+    if (streepBreedte > 0) {
+      page.drawRectangle({ x: MARGE, y: by, width: streepBreedte, height: h, color: kl.streep });
     }
-    y = top - hoogte - 6;
+    let cy = top - padY;
+    page.drawText(label, { x: MARGE + padX, y: cy - labelSize, size: labelSize, font: bold, color: kl.label });
+    cy -= labelSize + 8;
+    for (const regel of regels) {
+      cy -= lh;
+      page.drawText(regel, { x: MARGE + padX, y: cy + 4, size, font: helv, color: kl.tekst });
+    }
+    y = by - 10;
+  }
+
+  /** Openbare opmerking: rustig grijs vlak met staalblauwe streep. */
+  function opmerkingBlok(s: string) {
+    tekstVlak(s, "Opmerking", {
+      bg: SURFACE,
+      rand: LINE,
+      streep: ACCENT,
+      label: MUTED,
+      tekst: rgb(0.2, 0.23, 0.27),
+    });
   }
 
   /**
-   * Interne notitie: amber blok met een expliciet "INTERN"-label. Staat alleen in de zaak-versie.
-   * Bewust visueel anders dan de openbare opmerking, zodat het kantoor de twee niet verwart.
+   * Interne notitie: geel kader met zwarte letters, exact zoals de in-app weergave (urgent-geel rand,
+   * ink-tekst, geen linkerstreep). Alleen in de zaak-versie; bewust visueel anders dan de opmerking.
    */
   function interneNotitieBlok(s: string) {
-    const regels = wikkel(helv, 10, s, CONTENT - 24);
-    const hoogte = regels.length * 14 + 18;
-    ruimte(hoogte + 6);
-    const top = y;
-    page.drawRectangle({
-      x: MARGE,
-      y: top - hoogte + 8,
-      width: CONTENT,
-      height: hoogte,
-      color: INTERN_SOFT,
-      borderColor: INTERN,
-      borderWidth: 0.6,
+    tekstVlak(s, "INTERN: ALLEEN VOOR DE OPDRACHTGEVER", {
+      bg: INTERN_SOFT,
+      rand: GEEL,
+      streep: GEEL,
+      label: INK,
+      tekst: INK,
+      randBreedte: 1.6,
+      streepBreedte: 0,
     });
-    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: INTERN });
-    let ty = top - 6;
-    page.drawText("INTERN: alleen voor de opdrachtgever", {
-      x: MARGE + 12,
-      y: ty,
-      size: 8,
-      font: bold,
-      color: INTERN,
-    });
-    ty -= 13;
-    for (const regel of regels) {
-      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.3, 0.22, 0.05) });
-      ty -= 14;
-    }
-    y = top - hoogte - 6;
   }
 
   /** Eén controlepunt: checkbox met (getekend) vinkje bij akkoord, label + de tekst eronder. */
@@ -524,17 +567,27 @@ export async function genereerRapportPdf(
     y -= 8;
   }
 
-  /** Fotoraster, 2 per rij, uniform bijgesneden, genummerd vlaggetje, hele tegel klikbaar. */
-  async function fotoGrid(urls: string[]) {
+  /**
+   * Fotoraster, 2 per rij, uniform bijgesneden, genummerd vlaggetje, hele tegel klikbaar. `x0`/`breedte`
+   * laten het raster binnen een smaller vlak vallen (bijv. binnen een melding-kaart). `paginate=false`
+   * onderdrukt de eigen page-break (de aanroeper heeft de ruimte dan al gereserveerd).
+   */
+  async function fotoGrid(
+    urls: string[],
+    opts: { x0?: number; breedte?: number; paginate?: boolean } = {},
+  ) {
+    const x0 = opts.x0 ?? MARGE;
+    const breedte = opts.breedte ?? CONTENT;
+    const paginate = opts.paginate ?? true;
     const cols = 2;
     const gap = 10;
-    const cellW = (CONTENT - gap * (cols - 1)) / cols;
+    const cellW = (breedte - gap * (cols - 1)) / cols;
     const cellH = cellW * 0.7;
     for (let i = 0; i < urls.length; i++) {
       const col = i % cols;
-      if (col === 0) ruimte(cellH + gap);
+      if (col === 0 && paginate) ruimte(cellH + gap);
       const top = y;
-      const cx = MARGE + col * (cellW + gap);
+      const cx = x0 + col * (cellW + gap);
       const nr = ++fotoTeller;
       await tekenTegel(cx, top - cellH, cellW, cellH, urls[i], nr);
       // De hele tegel is klikbaar: opent de foto op groot formaat in de browser.
@@ -616,44 +669,111 @@ export async function genereerRapportPdf(
   }
 
   /**
-   * Klikbare video-KNOP (omlijnd, met een gekleurd play-vak links en "openen ›" rechts), zodat in de
-   * PDF meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie (opent de
-   * video in de browser).
+   * De meldingen-balk bovenaan het rapport: een rustig gekleurd vlak met icoon + tekst. Rood bij spoed,
+   * oranje bij gewone meldingen, groen bij geen. Kleur én icoon én label (design-regel: urgentie nooit
+   * alleen kleur).
    */
-  function videoLink(label: string, url: string) {
+  function meldingenBalkBlok(b: MeldingBalk) {
+    const kleur = b.status === "spoed" ? ROOD : b.status === "gewoon" ? ORANJE : SUCCESS;
+    const soft = b.status === "spoed" ? ROOD_SOFT : b.status === "gewoon" ? ORANJE_SOFT : SUCCESS_SOFT;
+    const h = 24;
+    ruimte(h + 10);
+    const top = y;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: soft, borderColor: kleur, borderWidth: 0.8 });
+    page.drawRectangle({ x: MARGE, y: by, width: 3, height: h, color: kleur });
+    const iconX = MARGE + 14;
+    const cy = by + h / 2;
+    if (b.status === "geen") {
+      // vinkje
+      page.drawLine({ start: { x: iconX, y: cy - 1 }, end: { x: iconX + 3, y: cy - 4 }, thickness: 1.4, color: kleur });
+      page.drawLine({ start: { x: iconX + 3, y: cy - 4 }, end: { x: iconX + 8, y: cy + 4 }, thickness: 1.4, color: kleur });
+    } else {
+      // waarschuwingsdriehoek met uitroepteken
+      page.drawSvgPath(`M 5 0 L 10 10 L 0 10 Z`, { x: iconX - 1, y: cy + 5, borderColor: kleur, borderWidth: 1.2 });
+      page.drawLine({ start: { x: iconX + 4, y: cy + 2 }, end: { x: iconX + 4, y: cy - 1 }, thickness: 1.2, color: kleur });
+      page.drawCircle({ x: iconX + 4, y: cy - 3, size: 0.7, color: kleur });
+    }
+    page.drawText(b.tekst, { x: MARGE + 30, y: cy - 3.5, size: 10.5, font: bold, color: kleur });
+    y = by - 18;
+  }
+
+  /**
+   * Klikbare KNOP (omlijnd, met een gekleurd icoon-vak links en "openen ›" rechts), zodat in de PDF
+   * meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie. `icoon` kiest het
+   * witte pictogram: een play-driehoek (video) of een download-pijl.
+   */
+  function knopLink(
+    label: string,
+    url: string,
+    icoon: "play" | "download",
+    opts: { x0?: number; paginate?: boolean } = {},
+  ) {
+    const x0 = opts.x0 ?? MARGE;
+    const paginate = opts.paginate ?? true;
     const h = 22;
     const labelSize = 10;
     const openenSize = 8.5;
     const openenLabel = "openen ›";
-    const playW = 20;
+    const iconW = 20;
     const padX = 10;
     const gap = 10;
-    const triH = 11;
-    const triW = 9;
     const labelW = bold.widthOfTextAtSize(label, labelSize);
     const openenW = helv.widthOfTextAtSize(openenLabel, openenSize);
-    const totaalW = playW + padX + labelW + gap + openenW + padX;
-    ruimte(h + 8);
+    const totaalW = iconW + padX + labelW + gap + openenW + padX;
+    if (paginate) ruimte(h + 8);
     const by = y - h; // onderkant van de knop
     // Witte knop met accent-rand.
-    page.drawRectangle({ x: MARGE, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
-    // Play-vak links (accent) met witte play-driehoek, verticaal gecentreerd.
-    page.drawRectangle({ x: MARGE, y: by, width: playW, height: h, color: ACCENT });
-    const triX = MARGE + (playW - triW) / 2;
-    const triTop = by + h / 2 + triH / 2; // anker = bovenpunt (drawSvgPath rekent y naar beneden)
-    page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: triTop, color: WIT });
+    page.drawRectangle({ x: x0, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
+    // Icoon-vak links (accent) met wit pictogram, verticaal gecentreerd.
+    page.drawRectangle({ x: x0, y: by, width: iconW, height: h, color: ACCENT });
+    const bx = x0 + iconW / 2;
+    const cy = by + h / 2;
+    if (icoon === "play") {
+      const triH = 11;
+      const triW = 9;
+      const triX = x0 + (iconW - triW) / 2;
+      page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: cy + triH / 2, color: WIT });
+    } else {
+      // download-pijl: schacht + punt naar beneden + basislijn (bak).
+      page.drawLine({ start: { x: bx, y: cy + 5 }, end: { x: bx, y: cy - 3 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx, y: cy - 4 }, end: { x: bx - 3.5, y: cy - 0.5 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx, y: cy - 4 }, end: { x: bx + 3.5, y: cy - 0.5 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx - 5, y: cy - 6.5 }, end: { x: bx + 5, y: cy - 6.5 }, thickness: 1.4, color: WIT });
+    }
     // Label (accent, vet) + "openen ›" (grijs), verticaal gecentreerd.
-    page.drawText(label, { x: MARGE + playW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
+    page.drawText(label, { x: x0 + iconW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
     page.drawText(openenLabel, {
-      x: MARGE + playW + padX + labelW + gap,
+      x: x0 + iconW + padX + labelW + gap,
       y: by + (h - openenSize) / 2 + 1,
       size: openenSize,
       font: helv,
       color: MUTED,
     });
     // De hele knop is klikbaar.
-    linkAnnotatie(MARGE, by, totaalW, h, url);
+    linkAnnotatie(x0, by, totaalW, h, url);
     y = by - 9;
+  }
+
+  /**
+   * Klein label-chipje voor een melding: rood gevuld "Spoed" (witte tekst) of oranje-getint "Melding"
+   * (oranje rand + tekst). Tekent op vaste (x, yb=onderkant); geeft de gebruikte breedte terug.
+   */
+  function meldingChip(spoed: boolean, x: number, yb: number): number {
+    const label = spoed ? "Spoed" : "Melding";
+    const size = 8.5;
+    const padx = 6;
+    const hh = 14;
+    const tw = bold.widthOfTextAtSize(label, size);
+    const w = tw + padx * 2;
+    if (spoed) {
+      page.drawRectangle({ x, y: yb, width: w, height: hh, color: ROOD });
+      page.drawText(label, { x: x + padx, y: yb + (hh - size) / 2 + 1, size, font: bold, color: WIT });
+    } else {
+      page.drawRectangle({ x, y: yb, width: w, height: hh, color: ORANJE_SOFT, borderColor: ORANJE, borderWidth: 0.8 });
+      page.drawText(label, { x: x + padx, y: yb + (hh - size) / 2 + 1, size, font: bold, color: ORANJE });
+    }
+    return w;
   }
 
   async function tekenHandtekening(url: string) {
@@ -683,6 +803,28 @@ export async function genereerRapportPdf(
     page.drawText("(handtekening niet beschikbaar)", { x: MARGE + 10, y: top - boxH / 2 - 4, size: 9, font: helv, color: MUTED });
     y = top - boxH - 16;
   }
+}
+
+/**
+ * Bouwt de absolute link naar de publieke foto-downloadpagina van een klus. Vereist een ingestelde
+ * `APP_URL` (de canonieke basis-URL); zonder dat geeft hij null terug, zodat er geen kapotte relatieve
+ * link in een gemailde PDF belandt en de knop simpelweg wegvalt.
+ */
+export function fotoDownloadLink(opdrachtId: string): string | null {
+  const base = process.env.APP_URL?.trim().replace(/\/+$/, "");
+  if (!base) return null;
+  return `${base}/klus/${opdrachtId}/fotos`;
+}
+
+/** Hoogte van een 2-koloms fotoraster (cover-tegels 0.7×breedte) voor n foto's binnen `breedte`. */
+function fotoBlokHoogte(n: number, breedte: number): number {
+  if (n <= 0) return 0;
+  const cols = 2;
+  const gap = 10;
+  const cellW = (breedte - gap * (cols - 1)) / cols;
+  const cellH = cellW * 0.7;
+  const rijen = Math.ceil(n / cols);
+  return rijen * cellH + (rijen - 1) * gap;
 }
 
 /** Breekt lange tekst in regels die binnen maxBreedte passen (pdf-lib doet geen word-wrap). */

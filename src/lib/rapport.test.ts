@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { PDFDocument, PDFName, PDFArray, PDFDict, PDFString } from "pdf-lib";
-import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport, interneFotosVoorRapport, interneVideoVoorRapport, toonHandtekeningInRapport, toonControleInRapport } from "./rapport";
+import { genereerRapportPdf, rapportSamenvatting, eindstaatFotoLabel, meldingenKop, rapportAfzenderWeergave, interneNotitieVoorRapport, interneFotosVoorRapport, interneVideoVoorRapport, toonHandtekeningInRapport, toonControleInRapport, fotoDownloadLink } from "./rapport";
 import type { Melding, Oplevering } from "./db";
 import type { ControlePunt } from "./oplever-controle";
 
@@ -344,6 +344,58 @@ describe("genereerRapportPdf", () => {
 
     const bytes = await genereerRapportPdf(opdracht, meldingen);
     expect(startsWithPdf(bytes)).toBe(true);
+  });
+});
+
+describe("fotoDownloadLink", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("bouwt een absolute link op basis van APP_URL", () => {
+    vi.stubEnv("APP_URL", "https://mijn.kluslus.nl");
+    expect(fotoDownloadLink("klus-9")).toBe("https://mijn.kluslus.nl/klus/klus-9/fotos");
+  });
+
+  it("stript een eind-slash van APP_URL", () => {
+    vi.stubEnv("APP_URL", "https://mijn.kluslus.nl/");
+    expect(fotoDownloadLink("abc")).toBe("https://mijn.kluslus.nl/klus/abc/fotos");
+  });
+
+  it("geeft null zonder APP_URL (dan geen kapotte link in de PDF)", () => {
+    vi.stubEnv("APP_URL", "");
+    expect(fotoDownloadLink("abc")).toBeNull();
+  });
+});
+
+describe("foto's-downloaden-knop in de PDF (alleen de zaak-versie)", () => {
+  beforeEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("zet de foto-downloadlink in de ZAAK-pdf en niet in de KLANT-pdf", async () => {
+    vi.stubEnv("APP_URL", "https://mijn.kluslus.nl");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
+      }),
+    );
+    const opdracht = maakMelding({ id: "klus-42" });
+    const opl = maakOplevering({ eindstaat_foto_urls: ["https://x/e1.jpg"] });
+
+    const zaak = await genereerRapportPdf(opdracht, [], opl, null, "zaak");
+    const klant = await genereerRapportPdf(opdracht, [], opl, null, "klant");
+
+    expect(await linkAnnotatieUrls(zaak)).toContain("https://mijn.kluslus.nl/klus/klus-42/fotos");
+    expect(await linkAnnotatieUrls(klant)).not.toContain("https://mijn.kluslus.nl/klus/klus-42/fotos");
+  });
+
+  it("zet geen downloadlink als er geen foto's zijn (ook niet voor de zaak)", async () => {
+    vi.stubEnv("APP_URL", "https://mijn.kluslus.nl");
+    const zaak = await genereerRapportPdf(maakMelding({ id: "klus-7" }), [], maakOplevering({}), null, "zaak");
+    expect(await linkAnnotatieUrls(zaak)).not.toContain("https://mijn.kluslus.nl/klus/klus-7/fotos");
   });
 });
 
