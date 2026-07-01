@@ -90,10 +90,11 @@ const ROOD_SOFT = rgb(0.99, 0.95, 0.95);
 const ORANJE = rgb(0.976, 0.451, 0.086);
 const ORANJE_SOFT = rgb(1, 0.965, 0.925);
 const WIT = rgb(1, 1, 1);
-// Interne notitie (alleen zaak-versie): amber, opvallend genoeg om niet met de openbare opmerking
+// Interne notitie (alleen zaak-versie): geel kader met zwarte letters, exact zoals de in-app weergave
+// (design-token urgent-geel #FBBF24 met ink-tekst). Opvallend genoeg om niet met de openbare opmerking
 // verward te worden.
-const INTERN = rgb(0.6, 0.33, 0.04);
-const INTERN_SOFT = rgb(1, 0.97, 0.9);
+const GEEL = rgb(0.984, 0.749, 0.141); // #FBBF24 (urgent-geel)
+const INTERN_SOFT = rgb(0.999, 0.976, 0.925); // urgent-geel op ~10% over wit
 
 /**
  * Genereert het opleverrapport als PDF (bytes) in de "Inspectierapport"-opmaak: briefhoofd met
@@ -253,6 +254,7 @@ export async function genereerRapportPdf(
   if (fotoDownloadUrl) knopLink("Foto's downloaden", fotoDownloadUrl, "download");
   if (samenvatting.videoUrl) knopLink("Video van de oplevering", samenvatting.videoUrl, "play");
   if (fotoDownloadUrl || samenvatting.videoUrl) {
+    y -= 8; // lucht tussen de knoppen en de uitleg-zin eronder
     tekst("Klik op een foto in het rapport om hem groot te openen; via de knop hierboven haal je de foto's op vol formaat op.", {
       size: 9,
       kleur: MUTED,
@@ -330,7 +332,7 @@ export async function genereerRapportPdf(
   }
 
   // ---- sectie 2: Oplevering ----
-  y -= 6;
+  y -= 18;
   sectieKop(2, "Oplevering");
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
 
@@ -365,7 +367,7 @@ export async function genereerRapportPdf(
 
   // ---- sectie 3: Controle bij oplevering (niet in de verkorte variant) ----
   if (toonControle) {
-    y -= 4;
+    y -= 14;
     sectieKop(3, "Controle bij oplevering");
     for (const c of controle) controleRegel(c.punt, c.akkoord);
   }
@@ -469,21 +471,32 @@ export async function genereerRapportPdf(
   function tekstVlak(
     s: string,
     label: string,
-    kl: { bg: RGB; rand: RGB; streep: RGB; label: RGB; tekst: RGB },
+    kl: {
+      bg: RGB;
+      rand: RGB;
+      streep: RGB;
+      label: RGB;
+      tekst: RGB;
+      randBreedte?: number;
+      streepBreedte?: number;
+    },
   ) {
     const padX = 14;
     const padY = 12;
     const labelSize = 8.5;
     const size = 10.5;
     const lh = 15;
+    const streepBreedte = kl.streepBreedte ?? 3;
     const regels = wikkel(helv, size, s, CONTENT - padX * 2);
     const contentH = labelSize + 8 + regels.length * lh;
     const h = padY + contentH + padY;
     ruimte(h + 8);
     const top = y;
     const by = top - h;
-    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: kl.bg, borderColor: kl.rand, borderWidth: 0.6 });
-    page.drawRectangle({ x: MARGE, y: by, width: 3, height: h, color: kl.streep });
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: kl.bg, borderColor: kl.rand, borderWidth: kl.randBreedte ?? 0.6 });
+    if (streepBreedte > 0) {
+      page.drawRectangle({ x: MARGE, y: by, width: streepBreedte, height: h, color: kl.streep });
+    }
     let cy = top - padY;
     page.drawText(label, { x: MARGE + padX, y: cy - labelSize, size: labelSize, font: bold, color: kl.label });
     cy -= labelSize + 8;
@@ -506,16 +519,18 @@ export async function genereerRapportPdf(
   }
 
   /**
-   * Interne notitie: amber vlak met een expliciet "INTERN"-label. Alleen in de zaak-versie, bewust
-   * visueel anders dan de openbare opmerking zodat het kantoor de twee niet verwart.
+   * Interne notitie: geel kader met zwarte letters, exact zoals de in-app weergave (urgent-geel rand,
+   * ink-tekst, geen linkerstreep). Alleen in de zaak-versie; bewust visueel anders dan de opmerking.
    */
   function interneNotitieBlok(s: string) {
-    tekstVlak(s, "INTERN: alleen voor de opdrachtgever", {
+    tekstVlak(s, "INTERN: ALLEEN VOOR DE OPDRACHTGEVER", {
       bg: INTERN_SOFT,
-      rand: INTERN,
-      streep: INTERN,
-      label: INTERN,
-      tekst: rgb(0.3, 0.22, 0.05),
+      rand: GEEL,
+      streep: GEEL,
+      label: INK,
+      tekst: INK,
+      randBreedte: 1.6,
+      streepBreedte: 0,
     });
   }
 
