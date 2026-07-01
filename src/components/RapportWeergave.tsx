@@ -1,8 +1,9 @@
-import { Play, Lock, PenLine } from "lucide-react";
+import { Play, Lock, PenLine, Download, TriangleAlert, Check } from "lucide-react";
 import { formatDatumKort } from "@/lib/datum";
 import { MeldingStaatBadge } from "@/components/MeldingStaatBadge";
 import { FotoGalerij } from "@/components/FotoGalerij";
 import { ActieKaart } from "@/components/ActieKaart";
+import { meldingenBalk } from "@/lib/rapport-indeling";
 
 // Kleuren overgenomen van de PDF-generator (rapport.ts) zodat de preview hetzelfde oogt: blauw accent.
 const BLAUW = "#335775";
@@ -36,6 +37,8 @@ export type RapportWeergaveData = {
   controle: { punt: string; akkoord: boolean }[];
   /** Interne notitie: alleen in de versie voor de opdrachtgever, nooit in de klant-versie. */
   interneNotitie: string | null;
+  /** Link naar de publieke foto-downloadpagina. Alleen gezet in de opdrachtgever-context; null = geen knop. */
+  fotoDownloadUrl?: string | null;
   meldingen: RapportMelding[];
 };
 
@@ -68,29 +71,50 @@ function LeaderRegel({ label, waarde, kleur }: { label: string; waarde: string; 
   );
 }
 
+// Meldingen-balk bovenaan: kleur + icoon + tekst. Rood spoed, oranje gewoon, groen geen.
+function MeldingenBalk({ meldingen }: { meldingen: { spoed: boolean }[] }) {
+  const b = meldingenBalk(meldingen);
+  const stijl =
+    b.status === "spoed"
+      ? "border-urgent-rood bg-urgent-rood/10 text-urgent-rood"
+      : b.status === "gewoon"
+        ? "border-accent bg-accent/10 text-[#c2410c]"
+        : "border-success bg-success/10 text-success";
+  return (
+    <div className={`mt-5 flex items-center gap-3 border border-l-4 px-4 py-2.5 ${stijl}`}>
+      {b.status === "geen" ? (
+        <Check size={18} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
+      ) : (
+        <TriangleAlert size={18} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
+      )}
+      <span className="text-sm font-bold">{b.tekst}</span>
+    </div>
+  );
+}
+
 /**
  * Puur presentationeel rapport-lichaam dat het echte opleverrapport (de PDF, rapport.ts) volgt:
- * blauw accent, genummerde secties, een overzicht in sectie 1, controle-checklist, en de
- * handtekening onderaan. Geen DB, geen async. Wordt gebruikt door de voorvertonen-pagina én het
- * voorbeeldrapport in de handleiding, zodat beide tonen wat de monteur echt verstuurt.
+ * blauw accent, genummerde secties, meldingen bovenaan (sectie 1), een overzicht + actie-knoppen
+ * bovenaan, controle-checklist, en de handtekening onderaan. Geen DB, geen async. Wordt gebruikt door
+ * de voorvertonen-pagina én het voorbeeldrapport in de handleiding, zodat beide tonen wat de monteur
+ * echt verstuurt.
  */
 export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
-  // Doorlopende foto-nummering (zelfde reeks als de PDF): oplevering eerst (1..n), dan de meldingen.
-  const meldingFotoStart: number[] = [];
-  {
-    let acc = data.fotos.length + 1;
+  // Doorlopende foto-nummering (zelfde reeks als de PDF): meldingen eerst (1..n), dan de eindstaat.
+  const { meldingFotoStart, eindstaatStart } = (() => {
+    const starts: number[] = [];
+    let teller = 1;
     for (const m of data.meldingen) {
-      meldingFotoStart.push(acc);
-      acc += m.foto_urls.length;
+      starts.push(teller);
+      teller += m.foto_urls.length;
     }
-  }
+    return { meldingFotoStart: starts, eindstaatStart: teller };
+  })();
 
   const controleNietAkkoord = data.controle.filter((c) => !c.akkoord).length;
   const heeftControle = data.controle.length > 0;
-  const heeftBijlagen = data.fotos.length > 0 || Boolean(data.videoUrl);
-  // Sectienummers: Oplevering=1, Meldingen=2, daarna Controle en Bijlagen voor zover aanwezig.
+  // Sectienummers: Meldingen=1, Oplevering=2, Controle=3 (voor zover aanwezig).
   const nrControle = 3;
-  const nrBijlagen = heeftControle ? 4 : 3;
 
   const tabel: [string, string][] = [];
   if (data.referentienummer) tabel.push(["Referentienummer", data.referentienummer]);
@@ -133,9 +157,13 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
         )}
       </div>
 
-      {/* sectie 1: Oplevering — overzicht + opmerking + interne notitie + eindstaat-foto's */}
-      <SectieKop nr={1} titel="Oplevering" />
-      <div className="flex flex-col gap-1.5">
+      {/* meldingen-balk bovenaan */}
+      <MeldingenBalk meldingen={data.meldingen} />
+
+      {/* overzicht in dezelfde volgorde als de secties (meldingen eerst) */}
+      <div className="mt-4 flex flex-col gap-1.5">
+        <LeaderRegel label="Meldingen" waarde={String(data.meldingen.length)} kleur="text-ink" />
+        <LeaderRegel label="Eindstaat-foto's" waarde={String(data.fotos.length)} kleur="text-ink" />
         <LeaderRegel
           label="Ondertekend door klant"
           waarde={data.ondertekend ? "Ja" : "Nee"}
@@ -146,8 +174,6 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
           waarde={data.videoUrl ? "Bijgevoegd" : "Geen"}
           kleur={data.videoUrl ? "text-[#335775]" : "text-ink-muted"}
         />
-        <LeaderRegel label="Eindstaat-foto's" waarde={String(data.fotos.length)} kleur="text-ink" />
-        <LeaderRegel label="Meldingen" waarde={String(data.meldingen.length)} kleur="text-ink" />
         {heeftControle && (
           <LeaderRegel
             label="Controle bij oplevering"
@@ -157,9 +183,78 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
         )}
       </div>
 
+      {/* actie-knoppen tussen overzicht en meldingen: foto's downloaden + video */}
+      {(data.fotoDownloadUrl || data.videoUrl) && (
+        <div className="mt-4 flex flex-col gap-2.5">
+          {data.fotoDownloadUrl && (
+            <ActieKaart
+              icoon={<Download size={20} strokeWidth={2.5} aria-hidden="true" />}
+              titel="Foto's downloaden"
+              sub="alle foto's op vol formaat, of kies er losse uit"
+              href={data.fotoDownloadUrl}
+              ariaLabel="Foto's van de oplevering downloaden"
+            />
+          )}
+          {data.videoUrl && (
+            <ActieKaart
+              icoon={<Play size={20} strokeWidth={2.5} aria-hidden="true" />}
+              titel="Video van de oplevering"
+              sub="tik om te bekijken"
+              href={data.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              ariaLabel="Video van de oplevering openen"
+            />
+          )}
+        </div>
+      )}
+
+      {/* sectie 1: Meldingen */}
+      <SectieKop nr={1} titel={`Meldingen (${data.meldingen.length})`} />
+      {data.meldingen.length === 0 ? (
+        <p className="border border-line bg-surface p-4 text-sm text-ink-muted">Geen meldingen op deze klus.</p>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {data.meldingen.map((m, mi) => (
+            <li
+              key={m.id}
+              className={`border border-line border-l-4 bg-white p-4 ${
+                m.spoed ? "border-l-urgent-rood" : "border-l-accent"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                {m.spoed ? (
+                  <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
+                ) : (
+                  <span className="inline-flex items-center border border-accent/60 bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-[0.04em] text-[#c2410c]">
+                    Melding
+                  </span>
+                )}
+                <span className="font-mono text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
+              </div>
+              {m.spoed && m.spoed_verzonden_at && (
+                <p className="mt-1 text-xs font-semibold text-urgent-rood">
+                  Al als spoed verstuurd op {formatDatumKort(m.spoed_verzonden_at)}
+                </p>
+              )}
+              {m.ruwe_tekst && (
+                <p className="mt-2 font-[family-name:var(--font-body)] text-base text-ink">{m.ruwe_tekst}</p>
+              )}
+              {m.foto_urls.length > 0 && (
+                <div className="mt-3">
+                  <FotoGalerij urls={m.foto_urls} startNummer={meldingFotoStart[mi]} />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* sectie 2: Oplevering — opmerking + interne notitie + eindstaat-foto's */}
+      <SectieKop nr={2} titel="Oplevering" />
       {data.opmerking && (
         <p
-          className="mt-3 border border-line bg-surface px-4 py-3 font-[family-name:var(--font-body)] text-base italic text-[#334155]"
+          className="border border-line bg-surface px-4 py-3 font-[family-name:var(--font-body)] text-base italic text-[#334155]"
           style={{ borderLeftWidth: 3, borderLeftColor: BLAUW }}
         >
           {data.opmerking}
@@ -182,7 +277,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
             <p className="mb-2 font-mono text-xs font-bold uppercase tracking-[0.06em] text-ink-muted">
               Eindstaat-foto&apos;s
             </p>
-            <FotoGalerij urls={data.fotos} startNummer={1} />
+            <FotoGalerij urls={data.fotos} startNummer={eindstaatStart} />
           </>
         ) : (
           <p className="border border-line bg-surface p-4 text-sm text-ink-muted">
@@ -191,37 +286,7 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
         )}
       </div>
 
-      {/* sectie 2: Meldingen */}
-      <SectieKop nr={2} titel={`Meldingen (${data.meldingen.length})`} />
-      {data.meldingen.length === 0 ? (
-        <p className="border border-line bg-surface p-4 text-sm text-ink-muted">Geen meldingen op deze klus.</p>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {data.meldingen.map((m, mi) => (
-            <li key={m.id} className="border border-line bg-white p-4">
-              <div className="flex items-center justify-between gap-2">
-                <MeldingStaatBadge spoed={m.spoed} spoed_verzonden_at={m.spoed_verzonden_at} />
-                <span className="font-mono text-xs text-ink-muted">{formatDatumKort(m.created_at)}</span>
-              </div>
-              {m.spoed && m.spoed_verzonden_at && (
-                <p className="mt-1 text-xs font-semibold text-urgent-rood">
-                  Al als spoed verstuurd op {formatDatumKort(m.spoed_verzonden_at)}
-                </p>
-              )}
-              {m.ruwe_tekst && (
-                <p className="mt-2 font-[family-name:var(--font-body)] text-base text-ink">{m.ruwe_tekst}</p>
-              )}
-              {m.foto_urls.length > 0 && (
-                <div className="mt-3">
-                  <FotoGalerij urls={m.foto_urls} startNummer={meldingFotoStart[mi]} />
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* sectie 3: Controle bij oplevering (de afgetekende checklist) */}
+      {/* sectie 3: Controle bij oplevering (de afgetekende vaste verklaring) */}
       {heeftControle && (
         <>
           <SectieKop nr={nrControle} titel="Controle bij oplevering" />
@@ -237,38 +302,16 @@ export function RapportWeergave({ data }: { data: RapportWeergaveData }) {
                   {c.akkoord ? "✓" : "✕"}
                 </span>
                 <span className="flex-1 text-ink">{c.punt}</span>
-                {!c.akkoord && (
-                  <span className="shrink-0 text-xs font-extrabold uppercase tracking-[0.04em] text-urgent-rood">
-                    niet akkoord
-                  </span>
-                )}
+                <span
+                  className={`shrink-0 text-xs font-extrabold uppercase tracking-[0.04em] ${
+                    c.akkoord ? "text-success" : "text-urgent-rood"
+                  }`}
+                >
+                  {c.akkoord ? "akkoord" : "niet akkoord"}
+                </span>
               </li>
             ))}
           </ul>
-        </>
-      )}
-
-      {/* sectie Bijlagen: video-link (de foto's hierboven zijn zelf aanklikbaar) */}
-      {heeftBijlagen && (
-        <>
-          <SectieKop nr={nrBijlagen} titel="Bijlagen" />
-          <p className="text-sm text-ink-muted">
-            Tik een foto aan om hem groot te openen, op te slaan en zelf door te sturen.
-          </p>
-          {data.videoUrl && (
-            <div className="mt-3">
-              <ActieKaart
-                accent="neutraal"
-                icoon={<Play size={20} strokeWidth={2.5} aria-hidden="true" />}
-                titel="Video van de oplevering"
-                sub="Tik om te bekijken"
-                href={data.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                ariaLabel="Video van de oplevering openen"
-              />
-            </div>
-          )}
         </>
       )}
 

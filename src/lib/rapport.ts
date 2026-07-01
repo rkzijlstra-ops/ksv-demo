@@ -20,6 +20,7 @@ import type { Melding, Oplevering } from "./db";
 import type { ControlePunt } from "./oplever-controle";
 import { formatDatumKort, formatDatumLang } from "./datum";
 import { rapportAfzenderWeergave, type RapportAfzender } from "./afzender";
+import { meldingenBalk, type MeldingBalk } from "./rapport-indeling";
 
 export interface RapportSamenvatting {
   zaaknaam: string;
@@ -84,6 +85,10 @@ const SUCCESS = rgb(0.16, 0.5, 0.3);
 const SUCCESS_SOFT = rgb(0.93, 0.97, 0.94);
 const ROOD = rgb(0.7, 0.2, 0.2);
 const ROOD_SOFT = rgb(0.99, 0.95, 0.95);
+// Oranje voor gewone meldingen (merk-accent uit het design-system, #F97316). Bewust naast het
+// staalblauwe rapport-accent: alleen voor de meldingen-signalering, niet voor de rest van het rapport.
+const ORANJE = rgb(0.976, 0.451, 0.086);
+const ORANJE_SOFT = rgb(1, 0.965, 0.925);
 const WIT = rgb(1, 1, 1);
 // Interne notitie (alleen zaak-versie): amber, opvallend genoeg om niet met de openbare opmerking
 // verward te worden.
@@ -200,17 +205,21 @@ export async function genereerRapportPdf(
   tabelRij("Opdrachtgever", samenvatting.zaaknaam);
   y -= 16;
 
-  // ---- sectie 1: Oplevering ----
+  // ---- afgeleide gegevens ----
   const fotos = oplevering?.eindstaat_foto_urls ?? [];
   const controle = oplevering?.controle ?? [];
   const controleNietAkkoord = controle.filter((c) => !c.akkoord).length;
   const toonControle = toonControleInRapport(controle, variant);
   const toonHandtekening = toonHandtekeningInRapport(oplevering, variant);
-  sectieKop(1, "Oplevering");
-  // De samenvattings-regels (ondertekend / video van de oplevering / eindstaat-foto's / controle) horen
-  // bij de VOLLEDIGE oplevering. Snel afsluiten (verkorting) kent geen eindstaat: daar dragen de
-  // meldingen het bewijs (foto's + video per melding). Toon die regels dus niet in de verkorte variant.
+  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+
+  // ---- meldingen-balk bovenaan: kleur + icoon + tekst (rood spoed / oranje gewoon / groen geen) ----
+  meldingenBalkBlok(meldingenBalk(meldingen));
+
+  // ---- overzicht in dezelfde volgorde als de secties (meldingen eerst) ----
   if (variant !== "verkorting") {
+    leaderRegel("Meldingen", String(meldingen.length), INK);
+    leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
     leaderRegel(
       "Ondertekend door klant",
       samenvatting.ondertekend ? "Ja" : "Nee",
@@ -221,9 +230,6 @@ export async function genereerRapportPdf(
       samenvatting.videoUrl ? "Bijgevoegd" : "Geen",
       samenvatting.videoUrl ? ACCENT : MUTED,
     );
-    leaderRegel("Eindstaat-foto's", String(fotos.length), INK);
-    leaderRegel("Meldingen", String(meldingen.length), INK);
-    // Controle-uitkomst ook in het overzicht: detail volgt in sectie 3.
     if (toonControle) {
       leaderRegel(
         "Controle bij oplevering",
@@ -232,48 +238,31 @@ export async function genereerRapportPdf(
       );
     }
   } else {
-    // Verkort (snel afsluiten): een opsomming van wat DIT rapport bevat, met alleen wat in de verkorte
-    // variant kan bestaan. De meldingen dragen het bewijs; geen eindstaat/handtekening/controle.
-    const meldingFotos = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+    // Verkort (snel afsluiten): de meldingen dragen het bewijs; geen eindstaat/handtekening/controle.
     const heeftMeldingVideo = meldingen.some((m) => !!m.video_url?.trim());
     leaderRegel("Meldingen", String(meldingen.length), INK);
-    leaderRegel("Foto's", String(meldingFotos), INK);
+    leaderRegel("Foto's", String(meldingFotoAantal), INK);
     leaderRegel("Video", heeftMeldingVideo ? "Bijgevoegd" : "Geen", heeftMeldingVideo ? ACCENT : MUTED);
-  }
-  y -= 6;
-
-  if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
-
-  // Interne blok: alleen in de ZAAK-versie. De klant-helpers leveren leeg/null, dus interne notitie
-  // én media kunnen structureel niet in de klant-PDF terechtkomen (zie tests "... lekt niet").
-  const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
-  if (intern) interneNotitieBlok(intern);
-  const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
-  if (interneFotos.length > 0) {
-    subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
-    await fotoGrid(interneFotos);
-  }
-  const interneVideo = interneVideoVoorRapport(oplevering, bedoeldVoor);
-  if (interneVideo) {
-    y -= 4;
-    videoLink("Interne video · alleen opdrachtgever", interneVideo);
-  }
-
-  // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen (ook niet de
-  // "geen eindstaat-foto's"-regel, want het begrip bestaat daar niet).
-  if (variant !== "verkorting") {
-    if (fotos.length > 0) {
-      subKop("EINDSTAAT-FOTO'S");
-      await fotoGrid(fotos);
-    } else {
-      tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
-    }
   }
   y -= 10;
 
-  // ---- sectie 2: Meldingen ----
-  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
-  sectieKop(2, meldingenKop(meldingen.length, meldingFotoAantal));
+  // ---- actie-knoppen (tussen overzicht en meldingen): foto's downloaden (alleen zaak) + video ----
+  const heeftDownloadbareFotos = meldingFotoAantal > 0 || fotos.length > 0;
+  const fotoDownloadUrl =
+    bedoeldVoor === "zaak" && heeftDownloadbareFotos ? fotoDownloadLink(opdracht.id) : null;
+  if (fotoDownloadUrl) knopLink("Foto's downloaden", fotoDownloadUrl, "download");
+  if (samenvatting.videoUrl) knopLink("Video van de oplevering", samenvatting.videoUrl, "play");
+  if (fotoDownloadUrl || samenvatting.videoUrl) {
+    tekst("Klik op een foto in het rapport om hem groot te openen; via de knop hierboven haal je de foto's op vol formaat op.", {
+      size: 9,
+      kleur: MUTED,
+      gap: 4,
+    });
+    y -= 6;
+  }
+
+  // ---- sectie 1: Meldingen ----
+  sectieKop(1, meldingenKop(meldingen.length, meldingFotoAantal));
 
   if (meldingen.length === 0) {
     tekst("Geen meldingen op deze klus.", { size: 10, kleur: MUTED });
@@ -281,8 +270,10 @@ export async function genereerRapportPdf(
 
   for (const m of meldingen) {
     ruimte(40);
-    const kop = m.spoed ? "Spoed" : "Melding";
-    page.drawText(kop, { x: MARGE, y, size: 11, font: bold, color: m.spoed ? ROOD : INK });
+    // Subtiel gekleurd merkje + label: rood bij spoed, oranje bij een gewone melding.
+    const mkleur = m.spoed ? ROOD : ORANJE;
+    page.drawRectangle({ x: MARGE, y: y - 1, width: 3, height: 12, color: mkleur });
+    page.drawText(m.spoed ? "Spoed" : "Melding", { x: MARGE + 9, y, size: 11, font: bold, color: mkleur });
     rechts(formatDatumKort(m.created_at), { size: 9, font: helv, kleur: MUTED, dy: 1 });
     y -= 16;
     if (m.spoed && m.spoed_verzonden_at) {
@@ -303,40 +294,49 @@ export async function genereerRapportPdf(
     }
     if (m.video_url) {
       y -= 6;
-      videoLink("Video bij deze melding", m.video_url);
+      knopLink("Video bij deze melding", m.video_url, "play");
     }
     y -= 8;
     page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.6, color: LINE });
     y -= 12;
   }
 
+  // ---- sectie 2: Oplevering ----
+  sectieKop(2, "Oplevering");
+  if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
+
+  // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen.
+  if (variant !== "verkorting") {
+    if (fotos.length > 0) {
+      subKop("EINDSTAAT-FOTO'S");
+      await fotoGrid(fotos);
+    } else {
+      tekst("Geen eindstaat-foto's bij deze oplevering.", { size: 10, kleur: MUTED });
+    }
+  }
+
+  // Interne blok: alleen in de ZAAK-versie, en bewust NÁ de eindstaat-foto's zodat de doorlopende
+  // foto-nummering (meldingen + eindstaat) gelijk blijft aan de foto-downloadpagina. De klant-helpers
+  // leveren leeg/null, dus interne notitie én media kunnen structureel niet in de klant-PDF komen.
+  const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
+  if (intern) interneNotitieBlok(intern);
+  const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
+  if (interneFotos.length > 0) {
+    subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
+    await fotoGrid(interneFotos);
+  }
+  const interneVideo = interneVideoVoorRapport(oplevering, bedoeldVoor);
+  if (interneVideo) {
+    y -= 4;
+    knopLink("Interne video · alleen opdrachtgever", interneVideo, "play");
+  }
+  y -= 10;
+
   // ---- sectie 3: Controle bij oplevering (niet in de verkorte variant) ----
   if (toonControle) {
     y -= 4;
     sectieKop(3, "Controle bij oplevering");
     for (const c of controle) controleRegel(c.punt, c.akkoord);
-  }
-
-  // ---- sectie 4: Bijlagen (foto's zijn zelf klikbaar; hier de hint + de videolink) ----
-  if (fotoTeller > 0 || samenvatting.videoUrl) {
-    y -= 4;
-    sectieKop(toonControle ? 4 : 3, "Bijlagen");
-    for (const regel of wikkel(
-      helv,
-      9.5,
-      "Klik op een foto in het rapport om hem op groot formaat te openen, op te slaan en zelf door te sturen (bijvoorbeeld naar een leverancier)." +
-        (samenvatting.videoUrl
-          ? " De video opent via onderstaande link en is op dezelfde manier te bewaren."
-          : ""),
-      CONTENT,
-    )) {
-      tekst(regel, { size: 9.5, kleur: MUTED, gap: 3 });
-    }
-    if (samenvatting.videoUrl) {
-      y -= 6;
-      videoLink("Video van de oplevering", samenvatting.videoUrl);
-    }
-    y -= 8;
   }
 
   // ---- afsluiting onderaan: klant-handtekening in kader (niet in de verkorte variant) ----
@@ -616,36 +616,75 @@ export async function genereerRapportPdf(
   }
 
   /**
-   * Klikbare video-KNOP (omlijnd, met een gekleurd play-vak links en "openen ›" rechts), zodat in de
-   * PDF meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie (opent de
-   * video in de browser).
+   * De meldingen-balk bovenaan het rapport: een rustig gekleurd vlak met icoon + tekst. Rood bij spoed,
+   * oranje bij gewone meldingen, groen bij geen. Kleur én icoon én label (design-regel: urgentie nooit
+   * alleen kleur).
    */
-  function videoLink(label: string, url: string) {
+  function meldingenBalkBlok(b: MeldingBalk) {
+    const kleur = b.status === "spoed" ? ROOD : b.status === "gewoon" ? ORANJE : SUCCESS;
+    const soft = b.status === "spoed" ? ROOD_SOFT : b.status === "gewoon" ? ORANJE_SOFT : SUCCESS_SOFT;
+    const h = 24;
+    ruimte(h + 10);
+    const top = y;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: soft, borderColor: kleur, borderWidth: 0.8 });
+    page.drawRectangle({ x: MARGE, y: by, width: 3, height: h, color: kleur });
+    const iconX = MARGE + 14;
+    const cy = by + h / 2;
+    if (b.status === "geen") {
+      // vinkje
+      page.drawLine({ start: { x: iconX, y: cy - 1 }, end: { x: iconX + 3, y: cy - 4 }, thickness: 1.4, color: kleur });
+      page.drawLine({ start: { x: iconX + 3, y: cy - 4 }, end: { x: iconX + 8, y: cy + 4 }, thickness: 1.4, color: kleur });
+    } else {
+      // waarschuwingsdriehoek met uitroepteken
+      page.drawSvgPath(`M 5 0 L 10 10 L 0 10 Z`, { x: iconX - 1, y: cy + 5, borderColor: kleur, borderWidth: 1.2 });
+      page.drawLine({ start: { x: iconX + 4, y: cy + 2 }, end: { x: iconX + 4, y: cy - 1 }, thickness: 1.2, color: kleur });
+      page.drawCircle({ x: iconX + 4, y: cy - 3, size: 0.7, color: kleur });
+    }
+    page.drawText(b.tekst, { x: MARGE + 30, y: cy - 3.5, size: 10.5, font: bold, color: kleur });
+    y = by - 6;
+  }
+
+  /**
+   * Klikbare KNOP (omlijnd, met een gekleurd icoon-vak links en "openen ›" rechts), zodat in de PDF
+   * meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie. `icoon` kiest het
+   * witte pictogram: een play-driehoek (video) of een download-pijl.
+   */
+  function knopLink(label: string, url: string, icoon: "play" | "download") {
     const h = 22;
     const labelSize = 10;
     const openenSize = 8.5;
     const openenLabel = "openen ›";
-    const playW = 20;
+    const iconW = 20;
     const padX = 10;
     const gap = 10;
-    const triH = 11;
-    const triW = 9;
     const labelW = bold.widthOfTextAtSize(label, labelSize);
     const openenW = helv.widthOfTextAtSize(openenLabel, openenSize);
-    const totaalW = playW + padX + labelW + gap + openenW + padX;
+    const totaalW = iconW + padX + labelW + gap + openenW + padX;
     ruimte(h + 8);
     const by = y - h; // onderkant van de knop
     // Witte knop met accent-rand.
     page.drawRectangle({ x: MARGE, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
-    // Play-vak links (accent) met witte play-driehoek, verticaal gecentreerd.
-    page.drawRectangle({ x: MARGE, y: by, width: playW, height: h, color: ACCENT });
-    const triX = MARGE + (playW - triW) / 2;
-    const triTop = by + h / 2 + triH / 2; // anker = bovenpunt (drawSvgPath rekent y naar beneden)
-    page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: triTop, color: WIT });
+    // Icoon-vak links (accent) met wit pictogram, verticaal gecentreerd.
+    page.drawRectangle({ x: MARGE, y: by, width: iconW, height: h, color: ACCENT });
+    const bx = MARGE + iconW / 2;
+    const cy = by + h / 2;
+    if (icoon === "play") {
+      const triH = 11;
+      const triW = 9;
+      const triX = MARGE + (iconW - triW) / 2;
+      page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: cy + triH / 2, color: WIT });
+    } else {
+      // download-pijl: schacht + punt naar beneden + basislijn (bak).
+      page.drawLine({ start: { x: bx, y: cy + 5 }, end: { x: bx, y: cy - 3 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx, y: cy - 4 }, end: { x: bx - 3.5, y: cy - 0.5 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx, y: cy - 4 }, end: { x: bx + 3.5, y: cy - 0.5 }, thickness: 1.4, color: WIT });
+      page.drawLine({ start: { x: bx - 5, y: cy - 6.5 }, end: { x: bx + 5, y: cy - 6.5 }, thickness: 1.4, color: WIT });
+    }
     // Label (accent, vet) + "openen ›" (grijs), verticaal gecentreerd.
-    page.drawText(label, { x: MARGE + playW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
+    page.drawText(label, { x: MARGE + iconW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
     page.drawText(openenLabel, {
-      x: MARGE + playW + padX + labelW + gap,
+      x: MARGE + iconW + padX + labelW + gap,
       y: by + (h - openenSize) / 2 + 1,
       size: openenSize,
       font: helv,
@@ -683,6 +722,17 @@ export async function genereerRapportPdf(
     page.drawText("(handtekening niet beschikbaar)", { x: MARGE + 10, y: top - boxH / 2 - 4, size: 9, font: helv, color: MUTED });
     y = top - boxH - 16;
   }
+}
+
+/**
+ * Bouwt de absolute link naar de publieke foto-downloadpagina van een klus. Vereist een ingestelde
+ * `APP_URL` (de canonieke basis-URL); zonder dat geeft hij null terug, zodat er geen kapotte relatieve
+ * link in een gemailde PDF belandt en de knop simpelweg wegvalt.
+ */
+export function fotoDownloadLink(opdrachtId: string): string | null {
+  const base = process.env.APP_URL?.trim().replace(/\/+$/, "");
+  if (!base) return null;
+  return `${base}/klus/${opdrachtId}/fotos`;
 }
 
 /** Breekt lange tekst in regels die binnen maxBreedte passen (pdf-lib doet geen word-wrap). */

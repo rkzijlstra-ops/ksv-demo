@@ -26,6 +26,11 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
   const ondertekend = Boolean(oplevering?.handtekening_url);
   const opmerking = oplevering?.opmerking?.trim() || null;
 
+  // Foto-downloadpagina alleen tonen als er ook echt foto's te downloaden zijn (melding- of eindstaat-
+  // foto's). Relatieve link zodat de knop in elke omgeving naar de eigen /klus/[id]/fotos wijst.
+  const meldingFotoAantal = meldingen.reduce((n, m) => n + m.foto_urls.length, 0);
+  const fotoDownloadUrl = meldingFotoAantal > 0 || fotos.length > 0 ? `/klus/${id}/fotos` : null;
+
   const data: RapportWeergaveData = {
     afzenderKop: afzender.kop,
     afzenderVoet: afzender.voet,
@@ -43,6 +48,7 @@ export default async function RapportPage({ params }: { params: Promise<{ id: st
     controle: oplevering?.controle ?? [],
     // Voorvertonen is voor de monteur: toon de interne notitie wel, zodat hij ziet wat de opdrachtgever krijgt.
     interneNotitie: oplevering?.interne_opmerking?.trim() || null,
+    fotoDownloadUrl,
     meldingen: meldingen.map((m) => ({
       id: m.id,
       spoed: m.spoed,
