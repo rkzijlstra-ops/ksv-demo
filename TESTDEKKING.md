@@ -185,6 +185,23 @@ Video-UPLOAD via de UI zelf (VideoMaken) is gedekt door oplever-upload.spec (zel
   één" levert één klus, en het inbound-adres + kopieerknop staan in het klus-toevoegen-venster.
 - Migratie `schema-compleet-30-controleer-splitsing.sql` (test+demo via `migrate:test`; productie handmatig).
 
+## Adres-keuze bij meerdere adressen (montagelocatie), beide rollen (2026-07-01)
+
+Een order met 2+ adressen (klant vs. bouwbedrijf/opdrachtgever) mag geen adres gokken: de klus komt met
+`adres_keuze_nodig` en leeg `klant_adres`, een mens kiest bewust de montagelocatie. Twee gaten gedicht:
+
+| Feature / flow | Lagen | Testbestand(en) | Status |
+|---|---|---|---|
+| Aanmaak-route respecteert het door de invoerder al gekozen adres (KlusInvoer stuurt de keuze mee als `klant_adres`, plus de volledige kandidatenlijst): keuze wint, vlag uit | U | opdrachten/aanmaken/route.test ("respecteert het door de invoerder gekozen adres") | groen |
+| Aanmaak-route vlagt nog steeds als er meerdere adressen zijn én niets gekozen is (multi-klus-modus, geen inline keuze) | U | opdrachten/aanmaken/route.test ("vlagt adres-keuze als ... niets gekozen") | groen |
+| MONTEUR kan de montagelocatie kiezen op zijn eigen klus-pagina (`/opdracht/[id]`): controle-blok zichtbaar, keuze landt in DB, vlag weg, blok verdwijnt | E | adres-keuze-monteur.spec | groen |
+| KANTOOR kiest de montagelocatie op het dashboard-detail (`/dashboard/opdracht/[id]`) — ongewijzigd, blijft werken | E | adres-keuze.spec | groen |
+
+Achtergrond: fout zat in `aanmaken/route.ts` (herberekende `keuzeNodig` uit de nog-volledige lijst en
+zette daarmee het gekozen adres op null) en in de monteur-detailpagina (toonde het `AdresControleBlok`
+niet, terwijl kantoor dat wél had). Mail-invoer laat `klant_adres` bewust leeg bij 2+ adressen
+(`inbound/route.ts`); de monteur kiest nu ná ontvangst op zijn klus-pagina.
+
 ## Bekende gaten (eerlijk, nog te dekken)
 
 - **✅ Verzend-flow (klant/zaak) e2e: gedekt sinds 2026-06-16.** `verzending.spec` dekt (1) klant-
