@@ -334,6 +334,11 @@ export async function genereerRapportPdf(
   sectieKop(2, "Oplevering");
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
 
+  // Interne notitie (tekst) direct na de opmerking, in de volgorde van de mockup. Alleen ZAAK-versie:
+  // de klant-helper levert null, dus de notitie kan structureel niet in de klant-PDF komen.
+  const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
+  if (intern) interneNotitieBlok(intern);
+
   // Eindstaat-foto's horen bij de volledige oplevering; in de verkorte variant niet tonen.
   if (variant !== "verkorting") {
     if (fotos.length > 0) {
@@ -344,11 +349,8 @@ export async function genereerRapportPdf(
     }
   }
 
-  // Interne blok: alleen in de ZAAK-versie, en bewust NÁ de eindstaat-foto's zodat de doorlopende
-  // foto-nummering (meldingen + eindstaat) gelijk blijft aan de foto-downloadpagina. De klant-helpers
-  // leveren leeg/null, dus interne notitie én media kunnen structureel niet in de klant-PDF komen.
-  const intern = interneNotitieVoorRapport(oplevering, bedoeldVoor);
-  if (intern) interneNotitieBlok(intern);
+  // Interne FOTO'S/video (zaak) bewust NÁ de eindstaat: zo blijft de doorlopende foto-nummering
+  // (meldingen + eindstaat) gelijk aan de foto-downloadpagina. De klant-helpers leveren leeg/null.
   const interneFotos = interneFotosVoorRapport(oplevering, bedoeldVoor);
   if (interneFotos.length > 0) {
     subKop("INTERNE FOTO'S · ALLEEN OPDRACHTGEVER");
@@ -459,65 +461,62 @@ export async function genereerRapportPdf(
     y -= 18;
   }
 
-  /** Opmerking in een zacht vlak met accent-streep links en een klein kopje. */
-  function opmerkingBlok(s: string) {
-    const regels = wikkel(helv, 10, s, CONTENT - 24);
-    const hoogte = regels.length * 14 + 18;
-    ruimte(hoogte + 6);
+  /**
+   * Getint tekstvlak met een accent-streep links, een klein kopje en de tekst eronder. Eén vorm voor de
+   * openbare opmerking en de interne notitie (verschillen alleen in kleur/label). Ruime binnenmarges en
+   * regelafstand voor een nette verhouding; hoogte vooraf berekend zodat de rand om de inhoud sluit.
+   */
+  function tekstVlak(
+    s: string,
+    label: string,
+    kl: { bg: RGB; rand: RGB; streep: RGB; label: RGB; tekst: RGB },
+  ) {
+    const padX = 14;
+    const padY = 12;
+    const labelSize = 8.5;
+    const size = 10.5;
+    const lh = 15;
+    const regels = wikkel(helv, size, s, CONTENT - padX * 2);
+    const contentH = labelSize + 8 + regels.length * lh;
+    const h = padY + contentH + padY;
+    ruimte(h + 8);
     const top = y;
-    page.drawRectangle({
-      x: MARGE,
-      y: top - hoogte + 8,
-      width: CONTENT,
-      height: hoogte,
-      color: SURFACE,
-      borderColor: LINE,
-      borderWidth: 0.6,
-    });
-    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: ACCENT });
-    let ty = top - 6;
-    page.drawText("Opmerking", { x: MARGE + 12, y: ty, size: 8, font: bold, color: MUTED });
-    ty -= 13;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: kl.bg, borderColor: kl.rand, borderWidth: 0.6 });
+    page.drawRectangle({ x: MARGE, y: by, width: 3, height: h, color: kl.streep });
+    let cy = top - padY;
+    page.drawText(label, { x: MARGE + padX, y: cy - labelSize, size: labelSize, font: bold, color: kl.label });
+    cy -= labelSize + 8;
     for (const regel of regels) {
-      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.2, 0.23, 0.27) });
-      ty -= 14;
+      cy -= lh;
+      page.drawText(regel, { x: MARGE + padX, y: cy + 4, size, font: helv, color: kl.tekst });
     }
-    y = top - hoogte - 6;
+    y = by - 10;
+  }
+
+  /** Openbare opmerking: rustig grijs vlak met staalblauwe streep. */
+  function opmerkingBlok(s: string) {
+    tekstVlak(s, "Opmerking", {
+      bg: SURFACE,
+      rand: LINE,
+      streep: ACCENT,
+      label: MUTED,
+      tekst: rgb(0.2, 0.23, 0.27),
+    });
   }
 
   /**
-   * Interne notitie: amber blok met een expliciet "INTERN"-label. Staat alleen in de zaak-versie.
-   * Bewust visueel anders dan de openbare opmerking, zodat het kantoor de twee niet verwart.
+   * Interne notitie: amber vlak met een expliciet "INTERN"-label. Alleen in de zaak-versie, bewust
+   * visueel anders dan de openbare opmerking zodat het kantoor de twee niet verwart.
    */
   function interneNotitieBlok(s: string) {
-    const regels = wikkel(helv, 10, s, CONTENT - 24);
-    const hoogte = regels.length * 14 + 18;
-    ruimte(hoogte + 6);
-    const top = y;
-    page.drawRectangle({
-      x: MARGE,
-      y: top - hoogte + 8,
-      width: CONTENT,
-      height: hoogte,
-      color: INTERN_SOFT,
-      borderColor: INTERN,
-      borderWidth: 0.6,
+    tekstVlak(s, "INTERN: alleen voor de opdrachtgever", {
+      bg: INTERN_SOFT,
+      rand: INTERN,
+      streep: INTERN,
+      label: INTERN,
+      tekst: rgb(0.3, 0.22, 0.05),
     });
-    page.drawRectangle({ x: MARGE, y: top - hoogte + 8, width: 3, height: hoogte, color: INTERN });
-    let ty = top - 6;
-    page.drawText("INTERN: alleen voor de opdrachtgever", {
-      x: MARGE + 12,
-      y: ty,
-      size: 8,
-      font: bold,
-      color: INTERN,
-    });
-    ty -= 13;
-    for (const regel of regels) {
-      page.drawText(regel, { x: MARGE + 12, y: ty, size: 10, font: helv, color: rgb(0.3, 0.22, 0.05) });
-      ty -= 14;
-    }
-    y = top - hoogte - 6;
   }
 
   /** Eén controlepunt: checkbox met (getekend) vinkje bij akkoord, label + de tekst eronder. */
