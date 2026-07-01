@@ -28,6 +28,7 @@ import { PendingMeldingen } from "@/components/PendingMeldingen";
 import { BevestigOntvangstKnop } from "@/components/BevestigOntvangstKnop";
 import { WerkomschrijvingBlok } from "@/components/WerkomschrijvingBlok";
 import { SplitsWaarschuwing } from "@/components/SplitsWaarschuwing";
+import { AdresControleBlok } from "@/components/AdresControleBlok";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,10 @@ export default async function OpdrachtDetailPage({
         <div className="mt-3">
           <SplitsWaarschuwing id={opdracht.id} reden={opdracht.controleer_splitsing_reden} />
         </div>
+      )}
+
+      {opdracht.adres_keuze_nodig && (
+        <AdresControleBlok opdrachtId={opdracht.id} kandidaten={opdracht.adres_kandidaten ?? []} />
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
