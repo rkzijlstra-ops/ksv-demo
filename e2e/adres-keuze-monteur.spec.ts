@@ -49,8 +49,8 @@ test.afterEach(async () => {
 test("monteur kiest de montagelocatie bij meerdere adressen op zijn eigen klus", async ({ page }) => {
   await page.goto(`/opdracht/${id}`);
 
-  // Het controle-blok staat er en beide adressen worden aangeboden.
-  await expect(page.getByRole("heading", { name: "Adres controleren" })).toBeVisible();
+  // Het gedeelde keuze-blok (AdresKeuze) staat er en beide adressen worden aangeboden.
+  await expect(page.getByText("kies de montagelocatie")).toBeVisible();
   await expect(page.getByText(MONTAGE)).toBeVisible();
   await expect(page.getByText(BEDRIJF)).toBeVisible();
 
@@ -73,6 +73,6 @@ test("monteur kiest de montagelocatie bij meerdere adressen op zijn eigen klus",
     )
     .toMatchObject({ klant_adres: MONTAGE, adres_keuze_nodig: false });
 
-  // En het controle-blok is na de refresh verdwenen, met het adres nu in de gegevens.
-  await expect(page.getByRole("heading", { name: "Adres controleren" })).toBeHidden();
+  // En het keuze-blok is na de refresh verdwenen, met het adres nu in de gegevens.
+  await expect(page.getByRole("button", { name: "Adres bevestigen" })).toBeHidden();
 });

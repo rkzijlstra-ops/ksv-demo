@@ -194,8 +194,9 @@ Een order met 2+ adressen (klant vs. bouwbedrijf/opdrachtgever) mag geen adres g
 |---|---|---|---|
 | Aanmaak-route respecteert het door de invoerder al gekozen adres (KlusInvoer stuurt de keuze mee als `klant_adres`, plus de volledige kandidatenlijst): keuze wint, vlag uit | U | opdrachten/aanmaken/route.test ("respecteert het door de invoerder gekozen adres") | groen |
 | Aanmaak-route vlagt nog steeds als er meerdere adressen zijn én niets gekozen is (multi-klus-modus, geen inline keuze) | U | opdrachten/aanmaken/route.test ("vlagt adres-keuze als ... niets gekozen") | groen |
-| MONTEUR kan de montagelocatie kiezen op zijn eigen klus-pagina (`/opdracht/[id]`): controle-blok zichtbaar, keuze landt in DB, vlag weg, blok verdwijnt | E | adres-keuze-monteur.spec | groen |
-| KANTOOR kiest de montagelocatie op het dashboard-detail (`/dashboard/opdracht/[id]`) — ongewijzigd, blijft werken | E | adres-keuze.spec | groen |
+| MONTEUR kan de montagelocatie kiezen op zijn eigen klus-pagina (`/opdracht/[id]`): keuze-blok zichtbaar, keuze landt in DB, vlag weg, blok verdwijnt | E | adres-keuze-monteur.spec | groen |
+| KANTOOR kiest de montagelocatie op het dashboard-detail (`/dashboard/opdracht/[id]`) | E | adres-keuze.spec | groen |
+| Weergave consistent: `AdresControleBlok` hergebruikt exact dezelfde `AdresKeuze` als het invoerscherm (geen apart rood kader/dubbele kop meer), overal hetzelfde gele keuze-blok; detail-versie heeft alleen een eigen "Adres bevestigen"-knop | E | adres-keuze.spec + adres-keuze-monteur.spec (verankeren op de gedeelde legenda "kies de montagelocatie" + bevestig-knop) | groen |
 
 Achtergrond: fout zat in `aanmaken/route.ts` (herberekende `keuzeNodig` uit de nog-volledige lijst en
 zette daarmee het gekozen adres op null) en in de monteur-detailpagina (toonde het `AdresControleBlok`
