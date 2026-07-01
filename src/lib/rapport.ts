@@ -258,7 +258,7 @@ export async function genereerRapportPdf(
       kleur: MUTED,
       gap: 4,
     });
-    y -= 6;
+    y -= 16;
   }
 
   // ---- sectie 1: Meldingen ----
@@ -268,40 +268,69 @@ export async function genereerRapportPdf(
     tekst("Geen meldingen op deze klus.", { size: 10, kleur: MUTED });
   }
 
+  // Elke melding als kaart (zoals de mockup): witte achtergrond, dunne rand rondom, volledige gekleurde
+  // linkerbalk (rood spoed / oranje gewoon), nette binnenmarges. Hoogte vooraf gemeten zodat de rand
+  // om de inhoud sluit; de foto's/video-knop tekenen binnen de kaart (geen eigen page-break).
+  const PAD_L = 16; // ná de 4px linkerbalk
+  const PAD_R = 14;
+  const PAD_Y = 12;
+  const innerX = MARGE + PAD_L;
+  const innerW = CONTENT - PAD_L - PAD_R;
+  const txtSize = 10;
+  const lineH = 13.5;
   for (const m of meldingen) {
-    ruimte(40);
-    // Subtiel gekleurd merkje + label: rood bij spoed, oranje bij een gewone melding.
     const mkleur = m.spoed ? ROOD : ORANJE;
-    page.drawRectangle({ x: MARGE, y: y - 1, width: 3, height: 12, color: mkleur });
-    page.drawText(m.spoed ? "Spoed" : "Melding", { x: MARGE + 9, y, size: 11, font: bold, color: mkleur });
-    rechts(formatDatumKort(m.created_at), { size: 9, font: helv, kleur: MUTED, dy: 1 });
-    y -= 16;
-    if (m.spoed && m.spoed_verzonden_at) {
-      tekst(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at)}`, {
-        size: 9,
-        kleur: ROOD,
-        gap: 5,
-      });
+    const tekstRegels = m.ruwe_tekst ? wikkel(helv, txtSize, m.ruwe_tekst, innerW) : [];
+    const fotoH = fotoBlokHoogte(m.foto_urls.length, innerW);
+    const spoedVerz = Boolean(m.spoed && m.spoed_verzonden_at);
+
+    let contentH = 14; // chip-rij
+    if (spoedVerz) contentH += 4 + 10;
+    if (tekstRegels.length) contentH += 6 + tekstRegels.length * lineH;
+    if (fotoH) contentH += 10 + fotoH;
+    if (m.video_url) contentH += 10 + 22;
+    const h = PAD_Y + contentH + PAD_Y;
+
+    ruimte(h + 12);
+    const top = y;
+    const by = top - h;
+    page.drawRectangle({ x: MARGE, y: by, width: CONTENT, height: h, color: WIT, borderColor: LINE, borderWidth: 0.8 });
+    page.drawRectangle({ x: MARGE, y: by, width: 4, height: h, color: mkleur });
+
+    const contentTop = top - PAD_Y;
+    const chipBottom = contentTop - 14;
+    meldingChip(m.spoed, innerX, chipBottom);
+    const dt = formatDatumKort(m.created_at);
+    const dw = helv.widthOfTextAtSize(dt, 9);
+    page.drawText(dt, { x: MARGE + CONTENT - PAD_R - dw, y: chipBottom + 3, size: 9, font: helv, color: MUTED });
+    y = chipBottom;
+
+    if (spoedVerz) {
+      y -= 4 + 10;
+      page.drawText(`Al als spoed verstuurd op ${formatDatumKort(m.spoed_verzonden_at!)}`, { x: innerX, y: y + 3, size: 9, font: helv, color: ROOD });
     }
-    if (m.ruwe_tekst) {
-      for (const regel of wikkel(helv, 10, m.ruwe_tekst, CONTENT)) {
-        tekst(regel, { size: 10, kleur: rgb(0.2, 0.23, 0.27), gap: 4 });
+    if (tekstRegels.length) {
+      y -= 6;
+      for (const regel of tekstRegels) {
+        y -= lineH;
+        page.drawText(regel, { x: innerX, y: y + 3, size: txtSize, font: helv, color: rgb(0.2, 0.23, 0.27) });
       }
     }
-    if (m.foto_urls.length > 0) {
-      y -= 4;
-      await fotoGrid(m.foto_urls);
+    if (fotoH) {
+      y -= 10;
+      await fotoGrid(m.foto_urls, { x0: innerX, breedte: innerW, paginate: false });
+      y += 10; // fotoGrid trekt na de laatste rij een gap af; binnen de kaart corrigeren
     }
     if (m.video_url) {
-      y -= 6;
-      knopLink("Video bij deze melding", m.video_url, "play");
+      y -= 10;
+      knopLink("Video bij deze melding", m.video_url, "play", { x0: innerX, paginate: false });
+      y += 9; // knopLink trekt zelf 9 af
     }
-    y -= 8;
-    page.drawRectangle({ x: MARGE, y, width: CONTENT, height: 0.6, color: LINE });
-    y -= 12;
+    y = by - 12; // onder de kaart, met tussenruimte naar de volgende
   }
 
   // ---- sectie 2: Oplevering ----
+  y -= 6;
   sectieKop(2, "Oplevering");
   if (samenvatting.opmerking) opmerkingBlok(samenvatting.opmerking);
 
@@ -524,17 +553,27 @@ export async function genereerRapportPdf(
     y -= 8;
   }
 
-  /** Fotoraster, 2 per rij, uniform bijgesneden, genummerd vlaggetje, hele tegel klikbaar. */
-  async function fotoGrid(urls: string[]) {
+  /**
+   * Fotoraster, 2 per rij, uniform bijgesneden, genummerd vlaggetje, hele tegel klikbaar. `x0`/`breedte`
+   * laten het raster binnen een smaller vlak vallen (bijv. binnen een melding-kaart). `paginate=false`
+   * onderdrukt de eigen page-break (de aanroeper heeft de ruimte dan al gereserveerd).
+   */
+  async function fotoGrid(
+    urls: string[],
+    opts: { x0?: number; breedte?: number; paginate?: boolean } = {},
+  ) {
+    const x0 = opts.x0 ?? MARGE;
+    const breedte = opts.breedte ?? CONTENT;
+    const paginate = opts.paginate ?? true;
     const cols = 2;
     const gap = 10;
-    const cellW = (CONTENT - gap * (cols - 1)) / cols;
+    const cellW = (breedte - gap * (cols - 1)) / cols;
     const cellH = cellW * 0.7;
     for (let i = 0; i < urls.length; i++) {
       const col = i % cols;
-      if (col === 0) ruimte(cellH + gap);
+      if (col === 0 && paginate) ruimte(cellH + gap);
       const top = y;
-      const cx = MARGE + col * (cellW + gap);
+      const cx = x0 + col * (cellW + gap);
       const nr = ++fotoTeller;
       await tekenTegel(cx, top - cellH, cellW, cellH, urls[i], nr);
       // De hele tegel is klikbaar: opent de foto op groot formaat in de browser.
@@ -642,7 +681,7 @@ export async function genereerRapportPdf(
       page.drawCircle({ x: iconX + 4, y: cy - 3, size: 0.7, color: kleur });
     }
     page.drawText(b.tekst, { x: MARGE + 30, y: cy - 3.5, size: 10.5, font: bold, color: kleur });
-    y = by - 6;
+    y = by - 18;
   }
 
   /**
@@ -650,7 +689,14 @@ export async function genereerRapportPdf(
    * meteen duidelijk is dat je erop kunt klikken. De hele knop is een link-annotatie. `icoon` kiest het
    * witte pictogram: een play-driehoek (video) of een download-pijl.
    */
-  function knopLink(label: string, url: string, icoon: "play" | "download") {
+  function knopLink(
+    label: string,
+    url: string,
+    icoon: "play" | "download",
+    opts: { x0?: number; paginate?: boolean } = {},
+  ) {
+    const x0 = opts.x0 ?? MARGE;
+    const paginate = opts.paginate ?? true;
     const h = 22;
     const labelSize = 10;
     const openenSize = 8.5;
@@ -661,18 +707,18 @@ export async function genereerRapportPdf(
     const labelW = bold.widthOfTextAtSize(label, labelSize);
     const openenW = helv.widthOfTextAtSize(openenLabel, openenSize);
     const totaalW = iconW + padX + labelW + gap + openenW + padX;
-    ruimte(h + 8);
+    if (paginate) ruimte(h + 8);
     const by = y - h; // onderkant van de knop
     // Witte knop met accent-rand.
-    page.drawRectangle({ x: MARGE, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
+    page.drawRectangle({ x: x0, y: by, width: totaalW, height: h, color: WIT, borderColor: ACCENT, borderWidth: 1.5 });
     // Icoon-vak links (accent) met wit pictogram, verticaal gecentreerd.
-    page.drawRectangle({ x: MARGE, y: by, width: iconW, height: h, color: ACCENT });
-    const bx = MARGE + iconW / 2;
+    page.drawRectangle({ x: x0, y: by, width: iconW, height: h, color: ACCENT });
+    const bx = x0 + iconW / 2;
     const cy = by + h / 2;
     if (icoon === "play") {
       const triH = 11;
       const triW = 9;
-      const triX = MARGE + (iconW - triW) / 2;
+      const triX = x0 + (iconW - triW) / 2;
       page.drawSvgPath(`M 0 0 L ${triW} ${triH / 2} L 0 ${triH} Z`, { x: triX, y: cy + triH / 2, color: WIT });
     } else {
       // download-pijl: schacht + punt naar beneden + basislijn (bak).
@@ -682,17 +728,38 @@ export async function genereerRapportPdf(
       page.drawLine({ start: { x: bx - 5, y: cy - 6.5 }, end: { x: bx + 5, y: cy - 6.5 }, thickness: 1.4, color: WIT });
     }
     // Label (accent, vet) + "openen ›" (grijs), verticaal gecentreerd.
-    page.drawText(label, { x: MARGE + iconW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
+    page.drawText(label, { x: x0 + iconW + padX, y: by + (h - labelSize) / 2 + 1, size: labelSize, font: bold, color: ACCENT });
     page.drawText(openenLabel, {
-      x: MARGE + iconW + padX + labelW + gap,
+      x: x0 + iconW + padX + labelW + gap,
       y: by + (h - openenSize) / 2 + 1,
       size: openenSize,
       font: helv,
       color: MUTED,
     });
     // De hele knop is klikbaar.
-    linkAnnotatie(MARGE, by, totaalW, h, url);
+    linkAnnotatie(x0, by, totaalW, h, url);
     y = by - 9;
+  }
+
+  /**
+   * Klein label-chipje voor een melding: rood gevuld "Spoed" (witte tekst) of oranje-getint "Melding"
+   * (oranje rand + tekst). Tekent op vaste (x, yb=onderkant); geeft de gebruikte breedte terug.
+   */
+  function meldingChip(spoed: boolean, x: number, yb: number): number {
+    const label = spoed ? "Spoed" : "Melding";
+    const size = 8.5;
+    const padx = 6;
+    const hh = 14;
+    const tw = bold.widthOfTextAtSize(label, size);
+    const w = tw + padx * 2;
+    if (spoed) {
+      page.drawRectangle({ x, y: yb, width: w, height: hh, color: ROOD });
+      page.drawText(label, { x: x + padx, y: yb + (hh - size) / 2 + 1, size, font: bold, color: WIT });
+    } else {
+      page.drawRectangle({ x, y: yb, width: w, height: hh, color: ORANJE_SOFT, borderColor: ORANJE, borderWidth: 0.8 });
+      page.drawText(label, { x: x + padx, y: yb + (hh - size) / 2 + 1, size, font: bold, color: ORANJE });
+    }
+    return w;
   }
 
   async function tekenHandtekening(url: string) {
@@ -733,6 +800,17 @@ export function fotoDownloadLink(opdrachtId: string): string | null {
   const base = process.env.APP_URL?.trim().replace(/\/+$/, "");
   if (!base) return null;
   return `${base}/klus/${opdrachtId}/fotos`;
+}
+
+/** Hoogte van een 2-koloms fotoraster (cover-tegels 0.7×breedte) voor n foto's binnen `breedte`. */
+function fotoBlokHoogte(n: number, breedte: number): number {
+  if (n <= 0) return 0;
+  const cols = 2;
+  const gap = 10;
+  const cellW = (breedte - gap * (cols - 1)) / cols;
+  const cellH = cellW * 0.7;
+  const rijen = Math.ceil(n / cols);
+  return rijen * cellH + (rijen - 1) * gap;
 }
 
 /** Breekt lange tekst in regels die binnen maxBreedte passen (pdf-lib doet geen word-wrap). */
