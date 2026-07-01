@@ -303,4 +303,9 @@ adresloos hangen. Het enige pad dat een keuze definitief wegschrijft (`db.kiesAd
 rollen bereikbaar.
 
 Gedekt: opdrachten/aanmaken/route.test (keuze gerespecteerd; vlaggen zonder keuze), adres-keuze-monteur.spec
-(monteur kiest op `/opdracht/[id]`), adres-keuze.spec (kantoor op dashboard, ongewijzigd).
+(monteur kiest op `/opdracht/[id]`), adres-keuze.spec (kantoor op dashboard).
+
+Weergave: het keuze-blok (`AdresKeuze`) is één gedeeld component en ziet er overal hetzelfde uit (geel,
+"Meerdere adressen gevonden, kies de montagelocatie"). Op de detailpagina's zat er eerst een tweede rood
+kader ("Adres controleren") omheen met een dubbele kop; dat is weg. `AdresControleBlok` toont nu enkel de
+gedeelde `AdresKeuze` plus een eigen "Adres bevestigen"-knop (want het corrigeert een bestaande klus).

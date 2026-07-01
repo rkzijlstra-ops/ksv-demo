@@ -7,9 +7,12 @@ import { AdresKeuze } from "@/components/AdresKeuze";
 import type { AdresKandidaat } from "@/lib/parser-schema";
 
 /**
- * Adres-controle op het dashboard (blok 20): de order had meerdere adressen, dus de planner kiest
- * hier bewust de montagelocatie voor de klus ingepland/verstuurd kan worden. Zolang dit blok er
- * staat, is het adres nog leeg en is plannen niet veilig.
+ * Adres-controle (blok 20) op de detailpagina, kantoor én monteur: de order had meerdere adressen, dus
+ * hier kiest een mens bewust de montagelocatie voor er gepland/verstuurd kan worden. Hergebruikt exact
+ * dezelfde AdresKeuze als bij het invoeren, zodat de keuze er overal hetzelfde uitziet (geen apart rood
+ * kader eromheen); het enige verschil is de eigen bevestig-knop, want dit corrigeert een bestaande klus
+ * en heeft dus zijn eigen opslag-actie. Zolang dit blok er staat, is het adres nog leeg en plannen niet
+ * veilig.
  */
 export function AdresControleBlok({
   opdrachtId,
@@ -50,20 +53,10 @@ export function AdresControleBlok({
   }
 
   return (
-    <section className="mt-6 border-2 border-urgent-rood bg-urgent-rood/5 p-4">
-      <h2 className="flex items-center gap-2 font-mono text-base font-extrabold uppercase tracking-[0.06em] text-ink">
-        <AlertTriangle size={18} strokeWidth={2.5} aria-hidden="true" />
-        Adres controleren
-      </h2>
-      <p className="mt-1 text-sm text-ink-muted">
-        Op de order stonden meerdere adressen. Plannen en versturen kan pas nadat je hieronder de
-        montagelocatie hebt gekozen, zodat de monteur niet naar het verkeerde adres rijdt.
-      </p>
-      <div className="mt-3">
-        <AdresKeuze kandidaten={kandidaten} waarde={adres} onKies={setAdres} />
-      </div>
+    <section className="mt-6 flex flex-col gap-3">
+      <AdresKeuze kandidaten={kandidaten} waarde={adres} onKies={setAdres} />
       {fout && (
-        <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-urgent-rood">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-urgent-rood">
           <AlertTriangle size={15} strokeWidth={2.5} aria-hidden="true" />
           {fout}
         </p>
@@ -72,7 +65,7 @@ export function AdresControleBlok({
         type="button"
         onClick={bevestig}
         disabled={bezig || !adres.trim()}
-        className="mt-3 inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-[filter] duration-150 hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 border-2 border-ink bg-accent px-4 text-base font-extrabold uppercase tracking-[0.05em] text-ink transition-[filter] duration-150 hover:brightness-95 focus-visible:outline-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {bezig ? (
           <>
