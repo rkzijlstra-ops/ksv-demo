@@ -47,21 +47,10 @@ test.beforeAll(async () => {
   // - "binnen"-items verlengen de pool en duwen de pagina buiten de viewport (flakey drag-test)
   // Nooit op uid filteren: dat raakt ook handmatig aangemaakte klussen op dezelfde test-accounts.
   await admin.from("meldingen").delete().like("klant_naam", `${PBX} %`);
-
-  // Verwijder ook orphaned monteur-profielen van test-runs (namen met "test" of "E2E", bv. Afmtest,
-  // Anntest, Optest, "E2E Monteur"). Een echte monteur die Reinier op kluslus-test aanmaakt heeft zo'n
-  // naam niet en blijft dus staan. Alleen de twee standaard test-accounts horen sowieso te blijven.
-  const bekendeProfiel = new Set([BEHEERDER.uid, MONTEUR.uid]);
-  const isTestNaam = (naam: string | null) =>
-    !!naam && (/test/i.test(naam) || naam.startsWith("E2E"));
-  const { data: alleProfielen } = await admin.from("profielen").select("id, rol, naam");
-  const orphans = (alleProfielen ?? []).filter(
-    (p) => p.rol === "monteur" && !bekendeProfiel.has(p.id) && isTestNaam(p.naam as string | null),
-  );
-  for (const p of orphans) {
-    await admin.from("profielen").delete().eq("id", p.id);
-    await admin.auth.admin.deleteUser(p.id).catch(() => {}); // auth-account is optional
-  }
+  // Bewust GEEN brede profielen-opruiming: dit bestand maakt zelf geen monteur-profielen aan, dus een
+  // sweep op naam-heuristiek (/test/i, E2E) over alle profielen zou alleen andermans data raken, en op de
+  // gedeelde test-DB ook een handmatig aangemaakte testmonteur van Reinier kunnen wissen. Elke test die
+  // profielen aanmaakt (o.a. de mail-specs) ruimt zijn eigen accounts zelf op.
 });
 
 async function seedOpdracht(klantNaam: string, opties: { monteur?: boolean } = {}): Promise<string> {

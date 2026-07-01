@@ -160,8 +160,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (!process.env.SHOTS) return;
   await admin.from("profielen").update({ bedrijfsnaam: null, telefoon: null, contact_email: null }).eq("id", MONTEUR.uid);
-  await admin.from("gebeurtenissen").delete().like("door_naam", "Rein RK");
-  // Opdrachten met de DEMO-prefix opruimen.
+  // Opdrachten met de DEMO-prefix opruimen (incl. hun gebeurtenissen via opdracht_id hieronder). GEEN
+  // brede wis op door_naam "Rein RK": op de gedeelde test-DB zou dat ook gebeurtenissen van handmatig
+  // keuren wissen. Alle hier geseede klussen dragen de DEMO-prefix, dus de sweep hieronder dekt ze.
   const { data } = await admin.from("meldingen").select("id").like("klant_naam", `${PREFIX}%`);
   for (const r of data ?? []) {
     await admin.from("gebeurtenissen").delete().eq("opdracht_id", r.id);
