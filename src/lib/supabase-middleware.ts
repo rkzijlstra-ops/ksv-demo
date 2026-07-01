@@ -13,7 +13,10 @@ import { NextResponse, type NextRequest } from "next/server";
 // DEMO_MODE; in productie redirecten ze naar home). Zonder dit zou de middleware ze naar /login sturen.
 // /test-login idem: de pagina logt zelf in op de test-DB en is gegrendeld op isTestLoginActief()
 // (in echte productie → notFound), dus publiek-maken is veilig.
-const PUBLIEK = ["/login", "/auth/", "/mockups", "/demo/", "/test-login"];
+// /klus/ is de publieke foto-downloadpagina die vanuit het (gemailde) opleverrapport wordt geopend:
+// de opdrachtgever is daar niet ingelogd. Toegang is niet-raadbaar via het opdracht-id (UUID), dezelfde
+// laag als de al-publieke foto- en PDF-URL's.
+const PUBLIEK = ["/login", "/auth/", "/mockups", "/demo/", "/test-login", "/klus/"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

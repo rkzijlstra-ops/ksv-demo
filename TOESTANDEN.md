@@ -261,3 +261,25 @@ en soft-delete het origineel. De detectie is best-effort: een fout (bv. de Claud
 klus staan, zonder waarschuwing. Daarnaast staat het inbound-adres kopieerbaar in het klus-toevoegen-venster
 (`KlusInvoer`, variant A: derde manier onder de bestand-knoppen). Gedekt: splits-detectie.test, claude-client.test,
 inbound/route.test, inbound/[id]/splitsen/route.test, splits-voorstel.spec (e2e splitsen + bevestigen + adres).
+
+## Rapport-herindeling: meldingen bovenaan + foto's downloaden (2026-07-01)
+
+Opbouwende feedback van de opdrachtgever op het opleverrapport, verwerkt in PDF én in-app weergave
+(spiegel), plus de snel-opleveren-variant en de rapport-voorbeelden (app-preview + handleiding lopen via
+`RapportWeergave`, dus automatisch mee).
+
+- **Meldingen bovenaan.** Meldingen is nu **sectie 1**, Oplevering sectie 2, Controle sectie 3. Boven de
+  secties een subtiele **meldingen-balk** (kleur + icoon + tekst): rood bij spoed, oranje bij gewone
+  meldingen, groen bij geen. Gewone melding krijgt een oranje randje + klein label; spoed blijft rood.
+- **Overzicht** staat als los blok bovenaan, in dezelfde volgorde als de secties.
+- **Foto-nummering** loopt meldingen-eerst; interne foto's (zaak) staan bewust NA de eindstaat zodat de
+  doorlopende nummering meldingen+eindstaat gelijk blijft aan de downloadpagina.
+- **Foto's downloaden (alleen zaak).** Knop in het rapport → publieke pagina `/klus/[id]/fotos`
+  (opdracht-id als niet-raadbare sleutel; in PUBLIEK-lijst). Tegels met vinkje, Download alles / Download
+  selectie → zip (`/api/klus/[id]/fotos/zip`, `?sel=` indexen uit de eigen lijst, geen losse URL's → geen
+  SSRF). Bewust GEEN foto's-als-bijlage in de PDF: houdt de gemailde PDF licht (bounce-risico bij strenge
+  DMARC) en werkt in elke viewer.
+
+Gedekt: rapport-indeling.test (balk-status/tekst, foto-groepen/nummering, download-namen), rapport.test
+(download-link zaak-wel/klant-niet, geldige PDF), api/klus/[id]/fotos/zip/route.test (statuscodes + zip);
+visuele keuring van de opmaak door Rein op de test-omgeving.
