@@ -81,4 +81,55 @@ describe("POST /api/opdrachten/aanmaken", () => {
     const primair = tweedeKlusDocs.find((c) => c[0].is_primair);
     expect(primair?.[0].bestandsnaam).toBe("bon.pdf");
   });
+
+  it("respecteert het door de invoerder gekozen adres bij meerdere kandidaten", async () => {
+    // De invoerder koos in KlusInvoer al bewust de montagelocatie (komt mee als klant_adres),
+    // maar de volledige kandidatenlijst wordt nog meegestuurd. Het gekozen adres moet winnen.
+    const res = await POST(
+      req({
+        klussen: [
+          {
+            velden: {
+              klant_naam: "D. Lek",
+              klant_adres: "7085 W. Jonker",
+              adressen: [
+                { adres: "7085 W. Jonker", soort: "montage" },
+                { adres: "Bouwbedrijf Janssen, Ede", soort: "opdrachtgever" },
+              ],
+            },
+            documenten: [{ naam: "order.pdf", type: "application/pdf", pad: "p1", publieke_url: "https://x/p1" }],
+          },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const kop = mockCreate.mock.calls[0][0];
+    expect(kop.klant_adres).toBe("7085 W. Jonker");
+    expect(kop.adres_keuze_nodig).toBe(false);
+  });
+
+  it("vlagt adres-keuze als er meerdere adressen zijn en niets gekozen is", async () => {
+    // Geen keuze gemaakt (klant_adres leeg): dan niets gokken, klus vlaggen zodat een mens kiest.
+    const res = await POST(
+      req({
+        klussen: [
+          {
+            velden: {
+              klant_naam: "D. Lek",
+              klant_adres: null,
+              adressen: [
+                { adres: "7085 W. Jonker", soort: "montage" },
+                { adres: "Bouwbedrijf Janssen, Ede", soort: "opdrachtgever" },
+              ],
+            },
+            documenten: [],
+          },
+        ],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const kop = mockCreate.mock.calls[0][0];
+    expect(kop.klant_adres).toBeNull();
+    expect(kop.adres_keuze_nodig).toBe(true);
+  });
 });

@@ -76,11 +76,15 @@ export async function POST(req: Request): Promise<NextResponse> {
     for (const klus of klussen) {
       const v = klus.velden;
       const adressen = Array.isArray(v.adressen) ? v.adressen : [];
-      const keuzeNodig = adresKeuzeNodig(adressen);
+      // De invoerder kan in KlusInvoer al bewust de montagelocatie hebben gekozen (komt mee als
+      // klant_adres, ook al blijft de volledige kandidatenlijst meegestuurd). Respecteer die keuze;
+      // alleen vlaggen als er meerdere adressen zijn EN er nog niets gekozen is.
+      const gekozenAdres = typeof v.klant_adres === "string" ? v.klant_adres.trim() : "";
+      const keuzeNodig = adresKeuzeNodig(adressen) && !gekozenAdres;
       const kop: OpdrachtInput = {
         documenttype: v.documenttype ?? "onbekend",
         klant_naam: v.klant_naam ?? null,
-        klant_adres: keuzeNodig ? null : (v.klant_adres ?? null),
+        klant_adres: keuzeNodig ? null : (gekozenAdres || null),
         referentienummer: v.referentienummer ?? null,
         adviseur: v.adviseur ?? null,
         klant_telefoon: v.klant_telefoon ?? null,

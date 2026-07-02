@@ -283,3 +283,29 @@ Opbouwende feedback van de opdrachtgever op het opleverrapport, verwerkt in PDF 
 Gedekt: rapport-indeling.test (balk-status/tekst, foto-groepen/nummering, download-namen), rapport.test
 (download-link zaak-wel/klant-niet, geldige PDF), api/klus/[id]/fotos/zip/route.test (statuscodes + zip);
 visuele keuring van de opmaak door Rein op de test-omgeving.
+
+## Adres-keuze bij meerdere adressen (montagelocatie) (2026-07-01)
+
+Toestand: een order heeft 2+ unieke adressen (klant/montage vs. bouwbedrijf/opdrachtgever). De parser
+gokt dan niet: `klant_adres` blijft leeg, `adres_keuze_nodig=true`, kandidaten bewaard. Een mens kiest.
+
+| Invoerweg → rol | wat gebeurt bij aanmaken | waar/hoe wordt gekozen | resultaat na keuze |
+|---|---|---|---|
+| Upload in de app (KlusInvoer), 1 klus | monteur/kantoor kiest inline; keuze komt mee als `klant_adres` → **wordt gerespecteerd**, vlag uit, adres in de klus | al bij het opslaan (inline `AdresKeuze`) | klus heeft direct het juiste `klant_adres` |
+| Upload in de app, meerdere klussen (groepen) | geen inline keuze in die modus → klus gevlagd (`adres_keuze_nodig`), `klant_adres` leeg | later op de klus-detailpagina | via `AdresControleBlok` → `/api/opdrachten/[id]/adres` |
+| Mail-invoer → MONTEUR | geen live UI; klus gevlagd, `klant_adres` leeg; voorstel in `/inbox` | op zijn eigen klus-pagina `/opdracht/[id]` (**nieuw**: blok toegevoegd) | keuze landt, vlag weg, blok verdwijnt |
+| Mail-invoer → KANTOOR | idem gevlagd; klus direct op dashboard | op dashboard-detail `/dashboard/opdracht/[id]` (bestond al) | keuze landt, vlag weg |
+
+Gat dat gedicht is: (1) de aanmaak-route gooide de al gemaakte keuze weg (herberekende de vlag uit de
+nog-volledige kandidatenlijst → `klant_adres` op null); (2) de monteur had op zijn detailpagina geen
+keuzeblok, terwijl kantoor dat wél had, dus een per-mail binnengekomen klus bleef bij de monteur
+adresloos hangen. Het enige pad dat een keuze definitief wegschrijft (`db.kiesAdres`) is nu voor beide
+rollen bereikbaar.
+
+Gedekt: opdrachten/aanmaken/route.test (keuze gerespecteerd; vlaggen zonder keuze), adres-keuze-monteur.spec
+(monteur kiest op `/opdracht/[id]`), adres-keuze.spec (kantoor op dashboard).
+
+Weergave: het keuze-blok (`AdresKeuze`) is één gedeeld component en ziet er overal hetzelfde uit (geel,
+"Meerdere adressen gevonden, kies de montagelocatie"). Op de detailpagina's zat er eerst een tweede rood
+kader ("Adres controleren") omheen met een dubbele kop; dat is weg. `AdresControleBlok` toont nu enkel de
+gedeelde `AdresKeuze` plus een eigen "Adres bevestigen"-knop (want het corrigeert een bestaande klus).
